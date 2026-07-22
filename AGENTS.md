@@ -18,6 +18,7 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 4. **Data in ScriptableObjects**; thin MonoBehaviours; plain C# domain.
 5. **Object pools** for spawnables; no `System.Linq` in combat ticks.
 6. **Protected `main`** — feature branch + PR only; never push straight to main.
+7. **No auto commit/push** — never `git commit` or `git push` unless the user explicitly asks.
 
 ## Stack notes
 

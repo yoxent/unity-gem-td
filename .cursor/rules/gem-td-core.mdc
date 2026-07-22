@@ -24,3 +24,4 @@ When a suggestion is suboptimal: (1) acknowledge goal (2) why not (3) better opt
 - Object pools for enemies/projectiles/pops.
 - No `System.Linq` in combat ticks — use `for` / reused lists.
 - Git: feature branch + PR into protected `main` only.
+- Never `git commit` or `git push` unless the user explicitly asks.
