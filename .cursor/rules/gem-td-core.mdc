@@ -1,0 +1,27 @@
+---
+description: Gem TD always-on agent conventions
+alwaysApply: true
+---
+
+# Gem TD — core conventions
+
+## Docs path
+
+Design docs live at `E:\Projects\Docs\project-docs\Unity\unity-gem-td` (GDD, ARCHITECTURE, UI-SPEC). Do not put design docs in this repo.
+
+## Lookup order
+
+SCE (`user-sce`) first → Context7 → web. If SCE lacked info, tell the user what to index.
+
+## Pushback
+
+When a suggestion is suboptimal: (1) acknowledge goal (2) why not (3) better option (4) why better (5) when to revisit.
+
+## Engineering
+
+- No gameplay reflection (`Activator`, attribute scan, string→type).
+- ScriptableObject data; plain C# logic; thin views.
+- Object pools for enemies/projectiles/pops.
+- No `System.Linq` in combat ticks — use `for` / reused lists.
+- Git: feature branch + PR into protected `main` only.
+- Never `git commit` or `git push` unless the user explicitly asks.
