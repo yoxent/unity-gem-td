@@ -1,0 +1,12 @@
+---
+description: Gameplay C# naming and structure
+globs: Assets/Scripts/**/*.cs
+alwaysApply: false
+---
+
+# Gameplay scripts
+
+- Names: `XxxDefinition` (SO), `XxxRuntime` (sim), `XxxView` (MonoBehaviour).
+- Gems: `GemId` switch factory → `IAttackModifier`; no reflection.
+- Services constructed in `GameCompositionRoot`; Gameplay must not reference UI or Steam assemblies.
+- Balance only via ScriptableObject fields.

@@ -1,0 +1,12 @@
+---
+description: UGUI and UI assembly conventions
+globs: Assets/Scripts/UI/**/*.cs
+alwaysApply: false
+---
+
+# UI scripts
+
+- UGUI only for 1.0. Kenney / feature.2d sprites — no shipping emoji.
+- Follow `UI-SPEC.md` layout (docs repo).
+- Socket DnD via drag handlers; listen to game events — do not poll domain state every frame.
+- Canvas reference resolution 1920×1080.
