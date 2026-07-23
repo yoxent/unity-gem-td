@@ -55,13 +55,27 @@ namespace GemTD.Tests.EditMode
             Assert.AreSame(_ballista, tower.Def);
             Assert.AreEqual(50, _economy.Gold);
             Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+            Assert.AreEqual(50, tower.PurchaseCost);
+            Assert.AreEqual(0, tower.UpgradeSpend);
         }
 
         [Test]
-        public void Sell_BlockedInCombat()
+        public void Place_AllowedInPlan()
         {
             var cell = new Vector2Int(3, 4);
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Build, out var tower));
+
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out var tower));
+
+            Assert.IsNotNull(tower);
+            Assert.AreEqual(50, _economy.Gold);
+            Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+        }
+
+        [Test]
+        public void TrySell_RejectedInCombat()
+        {
+            var cell = new Vector2Int(3, 4);
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out var tower));
             Assert.AreEqual(50, _economy.Gold);
 
             Assert.IsFalse(_placement.TrySell(tower, RunStateId.Combat, new GemInventory(6)));
@@ -70,23 +84,51 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Sell_InBuild_RefundsAndReturnsGems()
+        public void TrySell_InPlan_RefundsHalfAndReturnsGems()
         {
             var cell = new Vector2Int(3, 4);
             var inventory = new GemInventory(6);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Build, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out var tower));
             Assert.AreEqual(50, _economy.Gold);
 
             tower.TrySocket(_lmp, 0, allowSocket: true);
             _placement.Selected = tower;
 
-            Assert.IsTrue(_placement.TrySell(tower, RunStateId.Build, inventory));
+            Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, inventory));
 
-            Assert.AreEqual(100, _economy.Gold);
+            Assert.AreEqual(75, _economy.Gold);
             Assert.IsFalse(_map.IsBlocked(cell.x, cell.y));
             Assert.IsNull(_placement.Selected);
             Assert.IsTrue(ContainsGem(inventory, _lmp));
+        }
+
+        [Test]
+        public void TrySell_BlockedWhenBagCannotFitReturnedGems()
+        {
+            var cell = new Vector2Int(3, 4);
+            var inventory = new GemInventory(1);
+            inventory.TryAdd(_lmp);
+
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out var tower));
+            Assert.AreEqual(50, _economy.Gold);
+
+            var socketGem = ScriptableObject.CreateInstance<GemDefinition>();
+            socketGem.Id = GemId.Chain;
+            socketGem.DisplayName = "Chain";
+            try
+            {
+                tower.TrySocket(socketGem, 0, allowSocket: true);
+
+                Assert.IsFalse(_placement.TrySell(tower, RunStateId.Plan, inventory));
+                Assert.AreEqual(50, _economy.Gold);
+                Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+                Assert.AreSame(socketGem, tower.Sockets[0]);
+            }
+            finally
+            {
+                Object.DestroyImmediate(socketGem);
+            }
         }
 
         static bool ContainsGem(GemInventory inventory, GemDefinition gem)

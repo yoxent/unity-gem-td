@@ -44,10 +44,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void StartWave_FromBuild_TransitionsToCombatAndSetsWaveNumber()
+        public void StartWave_FromPlan_TransitionsToCombatAndSetsWaveNumber()
         {
             var controller = CreateController(_wave1);
-            EnterBuild();
+            EnterPlanReady();
 
             controller.StartWave();
 
@@ -60,7 +60,7 @@ namespace GemTD.Tests.EditMode
         {
             var controller = CreateController(_wave1);
             var gate = new TestSpawnerGate();
-            EnterBuild();
+            EnterPlanReady();
             controller.StartWave();
 
             controller.Tick(0f, gate.Gate);
@@ -74,11 +74,11 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Tick_WhenQueueEmptyAndNoLiveEnemies_GrantsGoldAndClearsWave()
+        public void Tick_WhenQueueEmptyAndNoLiveEnemies_GrantsGoldAndClearsToPlan()
         {
             var controller = CreateController(new[] { _wave1 }, endWaveGold: 25);
             var gate = new TestSpawnerGate();
-            EnterBuild();
+            EnterPlanReady();
             controller.StartWave();
 
             controller.Tick(0f, gate.Gate);
@@ -89,7 +89,7 @@ namespace GemTD.Tests.EditMode
             controller.Tick(0f, gate.Gate);
 
             Assert.AreEqual(25, _economy.Gold);
-            Assert.AreEqual(RunStateId.Expand, _states.Current);
+            Assert.AreEqual(RunStateId.Plan, _states.Current);
         }
 
         [Test]
@@ -97,7 +97,7 @@ namespace GemTD.Tests.EditMode
         {
             var controller = CreateController(_wave1);
             var gate = new TestSpawnerGate();
-            EnterBuild();
+            EnterPlanReady();
             controller.StartWave();
 
             controller.Tick(0f, gate.Gate);
@@ -127,7 +127,7 @@ namespace GemTD.Tests.EditMode
             {
                 var controller = CreateController(wave);
                 var gate = new TestSpawnerGate();
-                EnterBuild();
+                EnterPlanReady();
                 controller.StartWave();
 
                 controller.Tick(0f, gate.Gate);
@@ -148,28 +148,68 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void StartWave_AfterWaveThree_ReusesLastDefinition()
+        public void Clear_WaveWithOfferDraft_GoesDraft()
         {
-            var controller = CreateController(_wave1, _wave2, _wave3);
+            _wave1.OfferDraftAfterClear = true;
+            var controller = CreateController(_wave1);
             var gate = new TestSpawnerGate();
-            EnterBuild();
-
+            EnterPlanReady();
             ClearWave(controller, gate, expectedSpawns: 2);
-            EnterBuild();
-            ClearWave(controller, gate, expectedSpawns: 3);
-            EnterBuild();
-            ClearWave(controller, gate, expectedSpawns: 4);
-            EnterBuild();
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
+        }
 
-            gate.ResetCounts();
-            controller.StartWave();
-            Assert.AreEqual(4, controller.CurrentWaveNumber);
+        [Test]
+        public void Clear_FinalWave_GoesVictory_NoFurtherStartWave()
+        {
+            _wave1.EndsCampaign = true;
+            var controller = CreateController(_wave1);
+            var gate = new TestSpawnerGate();
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 2);
+            Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
+            Assert.Throws<InvalidOperationException>(() => controller.StartWave());
+        }
 
-            controller.Tick(0f, gate.Gate);
-            controller.Tick(0.25f, gate.Gate);
-            controller.Tick(0.25f, gate.Gate);
-            controller.Tick(0.25f, gate.Gate);
-            Assert.AreEqual(4, gate.SpawnCount);
+        [Test]
+        public void SixWaveFixture_DraftOn2And4_VictoryOn6()
+        {
+            var waves = new WaveDefinition[6];
+            for (var i = 0; i < 6; i++)
+            {
+                waves[i] = CreateWave(i + 1, _enemyDef, count: 1, interval: 0f);
+                waves[i].OfferDraftAfterClear = i == 1 || i == 3;
+                waves[i].EndsCampaign = i == 5;
+            }
+
+            try
+            {
+                var controller = CreateController(waves);
+                var gate = new TestSpawnerGate();
+
+                for (var w = 0; w < 6; w++)
+                {
+                    if (_states.Current == RunStateId.Draft)
+                        _states.DraftResolved();
+                    if (_states.Current != RunStateId.Plan)
+                        EnterPlanReady();
+                    else if (!_states.ExpandSatisfiedThisCycle)
+                        _states.NotifyExpandDone();
+
+                    ClearWave(controller, gate, expectedSpawns: 1);
+
+                    if (w == 1 || w == 3)
+                        Assert.AreEqual(RunStateId.Draft, _states.Current);
+                    else if (w == 5)
+                        Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
+                    else
+                        Assert.AreEqual(RunStateId.Plan, _states.Current);
+                }
+            }
+            finally
+            {
+                for (var i = 0; i < waves.Length; i++)
+                    UnityEngine.Object.DestroyImmediate(waves[i]);
+            }
         }
 
         WaveController CreateController(params WaveDefinition[] waves) =>
@@ -178,10 +218,14 @@ namespace GemTD.Tests.EditMode
         WaveController CreateController(WaveDefinition[] waves, int endWaveGold) =>
             new WaveController(waves, _states, _economy, endWaveGold);
 
-        void EnterBuild()
+        void EnterPlanReady()
         {
-            _states.StartRun();
-            _states.ExpandConfirmed();
+            if (_states.Current == RunStateId.Boot)
+                _states.StartRun();
+            if (_states.Current == RunStateId.Draft)
+                _states.DraftResolved();
+            if (_states.Current == RunStateId.Plan && !_states.ExpandSatisfiedThisCycle)
+                _states.NotifyExpandDone();
         }
 
         void ClearWave(WaveController controller, TestSpawnerGate gate, int expectedSpawns)
@@ -199,7 +243,6 @@ namespace GemTD.Tests.EditMode
 
             gate.ClearLive();
             controller.Tick(0f, gate.Gate);
-            Assert.AreEqual(RunStateId.Expand, _states.Current);
         }
 
         static WaveDefinition CreateWave(int number, EnemyDefinition enemy, int count, float interval) =>

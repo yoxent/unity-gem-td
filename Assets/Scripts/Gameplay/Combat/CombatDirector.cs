@@ -76,13 +76,23 @@ namespace GemTD.Gameplay.Combat
                     ListPool<IAttackModifier>.Release(modifiers);
 
                     var towerPos = CellToWorld(tower.Cell);
-                    if (!_selector.TrySelect(tower.TargetingMode, towerPos, tower.Def.Range, living, out var primary))
+                    var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
+                    var range = tower.Def.Range * rangeMul;
+                    if (!_selector.TrySelect(tower.TargetingMode, towerPos, range, living, out var primary))
                         continue;
 
                     var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
                     tower.Cooldown = tower.Def.AttackInterval / fireRate;
                     var damage = spec.Damage * tower.OutgoingDamageMultiplier;
-                    SpawnVolley(towerPos, primary, spec, tower.Def.Range, damage);
+                    var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
+                    var speed = _projectileSpeed * speedMul;
+                    var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
+                    var echoFactor = volleys > 1 ? spec.EchoDamageFactor : 1f;
+                    if (echoFactor <= 0f)
+                        echoFactor = 1f;
+                    var volleyDamage = damage * echoFactor;
+                    for (var v = 0; v < volleys; v++)
+                        SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed);
                 }
             }
 
@@ -108,7 +118,13 @@ namespace GemTD.Gameplay.Combat
             }
         }
 
-        void SpawnVolley(Vector3 origin, EnemyRuntime primary, AttackSpec spec, float chainRange, float damage)
+        void SpawnVolley(
+            Vector3 origin,
+            EnemyRuntime primary,
+            AttackSpec spec,
+            float chainRange,
+            float damage,
+            float speed)
         {
             var aim = primary.WorldPosition - origin;
             if (aim.sqrMagnitude < 1e-8f)
@@ -134,7 +150,7 @@ namespace GemTD.Gameplay.Combat
                     primary,
                     damage,
                     spec.ChainCount,
-                    _projectileSpeed,
+                    speed,
                     chainRange,
                     spec.AoeRadius);
                 _projectiles.Add(projectile);

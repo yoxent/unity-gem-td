@@ -15,6 +15,10 @@ namespace GemTD.Gameplay.Gems
                 GemId.Lmp => new LmpModifier(),
                 GemId.Chain => new ChainModifier(),
                 GemId.Fork => new ForkModifier(),
+                GemId.FasterAttacks => new FasterAttacksModifier(),
+                GemId.IncreasedAccuracy => new IncreasedAccuracyModifier(),
+                GemId.SlowerProjectiles => new SlowerProjectilesModifier(),
+                GemId.AttackEcho => new AttackEchoModifier(),
                 GemId.None => null,
                 _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Unregistered gem — add a factory case.")
             };

@@ -38,13 +38,12 @@ namespace GemTD.Gameplay.Run
 
         public void StartWave()
         {
+            if (_nextWaveIndex >= _waves.Length)
+                throw new InvalidOperationException("Campaign complete — no more waves.");
+
             _states.StartWave();
 
-            var defIndex = _nextWaveIndex;
-            if (defIndex >= _waves.Length)
-                defIndex = _waves.Length - 1;
-
-            _activeWave = _waves[defIndex];
+            _activeWave = _waves[_nextWaveIndex];
             CurrentWaveNumber = _nextWaveIndex + 1;
             BuildSpawnQueue(_activeWave);
             _spawnIndex = 0;
@@ -75,7 +74,9 @@ namespace GemTD.Gameplay.Run
                 _waveCleared = true;
                 _nextWaveIndex++;
                 _economy.GrantEndWaveGold(_endWaveGold);
-                _states.WaveCleared(offerDraft: false);
+                var offerDraft = _activeWave != null && _activeWave.OfferDraftAfterClear;
+                var endsCampaign = _activeWave != null && _activeWave.EndsCampaign;
+                _states.WaveCleared(offerDraft, endsCampaign);
             }
         }
 

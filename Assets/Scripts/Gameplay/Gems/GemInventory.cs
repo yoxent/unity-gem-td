@@ -8,6 +8,25 @@ namespace GemTD.Gameplay.Gems
 
         public IReadOnlyList<GemDefinition> Slots => _slots;
 
+        public int Capacity => _slots.Length;
+
+        public int OccupiedCount
+        {
+            get
+            {
+                var count = 0;
+                for (var i = 0; i < _slots.Length; i++)
+                {
+                    if (_slots[i] != null)
+                        count++;
+                }
+
+                return count;
+            }
+        }
+
+        public int FreeSlotCount => Capacity - OccupiedCount;
+
         public GemInventory(int capacity)
         {
             var size = capacity > 0 ? capacity : 1;
@@ -58,6 +77,32 @@ namespace GemTD.Gameplay.Gems
 
             gem = null;
             return false;
+        }
+
+        public bool TryDiscardAt(int index, out GemDefinition discarded)
+        {
+            if (index < 0 || index >= _slots.Length || _slots[index] == null)
+            {
+                discarded = null;
+                return false;
+            }
+
+            discarded = _slots[index];
+            _slots[index] = null;
+            return true;
+        }
+
+        public bool TryTakeAt(int index, out GemDefinition gem)
+        {
+            if (index < 0 || index >= _slots.Length || _slots[index] == null)
+            {
+                gem = null;
+                return false;
+            }
+
+            gem = _slots[index];
+            _slots[index] = null;
+            return true;
         }
     }
 }

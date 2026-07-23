@@ -110,6 +110,29 @@ namespace GemTD.Gameplay.Run
             else if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame)
                 _root.SetPlaceTower(2);
 
+            // Draft greybox: Z/X/C pick cards, V skip, B discard slot 0 (Plan), N/M replace Yes/No, comma complete replace slot 0.
+            if (_root.States != null && _root.States.Current == RunStateId.Draft)
+            {
+                if (kb.zKey.wasPressedThisFrame)
+                    _root.RequestDraftPick(0);
+                else if (kb.xKey.wasPressedThisFrame)
+                    _root.RequestDraftPick(1);
+                else if (kb.cKey.wasPressedThisFrame)
+                    _root.RequestDraftPick(2);
+                else if (kb.vKey.wasPressedThisFrame)
+                    _root.RequestDraftSkip();
+                else if (kb.nKey.wasPressedThisFrame)
+                    _root.RequestDraftReplaceYes();
+                else if (kb.mKey.wasPressedThisFrame)
+                    _root.RequestDraftReplaceNo();
+                else if (kb.commaKey.wasPressedThisFrame)
+                    _root.RequestDraftReplaceComplete(0);
+                return;
+            }
+
+            if (_root.States != null && _root.States.Current == RunStateId.Plan && kb.bKey.wasPressedThisFrame)
+                _root.RequestDiscardAt(0);
+
             // Scope first: Shift+R composite steals the chord so plain R does not also fire aim.
             if (_cycleScope != null && _cycleScope.WasPressedThisFrame())
             {

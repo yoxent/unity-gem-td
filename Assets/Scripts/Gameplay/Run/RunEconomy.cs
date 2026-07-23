@@ -39,6 +39,9 @@ namespace GemTD.Gameplay.Run
 
         public void RefundFull(int amount) => AddGold(amount);
 
+        public static int ComputeSellRefund(int purchaseCost, int upgradeSpend) =>
+            (purchaseCost + upgradeSpend) / 2;
+
         public void LoseLife(int amount = 1)
         {
             if (amount <= 0 || IsDefeated)

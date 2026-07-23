@@ -50,6 +50,14 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ComputeSellRefund_FloorsHalfOfPurchasePlusUpgrade()
+        {
+            Assert.AreEqual(25, RunEconomy.ComputeSellRefund(50, 0));
+            Assert.AreEqual(40, RunEconomy.ComputeSellRefund(50, 30));
+            Assert.AreEqual(0, RunEconomy.ComputeSellRefund(1, 0));
+        }
+
+        [Test]
         public void LoseLife_ReducesLivesAndRaisesEvent()
         {
             var economy = new RunEconomy(100, 20);
@@ -108,6 +116,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(100, config.StartingGold);
             Assert.AreEqual(20, config.StartingLives);
             Assert.AreEqual(25, config.EndWaveGold);
+            Assert.AreEqual(10, config.InventoryCapacity);
             Object.DestroyImmediate(config);
         }
 

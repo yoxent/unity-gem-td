@@ -25,6 +25,7 @@ namespace GemTD.Gameplay
         [SerializeField] TowerDefinition cannonDef;
         [SerializeField] TowerDefinition beaconDef;
         [SerializeField] WaveDefinition[] waves;
+        [SerializeField] GemDefinition[] draftPool;
 
         [Header("Scene")]
         [SerializeField] GridBoardView gridView;
@@ -46,10 +47,16 @@ namespace GemTD.Gameplay
         public GemInventory Inventory { get; private set; }
         public TowerPlacementService Placement { get; private set; }
         public WaveController WaveController { get; private set; }
+        public DraftService Draft { get; private set; }
         public int CurrentWaveNumber => WaveController != null ? WaveController.CurrentWaveNumber : 0;
         public bool HasSelectedTower => Placement != null && Placement.Selected != null;
         public bool SelectedHasSocketedGems =>
             Placement?.Selected != null && Placement.Selected.HasSocketedGems;
+        public bool CanStartWave =>
+            States != null
+            && States.Current == RunStateId.Plan
+            && States.ExpandSatisfiedThisCycle
+            && WaveController != null;
         public string PlaceTowerName =>
             _placeDef != null && !string.IsNullOrEmpty(_placeDef.DisplayName)
                 ? _placeDef.DisplayName
@@ -123,6 +130,7 @@ namespace GemTD.Gameplay
         void Start()
         {
             States.StartRun();
+            BeginDraftOffer(allowSkip: false);
         }
 
         void OnDestroy()
@@ -144,7 +152,9 @@ namespace GemTD.Gameplay
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             TryDebugAdvance();
 #endif
-            if (States == null || States.Current == RunStateId.Defeat)
+            if (States == null
+                || States.Current == RunStateId.Defeat
+                || States.Current == RunStateId.VictorySummary)
                 return;
 
             var dt = Clock.DeltaTime;
@@ -189,12 +199,13 @@ namespace GemTD.Gameplay
             GameEvents.RaiseGoldChanged(Economy.Gold);
             GameEvents.RaiseLivesChanged(Economy.Lives);
 
-            var capacity = 6;
-            if (runConfig != null && runConfig.SeedGems != null && runConfig.SeedGems.Length > capacity)
-                capacity = runConfig.SeedGems.Length;
+            var capacity = runConfig != null && runConfig.InventoryCapacity > 0
+                ? runConfig.InventoryCapacity
+                : 10;
             Inventory = new GemInventory(capacity);
-            if (runConfig != null)
-                Inventory.Seed(runConfig.SeedGems);
+            // Starter draft supplies the first gem — do not seed LMP+Chain.
+
+            Draft = new DraftService(new System.Random());
 
             _expand = new MapExpandService(_path, _board);
             Placement = new TowerPlacementService(_board, _path, _expand, Economy);
@@ -232,14 +243,58 @@ namespace GemTD.Gameplay
                 SyncProjectileViews();
             }
 
-            if (next == RunStateId.Expand)
-                RefreshExpandMarkers();
-            else
+            if (next == RunStateId.Plan)
+            {
+                _loggedExpandSkip = false;
+                if (!States.ExpandSatisfiedThisCycle)
+                    RefreshExpandMarkers();
+                else
+                    ClearExpandMarkers();
+            }
+            else if (next == RunStateId.Draft)
+            {
                 ClearExpandMarkers();
+                // Mid-run drafts (starter already began in Start).
+                if (prev == RunStateId.Combat)
+                    BeginDraftOffer(allowSkip: true);
+            }
+            else
+            {
+                ClearExpandMarkers();
+            }
         }
 
         static bool IsCombatPhase(RunStateId state) =>
             state == RunStateId.Combat || state == RunStateId.Boss || state == RunStateId.Endless;
+
+        void BeginDraftOffer(bool allowSkip)
+        {
+            if (Draft == null)
+                return;
+
+            var usable = 0;
+            if (draftPool != null)
+            {
+                for (var i = 0; i < draftPool.Length; i++)
+                {
+                    if (draftPool[i] != null)
+                        usable++;
+                }
+            }
+
+            if (usable < 3)
+            {
+                Debug.LogError(
+                    "[GemTD] draftPool needs at least 3 assigned gems on GameCompositionRoot " +
+                    $"(found {usable}). Run menu: Gem TD / Phase 2 PR4 Wire Draft Pool + Waves");
+                return;
+            }
+
+            Draft.BeginOffer(draftPool, allowSkip);
+            Debug.Log(
+                $"[GemTD] Draft offer ({(allowSkip ? "skip OK" : "must pick")}): " +
+                $"{Draft.CurrentOffer[0].DisplayName} / {Draft.CurrentOffer[1].DisplayName} / {Draft.CurrentOffer[2].DisplayName}");
+        }
 
         void RefreshExpandMarkers()
         {
@@ -247,15 +302,18 @@ namespace GemTD.Gameplay
             if (_expand == null || expandMarkerPrefab == null || gridView == null)
                 return;
 
+            if (States.Current != RunStateId.Plan || States.ExpandSatisfiedThisCycle)
+                return;
+
             var count = _expand.CollectLegalExpands(_legalExpands);
             if (count == 0)
             {
                 if (!_loggedExpandSkip)
                 {
-                    Debug.Log("[GemTD] No legal expands — auto-skip Expand → Build.");
+                    Debug.Log("[GemTD] No legal expands — waive expand requirement.");
                     _loggedExpandSkip = true;
                 }
-                States.ExpandConfirmed();
+                States.WaiveExpandRequirement();
                 return;
             }
 
@@ -280,7 +338,7 @@ namespace GemTD.Gameplay
 
         public bool TryConfirmExpand(Vector2Int cell)
         {
-            if (States.Current != RunStateId.Expand)
+            if (States.Current != RunStateId.Plan || States.ExpandSatisfiedThisCycle)
                 return false;
 
             if (!_expand.TryExpand(cell))
@@ -291,7 +349,7 @@ namespace GemTD.Gameplay
 
             gridView?.SetPath(_path);
             ClearExpandMarkers();
-            States.ExpandConfirmed();
+            States.NotifyExpandDone();
             return true;
         }
 
@@ -301,7 +359,7 @@ namespace GemTD.Gameplay
                 return;
 
             var phase = States.Current;
-            if (phase != RunStateId.Build && phase != RunStateId.Combat)
+            if (phase != RunStateId.Plan && phase != RunStateId.Combat)
                 return;
 
             var cell = gridView.WorldToCell(world);
@@ -370,7 +428,7 @@ namespace GemTD.Gameplay
 
         public void RequestStartWave()
         {
-            if (States.Current != RunStateId.Build || WaveController == null)
+            if (!CanStartWave)
                 return;
 
             WaveController.StartWave();
@@ -403,9 +461,9 @@ namespace GemTD.Gameplay
 
         public void RequestSocket(GemId id)
         {
-            if (States.Current != RunStateId.Build)
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
             {
-                Debug.Log("[GemTD] Socket frozen outside Build.");
+                Debug.Log("[GemTD] Socket frozen outside Plan/Combat.");
                 return;
             }
 
@@ -428,6 +486,148 @@ namespace GemTD.Gameplay
 
             if (!socketed)
                 Inventory.TryAdd(gem);
+        }
+
+        /// <summary>Socket the gem in a specific bag slot onto the selected tower.</summary>
+        public void RequestSocketFromInventory(int inventoryIndex)
+        {
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
+            {
+                Debug.Log("[GemTD] Socket frozen outside Plan/Combat.");
+                return;
+            }
+
+            var tower = Placement?.Selected;
+            if (tower == null)
+            {
+                Debug.Log("[GemTD] Select a tower before socketing from inventory.");
+                return;
+            }
+
+            if (!Inventory.TryTakeAt(inventoryIndex, out var gem))
+                return;
+
+            var socketed = false;
+            for (var i = 0; i < tower.Sockets.Length; i++)
+            {
+                if (tower.TrySocket(gem, i, allowSocket: true))
+                {
+                    socketed = true;
+                    break;
+                }
+            }
+
+            if (!socketed)
+            {
+                Inventory.TryAdd(gem);
+                Debug.Log($"[GemTD] Could not socket {gem.DisplayName} (full sockets or duplicate GemId).");
+            }
+        }
+
+        public void RequestUnsocket(int socketIndex)
+        {
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
+                return;
+
+            var tower = Placement?.Selected;
+            if (tower == null || Inventory == null)
+                return;
+
+            if (Inventory.FreeSlotCount <= 0)
+            {
+                Debug.Log("[GemTD] Unsocket blocked — inventory full (discard first).");
+                return;
+            }
+
+            if (!tower.TryUnsocket(socketIndex, out var gem, allowSocket: true))
+                return;
+
+            if (!Inventory.TryAdd(gem))
+                tower.TrySocket(gem, socketIndex, allowSocket: true);
+        }
+
+        public void RequestDiscardAt(int inventoryIndex)
+        {
+            if (States.Current != RunStateId.Plan || Inventory == null)
+            {
+                Debug.Log("[GemTD] Discard only allowed in Plan.");
+                return;
+            }
+
+            if (!Inventory.TryDiscardAt(inventoryIndex, out var discarded))
+                return;
+
+            Debug.Log($"[GemTD] Discarded {discarded.DisplayName} from inventory slot {inventoryIndex}.");
+        }
+
+        /// <summary>
+        /// Inventory slot click: draft-replace complete, else socket onto selected tower,
+        /// or discard when Shift held in Plan.
+        /// </summary>
+        public void RequestInventorySlotClick(int inventoryIndex, bool shiftDiscard)
+        {
+            if (States == null || Inventory == null)
+                return;
+
+            if (States.Current == RunStateId.Draft
+                && Draft != null
+                && Draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick)
+            {
+                RequestDraftReplaceComplete(inventoryIndex);
+                return;
+            }
+
+            if (shiftDiscard && States.Current == RunStateId.Plan)
+            {
+                RequestDiscardAt(inventoryIndex);
+                return;
+            }
+
+            RequestSocketFromInventory(inventoryIndex);
+        }
+
+        public void RequestDraftPick(int offerIndex)
+        {
+            if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
+                return;
+
+            if (!Draft.TryPick(offerIndex, Inventory, out var resolved))
+                return;
+
+            if (resolved)
+            {
+                States.DraftResolved();
+                return;
+            }
+
+            if (Draft.ReplacePhase == DraftReplacePhase.AwaitingConfirm)
+                Debug.Log("[GemTD] Bag full — ConfirmReplaceYes/No, then pick inventory slot.");
+        }
+
+        public void RequestDraftSkip()
+        {
+            if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
+                return;
+
+            if (!Draft.TrySkip(Economy, 75, out var resolved) || !resolved)
+                return;
+
+            States.DraftResolved();
+        }
+
+        public void RequestDraftReplaceYes() => Draft?.ConfirmReplaceYes();
+        public void RequestDraftReplaceNo() => Draft?.ConfirmReplaceNo();
+        public void RequestDraftReplaceCancel() => Draft?.CancelReplace();
+
+        public void RequestDraftReplaceComplete(int inventoryIndex)
+        {
+            if (States.Current != RunStateId.Draft || Draft == null || Inventory == null)
+                return;
+
+            if (!Draft.TryCompleteReplace(inventoryIndex, Inventory, out var resolved) || !resolved)
+                return;
+
+            States.DraftResolved();
         }
 
         void SpawnEnemy(EnemyDefinition def)
@@ -615,14 +815,22 @@ namespace GemTD.Gameplay
 
             switch (States.Current)
             {
-                case RunStateId.Expand:
-                    if (_legalExpands.Count > 0)
-                        TryConfirmExpand(_legalExpands[0]);
+                case RunStateId.Plan:
+                    if (!States.ExpandSatisfiedThisCycle)
+                    {
+                        if (_legalExpands.Count > 0)
+                            TryConfirmExpand(_legalExpands[0]);
+                        else
+                            States.WaiveExpandRequirement();
+                    }
                     else
-                        States.ExpandConfirmed();
+                    {
+                        RequestStartWave();
+                    }
                     break;
-                case RunStateId.Build:
-                    RequestStartWave();
+                case RunStateId.Draft:
+                    if (Draft != null && Draft.IsActive && Draft.CurrentOffer.Count > 0)
+                        RequestDraftPick(0);
                     break;
                 case RunStateId.Combat:
                     States.WaveCleared(offerDraft: false);

@@ -34,7 +34,7 @@ namespace GemTD.Gameplay.Towers
             if (def == null)
                 return false;
 
-            if (phase != RunStateId.Build && phase != RunStateId.Combat)
+            if (phase != RunStateId.Plan && phase != RunStateId.Combat)
                 return false;
 
             if (!_board.IsBuildable(cell.x, cell.y))
@@ -59,10 +59,20 @@ namespace GemTD.Gameplay.Towers
             if (tower == null || inventory == null)
                 return false;
 
-            if (phase != RunStateId.Build)
+            if (phase != RunStateId.Plan)
                 return false;
 
-            _economy.RefundFull(tower.Def.Cost);
+            var gemCount = 0;
+            for (var i = 0; i < tower.Sockets.Length; i++)
+            {
+                if (tower.Sockets[i] != null)
+                    gemCount++;
+            }
+
+            if (gemCount > inventory.FreeSlotCount)
+                return false;
+
+            _economy.AddGold(RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend));
 
             for (var i = 0; i < tower.Sockets.Length; i++)
             {

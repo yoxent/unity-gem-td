@@ -12,11 +12,15 @@ namespace GemTD.Gameplay.Towers
         public float Cooldown { get; set; }
         public TargetingMode TargetingMode { get; set; }
         public float OutgoingDamageMultiplier { get; set; }
+        public int PurchaseCost { get; }
+        public int UpgradeSpend { get; set; }
 
         public TowerRuntime(Vector2Int cell, TowerDefinition def)
         {
             Cell = cell;
             Def = def;
+            PurchaseCost = def != null ? def.Cost : 0;
+            UpgradeSpend = 0;
             OutgoingDamageMultiplier = 1f;
             var socketCount = def != null && def.SocketCount > 0 ? def.SocketCount : 1;
             Sockets = new GemDefinition[socketCount];
@@ -44,6 +48,13 @@ namespace GemTD.Gameplay.Towers
 
             if (Sockets[index] != null)
                 return false;
+
+            for (var i = 0; i < Sockets.Length; i++)
+            {
+                var existing = Sockets[i];
+                if (existing != null && existing.Id == gem.Id)
+                    return false;
+            }
 
             Sockets[index] = gem;
             return true;

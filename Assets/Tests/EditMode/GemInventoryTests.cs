@@ -88,6 +88,34 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void FreeSlotCount_ReflectsOccupied()
+        {
+            var inv = new GemInventory(10);
+            Assert.AreEqual(10, inv.FreeSlotCount);
+            inv.TryAdd(_lmp);
+            Assert.AreEqual(9, inv.FreeSlotCount);
+            Assert.AreEqual(1, inv.OccupiedCount);
+        }
+
+        [Test]
+        public void TryDiscardAt_RemovesGem()
+        {
+            var inv = new GemInventory(10);
+            inv.Seed(new[] { _lmp, _chain });
+            Assert.IsTrue(inv.TryDiscardAt(0, out var gone));
+            Assert.AreSame(_lmp, gone);
+            Assert.IsNull(inv.Slots[0]);
+            Assert.AreEqual(9, inv.FreeSlotCount);
+        }
+
+        [Test]
+        public void TryDiscardAt_FailsOnEmptySlot()
+        {
+            var inv = new GemInventory(10);
+            Assert.IsFalse(inv.TryDiscardAt(0, out _));
+        }
+
+        [Test]
         public void TowerRuntime_SocketsLengthMatchesDefSocketCount()
         {
             var tower = new TowerRuntime(new Vector2Int(2, 3), _ballista);
@@ -164,6 +192,24 @@ namespace GemTD.Tests.EditMode
 
             Assert.IsFalse(tower.TrySocket(_lmp, 2, allowSocket: true));
             Assert.IsFalse(tower.TrySocket(_lmp, -1, allowSocket: true));
+        }
+
+        [Test]
+        public void TrySocket_RejectsDuplicateGemIdOnSameTower()
+        {
+            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var lmp2 = ScriptableObject.CreateInstance<GemDefinition>();
+            lmp2.Id = GemId.Lmp;
+            try
+            {
+                Assert.IsTrue(tower.TrySocket(_lmp, 0, allowSocket: true));
+                Assert.IsFalse(tower.TrySocket(lmp2, 1, allowSocket: true));
+                Assert.IsNull(tower.Sockets[1]);
+            }
+            finally
+            {
+                Object.DestroyImmediate(lmp2);
+            }
         }
     }
 }

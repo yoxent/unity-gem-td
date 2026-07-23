@@ -11,6 +11,10 @@ namespace GemTD.Gameplay.Gems
         Shock = 6,
         Pierce = 7,
         ElementalProliferation = 8,
-        Gmp = 9
+        Gmp = 9,
+        FasterAttacks = 10,
+        IncreasedAccuracy = 11,
+        SlowerProjectiles = 12,
+        AttackEcho = 13
     }
 }
