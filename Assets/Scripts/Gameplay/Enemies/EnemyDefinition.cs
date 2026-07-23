@@ -9,6 +9,8 @@ namespace GemTD.Gameplay.Enemies
         public float MaxHealth = 20f;
         public float MoveSpeed = 2f;
         public int Armor;
+        public int KillGold = 5;
+        public int LeakDamage = 1;
         public Material PlaceholderMaterial;
     }
 }

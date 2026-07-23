@@ -34,5 +34,23 @@ namespace GemTD.Tests.EditMode
             var mod = GemModifierFactory.Create(GemId.Lmp);
             Assert.IsInstanceOf<LmpModifier>(mod);
         }
+
+        [Test]
+        public void Chain_AddsChainsAndReducesDamage()
+        {
+            var pipeline = new GemModifierPipeline();
+            var baseline = AttackSpec.FromBase(damage: 10f);
+            var result = pipeline.Apply(baseline, new IAttackModifier[] { new ChainModifier(0.7f, 2) });
+
+            Assert.AreEqual(7f, result.Damage, 0.001f);
+            Assert.AreEqual(2, result.ChainCount);
+        }
+
+        [Test]
+        public void Factory_CreatesChain()
+        {
+            var mod = GemModifierFactory.Create(GemId.Chain);
+            Assert.IsInstanceOf<ChainModifier>(mod);
+        }
     }
 }

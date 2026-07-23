@@ -3,20 +3,30 @@ using UnityEngine;
 namespace GemTD.Gameplay.Grid
 {
     /// <summary>
-    /// Thin view: builds a flat placeholder grid under this transform.
+    /// Thin view: binds a <see cref="GridBoard"/> (+ optional path) and builds placeholder tiles.
     /// </summary>
     public sealed class GridBoardView : MonoBehaviour
     {
-        [SerializeField] int width = 8;
-        [SerializeField] int height = 8;
         [SerializeField] float cellSize = 1f;
         [SerializeField] Material tileMaterial;
+        [SerializeField] Material pathMaterial;
 
         public GridBoard Board { get; private set; }
+        public float CellSize => cellSize;
 
-        void Awake()
+        PathGraph _path;
+
+        /// <summary>Bind domain board (created by composition root). Rebuilds visuals.</summary>
+        public void Bind(GridBoard board, PathGraph path = null)
         {
-            Board = new GridBoard(width, height);
+            Board = board;
+            _path = path;
+            RebuildVisuals();
+        }
+
+        public void SetPath(PathGraph path)
+        {
+            _path = path;
             RebuildVisuals();
         }
 
@@ -25,7 +35,13 @@ namespace GemTD.Gameplay.Grid
             for (var i = transform.childCount - 1; i >= 0; i--)
                 Destroy(transform.GetChild(i).gameObject);
 
+            if (Board == null)
+                return;
+
+            var width = Board.Width;
+            var height = Board.Height;
             var half = cellSize * 0.5f;
+
             for (var y = 0; y < height; y++)
             {
                 for (var x = 0; x < width; x++)
@@ -40,15 +56,34 @@ namespace GemTD.Gameplay.Grid
                     if (col != null)
                         Destroy(col);
 
-                    if (tileMaterial != null)
+                    var isPath = _path != null && _path.IsPath(x, y);
+                    var mat = isPath && pathMaterial != null ? pathMaterial : tileMaterial;
+                    if (mat != null)
                     {
                         var renderer = tile.GetComponent<MeshRenderer>();
                         if (renderer != null)
-                            renderer.sharedMaterial = tileMaterial;
+                            renderer.sharedMaterial = mat;
+                    }
+                    else if (isPath)
+                    {
+                        var renderer = tile.GetComponent<MeshRenderer>();
+                        if (renderer != null)
+                        {
+                            var block = new MaterialPropertyBlock();
+                            renderer.GetPropertyBlock(block);
+                            var pathColor = new Color(0.55f, 0.4f, 0.25f);
+                            block.SetColor("_BaseColor", pathColor);
+                            block.SetColor("_Color", pathColor);
+                            renderer.SetPropertyBlock(block);
+                        }
                     }
                 }
             }
         }
+
+        public Vector3 CellToWorld(int x, int y) => CellCenterWorld(x, y);
+
+        public Vector3 CellToWorld(Vector2Int cell) => CellCenterWorld(cell.x, cell.y);
 
         public Vector3 CellCenterWorld(int x, int y)
         {
@@ -56,11 +91,17 @@ namespace GemTD.Gameplay.Grid
             return transform.TransformPoint(new Vector3(x * cellSize + half, 0f, y * cellSize + half));
         }
 
+        public Vector2Int WorldToCell(Vector3 world)
+        {
+            var local = transform.InverseTransformPoint(world);
+            var x = Mathf.FloorToInt(local.x / cellSize);
+            var y = Mathf.FloorToInt(local.z / cellSize);
+            return new Vector2Int(x, y);
+        }
+
 #if UNITY_EDITOR
         void OnValidate()
         {
-            width = Mathf.Max(1, width);
-            height = Mathf.Max(1, height);
             cellSize = Mathf.Max(0.1f, cellSize);
         }
 #endif
