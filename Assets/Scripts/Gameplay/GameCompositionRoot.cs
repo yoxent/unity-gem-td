@@ -15,6 +15,9 @@ namespace GemTD.Gameplay
         public RunClock Clock { get; private set; }
         public RunStateMachine States { get; private set; }
 
+        InputAction _advancePhase;
+        InputActionMap _debugMap;
+
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -27,6 +30,14 @@ namespace GemTD.Gameplay
             Clock = new RunClock();
             States = new RunStateMachine(Clock);
             GameEvents.ClearAll();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _debugMap = new InputActionMap("RunDebug");
+            _advancePhase = _debugMap.AddAction("AdvancePhase", InputActionType.Button);
+            _advancePhase.AddBinding("<Keyboard>/space");
+            _advancePhase.AddBinding("<Keyboard>/f5");
+            _debugMap.Enable();
+#endif
         }
 
         void Start()
@@ -39,14 +50,14 @@ namespace GemTD.Gameplay
             if (Instance == this)
                 Instance = null;
             GameEvents.ClearAll();
+            _debugMap?.Dispose();
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         void Update()
         {
             // Temporary cycle for Phase 1 scaffold verification (remove when UI wired).
-            var keyboard = Keyboard.current;
-            if (keyboard == null || !keyboard.f5Key.wasPressedThisFrame)
+            if (_advancePhase == null || !_advancePhase.WasPressedThisFrame())
                 return;
 
             switch (States.Current)
