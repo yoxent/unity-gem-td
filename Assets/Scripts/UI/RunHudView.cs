@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GemTD.Core;
 using GemTD.Gameplay;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 
@@ -69,7 +70,12 @@ namespace GemTD.UI
             OnWaveChanged(_root.CurrentWaveNumber);
 
             if (stateText != null && _root.States != null)
-                stateText.text = $"State: {_root.States.Current}";
+            {
+                // Two lines + short labels — StateText rect is narrow; long Aim names were clipping Scope.
+                stateText.text =
+                    $"State: {_root.States.Current} | Place: {_root.PlaceTowerName}\n" +
+                    $"Aim: {FormatAim(_root.SelectedTargetingMode)} (R) | Scope: {FormatScope(_root.CurrentApplyScope)} (Shift+R)";
+            }
 
             if (defeatText != null)
             {
@@ -233,5 +239,28 @@ namespace GemTD.UI
 
         void OnSocketLmp() => _root?.RequestSocket(GemId.Lmp);
         void OnSocketChain() => _root?.RequestSocket(GemId.Chain);
+
+        static string FormatAim(TargetingMode mode)
+        {
+            switch (mode)
+            {
+                case TargetingMode.First: return "First";
+                case TargetingMode.Last: return "Last";
+                case TargetingMode.Closest: return "Near";
+                case TargetingMode.Strongest: return "MaxHP";
+                default: return mode.ToString();
+            }
+        }
+
+        static string FormatScope(TargetingApplyScope scope)
+        {
+            switch (scope)
+            {
+                case TargetingApplyScope.ThisTower: return "Tower";
+                case TargetingApplyScope.ThisType: return "Type";
+                case TargetingApplyScope.AllTowers: return "All";
+                default: return scope.ToString();
+            }
+        }
     }
 }

@@ -129,6 +129,23 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, director.Projectiles.Count);
         }
 
+        [Test]
+        public void ClearProjectiles_RemovesInFlightBolts()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            Assert.Greater(director.Projectiles.Count, 0);
+
+            director.ClearProjectiles();
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+        }
+
         EnemyRuntime CreateEnemyNearTower()
         {
             return CreateEnemyAtProgress(0.1f);

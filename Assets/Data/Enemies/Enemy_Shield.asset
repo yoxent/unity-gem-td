@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 612fc8c0802b25e43ad0d640727e9a6a, type: 3}
-  m_Name: Enemy_Runner
+  m_Name: Enemy_Shield
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Enemies.EnemyDefinition
-  DisplayName: Runner
-  MaxHealth: 20
-  MoveSpeed: 2
+  DisplayName: Shield
+  MaxHealth: 25
+  MoveSpeed: 1.8
   Armor: 0
-  ShieldMax: 0
+  ShieldMax: 20
   CanDash: 0
-  KillGold: 5
-  LeakDamage: 1
+  KillGold: 8
+  LeakDamage: 2
   PlaceholderMaterial: {fileID: 2100000, guid: 0402be9d30af2d84296616793b53195f, type: 2}

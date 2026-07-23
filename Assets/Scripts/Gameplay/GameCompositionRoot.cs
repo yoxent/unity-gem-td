@@ -22,6 +22,8 @@ namespace GemTD.Gameplay
         [Header("Data")]
         [SerializeField] RunConfig runConfig;
         [SerializeField] TowerDefinition ballistaDef;
+        [SerializeField] TowerDefinition cannonDef;
+        [SerializeField] TowerDefinition beaconDef;
         [SerializeField] WaveDefinition[] waves;
 
         [Header("Scene")]
@@ -48,12 +50,23 @@ namespace GemTD.Gameplay
         public bool HasSelectedTower => Placement != null && Placement.Selected != null;
         public bool SelectedHasSocketedGems =>
             Placement?.Selected != null && Placement.Selected.HasSocketedGems;
+        public string PlaceTowerName =>
+            _placeDef != null && !string.IsNullOrEmpty(_placeDef.DisplayName)
+                ? _placeDef.DisplayName
+                : (_placeDef != null ? _placeDef.name : "None");
+        public TargetingMode SelectedTargetingMode =>
+            HasSelectedTower ? Placement.Selected.TargetingMode : TargetingMode.First;
+        public TargetingApplyScope CurrentApplyScope => _applyScope;
+
+        TowerDefinition _placeDef;
+        TargetingApplyScope _applyScope = TargetingApplyScope.ThisTower;
 
         GridBoard _board;
         PathGraph _path;
         MapExpandService _expand;
         EnemyRegistry _registry;
         CombatDirector _combat;
+        BeaconAuraSystem _beaconAura;
         GemModifierPipeline _pipeline;
         EnemySpawnerGate _spawnerGate;
 
@@ -86,6 +99,8 @@ namespace GemTD.Gameplay
 
             Instance = this;
             GameEvents.ClearAll();
+
+            _placeDef = ballistaDef;
 
             Clock = new RunClock();
             States = new RunStateMachine(Clock);
@@ -139,7 +154,11 @@ namespace GemTD.Gameplay
                 TickEnemies(dt);
 
                 if (States.Current == RunStateId.Combat)
+                {
+                    var cellSize = gridView != null ? gridView.CellSize : 1f;
+                    _beaconAura?.Tick(_towers, _registry, cellSize);
                     _combat?.Tick(dt, _towers, _registry, _pipeline);
+                }
             }
 
             SyncProjectileViews();
@@ -182,6 +201,7 @@ namespace GemTD.Gameplay
             _registry = new EnemyRegistry();
             var cellSize = gridView != null ? gridView.CellSize : 1f;
             _combat = new CombatDirector(cellSize, projectileSpeed);
+            _beaconAura = new BeaconAuraSystem();
             _pipeline = new GemModifierPipeline();
 
             _spawnerGate = new EnemySpawnerGate(SpawnEnemy, () => CountLivingEnemies());
@@ -206,11 +226,20 @@ namespace GemTD.Gameplay
 
         void OnStateChanged(RunStateId prev, RunStateId next)
         {
+            if (IsCombatPhase(prev) && !IsCombatPhase(next))
+            {
+                _combat?.ClearProjectiles();
+                SyncProjectileViews();
+            }
+
             if (next == RunStateId.Expand)
                 RefreshExpandMarkers();
             else
                 ClearExpandMarkers();
         }
+
+        static bool IsCombatPhase(RunStateId state) =>
+            state == RunStateId.Combat || state == RunStateId.Boss || state == RunStateId.Endless;
 
         void RefreshExpandMarkers()
         {
@@ -268,7 +297,7 @@ namespace GemTD.Gameplay
 
         public void TryPlaceAtWorld(Vector3 world)
         {
-            if (gridView == null || ballistaDef == null || Placement == null)
+            if (gridView == null || _placeDef == null || Placement == null)
                 return;
 
             var phase = States.Current;
@@ -276,7 +305,7 @@ namespace GemTD.Gameplay
                 return;
 
             var cell = gridView.WorldToCell(world);
-            if (!Placement.TryPlace(ballistaDef, cell, phase, out var tower))
+            if (!Placement.TryPlace(_placeDef, cell, phase, out var tower))
             {
                 Debug.Log($"[GemTD] Place rejected at {cell} (phase={phase}, gold={Economy.Gold})");
                 return;
@@ -289,6 +318,40 @@ namespace GemTD.Gameplay
                 view.Bind(tower, gridView.CellToWorld(cell));
                 _towerViews.Add(view);
             }
+        }
+
+        public void SetPlaceTower(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    if (ballistaDef != null)
+                        _placeDef = ballistaDef;
+                    break;
+                case 1:
+                    if (cannonDef != null)
+                        _placeDef = cannonDef;
+                    break;
+                case 2:
+                    if (beaconDef != null)
+                        _placeDef = beaconDef;
+                    break;
+            }
+        }
+
+        public void CycleTargetingMode()
+        {
+            if (!HasSelectedTower)
+                return;
+
+            var selected = Placement.Selected;
+            var next = (TargetingMode)(((int)selected.TargetingMode + 1) % 4);
+            TargetingService.Apply(next, _applyScope, selected, _towers);
+        }
+
+        public void CycleTargetingScope()
+        {
+            _applyScope = (TargetingApplyScope)(((int)_applyScope + 1) % 3);
         }
 
         public void SelectTower(TowerView view)

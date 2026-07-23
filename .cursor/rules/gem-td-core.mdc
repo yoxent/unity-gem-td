@@ -5,13 +5,21 @@ alwaysApply: true
 
 # Gem TD — core conventions
 
-## Docs path
+## Docs path (required lookup)
 
-Design docs live at `E:\Projects\Docs\project-docs\Unity\unity-gem-td` (GDD, ARCHITECTURE, UI-SPEC). Do not put design docs in this repo.
+Canonical docs: `E:\Projects\Docs\project-docs\Unity\unity-gem-td`
+
+- Design: `GDD.md`, `ARCHITECTURE.md`, `UI-SPEC.md`
+- Plans/status: `planning/`
+- Superpowers / SDD ledger: `planning/sdd/` (`progress.md`, task briefs/reports)
+
+**Always read the docs repo** when resuming work, locking designs, or answering “what’s decided / what’s next.” Do not assume absence because the file is not in this Unity workspace.
+
+**Never** create design docs, plans, or `.superpowers/` / SDD scratch inside this game repo. If a skill defaults to `<repo>/.superpowers/sdd`, redirect writes to `…/unity-gem-td/planning/sdd/`.
 
 ## Lookup order
 
-SCE (`user-sce`) first → Context7 → web. If SCE lacked info, tell the user what to index.
+Docs repo (absolute path) → SCE (`user-sce`) → Context7 → web. If SCE lacked info that exists only in the docs repo, say what to index.
 
 ## Pushback
 

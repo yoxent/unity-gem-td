@@ -8,7 +8,7 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain combat tick: cooldown → gem pipeline → First target → projectiles (LMP/Chain).
+    /// Domain combat tick: cooldown → gem pipeline → targeting mode → projectiles (LMP/Chain).
     /// </summary>
     public sealed class CombatDirector
     {
@@ -23,6 +23,14 @@ namespace GemTD.Gameplay.Combat
         {
             _cellSize = cellSize > 0f ? cellSize : 1f;
             _projectileSpeed = projectileSpeed > 0f ? projectileSpeed : 20f;
+        }
+
+        /// <summary>Despawn all in-flight bolts (wave end / leave combat). Views pool via sync.</summary>
+        public void ClearProjectiles()
+        {
+            for (var i = 0; i < _projectiles.Count; i++)
+                _projectiles[i].Deactivate();
+            _projectiles.Clear();
         }
 
         public void Tick(
@@ -54,23 +62,27 @@ namespace GemTD.Gameplay.Combat
                     if (tower == null || tower.Def == null)
                         continue;
 
+                    if (tower.Def.Kind == TowerKind.Aura)
+                        continue;
+
                     tower.Cooldown -= dt;
                     if (tower.Cooldown > 0f)
                         continue;
 
                     var modifiers = ListPool<IAttackModifier>.Get();
                     BuildSocketModifiers(tower, modifiers);
-                    var baseline = AttackSpec.FromBase(tower.Def.Damage);
+                    var baseline = AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.SplashRadius);
                     var spec = pipeline.Apply(baseline, modifiers);
                     ListPool<IAttackModifier>.Release(modifiers);
 
                     var towerPos = CellToWorld(tower.Cell);
-                    if (!_selector.TrySelectFirst(towerPos, tower.Def.Range, living, out var primary))
+                    if (!_selector.TrySelect(tower.TargetingMode, towerPos, tower.Def.Range, living, out var primary))
                         continue;
 
                     var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
                     tower.Cooldown = tower.Def.AttackInterval / fireRate;
-                    SpawnVolley(towerPos, primary, spec, tower.Def.Range);
+                    var damage = spec.Damage * tower.OutgoingDamageMultiplier;
+                    SpawnVolley(towerPos, primary, spec, tower.Def.Range, damage);
                 }
             }
 
@@ -96,7 +108,7 @@ namespace GemTD.Gameplay.Combat
             }
         }
 
-        void SpawnVolley(Vector3 origin, EnemyRuntime primary, AttackSpec spec, float chainRange)
+        void SpawnVolley(Vector3 origin, EnemyRuntime primary, AttackSpec spec, float chainRange, float damage)
         {
             var aim = primary.WorldPosition - origin;
             if (aim.sqrMagnitude < 1e-8f)
@@ -120,10 +132,11 @@ namespace GemTD.Gameplay.Combat
                     origin,
                     dir,
                     primary,
-                    spec.Damage,
+                    damage,
                     spec.ChainCount,
                     _projectileSpeed,
-                    chainRange);
+                    chainRange,
+                    spec.AoeRadius);
                 _projectiles.Add(projectile);
             }
         }

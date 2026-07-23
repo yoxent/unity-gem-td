@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using GemTD.Core;
+using GemTD.Gameplay.Enemies;
 
 namespace GemTD.Gameplay.Run
 {
@@ -9,9 +11,10 @@ namespace GemTD.Gameplay.Run
         readonly RunStateMachine _states;
         readonly RunEconomy _economy;
         readonly int _endWaveGold;
+        readonly List<EnemyDefinition> _spawnQueue = new List<EnemyDefinition>();
 
         int _nextWaveIndex;
-        int _remainingSpawns;
+        int _spawnIndex;
         float _spawnTimer;
         WaveDefinition _activeWave;
         bool _waveCleared;
@@ -43,7 +46,8 @@ namespace GemTD.Gameplay.Run
 
             _activeWave = _waves[defIndex];
             CurrentWaveNumber = _nextWaveIndex + 1;
-            _remainingSpawns = _activeWave.Count;
+            BuildSpawnQueue(_activeWave);
+            _spawnIndex = 0;
             _spawnTimer = 0f;
             _waveCleared = false;
         }
@@ -53,25 +57,43 @@ namespace GemTD.Gameplay.Run
             if (spawner == null || _waveCleared || _states.Current != RunStateId.Combat)
                 return;
 
-            if (_remainingSpawns > 0)
+            if (_spawnIndex < _spawnQueue.Count)
             {
                 if (dt > 0f)
                     _spawnTimer -= dt;
 
-                while (_remainingSpawns > 0 && _spawnTimer <= 0f)
+                while (_spawnIndex < _spawnQueue.Count && _spawnTimer <= 0f)
                 {
-                    spawner.Spawn(_activeWave.Enemy);
-                    _remainingSpawns--;
+                    spawner.Spawn(_spawnQueue[_spawnIndex]);
+                    _spawnIndex++;
                     _spawnTimer += _activeWave.SpawnInterval;
                 }
             }
 
-            if (_remainingSpawns <= 0 && spawner.LiveEnemyCount == 0)
+            if (_spawnIndex >= _spawnQueue.Count && spawner.LiveEnemyCount == 0)
             {
                 _waveCleared = true;
                 _nextWaveIndex++;
                 _economy.GrantEndWaveGold(_endWaveGold);
                 _states.WaveCleared(offerDraft: false);
+            }
+        }
+
+        void BuildSpawnQueue(WaveDefinition wave)
+        {
+            _spawnQueue.Clear();
+            var entries = wave.Entries;
+            if (entries == null)
+                return;
+
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var entry = entries[i];
+                if (entry.Enemy == null || entry.Count <= 0)
+                    continue;
+
+                for (var c = 0; c < entry.Count; c++)
+                    _spawnQueue.Add(entry.Enemy);
             }
         }
     }

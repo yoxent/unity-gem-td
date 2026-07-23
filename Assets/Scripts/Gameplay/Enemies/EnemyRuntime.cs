@@ -12,6 +12,8 @@ namespace GemTD.Gameplay.Enemies
 
         public EnemyDefinition Definition => _def;
         public float Hp { get; private set; }
+        public float ShieldHp { get; private set; }
+        public float MoveSpeedMultiplier { get; set; }
         public bool IsAlive => _alive;
         public Vector3 WorldPosition { get; private set; }
 
@@ -41,6 +43,8 @@ namespace GemTD.Gameplay.Enemies
             _def = def;
             _alive = true;
             Hp = def != null ? def.MaxHealth : 0f;
+            ShieldHp = def != null ? def.ShieldMax : 0f;
+            MoveSpeedMultiplier = 1f;
             _segmentIndex = 0;
 
             if (worldWaypoints == null || worldWaypoints.Count == 0)
@@ -62,8 +66,9 @@ namespace GemTD.Gameplay.Enemies
             if (!_alive || _waypoints == null || _waypoints.Length < 2 || dt <= 0f)
                 return false;
 
-            var speed = _def != null ? _def.MoveSpeed : 0f;
-            var remaining = speed * dt;
+            var baseSpeed = _def != null ? _def.MoveSpeed : 0f;
+            var multiplier = MoveSpeedMultiplier < 0f ? 0f : MoveSpeedMultiplier;
+            var remaining = baseSpeed * multiplier * dt;
 
             while (remaining > 0f && _segmentIndex < _waypoints.Length - 1)
             {
@@ -95,11 +100,31 @@ namespace GemTD.Gameplay.Enemies
             if (!_alive || dmg <= 0f)
                 return;
 
-            Hp -= dmg;
-            if (Hp <= 0f)
+            var armor = _def != null ? _def.Armor : 0;
+            var remaining = Mathf.Max(0f, dmg - armor);
+
+            if (ShieldHp > 0f && remaining > 0f)
             {
-                Hp = 0f;
-                _alive = false;
+                if (remaining >= ShieldHp)
+                {
+                    remaining -= ShieldHp;
+                    ShieldHp = 0f;
+                }
+                else
+                {
+                    ShieldHp -= remaining;
+                    remaining = 0f;
+                }
+            }
+
+            if (remaining > 0f)
+            {
+                Hp -= remaining;
+                if (Hp <= 0f)
+                {
+                    Hp = 0f;
+                    _alive = false;
+                }
             }
         }
     }

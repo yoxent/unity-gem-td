@@ -36,10 +36,29 @@ namespace GemTD.Editor
             var gemLmp = CreateOrLoadGem("Assets/Data/Gems/Gem_LMP.asset", GemId.Lmp, "Lesser Multiple Projectiles");
             var gemChain = CreateOrLoadGem("Assets/Data/Gems/Gem_Chain.asset", GemId.Chain, "Chain");
             var ballista = CreateOrLoadTower("Assets/Data/Towers/Tower_Ballista.asset");
+            var cannon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Cannon.asset");
+            var beacon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Beacon.asset");
             var runner = CreateOrLoadEnemy("Assets/Data/Enemies/Enemy_Runner.asset");
-            var wave1 = CreateOrLoadWave("Assets/Data/Waves/Wave_01.asset", 1, runner, 4, 0.6f);
-            var wave2 = CreateOrLoadWave("Assets/Data/Waves/Wave_02.asset", 2, runner, 8, 0.45f);
-            var wave3 = CreateOrLoadWave("Assets/Data/Waves/Wave_03.asset", 3, runner, 12, 0.35f);
+            var boss = CreateOrLoadEnemy("Assets/Data/Enemies/Enemy_Boss.asset");
+            var wave1 = CreateOrLoadWave(
+                "Assets/Data/Waves/Wave_01.asset",
+                1,
+                new[] { new WaveSpawnEntry { Enemy = runner, Count = 4 } },
+                0.6f);
+            var wave2 = CreateOrLoadWave(
+                "Assets/Data/Waves/Wave_02.asset",
+                2,
+                new[] { new WaveSpawnEntry { Enemy = runner, Count = 8 } },
+                0.45f);
+            var wave3 = CreateOrLoadWave(
+                "Assets/Data/Waves/Wave_03.asset",
+                3,
+                new[]
+                {
+                    new WaveSpawnEntry { Enemy = runner, Count = 12 },
+                    new WaveSpawnEntry { Enemy = boss, Count = 1 },
+                },
+                0.35f);
             var runConfig = CreateOrLoadRunConfig("Assets/Data/RunConfig_Default.asset", gemLmp, gemChain);
 
             var enemyPrefab = CreateEnemyPrefab();
@@ -53,6 +72,8 @@ namespace GemTD.Editor
             // Reload after import so scene refs serialize with guids.
             runConfig = AssetDatabase.LoadAssetAtPath<RunConfig>("Assets/Data/RunConfig_Default.asset");
             ballista = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Ballista.asset");
+            cannon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Cannon.asset");
+            beacon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Beacon.asset");
             wave1 = AssetDatabase.LoadAssetAtPath<WaveDefinition>("Assets/Data/Waves/Wave_01.asset");
             wave2 = AssetDatabase.LoadAssetAtPath<WaveDefinition>("Assets/Data/Waves/Wave_02.asset");
             wave3 = AssetDatabase.LoadAssetAtPath<WaveDefinition>("Assets/Data/Waves/Wave_03.asset");
@@ -98,6 +119,8 @@ namespace GemTD.Editor
             var so = new SerializedObject(root);
             so.FindProperty("runConfig").objectReferenceValue = runConfig;
             so.FindProperty("ballistaDef").objectReferenceValue = ballista;
+            so.FindProperty("cannonDef").objectReferenceValue = cannon;
+            so.FindProperty("beaconDef").objectReferenceValue = beacon;
             var wavesProp = so.FindProperty("waves");
             wavesProp.arraySize = 3;
             wavesProp.GetArrayElementAtIndex(0).objectReferenceValue = wave1;
@@ -197,7 +220,7 @@ namespace GemTD.Editor
             return enemy;
         }
 
-        static WaveDefinition CreateOrLoadWave(string path, int number, EnemyDefinition enemy, int count, float interval)
+        static WaveDefinition CreateOrLoadWave(string path, int number, WaveSpawnEntry[] entries, float interval)
         {
             var wave = AssetDatabase.LoadAssetAtPath<WaveDefinition>(path);
             if (wave == null)
@@ -207,8 +230,7 @@ namespace GemTD.Editor
             }
 
             wave.WaveNumber = number;
-            wave.Enemy = enemy;
-            wave.Count = count;
+            wave.Entries = entries;
             wave.SpawnInterval = interval;
             EditorUtility.SetDirty(wave);
             return wave;

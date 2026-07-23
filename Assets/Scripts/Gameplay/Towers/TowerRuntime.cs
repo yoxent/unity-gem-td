@@ -1,4 +1,5 @@
 using UnityEngine;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 
 namespace GemTD.Gameplay.Towers
@@ -9,13 +10,17 @@ namespace GemTD.Gameplay.Towers
         public TowerDefinition Def { get; }
         public GemDefinition[] Sockets { get; }
         public float Cooldown { get; set; }
+        public TargetingMode TargetingMode { get; set; }
+        public float OutgoingDamageMultiplier { get; set; }
 
         public TowerRuntime(Vector2Int cell, TowerDefinition def)
         {
             Cell = cell;
             Def = def;
+            OutgoingDamageMultiplier = 1f;
             var socketCount = def != null && def.SocketCount > 0 ? def.SocketCount : 1;
             Sockets = new GemDefinition[socketCount];
+            TargetingMode = TargetingMode.First;
         }
 
         public bool HasSocketedGems

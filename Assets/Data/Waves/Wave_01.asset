@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Wave_01
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Run.WaveDefinition
   WaveNumber: 1
-  Enemy: {fileID: 11400000, guid: 32ae34bfa8ca7af48b720cfe5a9559da, type: 2}
-  Count: 4
   SpawnInterval: 0.6
+  Entries:
+  - Enemy: {fileID: 11400000, guid: 32ae34bfa8ca7af48b720cfe5a9559da, type: 2}
+    Count: 4

@@ -5,7 +5,7 @@ using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Run
 {
-    /// <summary>Click expand markers, place Ballista, select towers.</summary>
+    /// <summary>Click expand markers, place towers, select towers, targeting hotkeys.</summary>
     public sealed class RunInputController : MonoBehaviour
     {
         [SerializeField] Camera worldCamera;
@@ -13,6 +13,8 @@ namespace GemTD.Gameplay.Run
 
         GameCompositionRoot _root;
         InputAction _click;
+        InputAction _cycleAim;
+        InputAction _cycleScope;
 
         public void Bind(GameCompositionRoot root)
         {
@@ -25,6 +27,18 @@ namespace GemTD.Gameplay.Run
         {
             _click = new InputAction("Click", InputActionType.Button, "<Mouse>/leftButton");
             _click.Enable();
+
+            // R alone — cycle aim mode (no modifiers).
+            _cycleAim = new InputAction("CycleAim", InputActionType.Button);
+            _cycleAim.AddBinding("<Keyboard>/r");
+            _cycleAim.Enable();
+
+            // Shift+R only — cycle apply scope (explicit modifier; not Ctrl).
+            _cycleScope = new InputAction("CycleScope", InputActionType.Button);
+            _cycleScope.AddCompositeBinding("OneModifier")
+                .With("Modifier", "<Keyboard>/shift")
+                .With("binding", "<Keyboard>/r");
+            _cycleScope.Enable();
         }
 
         void OnDisable()
@@ -32,10 +46,20 @@ namespace GemTD.Gameplay.Run
             _click?.Disable();
             _click?.Dispose();
             _click = null;
+
+            _cycleAim?.Disable();
+            _cycleAim?.Dispose();
+            _cycleAim = null;
+
+            _cycleScope?.Disable();
+            _cycleScope?.Dispose();
+            _cycleScope = null;
         }
 
         void Update()
         {
+            HandleHotkeys();
+
             if (_root == null || _click == null || !_click.WasPressedThisFrame())
                 return;
 
@@ -68,6 +92,38 @@ namespace GemTD.Gameplay.Run
 
             var world = ray.GetPoint(enter);
             _root.TryPlaceAtWorld(world);
+        }
+
+        void HandleHotkeys()
+        {
+            if (_root == null)
+                return;
+
+            var kb = Keyboard.current;
+            if (kb == null)
+                return;
+
+            if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame)
+                _root.SetPlaceTower(0);
+            else if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame)
+                _root.SetPlaceTower(1);
+            else if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame)
+                _root.SetPlaceTower(2);
+
+            // Scope first: Shift+R composite steals the chord so plain R does not also fire aim.
+            if (_cycleScope != null && _cycleScope.WasPressedThisFrame())
+            {
+                _root.CycleTargetingScope();
+                return;
+            }
+
+            if (_cycleAim != null && _cycleAim.WasPressedThisFrame())
+            {
+                // Ignore when Ctrl/Alt held (OS/editor chords); Scope is Shift-only above.
+                if (kb.ctrlKey.isPressed || kb.altKey.isPressed)
+                    return;
+                _root.CycleTargetingMode();
+            }
         }
     }
 }

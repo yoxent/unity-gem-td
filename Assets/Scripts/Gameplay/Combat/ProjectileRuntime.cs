@@ -18,6 +18,7 @@ namespace GemTD.Gameplay.Combat
         public int ChainRemaining { get; private set; }
         public float Speed { get; private set; }
         public float ChainRange { get; private set; }
+        public float AoeRadius { get; private set; }
         public bool IsActive { get; private set; }
 
         public void Init(
@@ -27,7 +28,8 @@ namespace GemTD.Gameplay.Combat
             float damage,
             int chainCount,
             float speed,
-            float chainRange)
+            float chainRange,
+            float aoeRadius = 0f)
         {
             Position = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
@@ -36,8 +38,11 @@ namespace GemTD.Gameplay.Combat
             ChainRemaining = chainCount;
             Speed = speed;
             ChainRange = chainRange;
+            AoeRadius = aoeRadius > 0f ? aoeRadius : 0f;
             IsActive = true;
         }
+
+        public void Deactivate() => IsActive = false;
 
         /// <summary>
         /// Advances flight. Returns false when the projectile should be removed.
@@ -76,6 +81,21 @@ namespace GemTD.Gameplay.Combat
         {
             var hit = Target;
             hit.ApplyDamage(Damage);
+
+            if (AoeRadius > 0f && livingCandidates != null)
+            {
+                var radiusSq = AoeRadius * AoeRadius;
+                var hitPos = hit.WorldPosition;
+                for (var i = 0; i < livingCandidates.Count; i++)
+                {
+                    var enemy = livingCandidates[i];
+                    if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, hit))
+                        continue;
+
+                    if ((enemy.WorldPosition - hitPos).sqrMagnitude <= radiusSq)
+                        enemy.ApplyDamage(Damage);
+                }
+            }
 
             if (ChainRemaining <= 0)
             {

@@ -10,12 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a73c30da3ad78d0418e3567e462e3405, type: 3}
-  m_Name: Tower_Ballista
+  m_Name: Tower_Cannon
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
-  DisplayName: Ballista
-  Kind: 0
-  Cost: 50
-  Range: 5
-  Damage: 10
-  AttackInterval: 1
+  DisplayName: Cannon
+  Kind: 1
+  Cost: 60
+  Range: 4.5
+  Damage: 8
+  AttackInterval: 1.2
+  SplashRadius: 1.5
   SocketCount: 2

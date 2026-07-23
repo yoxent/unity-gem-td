@@ -5,11 +5,21 @@ using GemTD.Gameplay.Enemies;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// First targeting: highest path Progress among living enemies in range.
+    /// Nordhold-style targeting: First, Last, Closest, Strongest among living enemies in range.
     /// </summary>
     public sealed class TargetSelector
     {
         public bool TrySelectFirst(
+            Vector3 towerPos,
+            float range,
+            List<EnemyRuntime> candidates,
+            out EnemyRuntime target)
+        {
+            return TrySelect(TargetingMode.First, towerPos, range, candidates, out target);
+        }
+
+        public bool TrySelect(
+            TargetingMode mode,
             Vector3 towerPos,
             float range,
             List<EnemyRuntime> candidates,
@@ -20,7 +30,11 @@ namespace GemTD.Gameplay.Combat
                 return false;
 
             var rangeSq = range * range;
-            var bestProgress = float.NegativeInfinity;
+            var bestProgress = mode == TargetingMode.Last
+                ? float.PositiveInfinity
+                : float.NegativeInfinity;
+            var bestDistSq = float.PositiveInfinity;
+            var bestHp = float.NegativeInfinity;
 
             for (var i = 0; i < candidates.Count; i++)
             {
@@ -29,13 +43,45 @@ namespace GemTD.Gameplay.Combat
                     continue;
 
                 var delta = enemy.WorldPosition - towerPos;
-                if (delta.sqrMagnitude > rangeSq)
+                var distSq = delta.sqrMagnitude;
+                if (distSq > rangeSq)
                     continue;
 
-                if (enemy.Progress > bestProgress)
+                switch (mode)
                 {
-                    bestProgress = enemy.Progress;
-                    target = enemy;
+                    case TargetingMode.First:
+                        if (enemy.Progress > bestProgress)
+                        {
+                            bestProgress = enemy.Progress;
+                            target = enemy;
+                        }
+                        break;
+
+                    case TargetingMode.Last:
+                        if (enemy.Progress < bestProgress)
+                        {
+                            bestProgress = enemy.Progress;
+                            target = enemy;
+                        }
+                        break;
+
+                    case TargetingMode.Closest:
+                        if (distSq < bestDistSq)
+                        {
+                            bestDistSq = distSq;
+                            target = enemy;
+                        }
+                        break;
+
+                    case TargetingMode.Strongest:
+                        if (enemy.Hp > bestHp ||
+                            (enemy.Hp == bestHp && enemy.Progress > bestProgress))
+                        {
+                            bestHp = enemy.Hp;
+                            bestProgress = enemy.Progress;
+                            target = enemy;
+                        }
+                        break;
                 }
             }
 
