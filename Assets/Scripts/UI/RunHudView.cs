@@ -55,6 +55,17 @@ namespace GemTD.UI
         string _lastInvSignature;
         bool _inventoryUiBuilt;
 
+        GameObject _buildBarPanel;
+        bool _buildBarBuilt;
+        GameObject _towerDetailsPanel;
+        Text _towerDetailsText;
+        Button _towerDetailsSellButton;
+        readonly Button[] _unsocketButtons = new Button[3];
+        bool _towerDetailsBuilt;
+        GameObject _codexPanel;
+        Text _codexText;
+        bool _codexBuilt;
+
         void OnEnable()
         {
             BindGameEvents();
@@ -75,10 +86,16 @@ namespace GemTD.UI
             HideLegacySocketButtons();
             EnsureDraftUi();
             EnsureInventoryUi();
+            EnsureBuildBarUi();
+            EnsureTowerDetailsUi();
+            EnsureCodexUi();
             BindButtons();
             RefreshAll();
             RefreshDraftUi(force: true);
             RefreshInventoryUi(force: true);
+            RefreshBuildBarUi();
+            RefreshTowerDetailsUi();
+            RefreshCodexUi();
         }
 
         void Update()
@@ -104,7 +121,7 @@ namespace GemTD.UI
                 else
                 {
                     stateText.text =
-                        $"State: {_root.States.Current} | Place: {_root.PlaceTowerName}\n" +
+                        $"State: {_root.States.Current} | Place: {_root.PlaceTowerName} (Shift=multi)\n" +
                         $"Aim: {FormatAim(_root.SelectedTargetingMode)} (R) | Scope: {FormatScope(_root.CurrentApplyScope)} (Shift+R)";
                 }
             }
@@ -142,6 +159,9 @@ namespace GemTD.UI
 
             RefreshDraftUi(force: false);
             RefreshInventoryUi(force: false);
+            RefreshBuildBarUi();
+            RefreshTowerDetailsUi();
+            RefreshCodexUi();
         }
 
         void HideLegacySocketButtons()
@@ -231,7 +251,8 @@ namespace GemTD.UI
 
             var inPlan = _root.States.Current == RunStateId.Plan;
             var canSocket = (_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat)
-                            && _root.HasSelectedTower;
+                            && _root.HasSelectedTower
+                            && _root.SelectedSocketLockRemaining <= 0f;
             var replacePick = _root.States.Current == RunStateId.Draft
                               && _root.Draft != null
                               && _root.Draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick;
@@ -296,8 +317,15 @@ namespace GemTD.UI
                 return "—";
             switch (gem.Id)
             {
-                case GemId.Lmp: return "LMP";
+                case GemId.Lmp: return "MP";
                 case GemId.Chain: return "Chain";
+                case GemId.Fork: return "Fork";
+                case GemId.IncreasedArea: return "Area";
+                case GemId.Ignite: return "Ignite";
+                case GemId.Chill: return "Chill";
+                case GemId.Shock: return "Shock";
+                case GemId.Pierce: return "Pierce";
+                case GemId.ElementalProliferation: return "Prolif";
                 case GemId.FasterAttacks: return "Fast";
                 case GemId.IncreasedAccuracy: return "Acc";
                 case GemId.SlowerProjectiles: return "Slow";
@@ -646,6 +674,184 @@ namespace GemTD.UI
         void OnDraftSkip() => _root?.RequestDraftSkip();
         void OnDraftReplaceYes() => _root?.RequestDraftReplaceYes();
         void OnDraftReplaceNo() => _root?.RequestDraftReplaceNo();
+
+        void EnsureBuildBarUi()
+        {
+            if (_buildBarBuilt && _buildBarPanel != null)
+                return;
+
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+                canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+                return;
+
+            var panelGo = new GameObject("BuildBar", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(canvas.transform, false);
+            var rt = panelGo.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0.5f);
+            rt.anchorMax = new Vector2(0f, 0.5f);
+            rt.pivot = new Vector2(0f, 0.5f);
+            rt.sizeDelta = new Vector2(130f, 160f);
+            rt.anchoredPosition = new Vector2(12f, 40f);
+            panelGo.GetComponent<Image>().color = new Color(0.07f, 0.08f, 0.1f, 0.9f);
+
+            CreateUiText(panelGo.transform, "BuildTitle", "Build (1/2/3)", new Vector2(0f, 60f), 14);
+            var b0 = CreateUiButton(panelGo.transform, "BuildBallista", "Ballista", new Vector2(0f, 20f), new Vector2(110f, 32f));
+            var b1 = CreateUiButton(panelGo.transform, "BuildCannon", "Cannon", new Vector2(0f, -16f), new Vector2(110f, 32f));
+            var b2 = CreateUiButton(panelGo.transform, "BuildBeacon", "Beacon", new Vector2(0f, -52f), new Vector2(110f, 32f));
+            b0.onClick.AddListener(() => _root?.SetPlaceTower(0));
+            b1.onClick.AddListener(() => _root?.SetPlaceTower(1));
+            b2.onClick.AddListener(() => _root?.SetPlaceTower(2));
+
+            _buildBarPanel = panelGo;
+            _buildBarBuilt = true;
+        }
+
+        void RefreshBuildBarUi()
+        {
+            if (!_buildBarBuilt)
+                EnsureBuildBarUi();
+            if (_buildBarPanel == null || _root == null || _root.States == null)
+                return;
+
+            var show = _root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat;
+            _buildBarPanel.SetActive(show);
+        }
+
+        void EnsureTowerDetailsUi()
+        {
+            if (_towerDetailsBuilt && _towerDetailsPanel != null)
+                return;
+
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+                canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+                return;
+
+            var panelGo = new GameObject("TowerDetailsPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(canvas.transform, false);
+            var rt = panelGo.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 0.5f);
+            rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(1f, 0.5f);
+            rt.sizeDelta = new Vector2(260f, 230f);
+            rt.anchoredPosition = new Vector2(-12f, 20f);
+            panelGo.GetComponent<Image>().color = new Color(0.07f, 0.08f, 0.1f, 0.92f);
+
+            _towerDetailsText = CreateUiText(panelGo.transform, "TowerDetailsBody", "No tower selected", new Vector2(0f, 45f), 15);
+            var textRt = _towerDetailsText.GetComponent<RectTransform>();
+            textRt.sizeDelta = new Vector2(240f, 110f);
+            _towerDetailsText.alignment = TextAnchor.UpperLeft;
+
+            for (var i = 0; i < _unsocketButtons.Length; i++)
+            {
+                var socketIndex = i;
+                var x = -80f + i * 80f;
+                var btn = CreateUiButton(
+                    panelGo.transform,
+                    $"Unsocket{i}",
+                    $"Out {i + 1}",
+                    new Vector2(x, -40f),
+                    new Vector2(72f, 28f));
+                btn.onClick.AddListener(() => _root?.RequestUnsocket(socketIndex));
+                _unsocketButtons[i] = btn;
+            }
+
+            _towerDetailsSellButton = CreateUiButton(panelGo.transform, "AroundTowerSell", "Sell (Plan)", new Vector2(0f, -85f), new Vector2(120f, 34f));
+            _towerDetailsSellButton.onClick.AddListener(OnSell);
+
+            _towerDetailsPanel = panelGo;
+            _towerDetailsBuilt = true;
+        }
+
+        void RefreshTowerDetailsUi()
+        {
+            if (!_towerDetailsBuilt)
+                EnsureTowerDetailsUi();
+            if (_towerDetailsPanel == null || _root == null)
+                return;
+
+            var show = _root.HasSelectedTower
+                       && _root.States != null
+                       && _root.States.Current != RunStateId.Boot
+                       && _root.States.Current != RunStateId.Draft;
+            _towerDetailsPanel.SetActive(show);
+            if (!show)
+                return;
+
+            if (_towerDetailsText != null)
+                _towerDetailsText.text = _root.BuildSelectedTowerDetailsText();
+
+            var plan = _root.States.Current == RunStateId.Plan;
+            var combat = _root.States.Current == RunStateId.Combat;
+            var canUnsocketPhase = plan || combat;
+            var locked = _root.SelectedSocketLockRemaining > 0f;
+
+            if (_towerDetailsSellButton != null)
+                _towerDetailsSellButton.interactable = plan;
+
+            for (var i = 0; i < _unsocketButtons.Length; i++)
+            {
+                var btn = _unsocketButtons[i];
+                if (btn == null)
+                    continue;
+
+                var occupied = _root.SelectedSocketOccupied(i);
+                btn.gameObject.SetActive(true);
+                btn.interactable = canUnsocketPhase && occupied && !locked;
+            }
+        }
+
+        void EnsureCodexUi()
+        {
+            if (_codexBuilt && _codexPanel != null)
+                return;
+
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+                canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+                return;
+
+            var panelGo = new GameObject("CodexPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(canvas.transform, false);
+            var rt = panelGo.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.sizeDelta = new Vector2(520f, 110f);
+            rt.anchoredPosition = new Vector2(0f, -12f);
+            panelGo.GetComponent<Image>().color = new Color(0.1f, 0.09f, 0.14f, 0.94f);
+
+            CreateUiText(panelGo.transform, "CodexTitle", "Codex (C)", new Vector2(0f, -18f), 18);
+            _codexText = CreateUiText(panelGo.transform, "CodexBody", "", new Vector2(0f, -55f), 15);
+            var bodyRt = _codexText.GetComponent<RectTransform>();
+            bodyRt.sizeDelta = new Vector2(480f, 50f);
+
+            var close = CreateUiButton(panelGo.transform, "CodexClose", "Close", new Vector2(220f, -18f), new Vector2(70f, 28f));
+            close.onClick.AddListener(() => _root?.ToggleCodexPanel());
+
+            _codexPanel = panelGo;
+            _codexPanel.SetActive(false);
+            _codexBuilt = true;
+        }
+
+        void RefreshCodexUi()
+        {
+            if (!_codexBuilt)
+                EnsureCodexUi();
+            if (_codexPanel == null || _root == null)
+                return;
+
+            var open = _root.CodexPanelOpen;
+            _codexPanel.SetActive(open);
+            if (!open || _codexText == null)
+                return;
+
+            _codexText.text = "Hydra Ballista\n" + _root.CodexHydraLine;
+        }
 
         static Text CreateUiText(Transform parent, string name, string value, Vector2 anchored, int fontSize)
         {

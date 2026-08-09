@@ -10,6 +10,7 @@ namespace GemTD.Gameplay.Run
         public int StartingLives = 20;
         public int EndWaveGold = 25;
         public int InventoryCapacity = 10;
+        public bool SeedHydraRecipeGems = true;
         public GemDefinition[] SeedGems;
     }
 }

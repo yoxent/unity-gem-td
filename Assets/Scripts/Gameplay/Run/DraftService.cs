@@ -52,17 +52,38 @@ namespace GemTD.Gameplay.Run
             if (_scratch.Count < 3)
                 throw new ArgumentException("Draft pool must contain at least 3 non-null gems.", nameof(pool));
 
-            // Fisher–Yates partial shuffle for 3 unique picks.
-            for (var i = 0; i < 3; i++)
+            // Weighted sample without replacement (3 unique picks).
+            for (var pick = 0; pick < 3; pick++)
             {
-                var j = i + _rng.Next(_scratch.Count - i);
-                var tmp = _scratch[i];
-                _scratch[i] = _scratch[j];
-                _scratch[j] = tmp;
-                _offer.Add(_scratch[i]);
+                var totalWeight = 0f;
+                for (var i = 0; i < _scratch.Count; i++)
+                    totalWeight += EffectiveWeight(_scratch[i]);
+
+                var roll = (float)_rng.NextDouble() * totalWeight;
+                var chosen = 0;
+                var cumulative = 0f;
+                for (var i = 0; i < _scratch.Count; i++)
+                {
+                    cumulative += EffectiveWeight(_scratch[i]);
+                    if (roll <= cumulative || i == _scratch.Count - 1)
+                    {
+                        chosen = i;
+                        break;
+                    }
+                }
+
+                _offer.Add(_scratch[chosen]);
+                _scratch.RemoveAt(chosen);
             }
 
             IsActive = true;
+        }
+
+        static float EffectiveWeight(GemDefinition gem)
+        {
+            if (gem == null || gem.DraftWeight <= 0f)
+                return 1f;
+            return gem.DraftWeight;
         }
 
         public bool TryPick(int offerIndex, GemInventory inventory, out bool resolved)

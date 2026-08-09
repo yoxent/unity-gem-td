@@ -8,7 +8,7 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain combat tick: cooldown → gem pipeline → targeting mode → projectiles (LMP/Chain).
+    /// Domain combat tick: cooldown → gem pipeline → targeting mode → projectiles (LMP/Chain/Hydra).
     /// </summary>
     public sealed class CombatDirector
     {
@@ -16,6 +16,7 @@ namespace GemTD.Gameplay.Combat
         readonly float _projectileSpeed;
         readonly TargetSelector _selector = new TargetSelector();
         readonly List<ProjectileRuntime> _projectiles = new List<ProjectileRuntime>(32);
+        readonly List<ProjectileRuntime> _spawnBuffer = new List<ProjectileRuntime>(16);
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
 
@@ -31,13 +32,15 @@ namespace GemTD.Gameplay.Combat
             for (var i = 0; i < _projectiles.Count; i++)
                 _projectiles[i].Deactivate();
             _projectiles.Clear();
+            _spawnBuffer.Clear();
         }
 
         public void Tick(
             float dt,
             List<TowerRuntime> towers,
             EnemyRegistry enemies,
-            GemModifierPipeline pipeline)
+            GemModifierPipeline pipeline,
+            StatusRuntime statuses = null)
         {
             if (enemies == null || pipeline == null)
                 return;
@@ -50,6 +53,8 @@ namespace GemTD.Gameplay.Combat
                 if (!_projectiles[i].Tick(dt, living))
                     _projectiles.RemoveAt(i);
             }
+
+            MergeSpawnBuffer();
 
             // Refresh after projectile kills so tower targeting sees current alive set.
             enemies.CopyAlive(living);
@@ -91,12 +96,32 @@ namespace GemTD.Gameplay.Combat
                     if (echoFactor <= 0f)
                         echoFactor = 1f;
                     var volleyDamage = damage * echoFactor;
+                    var hydra = EvolutionEvaluator.IsHydraBallista(tower);
                     for (var v = 0; v < volleys; v++)
-                        SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed);
+                    {
+                        if (hydra)
+                        {
+                            var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
+                            var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
+                            for (var h = 0; h < laterals.Length; h++)
+                                SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, yaws[h], laterals[h]);
+                        }
+                        else
+                        {
+                            SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, 0f, 0f);
+                        }
+                    }
                 }
             }
 
             ListPool<EnemyRuntime>.Release(living);
+        }
+
+        void MergeSpawnBuffer()
+        {
+            for (var i = 0; i < _spawnBuffer.Count; i++)
+                _projectiles.Add(_spawnBuffer[i]);
+            _spawnBuffer.Clear();
         }
 
         static void BuildSocketModifiers(TowerRuntime tower, List<IAttackModifier> into)
@@ -124,7 +149,10 @@ namespace GemTD.Gameplay.Combat
             AttackSpec spec,
             float chainRange,
             float damage,
-            float speed)
+            float speed,
+            StatusRuntime statuses,
+            float headYawDegrees,
+            float headLateral)
         {
             var aim = primary.WorldPosition - origin;
             if (aim.sqrMagnitude < 1e-8f)
@@ -132,7 +160,30 @@ namespace GemTD.Gameplay.Combat
             else
                 aim.Normalize();
 
+            if (Mathf.Abs(headLateral) > 1e-4f)
+            {
+                var headSide = Quaternion.Euler(0f, 90f, 0f) * aim;
+                origin += headSide * headLateral;
+                aim = primary.WorldPosition - origin;
+                if (aim.sqrMagnitude > 1e-8f)
+                    aim.Normalize();
+            }
+
+            if (Mathf.Abs(headYawDegrees) > 1e-4f)
+                aim = Quaternion.Euler(0f, headYawDegrees, 0f) * aim;
+
+            var pierceRemaining = spec.Pierce ? ProjectileRuntime.DefaultPierceRemaining : 0;
+            var forkRemaining = spec.ForkCount;
             var count = spec.ProjectileCount > 0 ? spec.ProjectileCount : 1;
+            // Soft-seek when fanning (LMP / Hydra yaw) so pellets stay visually distinct but still connect.
+            var softSeek = count > 1 || Mathf.Abs(headYawDegrees) > 1e-4f;
+            var toPrimary = Vector3.Distance(origin, primary.WorldPosition);
+            var fanLateral = Vector3.Cross(Vector3.up, aim);
+            if (fanLateral.sqrMagnitude > 1e-8f)
+                fanLateral.Normalize();
+            else
+                fanLateral = Vector3.right;
+
             for (var i = 0; i < count; i++)
             {
                 var yaw = 0f;
@@ -143,6 +194,10 @@ namespace GemTD.Gameplay.Combat
                 }
 
                 var dir = Quaternion.Euler(0f, yaw, 0f) * aim;
+                var seekOffset = Vector3.zero;
+                if (softSeek && Mathf.Abs(yaw) > 1e-4f)
+                    seekOffset = fanLateral * (Mathf.Tan(yaw * Mathf.Deg2Rad) * Mathf.Max(toPrimary, 0.5f));
+
                 var projectile = new ProjectileRuntime();
                 projectile.Init(
                     origin,
@@ -152,7 +207,17 @@ namespace GemTD.Gameplay.Combat
                     spec.ChainCount,
                     speed,
                     chainRange,
-                    spec.AoeRadius);
+                    spec.AoeRadius,
+                    pierceRemaining,
+                    forkRemaining,
+                    spec.Ignite,
+                    spec.Chill,
+                    spec.Shock,
+                    spec.Proliferate,
+                    statuses,
+                    _spawnBuffer,
+                    softSeek,
+                    seekOffset);
                 _projectiles.Add(projectile);
             }
         }

@@ -164,6 +164,61 @@ namespace GemTD.Tests.EditMode
             return gem;
         }
 
+        GemDefinition MakeGem(GemId id, string name, float weight)
+        {
+            var gem = MakeGem(id, name);
+            gem.DraftWeight = weight;
+            return gem;
+        }
+
+        [Test]
+        public void BeginOffer_StillThreeUnique_WithWeights()
+        {
+            var draft = new DraftService(new System.Random(1));
+            draft.BeginOffer(_pool, allowSkip: true);
+            Assert.AreEqual(3, draft.CurrentOffer.Count);
+            Assert.AreNotEqual(draft.CurrentOffer[0].Id, draft.CurrentOffer[1].Id);
+            Assert.AreNotEqual(draft.CurrentOffer[1].Id, draft.CurrentOffer[2].Id);
+            Assert.AreNotEqual(draft.CurrentOffer[0].Id, draft.CurrentOffer[2].Id);
+        }
+
+        [Test]
+        public void BeginOffer_RespectsWeights_BiasesHydraTrio()
+        {
+            var weighted = new List<GemDefinition>(9);
+            weighted.Add(MakeGem(GemId.Lmp, "MP", 100f));
+            weighted.Add(MakeGem(GemId.Chain, "Chain", 100f));
+            weighted.Add(MakeGem(GemId.Fork, "Fork", 100f));
+            weighted.Add(MakeGem(GemId.IncreasedArea, "Area", 1f));
+            weighted.Add(MakeGem(GemId.Ignite, "Ignite", 1f));
+            weighted.Add(MakeGem(GemId.Chill, "Chill", 1f));
+            weighted.Add(MakeGem(GemId.Shock, "Shock", 1f));
+            weighted.Add(MakeGem(GemId.Pierce, "Pierce", 1f));
+            weighted.Add(MakeGem(GemId.ElementalProliferation, "Prolif", 1f));
+
+            var lmpHits = 0;
+            var chainHits = 0;
+            var forkHits = 0;
+            const int trials = 200;
+            for (var t = 0; t < trials; t++)
+            {
+                var draft = new DraftService(new System.Random(t + 1));
+                draft.BeginOffer(weighted, allowSkip: true);
+                for (var i = 0; i < draft.CurrentOffer.Count; i++)
+                {
+                    var id = draft.CurrentOffer[i].Id;
+                    if (id == GemId.Lmp) lmpHits++;
+                    else if (id == GemId.Chain) chainHits++;
+                    else if (id == GemId.Fork) forkHits++;
+                }
+            }
+
+            // With weight 100 vs 1, each trio Id should appear in well over 40% of offers.
+            Assert.Greater(lmpHits, trials * 0.4f);
+            Assert.Greater(chainHits, trials * 0.4f);
+            Assert.Greater(forkHits, trials * 0.4f);
+        }
+
         GemInventory FillInventory(int capacity)
         {
             var inventory = new GemInventory(capacity);

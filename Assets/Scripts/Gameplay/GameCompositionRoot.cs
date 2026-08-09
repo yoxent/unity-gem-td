@@ -7,6 +7,7 @@ using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Grid;
 using GemTD.Gameplay.Map;
+using GemTD.Gameplay.Meta;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 
@@ -48,10 +49,22 @@ namespace GemTD.Gameplay
         public TowerPlacementService Placement { get; private set; }
         public WaveController WaveController { get; private set; }
         public DraftService Draft { get; private set; }
+        public SocketLockdown SocketLockdown { get; private set; }
+        public CodexProgress Codex { get; private set; }
+        public StatusRuntime Statuses => _statuses;
         public int CurrentWaveNumber => WaveController != null ? WaveController.CurrentWaveNumber : 0;
         public bool HasSelectedTower => Placement != null && Placement.Selected != null;
         public bool SelectedHasSocketedGems =>
             Placement?.Selected != null && Placement.Selected.HasSocketedGems;
+
+        public bool SelectedSocketOccupied(int socketIndex)
+        {
+            var tower = Placement?.Selected;
+            if (tower?.Sockets == null || socketIndex < 0 || socketIndex >= tower.Sockets.Length)
+                return false;
+            var gem = tower.Sockets[socketIndex];
+            return gem != null && gem.Id != GemId.None;
+        }
         public bool CanStartWave =>
             States != null
             && States.Current == RunStateId.Plan
@@ -61,6 +74,60 @@ namespace GemTD.Gameplay
             _placeDef != null && !string.IsNullOrEmpty(_placeDef.DisplayName)
                 ? _placeDef.DisplayName
                 : (_placeDef != null ? _placeDef.name : "None");
+        public bool HasPlaceTowerSelected => _placeDef != null;
+        public float SelectedSocketLockRemaining
+        {
+            get
+            {
+                if (SocketLockdown == null || Placement?.Selected == null)
+                    return 0f;
+                return SocketLockdown.Remaining(Placement.Selected);
+            }
+        }
+
+        public string BuildSelectedTowerDetailsText()
+        {
+            var tower = Placement?.Selected;
+            if (tower == null || tower.Def == null)
+                return "No tower selected";
+
+            var def = tower.Def;
+            var sb = new System.Text.StringBuilder(128);
+            sb.Append(def.DisplayName);
+            if (EvolutionEvaluator.IsHydraBallista(tower))
+                sb.Append(" [HYDRA]");
+            sb.Append('\n');
+            sb.Append($"Dmg {def.Damage:0.#}  Rng {def.Range:0.#}  Int {def.AttackInterval:0.##}s\n");
+            sb.Append("Sockets: ");
+            for (var i = 0; i < tower.Sockets.Length; i++)
+            {
+                if (i > 0) sb.Append(" | ");
+                var g = tower.Sockets[i];
+                sb.Append(g != null ? g.DisplayName : "—");
+            }
+
+            var lockLeft = SelectedSocketLockRemaining;
+            if (lockLeft > 0f)
+                sb.Append($"\nLOCK {lockLeft:0.0}s");
+            return sb.ToString();
+        }
+
+        public void ToggleCodexPanel()
+        {
+            CodexPanelOpen = !CodexPanelOpen;
+        }
+
+        public bool CodexPanelOpen { get; private set; }
+
+        public string CodexHydraLine =>
+            Codex != null ? Codex.HydraHintOrReveal : CodexProgress.CrypticHydraHint;
+
+        public void ClearPlaceTower()
+        {
+            _placeDef = null;
+            _placementGhost?.Hide();
+        }
+
         public TargetingMode SelectedTargetingMode =>
             HasSelectedTower ? Placement.Selected.TargetingMode : TargetingMode.First;
         public TargetingApplyScope CurrentApplyScope => _applyScope;
@@ -75,10 +142,12 @@ namespace GemTD.Gameplay
         CombatDirector _combat;
         BeaconAuraSystem _beaconAura;
         GemModifierPipeline _pipeline;
+        StatusRuntime _statuses;
         EnemySpawnerGate _spawnerGate;
 
         readonly List<TowerRuntime> _towers = new List<TowerRuntime>(16);
         readonly List<TowerView> _towerViews = new List<TowerView>(16);
+        PlacementGhostView _placementGhost;
         readonly List<EnemyView> _enemyViews = new List<EnemyView>(32);
         readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
         readonly List<ExpandMarkerView> _markers = new List<ExpandMarkerView>(16);
@@ -86,6 +155,7 @@ namespace GemTD.Gameplay
         readonly List<Vector2Int> _polylineCells = new List<Vector2Int>(16);
         readonly List<Vector3> _polylineWorld = new List<Vector3>(16);
         readonly List<Vector2Int> _spawnTips = new List<Vector2Int>(8);
+        readonly List<EnemyRuntime> _livingScratch = new List<EnemyRuntime>(32);
 
         ViewObjectPool<EnemyView> _enemyPool;
         ViewObjectPool<ProjectileView> _projectilePool;
@@ -107,7 +177,8 @@ namespace GemTD.Gameplay
             Instance = this;
             GameEvents.ClearAll();
 
-            _placeDef = ballistaDef;
+            // Classic TD: no tower selected for placement until the build bar (or 1/2/3) is used.
+            _placeDef = null;
 
             Clock = new RunClock();
             States = new RunStateMachine(Clock);
@@ -167,12 +238,78 @@ namespace GemTD.Gameplay
                 {
                     var cellSize = gridView != null ? gridView.CellSize : 1f;
                     _beaconAura?.Tick(_towers, _registry, cellSize);
-                    _combat?.Tick(dt, _towers, _registry, _pipeline);
+                    if (_statuses != null && _registry != null)
+                    {
+                        _livingScratch.Clear();
+                        _registry.CopyAlive(_livingScratch);
+                        _statuses.Tick(dt, _livingScratch);
+                    }
+                    _combat?.Tick(dt, _towers, _registry, _pipeline, _statuses);
+                    SocketLockdown?.Tick(dt);
                 }
             }
 
             SyncProjectileViews();
             SyncEnemyViews();
+            TickPlacementGhost();
+        }
+
+        void EnsurePlacementGhost()
+        {
+            if (_placementGhost != null)
+                return;
+
+            var go = new GameObject("PlacementGhost");
+            go.transform.SetParent(transform, false);
+            _placementGhost = go.AddComponent<PlacementGhostView>();
+            _placementGhost.EnsureBuilt(towerPrefab);
+            _placementGhost.Hide();
+        }
+
+        /// <summary>Bloons-style ghost: snap to hovered tile while a build type is armed.</summary>
+        public void TickPlacementGhost()
+        {
+            if (!HasPlaceTowerSelected || gridView == null || Placement == null || States == null)
+            {
+                _placementGhost?.Hide();
+                return;
+            }
+
+            var phase = States.Current;
+            if (phase != RunStateId.Plan && phase != RunStateId.Combat)
+            {
+                _placementGhost?.Hide();
+                return;
+            }
+
+            if (Mouse.current == null)
+            {
+                _placementGhost?.Hide();
+                return;
+            }
+
+            var cam = Camera.main;
+            if (cam == null)
+            {
+                _placementGhost?.Hide();
+                return;
+            }
+
+            EnsurePlacementGhost();
+            var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
+            var plane = new Plane(Vector3.up, Vector3.zero);
+            if (!plane.Raycast(ray, out var enter))
+            {
+                _placementGhost.Hide();
+                return;
+            }
+
+            var world = ray.GetPoint(enter);
+            var cell = gridView.WorldToCell(world);
+            var valid = Placement.CanPlace(_placeDef, cell, phase);
+            var range = _placeDef != null ? _placeDef.Range : 3f;
+            _placementGhost.SetRange(range);
+            _placementGhost.ShowAt(gridView.CellToWorld(cell), valid);
         }
 
         void BootstrapServices()
@@ -203,9 +340,12 @@ namespace GemTD.Gameplay
                 ? runConfig.InventoryCapacity
                 : 10;
             Inventory = new GemInventory(capacity);
-            // Starter draft supplies the first gem — do not seed LMP+Chain.
+            SeedHydraRecipeInventory();
 
             Draft = new DraftService(new System.Random());
+            SocketLockdown = new SocketLockdown(3f);
+            Codex = new CodexProgress(new JsonFileCodexStore());
+            _statuses = new StatusRuntime();
 
             _expand = new MapExpandService(_path, _board);
             Placement = new TowerPlacementService(_board, _path, _expand, Economy);
@@ -353,7 +493,7 @@ namespace GemTD.Gameplay
             return true;
         }
 
-        public void TryPlaceAtWorld(Vector3 world)
+        public void TryPlaceAtWorld(Vector3 world, bool keepPlacementSelected = false)
         {
             if (gridView == null || _placeDef == null || Placement == null)
                 return;
@@ -376,10 +516,27 @@ namespace GemTD.Gameplay
                 view.Bind(tower, gridView.CellToWorld(cell));
                 _towerViews.Add(view);
             }
+
+            // Classic TD: one build-bar pick = one place, unless Shift is held.
+            if (!keepPlacementSelected)
+                ClearPlaceTower();
+        }
+
+        public void ClearTowerSelection()
+        {
+            if (Placement != null)
+                Placement.Selected = null;
+
+            for (var i = 0; i < _towerViews.Count; i++)
+            {
+                if (_towerViews[i] != null)
+                    _towerViews[i].SetSelected(false);
+            }
         }
 
         public void SetPlaceTower(int index)
         {
+            ClearTowerSelection();
             switch (index)
             {
                 case 0:
@@ -394,6 +551,12 @@ namespace GemTD.Gameplay
                     if (beaconDef != null)
                         _placeDef = beaconDef;
                     break;
+            }
+
+            if (_placeDef != null)
+            {
+                EnsurePlacementGhost();
+                TickPlacementGhost();
             }
         }
 
@@ -417,6 +580,7 @@ namespace GemTD.Gameplay
             if (view == null || view.Runtime == null)
                 return;
 
+            ClearPlaceTower();
             Placement.Selected = view.Runtime;
             for (var i = 0; i < _towerViews.Count; i++)
             {
@@ -471,6 +635,12 @@ namespace GemTD.Gameplay
             if (tower == null)
                 return;
 
+            if (SocketLockdown != null && !SocketLockdown.CanSocket(tower, States.Current))
+            {
+                Debug.Log($"[GemTD] Tower sockets locked ({SocketLockdown.Remaining(tower):0.0}s).");
+                return;
+            }
+
             if (!Inventory.TryTake(id, out var gem))
                 return;
 
@@ -485,7 +655,12 @@ namespace GemTD.Gameplay
             }
 
             if (!socketed)
+            {
                 Inventory.TryAdd(gem);
+                return;
+            }
+
+            OnSocketChanged(tower);
         }
 
         /// <summary>Socket the gem in a specific bag slot onto the selected tower.</summary>
@@ -501,6 +676,12 @@ namespace GemTD.Gameplay
             if (tower == null)
             {
                 Debug.Log("[GemTD] Select a tower before socketing from inventory.");
+                return;
+            }
+
+            if (SocketLockdown != null && !SocketLockdown.CanSocket(tower, States.Current))
+            {
+                Debug.Log($"[GemTD] Tower sockets locked ({SocketLockdown.Remaining(tower):0.0}s).");
                 return;
             }
 
@@ -521,7 +702,10 @@ namespace GemTD.Gameplay
             {
                 Inventory.TryAdd(gem);
                 Debug.Log($"[GemTD] Could not socket {gem.DisplayName} (full sockets or duplicate GemId).");
+                return;
             }
+
+            OnSocketChanged(tower);
         }
 
         public void RequestUnsocket(int socketIndex)
@@ -533,6 +717,12 @@ namespace GemTD.Gameplay
             if (tower == null || Inventory == null)
                 return;
 
+            if (SocketLockdown != null && !SocketLockdown.CanSocket(tower, States.Current))
+            {
+                Debug.Log($"[GemTD] Tower sockets locked ({SocketLockdown.Remaining(tower):0.0}s).");
+                return;
+            }
+
             if (Inventory.FreeSlotCount <= 0)
             {
                 Debug.Log("[GemTD] Unsocket blocked — inventory full (discard first).");
@@ -543,7 +733,37 @@ namespace GemTD.Gameplay
                 return;
 
             if (!Inventory.TryAdd(gem))
+            {
                 tower.TrySocket(gem, socketIndex, allowSocket: true);
+                return;
+            }
+
+            OnSocketChanged(tower);
+        }
+
+        void OnSocketChanged(TowerRuntime tower)
+        {
+            SocketLockdown?.NotifyChanged(tower, States.Current);
+            if (EvolutionEvaluator.IsHydraBallista(tower))
+                Codex?.NotifyHydraFormed();
+        }
+
+        void SeedHydraRecipeInventory()
+        {
+            if (Inventory == null || runConfig == null || !runConfig.SeedHydraRecipeGems)
+                return;
+
+            var seeds = runConfig.SeedGems;
+            if (seeds == null || seeds.Length == 0)
+                return;
+
+            for (var i = 0; i < seeds.Length; i++)
+            {
+                if (seeds[i] == null)
+                    continue;
+                if (!Inventory.TryAdd(seeds[i]))
+                    Debug.LogWarning($"[GemTD] Could not seed gem {seeds[i].DisplayName} (inventory full).");
+            }
         }
 
         public void RequestDiscardAt(int inventoryIndex)

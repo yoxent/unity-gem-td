@@ -17,7 +17,7 @@ namespace GemTD.Gameplay.Gems
         {
             spec.Damage *= _damageMultiplier;
             spec.ProjectileCount += _extraProjectiles;
-            spec.SpreadDegrees = spec.SpreadDegrees <= 0f ? 12f : spec.SpreadDegrees;
+            spec.SpreadDegrees = spec.SpreadDegrees <= 0f ? 24f : spec.SpreadDegrees;
             return spec;
         }
     }
@@ -54,6 +54,86 @@ namespace GemTD.Gameplay.Gems
         {
             spec.Damage *= _damageMultiplier;
             spec.ForkCount += 1;
+            return spec;
+        }
+    }
+
+    public sealed class IncreasedAreaModifier : IAttackModifier
+    {
+        readonly float _aoeMultiplier;
+        readonly float _fireRateMultiplier;
+
+        public IncreasedAreaModifier(float aoeMultiplier = 1.35f, float fireRateMultiplier = 0.9f)
+        {
+            _aoeMultiplier = aoeMultiplier;
+            _fireRateMultiplier = fireRateMultiplier;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.AoeRadius *= _aoeMultiplier;
+            spec.FireRateMultiplier *= _fireRateMultiplier;
+            return spec;
+        }
+    }
+
+    public sealed class IgniteModifier : IAttackModifier
+    {
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Ignite = true;
+            return spec;
+        }
+    }
+
+    public sealed class ChillModifier : IAttackModifier
+    {
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Chill = true;
+            return spec;
+        }
+    }
+
+    public sealed class ShockModifier : IAttackModifier
+    {
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Shock = true;
+            return spec;
+        }
+    }
+
+    public sealed class PierceModifier : IAttackModifier
+    {
+        readonly float _damageMultiplier;
+
+        public PierceModifier(float damageMultiplier = 0.85f)
+        {
+            _damageMultiplier = damageMultiplier;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Damage *= _damageMultiplier;
+            spec.Pierce = true;
+            return spec;
+        }
+    }
+
+    public sealed class ElementalProliferationModifier : IAttackModifier
+    {
+        readonly float _damageMultiplier;
+
+        public ElementalProliferationModifier(float damageMultiplier = 0.75f)
+        {
+            _damageMultiplier = damageMultiplier;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Damage *= _damageMultiplier;
+            spec.Proliferate = true;
             return spec;
         }
     }

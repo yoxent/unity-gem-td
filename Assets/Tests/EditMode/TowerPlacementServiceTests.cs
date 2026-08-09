@@ -44,6 +44,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void CanPlace_True_WhenBuildableAndAffordable()
+        {
+            var cell = new Vector2Int(3, 4);
+            Assert.IsTrue(_placement.CanPlace(_ballista, cell, RunStateId.Plan));
+            Assert.AreEqual(100, _economy.Gold);
+        }
+
+        [Test]
+        public void CanPlace_False_WhenOccupiedOrUnaffordable()
+        {
+            var cell = new Vector2Int(3, 4);
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out _));
+            Assert.IsFalse(_placement.CanPlace(_ballista, cell, RunStateId.Plan));
+
+            var other = new Vector2Int(4, 4);
+            _ballista.Cost = 999;
+            Assert.IsFalse(_placement.CanPlace(_ballista, other, RunStateId.Plan));
+        }
+
+        [Test]
         public void Place_AllowedInCombat()
         {
             var cell = new Vector2Int(3, 4);

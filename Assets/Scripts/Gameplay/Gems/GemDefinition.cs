@@ -8,5 +8,7 @@ namespace GemTD.Gameplay.Gems
         public GemId Id = GemId.None;
         public string DisplayName = "Gem";
         [TextArea] public string Description;
+        [Tooltip("Relative draft weight. Values <= 0 are treated as 1.")]
+        public float DraftWeight = 1f;
     }
 }

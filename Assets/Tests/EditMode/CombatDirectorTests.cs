@@ -229,6 +229,49 @@ namespace GemTD.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Hydra_SpawnsThreeTimesPelletCountOfBareLmp()
+        {
+            var ballista = ScriptableObject.CreateInstance<TowerDefinition>();
+            ballista.DisplayName = "Ballista";
+            ballista.Kind = TowerKind.Projectile;
+            ballista.SocketCount = 3;
+            ballista.Range = 20f;
+            ballista.Damage = 10f;
+            ballista.AttackInterval = 1f;
+
+            var fork = ScriptableObject.CreateInstance<GemDefinition>();
+            fork.Id = GemId.Fork;
+            try
+            {
+                var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+                var enemy = CreateEnemyNearTower();
+                var registry = new EnemyRegistry();
+                registry.Register(enemy);
+
+                var lmpOnly = new TowerRuntime(new Vector2Int(0, 0), ballista);
+                Assert.IsTrue(lmpOnly.TrySocket(_lmp, 0, allowSocket: true));
+                director.Tick(0.016f, new List<TowerRuntime> { lmpOnly }, registry, _pipeline);
+                Assert.AreEqual(3, director.Projectiles.Count);
+
+                director.ClearProjectiles();
+
+                var hydra = new TowerRuntime(new Vector2Int(0, 0), ballista);
+                Assert.IsTrue(hydra.TrySocket(_lmp, 0, allowSocket: true));
+                Assert.IsTrue(hydra.TrySocket(_chain, 1, allowSocket: true));
+                Assert.IsTrue(hydra.TrySocket(fork, 2, allowSocket: true));
+                director.Tick(0.016f, new List<TowerRuntime> { hydra }, registry, _pipeline);
+
+                // 3 heads × 3 LMP pellets; fork/chain children spawn on hit, not at fire time
+                Assert.AreEqual(9, director.Projectiles.Count);
+            }
+            finally
+            {
+                Object.DestroyImmediate(ballista);
+                Object.DestroyImmediate(fork);
+            }
+        }
+
         EnemyRuntime CreateEnemyNearTower()
         {
             return CreateEnemyAtProgress(0.1f);

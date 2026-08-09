@@ -27,10 +27,8 @@ namespace GemTD.Gameplay.Towers
             _economy = economy;
         }
 
-        public bool TryPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, out TowerRuntime tower)
+        public bool CanPlace(TowerDefinition def, Vector2Int cell, RunStateId phase)
         {
-            tower = null;
-
             if (def == null)
                 return false;
 
@@ -44,6 +42,19 @@ namespace GemTD.Gameplay.Towers
                 return false;
 
             if (_map.IsBlocked(cell.x, cell.y))
+                return false;
+
+            if (def.Cost > _economy.Gold)
+                return false;
+
+            return true;
+        }
+
+        public bool TryPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, out TowerRuntime tower)
+        {
+            tower = null;
+
+            if (!CanPlace(def, cell, phase))
                 return false;
 
             if (!_economy.TrySpend(def.Cost))

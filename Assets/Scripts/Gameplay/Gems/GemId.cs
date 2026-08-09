@@ -15,6 +15,7 @@ namespace GemTD.Gameplay.Gems
         FasterAttacks = 10,
         IncreasedAccuracy = 11,
         SlowerProjectiles = 12,
-        AttackEcho = 13
+        AttackEcho = 13,
+        Chill = 14
     }
 }
