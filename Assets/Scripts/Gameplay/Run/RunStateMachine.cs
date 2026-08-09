@@ -16,9 +16,11 @@ namespace GemTD.Gameplay.Run
         public event Action<RunStateId, RunStateId> StateChanged;
 
         readonly RunClock _clock;
+        readonly SpeedControl _speed;
 
-        public RunStateMachine(RunClock clock)
+        public RunStateMachine(SpeedControl speed, RunClock clock)
         {
+            _speed = speed ?? throw new ArgumentNullException(nameof(speed));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         }
 
@@ -32,7 +34,11 @@ namespace GemTD.Gameplay.Run
             Debug.Log($"[RunState] {prev} → {next}");
         }
 
-        public void StartRun() => ForceState(RunStateId.Draft);
+        public void StartRun()
+        {
+            _speed.ResetSpeedForNewRun();
+            ForceState(RunStateId.Draft);
+        }
 
         public void DraftResolved()
         {
@@ -113,15 +119,15 @@ namespace GemTD.Gameplay.Run
                 case RunStateId.Combat:
                 case RunStateId.Boss:
                 case RunStateId.Endless:
-                    _clock.SetPaused(false);
+                    _speed.PopPause("draft");
                     break;
                 case RunStateId.Draft:
                 case RunStateId.Defeat:
                 case RunStateId.VictorySummary:
-                    _clock.SetPaused(true);
+                    _speed.PushPause("draft");
                     break;
                 default:
-                    _clock.SetPaused(false);
+                    _speed.PushPause("draft"); // Plan stays paused
                     break;
             }
         }

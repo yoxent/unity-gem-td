@@ -44,6 +44,7 @@ namespace GemTD.Gameplay
         [SerializeField] float projectileSpeed = 20f;
 
         public RunClock Clock { get; private set; }
+        public SpeedControl Speed { get; private set; }
         public RunStateMachine States { get; private set; }
         public RunEconomy Economy { get; private set; }
         public GemInventory Inventory { get; private set; }
@@ -180,7 +181,8 @@ namespace GemTD.Gameplay
             _placeDef = null;
 
             Clock = new RunClock();
-            States = new RunStateMachine(Clock);
+            Speed = new SpeedControl(Clock);
+            States = new RunStateMachine(Speed, Clock);
             States.StateChanged += OnStateChanged;
 
             BootstrapServices();
@@ -747,7 +749,11 @@ namespace GemTD.Gameplay
             {
                 var entry = codexCatalog.GetById("hydra-ballista");
                 if (entry != null)
+                {
                     Codex.Unlock(entry);
+                    GameEvents.RaiseEvolutionUnlocked();
+                    Debug.Log("[EvolutionUnlocked] Hydra Ballista formed.");
+                }
             }
         }
 

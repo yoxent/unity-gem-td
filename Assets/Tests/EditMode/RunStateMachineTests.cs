@@ -9,7 +9,8 @@ namespace GemTD.Tests.EditMode
     {
         static RunStateMachine ReadyCombat(bool expandSatisfied = true)
         {
-            var fsm = new RunStateMachine(new RunClock());
+            var clock = new RunClock();
+            var fsm = new RunStateMachine(new SpeedControl(clock), clock);
             fsm.StartRun();
             fsm.DraftResolved();
             if (expandSatisfied)
@@ -21,7 +22,8 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void StartRun_EntersDraft()
         {
-            var fsm = new RunStateMachine(new RunClock());
+            var clock = new RunClock();
+            var fsm = new RunStateMachine(new SpeedControl(clock), clock);
             fsm.StartRun();
             Assert.AreEqual(RunStateId.Draft, fsm.Current);
         }
@@ -29,7 +31,8 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void DraftResolved_EntersPlan_ExpandUnsatisfied()
         {
-            var fsm = new RunStateMachine(new RunClock());
+            var clock = new RunClock();
+            var fsm = new RunStateMachine(new SpeedControl(clock), clock);
             fsm.StartRun();
             fsm.DraftResolved();
             Assert.AreEqual(RunStateId.Plan, fsm.Current);
@@ -39,7 +42,8 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void StartWave_RequiresExpandSatisfied()
         {
-            var fsm = new RunStateMachine(new RunClock());
+            var clock = new RunClock();
+            var fsm = new RunStateMachine(new SpeedControl(clock), clock);
             fsm.StartRun();
             fsm.DraftResolved();
             Assert.Throws<InvalidOperationException>(() => fsm.StartWave());

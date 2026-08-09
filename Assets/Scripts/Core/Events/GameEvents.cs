@@ -11,11 +11,16 @@ namespace GemTD.Core
         public static event Action<int> LivesChanged;
         public static event Action<int> WaveChanged;
         public static event Action EvolutionUnlocked;
+        public static event Action<float> SpeedChanged;
+        public static event Action<bool> PauseChanged;
 
         public static void RaiseGoldChanged(int gold) => GoldChanged?.Invoke(gold);
         public static void RaiseLivesChanged(int lives) => LivesChanged?.Invoke(lives);
         public static void RaiseWaveChanged(int wave) => WaveChanged?.Invoke(wave);
         public static void RaiseEvolutionUnlocked() => EvolutionUnlocked?.Invoke();
+
+        public static void RaiseSpeedChanged(float scale) => SpeedChanged?.Invoke(scale);
+        public static void RaisePauseChanged(bool paused) => PauseChanged?.Invoke(paused);
 
         public static void ClearAll()
         {
@@ -23,6 +28,8 @@ namespace GemTD.Core
             LivesChanged = null;
             WaveChanged = null;
             EvolutionUnlocked = null;
+            SpeedChanged = null;
+            PauseChanged = null;
         }
     }
 }

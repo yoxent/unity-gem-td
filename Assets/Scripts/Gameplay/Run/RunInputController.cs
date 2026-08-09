@@ -83,9 +83,14 @@ namespace GemTD.Gameplay.Run
             if (_root == null)
                 return;
 
-            // Esc: cancel place → else deselect tower (BTD-style).
+            // Esc: layer 2 (B-1) close Codex if open; else cancel place / deselect (BTD-style).
             if (_escape != null && _escape.WasPressedThisFrame())
             {
+                if (_root != null && _root.CodexPanelOpen)
+                {
+                    _root.ToggleCodexPanel();
+                    return;
+                }
                 if (HandleCancelLayer())
                     return;
             }
@@ -194,52 +199,41 @@ namespace GemTD.Gameplay.Run
             if (kb == null)
                 return;
 
-            if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame)
-                _root.SetPlaceTower(0);
-            else if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame)
-                _root.SetPlaceTower(1);
-            else if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame)
-                _root.SetPlaceTower(2);
+            var speed = _root.Speed;
+            var states = _root.States;
 
-            // Draft greybox: Z/X/C pick cards, V skip, B discard slot 0 (Plan), N/M replace Yes/No, comma complete replace slot 0.
-            if (_root.States != null && _root.States.Current == RunStateId.Draft)
+            // Speed: 1/2/3 (harmless in any state; only matters in Combat but settable anywhere).
+            if (speed != null)
             {
-                if (kb.zKey.wasPressedThisFrame)
-                    _root.RequestDraftPick(0);
-                else if (kb.xKey.wasPressedThisFrame)
-                    _root.RequestDraftPick(1);
-                else if (kb.cKey.wasPressedThisFrame)
-                    _root.RequestDraftPick(2);
-                else if (kb.vKey.wasPressedThisFrame)
-                    _root.RequestDraftSkip();
-                else if (kb.nKey.wasPressedThisFrame)
-                    _root.RequestDraftReplaceYes();
-                else if (kb.mKey.wasPressedThisFrame)
-                    _root.RequestDraftReplaceNo();
-                else if (kb.commaKey.wasPressedThisFrame)
-                    _root.RequestDraftReplaceComplete(0);
-                return;
+                if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame)
+                    speed.SetSpeed(1f);
+                else if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame)
+                    speed.SetSpeed(2f);
+                else if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame)
+                    speed.SetSpeed(4f);
             }
 
-            if (_root.States != null && _root.States.Current == RunStateId.Plan && kb.bKey.wasPressedThisFrame)
-                _root.RequestDiscardAt(0);
-
-            if (kb.cKey.wasPressedThisFrame)
-                _root.ToggleCodexPanel();
-
-            // Scope first: Shift+R composite steals the chord so plain R does not also fire aim.
-            if (_cycleScope != null && _cycleScope.WasPressedThisFrame())
+            // Space: toggle pause (Plan: resume-to-Combat only if Expand satisfied; Draft: ignored; Combat: active).
+            if (kb.spaceKey.wasPressedThisFrame && states != null)
             {
-                _root.CycleTargetingScope();
-                return;
+                var s = states.Current;
+                if (s == RunStateId.Combat)
+                {
+                    speed?.TogglePause();
+                }
+                else if (s == RunStateId.Plan && states.ExpandSatisfiedThisCycle)
+                {
+                    speed?.TogglePause(); // resume from Plan pause
+                }
+                // Draft / Victory / Defeat: ignored (modal / run-end).
             }
 
-            if (_cycleAim != null && _cycleAim.WasPressedThisFrame())
+            // C: toggle Codex (Plan + Combat only; ignored in Draft / Victory / Defeat).
+            if (kb.cKey.wasPressedThisFrame && states != null)
             {
-                // Ignore when Ctrl/Alt held (OS/editor chords); Scope is Shift-only above.
-                if (kb.ctrlKey.isPressed || kb.altKey.isPressed)
-                    return;
-                _root.CycleTargetingMode();
+                var s = states.Current;
+                if (s == RunStateId.Plan || s == RunStateId.Combat)
+                    _root.ToggleCodexPanel();
             }
         }
     }

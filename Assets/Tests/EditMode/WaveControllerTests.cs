@@ -23,7 +23,7 @@ namespace GemTD.Tests.EditMode
         {
             GameEvents.ClearAll();
             _clock = new RunClock();
-            _states = new RunStateMachine(_clock);
+            _states = new RunStateMachine(new SpeedControl(_clock), _clock);
             _economy = new RunEconomy(0, 20);
 
             _enemyDef = ScriptableObject.CreateInstance<EnemyDefinition>();

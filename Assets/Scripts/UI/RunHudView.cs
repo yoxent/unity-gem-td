@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -23,6 +24,22 @@ namespace GemTD.UI
         [SerializeField] Button sellButton;
         [SerializeField] Button socketLmpButton;
         [SerializeField] Button socketChainButton;
+
+        Button _speedBtn1;
+        Button _speedBtn2;
+        Button _speedBtn4;
+        Text _speedLabel1;
+        Text _speedLabel2;
+        Text _speedLabel4;
+        GameObject _pauseChip;
+        Text _pauseChipText;
+        bool _speedUiBuilt;
+
+        [Header("Speed panel (scene-serialized; built by Phase2Pr6WireScene)")]
+        [SerializeField] Button speedBtn1;
+        [SerializeField] Button speedBtn2;
+        [SerializeField] Button speedBtn4;
+        [SerializeField] GameObject pauseChip;
 
         [Header("Sell confirm (socketed gems)")]
         [SerializeField] GameObject sellConfirmPanel;
@@ -90,11 +107,13 @@ namespace GemTD.UI
             EnsureBuildBarUi();
             EnsureTowerDetailsUi();
             EnsureCodexUi();
+            EnsureSpeedUi();
             BindButtons();
             RefreshAll();
             RefreshDraftUi(force: true);
             RefreshInventoryUi(force: true);
             RefreshBuildBarUi();
+            OnSpeedChanged(0f); // apply initial highlight
             RefreshTowerDetailsUi();
             RefreshCodexUi();
         }
@@ -509,6 +528,8 @@ namespace GemTD.UI
             GameEvents.GoldChanged += OnGoldChanged;
             GameEvents.LivesChanged += OnLivesChanged;
             GameEvents.WaveChanged += OnWaveChanged;
+            GameEvents.SpeedChanged += OnSpeedChanged;
+            GameEvents.PauseChanged += OnPauseChanged;
         }
 
         void UnbindGameEvents()
@@ -516,6 +537,8 @@ namespace GemTD.UI
             GameEvents.GoldChanged -= OnGoldChanged;
             GameEvents.LivesChanged -= OnLivesChanged;
             GameEvents.WaveChanged -= OnWaveChanged;
+            GameEvents.SpeedChanged -= OnSpeedChanged;
+            GameEvents.PauseChanged -= OnPauseChanged;
         }
 
         void BindButtons()
@@ -803,6 +826,98 @@ namespace GemTD.UI
                 btn.gameObject.SetActive(true);
                 btn.interactable = canUnsocketPhase && occupied && !locked;
             }
+        }
+
+        void EnsureSpeedUi()
+        {
+            if (_speedUiBuilt && _speedBtn1 != null)
+                return;
+
+            // Prefer scene-serialized refs (built at editor time by the wire menu).
+            if (speedBtn1 != null && speedBtn2 != null && speedBtn4 != null)
+            {
+                _speedBtn1 = speedBtn1;
+                _speedBtn2 = speedBtn2;
+                _speedBtn4 = speedBtn4;
+                _speedLabel1 = speedBtn1.GetComponentInChildren<Text>();
+                _speedLabel2 = speedBtn2.GetComponentInChildren<Text>();
+                _speedLabel4 = speedBtn4.GetComponentInChildren<Text>();
+                _pauseChip = pauseChip;
+                if (_pauseChip != null)
+                    _pauseChipText = _pauseChip.GetComponentInChildren<Text>();
+                _speedBtn1.onClick.AddListener(() => _root?.Speed?.SetSpeed(1f));
+                _speedBtn2.onClick.AddListener(() => _root?.Speed?.SetSpeed(2f));
+                _speedBtn4.onClick.AddListener(() => _root?.Speed?.SetSpeed(4f));
+                if (_pauseChip != null)
+                    _pauseChip.SetActive(false);
+                _speedUiBuilt = true;
+                return;
+            }
+
+            // Fallback: build at runtime (dev safety only). Not the normal path.
+            Debug.LogWarning("[RunHudView] Speed panel serialized refs not set — building at runtime. Run wire menu to pre-place.");
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+                canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+                return;
+
+            var panelGo = new GameObject("SpeedPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(canvas.transform, false);
+            var rt = panelGo.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 1f);
+            rt.sizeDelta = new Vector2(180f, 44f);
+            rt.anchoredPosition = new Vector2(-12f, -12f);
+            panelGo.GetComponent<Image>().color = new Color(0.07f, 0.08f, 0.1f, 0.9f);
+
+            _speedBtn1 = CreateUiButton(panelGo.transform, "Speed1", "1x", new Vector2(-66f, 0f), new Vector2(48f, 28f));
+            _speedBtn2 = CreateUiButton(panelGo.transform, "Speed2", "2x", new Vector2(0f, 0f), new Vector2(48f, 28f));
+            _speedBtn4 = CreateUiButton(panelGo.transform, "Speed4", "4x", new Vector2(66f, 0f), new Vector2(48f, 28f));
+            _speedLabel1 = _speedBtn1.GetComponentInChildren<Text>();
+            _speedLabel2 = _speedBtn2.GetComponentInChildren<Text>();
+            _speedLabel4 = _speedBtn4.GetComponentInChildren<Text>();
+
+            _speedBtn1.onClick.AddListener(() => _root?.Speed?.SetSpeed(1f));
+            _speedBtn2.onClick.AddListener(() => _root?.Speed?.SetSpeed(2f));
+            _speedBtn4.onClick.AddListener(() => _root?.Speed?.SetSpeed(4f));
+
+            _pauseChip = new GameObject("PauseChip", typeof(RectTransform), typeof(Image));
+            _pauseChip.transform.SetParent(panelGo.transform, false);
+            var chipRt = _pauseChip.GetComponent<RectTransform>();
+            chipRt.anchorMin = new Vector2(0.5f, 1f);
+            chipRt.anchorMax = new Vector2(0.5f, 1f);
+            chipRt.pivot = new Vector2(0.5f, 0f);
+            chipRt.sizeDelta = new Vector2(120f, 20f);
+            chipRt.anchoredPosition = new Vector2(0f, 4f);
+            _pauseChipText = CreateUiText(_pauseChip.transform, "PauseText", "PAUSED", Vector2.zero, 13);
+            var ptRt = _pauseChipText.GetComponent<RectTransform>();
+            ptRt.offsetMin = Vector2.zero;
+            ptRt.offsetMax = Vector2.zero;
+            _pauseChip.GetComponent<Image>().color = new Color(0.45f, 0.14f, 0.14f, 0.9f);
+            _pauseChip.SetActive(false);
+
+            _speedUiBuilt = true;
+        }
+
+        void OnSpeedChanged(float scale)
+        {
+            if (_root == null)
+                return;
+            var active = _root.Speed != null ? _root.Speed.CurrentSpeed : 1f;
+            var dim = new Color(0.6f, 0.6f, 0.62f, 1f);
+            var lit = new Color(0.88f, 0.71f, 0.29f, 1f); // accent-gold
+            if (_speedLabel1 != null) _speedLabel1.color = Math.Abs(active - 1f) < 0.01f ? lit : dim;
+            if (_speedLabel2 != null) _speedLabel2.color = Math.Abs(active - 2f) < 0.01f ? lit : dim;
+            if (_speedLabel4 != null) _speedLabel4.color = Math.Abs(active - 4f) < 0.01f ? lit : dim;
+        }
+
+        void OnPauseChanged(bool paused)
+        {
+            if (_pauseChip != null)
+                _pauseChip.SetActive(paused);
+            // Speed buttons remain clickable while paused (sets pending speed).
         }
 
         void EnsureCodexUi()
