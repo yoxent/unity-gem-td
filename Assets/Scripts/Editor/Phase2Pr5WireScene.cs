@@ -5,6 +5,7 @@ using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
+using GemTD.Gameplay.Meta;
 
 namespace GemTD.Editor
 {
@@ -13,6 +14,7 @@ namespace GemTD.Editor
     {
         const string RunScenePath = "Assets/Scenes/Run.unity";
         const string GemsFolder = "Assets/Data/Gems";
+        const string CodexFolder = "Assets/Data/Codex";
 
         [MenuItem("Gem TD/Phase 2 PR5 Wire Gems + Hydra Seed")]
         public static void Wire()
@@ -51,6 +53,39 @@ namespace GemTD.Editor
                     return;
                 }
             }
+
+            if (!AssetDatabase.IsValidFolder("Assets/Data"))
+                AssetDatabase.CreateFolder("Assets", "Data");
+            if (!AssetDatabase.IsValidFolder(CodexFolder))
+                AssetDatabase.CreateFolder("Assets/Data", "Codex");
+
+            var hydra = AssetDatabase.LoadAssetAtPath<CodexEntry>($"{CodexFolder}/Codex_Hydra.asset");
+            if (hydra == null)
+            {
+                hydra = ScriptableObject.CreateInstance<CodexEntry>();
+                AssetDatabase.CreateAsset(hydra, $"{CodexFolder}/Codex_Hydra.asset");
+            }
+            hydra.Id = "hydra-ballista";
+            hydra.DisplayName = "Hydra Ballista";
+            hydra.LockedHint = "Three jaws share one quarrelsome appetite.";
+            hydra.UnlockedText = "Hydra Ballista — Chain + Fork + Multiple Projectiles";
+            hydra.Recipe = new[] { chain, fork, lmp };
+
+            var snakeIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Temp/Icons/snake.png");
+            hydra.Icon = snakeIcon;
+            if (snakeIcon == null)
+                Debug.LogWarning("[PR5 Wire] snake.png Sprite not found — Codex Hydra icon will be null (??? fallback).");
+            EditorUtility.SetDirty(hydra);
+
+            var catalog = AssetDatabase.LoadAssetAtPath<CodexCatalog>($"{CodexFolder}/CodexCatalog.asset");
+            if (catalog == null)
+            {
+                catalog = ScriptableObject.CreateInstance<CodexCatalog>();
+                AssetDatabase.CreateAsset(catalog, $"{CodexFolder}/CodexCatalog.asset");
+            }
+            catalog.Entries = new[] { hydra };
+            EditorUtility.SetDirty(catalog);
+            AssetDatabase.SaveAssets();
 
             var ballista = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Ballista.asset");
             if (ballista == null)
@@ -109,6 +144,7 @@ namespace GemTD.Editor
                 draftProp.GetArrayElementAtIndex(i).objectReferenceValue = pool[i];
 
             so.FindProperty("runConfig").objectReferenceValue = cfg;
+            so.FindProperty("codexCatalog").objectReferenceValue = catalog;
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(root);
             EditorSceneManager.MarkSceneDirty(scene);

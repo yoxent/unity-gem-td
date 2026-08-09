@@ -63,8 +63,9 @@ namespace GemTD.UI
         readonly Button[] _unsocketButtons = new Button[3];
         bool _towerDetailsBuilt;
         GameObject _codexPanel;
-        Text _codexText;
         bool _codexBuilt;
+        readonly System.Collections.Generic.List<GameObject> _codexRows = new System.Collections.Generic.List<GameObject>();
+        const float CodexRowHeight = 64f;
 
         void OnEnable()
         {
@@ -821,16 +822,13 @@ namespace GemTD.UI
             rt.anchorMin = new Vector2(0.5f, 1f);
             rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
-            rt.sizeDelta = new Vector2(520f, 110f);
+            rt.sizeDelta = new Vector2(560f, 80f);
             rt.anchoredPosition = new Vector2(0f, -12f);
             panelGo.GetComponent<Image>().color = new Color(0.1f, 0.09f, 0.14f, 0.94f);
 
-            CreateUiText(panelGo.transform, "CodexTitle", "Codex (C)", new Vector2(0f, -18f), 18);
-            _codexText = CreateUiText(panelGo.transform, "CodexBody", "", new Vector2(0f, -55f), 15);
-            var bodyRt = _codexText.GetComponent<RectTransform>();
-            bodyRt.sizeDelta = new Vector2(480f, 50f);
+            CreateUiText(panelGo.transform, "CodexTitle", "Codex (C)", new Vector2(0f, -16f), 18);
 
-            var close = CreateUiButton(panelGo.transform, "CodexClose", "Close", new Vector2(220f, -18f), new Vector2(70f, 28f));
+            var close = CreateUiButton(panelGo.transform, "CodexClose", "Close", new Vector2(240f, -16f), new Vector2(70f, 28f));
             close.onClick.AddListener(() => _root?.ToggleCodexPanel());
 
             _codexPanel = panelGo;
@@ -847,10 +845,132 @@ namespace GemTD.UI
 
             var open = _root.CodexPanelOpen;
             _codexPanel.SetActive(open);
-            if (!open || _codexText == null)
+            if (!open)
                 return;
 
-            _codexText.text = "Hydra Ballista\n" + _root.CodexHydraLine;
+            // Clear previous rows.
+            for (var i = 0; i < _codexRows.Count; i++)
+            {
+                if (_codexRows[i] != null)
+                    Destroy(_codexRows[i]);
+            }
+            _codexRows.Clear();
+
+            var catalog = _root.CodexCatalog;
+            var progress = _root.Codex;
+            if (catalog == null || catalog.Entries == null)
+                return;
+
+            var rowWidth = 540f;
+            var y = -50f;
+            for (var i = 0; i < catalog.Entries.Length; i++)
+            {
+                var entry = catalog.Entries[i];
+                if (entry == null)
+                    continue;
+
+                var rowGo = new GameObject($"CodexRow_{i}", typeof(RectTransform), typeof(Image));
+                rowGo.transform.SetParent(_codexPanel.transform, false);
+                var rowRt = rowGo.GetComponent<RectTransform>();
+                rowRt.anchorMin = new Vector2(0.5f, 1f);
+                rowRt.anchorMax = new Vector2(0.5f, 1f);
+                rowRt.pivot = new Vector2(0.5f, 1f);
+                rowRt.sizeDelta = new Vector2(rowWidth, CodexRowHeight - 8f);
+                rowRt.anchoredPosition = new Vector2(0f, y);
+                rowGo.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.0f);
+
+                var unlocked = progress != null && progress.IsUnlocked(entry);
+
+                // Icon slot (or ??? chip).
+                var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+                iconGo.transform.SetParent(rowGo.transform, false);
+                var iconRt = iconGo.GetComponent<RectTransform>();
+                iconRt.anchorMin = new Vector2(0f, 0.5f);
+                iconRt.anchorMax = new Vector2(0f, 0.5f);
+                iconRt.pivot = new Vector2(0.5f, 0.5f);
+                iconRt.sizeDelta = new Vector2(40f, 40f);
+                iconRt.anchoredPosition = new Vector2(34f, 0f);
+                var iconImage = iconGo.GetComponent<Image>();
+                if (unlocked && entry.Icon != null)
+                {
+                    iconImage.sprite = entry.Icon;
+                    iconImage.color = Color.white;
+                    iconImage.preserveAspect = true;
+                }
+                else
+                {
+                    iconImage.color = new Color(0.18f, 0.18f, 0.22f, 1f);
+                }
+
+                // ??? text over the icon when not unlocked or no sprite.
+                if (!(unlocked && entry.Icon != null))
+                {
+                    var q = CreateUiText(iconGo.transform, "Q", "???", Vector2.zero, 16);
+                    var qRt = q.GetComponent<RectTransform>();
+                    qRt.offsetMin = Vector2.zero;
+                    qRt.offsetMax = Vector2.zero;
+                    q.color = new Color(0.6f, 0.6f, 0.65f, 1f);
+                }
+
+                // Name.
+                var nameRt = CreateUiText(rowGo.transform, "Name",
+                    unlocked ? (entry.DisplayName ?? string.Empty) : "???",
+                    new Vector2(-120f, 12f), 15).GetComponent<RectTransform>();
+                nameRt.anchorMin = new Vector2(0f, 0.5f);
+                nameRt.anchorMax = new Vector2(0.5f, 0.5f);
+                nameRt.pivot = new Vector2(0f, 0.5f);
+                nameRt.anchoredPosition = new Vector2(64f, 12f);
+                nameRt.sizeDelta = new Vector2(300f, 24f);
+                nameRt.GetComponent<Text>().alignment = TextAnchor.MiddleLeft;
+
+                // State chip.
+                var chipGo = new GameObject("StateChip", typeof(RectTransform), typeof(Image));
+                chipGo.transform.SetParent(rowGo.transform, false);
+                var chipRt = chipGo.GetComponent<RectTransform>();
+                chipRt.anchorMin = new Vector2(1f, 0.5f);
+                chipRt.anchorMax = new Vector2(1f, 0.5f);
+                chipRt.pivot = new Vector2(1f, 0.5f);
+                chipRt.sizeDelta = new Vector2(94f, 24f);
+                chipRt.anchoredPosition = new Vector2(-12f, 12f);
+                var chipImage = chipGo.GetComponent<Image>();
+                var chipText = CreateUiText(chipGo.transform, "ChipText",
+                    unlocked ? "DISCOVERED" : "LOCKED", Vector2.zero, 13);
+                var chipTextRt = chipText.GetComponent<RectTransform>();
+                chipTextRt.offsetMin = Vector2.zero;
+                chipTextRt.offsetMax = Vector2.zero;
+                if (unlocked)
+                {
+                    chipImage.color = new Color(0.14f, 0.45f, 0.20f, 1f);
+                    chipText.color = new Color(0.85f, 1f, 0.85f, 1f);
+                }
+                else
+                {
+                    chipImage.color = new Color(0.45f, 0.14f, 0.14f, 1f);
+                    chipText.color = new Color(1f, 0.85f, 0.85f, 1f);
+                }
+
+                // Body (locked hint OR unlocked text).
+                var body = CreateUiText(rowGo.transform, "Body",
+                    unlocked ? (entry.UnlockedText ?? string.Empty) : (entry.LockedHint ?? string.Empty),
+                    new Vector2(0f, -14f), 14);
+                var bodyRt = body.GetComponent<RectTransform>();
+                bodyRt.anchorMin = new Vector2(0f, 0.5f);
+                bodyRt.anchorMax = new Vector2(1f, 0.5f);
+                bodyRt.pivot = new Vector2(0f, 0.5f);
+                bodyRt.anchoredPosition = new Vector2(64f, -14f);
+                bodyRt.sizeDelta = new Vector2(460f, 40f);
+                body.alignment = TextAnchor.MiddleLeft;
+                body.color = unlocked
+                    ? new Color(1f, 1f, 1f, 1f)
+                    : new Color(0.7f, 0.7f, 0.72f, 0.65f); // dimmed locked body
+
+                _codexRows.Add(rowGo);
+                y -= CodexRowHeight;
+            }
+
+            // Resize panel to fit all rows.
+            var panelRt = _codexPanel.GetComponent<RectTransform>();
+            panelRt.sizeDelta = new Vector2(560f, 70f + catalog.Entries.Length * CodexRowHeight);
         }
 
         static Text CreateUiText(Transform parent, string name, string value, Vector2 anchored, int fontSize)

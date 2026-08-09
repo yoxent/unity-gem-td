@@ -27,6 +27,7 @@ namespace GemTD.Gameplay
         [SerializeField] TowerDefinition beaconDef;
         [SerializeField] WaveDefinition[] waves;
         [SerializeField] GemDefinition[] draftPool;
+        [SerializeField] CodexCatalog codexCatalog;
 
         [Header("Scene")]
         [SerializeField] GridBoardView gridView;
@@ -51,6 +52,7 @@ namespace GemTD.Gameplay
         public DraftService Draft { get; private set; }
         public SocketLockdown SocketLockdown { get; private set; }
         public CodexProgress Codex { get; private set; }
+        public CodexCatalog CodexCatalog => codexCatalog;
         public StatusRuntime Statuses => _statuses;
         public int CurrentWaveNumber => WaveController != null ? WaveController.CurrentWaveNumber : 0;
         public bool HasSelectedTower => Placement != null && Placement.Selected != null;
@@ -118,9 +120,6 @@ namespace GemTD.Gameplay
         }
 
         public bool CodexPanelOpen { get; private set; }
-
-        public string CodexHydraLine =>
-            Codex != null ? Codex.HydraHintOrReveal : CodexProgress.CrypticHydraHint;
 
         public void ClearPlaceTower()
         {
@@ -744,8 +743,12 @@ namespace GemTD.Gameplay
         void OnSocketChanged(TowerRuntime tower)
         {
             SocketLockdown?.NotifyChanged(tower, States.Current);
-            if (EvolutionEvaluator.IsHydraBallista(tower))
-                Codex?.NotifyHydraFormed();
+            if (EvolutionEvaluator.IsHydraBallista(tower) && Codex != null && codexCatalog != null)
+            {
+                var entry = codexCatalog.GetById("hydra-ballista");
+                if (entry != null)
+                    Codex.Unlock(entry);
+            }
         }
 
         void SeedHydraRecipeInventory()
