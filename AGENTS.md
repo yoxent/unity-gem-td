@@ -25,6 +25,7 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 5. **Object pools** for spawnables; no `System.Linq` in combat ticks.
 6. **Protected `main`** — feature branch + PR only; never push straight to main.
 7. **No auto commit/push** — never `git commit` or `git push` unless the user explicitly asks.
+8. **Conventional TD shell** — gems/sockets are the unique fantasy; place/select/sell/upgrade/waves/hotkeys/previews follow **Bloons TD 5/6** first (see `.cursor/rules/gem-td-bloons-mechanics.mdc`).
 
 ## Stack notes
 
