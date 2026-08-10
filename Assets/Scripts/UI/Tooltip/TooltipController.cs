@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
+using TMPro;
 
 namespace GemTD.UI
 {
@@ -9,12 +11,17 @@ namespace GemTD.UI
     public sealed class TooltipController : MonoBehaviour
     {
         [SerializeField] RectTransform tooltipPanel;
-        [SerializeField] Text tooltipText;
+        [SerializeField] TMP_Text tooltipText;
         [SerializeField] Canvas rootCanvas;
         [SerializeField] float padding = 12f;
 
         PointerEventData _eventData;
         readonly System.Collections.Generic.List<RaycastResult> _hits = new System.Collections.Generic.List<RaycastResult>(8);
+
+        private void Start()
+        {
+            tooltipPanel.gameObject.SetActive(false);
+        }
 
         void Update()
         {
@@ -46,7 +53,7 @@ namespace GemTD.UI
             if (_eventData == null)
                 _eventData = new PointerEventData(es);
             _eventData.Reset();
-            _eventData.position = UnityEngine.Input.mousePosition;
+            _eventData.position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
             _hits.Clear();
             es.RaycastAll(_eventData, _hits);
             for (var i = 0; i < _hits.Count; i++)

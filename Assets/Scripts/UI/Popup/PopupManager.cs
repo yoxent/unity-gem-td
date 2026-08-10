@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using GemTD.Core;
 
 namespace GemTD.UI
@@ -13,14 +14,14 @@ namespace GemTD.UI
         public const string DefaultNoText = "Cancel";
 
         [SerializeField] GameObject rootPanel;
-        [SerializeField] Text titleText;
-        [SerializeField] Text bodyText;
+        [SerializeField] TMP_Text titleText;
+        [SerializeField] TMP_Text bodyText;
         [SerializeField] Toggle dontShowAgain;
-        [SerializeField] Text dontShowAgainLabel;
+        [SerializeField] TMP_Text dontShowAgainLabel;
         [SerializeField] Button yesButton;
-        [SerializeField] Text yesLabel;
+        [SerializeField] TMP_Text yesLabel;
         [SerializeField] Button noButton;
-        [SerializeField] Text noLabel;
+        [SerializeField] TMP_Text noLabel;
 
         SpeedControl _speed;
         Action _onYes;
@@ -30,6 +31,13 @@ namespace GemTD.UI
         public bool IsOpen => rootPanel != null && rootPanel.activeSelf;
 
         public void Init(SpeedControl speed) => _speed = speed;
+
+        void Awake()
+        {
+            if (yesButton != null) yesButton.onClick.AddListener(OnYesClicked);
+            if (noButton != null) noButton.onClick.AddListener(OnNoClicked);
+            if (rootPanel != null) rootPanel.SetActive(false);
+        }
 
         public void ShowConfirm(string id, string title, string body, Action onConfirm,
             Action onCancel = null,
@@ -61,17 +69,20 @@ namespace GemTD.UI
 
         public void Hide()
         {
-            if (rootPanel != null) rootPanel.SetActive(false);
+            if (rootPanel != null)
+            {
+                rootPanel.SetActive(false);
+                rootPanel.transform.SetAsLastSibling();
+            }
             if (_speed != null && !string.IsNullOrEmpty(_currentId))
                 _speed.PopPause("popup-" + _currentId);
-            var noCb = _onNo;
             Reset();
             _onYes = null;
             _onNo = null;
             _currentId = null;
-            noCb?.Invoke();
         }
 
+        // Esc dismiss = neutral close (no callback). No button calls this (fires onCancel).
         void Reset()
         {
             if (titleText != null) titleText.text = "";
@@ -97,7 +108,11 @@ namespace GemTD.UI
             if (dontShowAgainLabel != null) dontShowAgainLabel.text = showCheckbox ? dontShowAgainText : "";
             if (dontShowAgain != null) dontShowAgain.isOn = false;
             if (noButton != null) noButton.gameObject.SetActive(!singleButton);
-            if (rootPanel != null) rootPanel.SetActive(true);
+            if (rootPanel != null)
+            {
+                rootPanel.transform.SetAsLastSibling();
+                rootPanel.SetActive(true);
+            }
             if (pauseForFairness && _speed != null)
                 _speed.PushPause("popup-" + id);
         }
@@ -118,8 +133,13 @@ namespace GemTD.UI
             cb?.Invoke();
         }
 
-        // Called by noButton.onClick.
-        public void OnNoClicked() => Hide();
+        // Called by noButton.onClick. Fires onCancel (the "No" decision) then hides.
+        public void OnNoClicked()
+        {
+            var cb = _onNo;
+            Hide();
+            cb?.Invoke();
+        }
 
         // --- Pure helpers (testable without a live panel) ---
         public static string DontShowKey(string id) => "GemTD.Popup." + id + ".DontShow";

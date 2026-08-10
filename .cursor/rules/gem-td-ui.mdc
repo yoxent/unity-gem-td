@@ -6,7 +6,10 @@ alwaysApply: false
 
 # UI scripts
 
-- UGUI only for 1.0. Kenney / feature.2d sprites — no shipping emoji.
+- **Prefab-based UI** (see `UI-SPEC.md` "Implementation conventions"): static, bounded UI panels are prefabs pre-placed in the scene; thin MonoBehaviour controllers hold `[SerializeField]` refs to children (inspector-dragged). Runtime NEVER calls `new GameObject`/`Instantiate` or sets `RectTransform.position/sizeDelta/anchoredPosition` for static UI — use layout groups in the inspector. Dynamic-display = pre-place N instances, flip display. **Exception:** runtime-generated/unbounded entities (enemies, projectiles, gems, VFX) may be instantiated/pooled at runtime.
+- **TextMeshPro only** — `[SerializeField] TMP_Text` (or `TextMeshProUGUI`), `using TMPro;`. Never legacy `UnityEngine.UI.Text`. `Unity.TextMeshPro` asmdef ref required on UI assemblies.
+- **No new bootstrap/wire-menu code** — existing `Phase2Pr*WireScene` menus are frozen (deleted pre-release); wiring is inspector-drag only.
+- UGUI + feature.2d (UI sprites). Kenney-compatible — no shipping emoji.
 - Follow `UI-SPEC.md` layout (docs repo).
 - Conventional TD shell (place ghost, Shift multi-place, Esc/RMB cancel) follows Bloons TD 5/6 — see `gem-td-bloons-mechanics.mdc`.
 - Selected-tower panel is **Tower Details** — never call it “inspector” (Unity Editor term).

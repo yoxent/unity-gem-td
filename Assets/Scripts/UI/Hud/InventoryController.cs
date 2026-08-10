@@ -1,0 +1,112 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using GemTD.Gameplay;
+using GemTD.Gameplay.Gems;
+using GemTD.Gameplay.Run;
+
+namespace GemTD.UI
+{
+    /// <summary>Lives on InventoryPanel prefab. Manages 10 InventoryGemSlot instances + hint text.</summary>
+    public sealed class InventoryController : MonoBehaviour
+    {
+        [SerializeField] TMP_Text inventoryHintText;
+        [SerializeField] GameObject panel;
+        [SerializeField] Transform inventorySlot;
+        [SerializeField] List<InventoryGemSlot> slots = new List<InventoryGemSlot>();
+
+        GameCompositionRoot _root;
+        PopupManager _popup;
+        bool _buttonsBound;
+        string _lastSignature;
+
+        void Start()
+        {
+            if (panel == null) panel = gameObject;
+
+            for (var i = 0; i < inventorySlot.childCount; i++)
+            {
+                InventoryGemSlot gemslot = null;
+                inventorySlot.transform.GetChild(i).TryGetComponent(out gemslot);
+
+                if (gemslot != null)
+                {
+                    var idx = i;
+                    slots.Add(gemslot);
+                    slots[i].GetButton().onClick.AddListener(() => OnSlotClicked(idx));
+                }
+            }
+
+            _buttonsBound = true;
+        }
+
+        void Update()
+        {
+            if ((!_buttonsBound)) return;
+
+            if (_root == null) _root = GameCompositionRoot.Instance;
+            if (_root == null) return;
+            if (_popup == null) _popup = FindFirstObjectByType<PopupManager>(FindObjectsInactive.Include);
+            var show = _root.Inventory != null && _root.States != null
+                       && _root.States.Current != RunStateId.Boot
+                       && _root.States.Current != RunStateId.Defeat
+                       && _root.States.Current != RunStateId.VictorySummary;
+            panel.SetActive(show);
+
+            if (!show) return;
+            Refresh();
+        }
+
+        void Refresh()
+        {
+            var inv = _root.Inventory;
+            if (inv == null) return;
+            var canSocket = (_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat)
+                            && _root.HasSelectedTower && _root.SelectedSocketLockRemaining <= 0f;
+            var replacePick = _root.States.Current == RunStateId.Draft
+                              && _root.Draft != null
+                              && _root.Draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick;
+            var inPlan = _root.States.Current == RunStateId.Plan;
+
+            if (inventoryHintText != null)
+            {
+                if (replacePick)
+                    inventoryHintText.text = "Inventory — click a gem to DESTROY & take draft card";
+                else if (canSocket)
+                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity} — click=socket | Shift+click=discard (Plan)";
+                else if (inPlan)
+                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity} — select a tower to socket";
+                else
+                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity}";
+            }
+
+            for (var i = 0; i < slots.Count && i < inv.Slots.Count; i++)
+            {
+                var gem = inv.Slots[i];
+                if (slots[i] == null) continue;
+
+                slots[i].Configure(_root, _popup, i, gem);
+
+                var btn = slots[i].SlotButton;
+
+                if (btn != null)
+                {
+                    var filled = gem != null;
+                    btn.interactable = filled && (canSocket || replacePick || inPlan);
+                    var img = btn.GetComponent<Image>();
+                    if (img != null)
+                        img.color = filled ? new Color(0.28f, 0.42f, 0.32f, 1f) : new Color(0.16f, 0.17f, 0.2f, 1f);
+                }
+            }
+        }
+
+        void OnSlotClicked(int index)
+        {
+            if (_root == null) return;
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            var shift = kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed);
+            _root.RequestInventorySlotClick(index, shift);
+        }
+    }
+}

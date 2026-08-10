@@ -77,6 +77,17 @@ namespace GemTD.Gameplay
             _placeDef != null && !string.IsNullOrEmpty(_placeDef.DisplayName)
                 ? _placeDef.DisplayName
                 : (_placeDef != null ? _placeDef.name : "None");
+
+        public string GetPlaceTowerName(int index)
+        {
+            return index switch
+            {
+                0 => ballistaDef != null ? ballistaDef.DisplayName : "Ballista",
+                1 => cannonDef != null ? cannonDef.DisplayName : "Cannon",
+                2 => beaconDef != null ? beaconDef.DisplayName : "Beacon",
+                _ => "?"
+            };
+        }
         public bool HasPlaceTowerSelected => _placeDef != null;
         public float SelectedSocketLockRemaining
         {
@@ -97,27 +108,23 @@ namespace GemTD.Gameplay
             var def = tower.Def;
             var sb = new System.Text.StringBuilder(128);
             sb.Append(def.DisplayName);
+
             if (EvolutionEvaluator.IsHydraBallista(tower))
                 sb.Append(" [HYDRA]");
             sb.Append('\n');
             sb.Append($"Dmg {def.Damage:0.#}  Rng {def.Range:0.#}  Int {def.AttackInterval:0.##}s\n");
-            sb.Append("Sockets: ");
-            for (var i = 0; i < tower.Sockets.Length; i++)
-            {
-                if (i > 0) sb.Append(" | ");
-                var g = tower.Sockets[i];
-                sb.Append(g != null ? g.DisplayName : "—");
-            }
 
             var lockLeft = SelectedSocketLockRemaining;
             if (lockLeft > 0f)
                 sb.Append($"\nLOCK {lockLeft:0.0}s");
+
             return sb.ToString();
         }
 
         public void ToggleCodexPanel()
         {
             CodexPanelOpen = !CodexPanelOpen;
+            GameEvents.RaiseCodexToggled();
         }
 
         public bool CodexPanelOpen { get; private set; }

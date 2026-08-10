@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using GemTD.Core;
 using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Towers;
 
@@ -17,8 +18,6 @@ namespace GemTD.Gameplay.Run
         InputAction _click;
         InputAction _rightClick;
         InputAction _escape;
-        InputAction _cycleAim;
-        InputAction _cycleScope;
 
         readonly List<RaycastResult> _uiHits = new List<RaycastResult>(16);
 
@@ -39,18 +38,6 @@ namespace GemTD.Gameplay.Run
 
             _escape = new InputAction("Escape", InputActionType.Button, "<Keyboard>/escape");
             _escape.Enable();
-
-            // R alone — cycle aim mode (no modifiers).
-            _cycleAim = new InputAction("CycleAim", InputActionType.Button);
-            _cycleAim.AddBinding("<Keyboard>/r");
-            _cycleAim.Enable();
-
-            // Shift+R only — cycle apply scope (explicit modifier; not Ctrl).
-            _cycleScope = new InputAction("CycleScope", InputActionType.Button);
-            _cycleScope.AddCompositeBinding("OneModifier")
-                .With("modifier", "<Keyboard>/shift")
-                .With("binding", "<Keyboard>/r");
-            _cycleScope.Enable();
         }
 
         void OnDisable()
@@ -66,14 +53,6 @@ namespace GemTD.Gameplay.Run
             _escape?.Disable();
             _escape?.Dispose();
             _escape = null;
-
-            _cycleAim?.Disable();
-            _cycleAim?.Dispose();
-            _cycleAim = null;
-
-            _cycleScope?.Disable();
-            _cycleScope?.Dispose();
-            _cycleScope = null;
         }
 
         void Update()
@@ -83,16 +62,11 @@ namespace GemTD.Gameplay.Run
             if (_root == null)
                 return;
 
-            // Esc: layer 2 (B-1) close Codex if open; else cancel place / deselect (BTD-style).
+            // Esc: route to HUD for layered close (popup -> Codex -> place/deselect).
             if (_escape != null && _escape.WasPressedThisFrame())
             {
-                if (_root != null && _root.CodexPanelOpen)
-                {
-                    _root.ToggleCodexPanel();
-                    return;
-                }
-                if (HandleCancelLayer())
-                    return;
+                GameEvents.RaiseRequestCloseTopMost();
+                return;
             }
 
             // RMB (GDD): cancel place → else deselect tower / close Tower Details.
