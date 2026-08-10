@@ -182,9 +182,10 @@ namespace GemTD.Gameplay
             }
 
             Instance = this;
-            GameEvents.ClearAll();
 
-            // Classic TD: no tower selected for placement until the build bar (or 1/2/3) is used.
+            // NOTE: do NOT GameEvents.ClearAll() here — UI prefabs subscribe in OnEnable during
+            // scene load, which runs before this Awake. Wiping here silently kills all UI event
+            // subscriptions (speed labels, gold/lives/wave text). OnDestroy handles cleanup.
             _placeDef = null;
 
             Clock = new RunClock();
