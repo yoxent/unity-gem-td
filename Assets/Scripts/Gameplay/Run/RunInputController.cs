@@ -213,8 +213,31 @@ namespace GemTD.Gameplay.Run
                 // Draft / Victory / Defeat: ignored (modal / run-end).
             }
 
-            // C: toggle Codex (Plan + Combat only; ignored in Draft / Victory / Defeat).
-            if (kb.cKey.wasPressedThisFrame && states != null)
+            var ctrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
+            var shift = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+            var planOrCombat = states != null &&
+                (states.Current == RunStateId.Plan || states.Current == RunStateId.Combat);
+
+            if (planOrCombat && _root.HasSelectedTower)
+            {
+                if (ctrl && kb.cKey.wasPressedThisFrame)
+                    _root.CopySelectedTargeting();
+                else if (ctrl && kb.vKey.wasPressedThisFrame)
+                    _root.PasteSelectedTargeting();
+                else if (!ctrl && kb.rKey.wasPressedThisFrame)
+                {
+                    if (shift)
+                    {
+                        if (_root.TryCycleApplyScope(out var needsAllConfirm) && needsAllConfirm)
+                            GameEvents.RaiseRequestTargetingAllConfirm();
+                    }
+                    else
+                        _root.CyclePriority(0);
+                }
+            }
+
+            // C: Codex — skip when Ctrl held (copy). Plan + Combat only.
+            if (!ctrl && kb.cKey.wasPressedThisFrame && states != null)
             {
                 var s = states.Current;
                 if (s == RunStateId.Plan || s == RunStateId.Combat)

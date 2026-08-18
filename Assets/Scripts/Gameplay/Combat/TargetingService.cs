@@ -6,7 +6,7 @@ namespace GemTD.Gameplay.Combat
     public static class TargetingService
     {
         public static void Apply(
-            TargetingMode mode,
+            TargetingRecipe recipe,
             TargetingApplyScope scope,
             TowerRuntime selected,
             List<TowerRuntime> allTowers)
@@ -17,7 +17,7 @@ namespace GemTD.Gameplay.Combat
             switch (scope)
             {
                 case TargetingApplyScope.ThisTower:
-                    selected.TargetingMode = mode;
+                    selected.Targeting = recipe;
                     break;
 
                 case TargetingApplyScope.ThisType:
@@ -26,7 +26,7 @@ namespace GemTD.Gameplay.Combat
                     {
                         var tower = allTowers[i];
                         if (tower != null && ReferenceEquals(tower.Def, selectedDef))
-                            tower.TargetingMode = mode;
+                            tower.Targeting = recipe;
                     }
                     break;
 
@@ -35,7 +35,7 @@ namespace GemTD.Gameplay.Combat
                     {
                         var tower = allTowers[i];
                         if (tower != null)
-                            tower.TargetingMode = mode;
+                            tower.Targeting = recipe;
                     }
                     break;
             }

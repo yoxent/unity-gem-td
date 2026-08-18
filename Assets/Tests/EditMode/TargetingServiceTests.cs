@@ -41,49 +41,79 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Apply_ThisTower_UpdatesSelectedOnly()
         {
-            TargetingService.Apply(TargetingMode.Closest, TargetingApplyScope.ThisTower, _towerA, _allTowers);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostArmor,
+                Priority2 = TargetingKey.MostHpPct,
+                Priority3 = TargetingKey.First
+            };
+            TargetingService.Apply(recipe, TargetingApplyScope.ThisTower, _towerA, _allTowers);
 
-            Assert.AreEqual(TargetingMode.Closest, _towerA.TargetingMode);
-            Assert.AreEqual(TargetingMode.First, _towerB.TargetingMode);
-            Assert.AreEqual(TargetingMode.First, _towerC.TargetingMode);
+            Assert.AreEqual(recipe, _towerA.Targeting);
+            Assert.AreEqual(TargetingRecipe.Default, _towerB.Targeting);
+            Assert.AreEqual(TargetingRecipe.Default, _towerC.Targeting);
         }
 
         [Test]
         public void Apply_ThisType_UpdatesTowersWithSameDef()
         {
-            TargetingService.Apply(TargetingMode.Last, TargetingApplyScope.ThisType, _towerA, _allTowers);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.Last,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            TargetingService.Apply(recipe, TargetingApplyScope.ThisType, _towerA, _allTowers);
 
-            Assert.AreEqual(TargetingMode.Last, _towerA.TargetingMode);
-            Assert.AreEqual(TargetingMode.Last, _towerB.TargetingMode);
-            Assert.AreEqual(TargetingMode.First, _towerC.TargetingMode);
+            Assert.AreEqual(recipe, _towerA.Targeting);
+            Assert.AreEqual(recipe, _towerB.Targeting);
+            Assert.AreEqual(TargetingRecipe.Default, _towerC.Targeting);
         }
 
         [Test]
-        public void Apply_AllTowers_UpdatesEveryTower()
+        public void Apply_AllTowers_WritesAllThreeKeys()
         {
-            TargetingService.Apply(TargetingMode.Strongest, TargetingApplyScope.AllTowers, _towerA, _allTowers);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.Slowest,
+                Priority2 = TargetingKey.MostShield,
+                Priority3 = TargetingKey.Last
+            };
+            TargetingService.Apply(recipe, TargetingApplyScope.AllTowers, _towerA, _allTowers);
 
-            Assert.AreEqual(TargetingMode.Strongest, _towerA.TargetingMode);
-            Assert.AreEqual(TargetingMode.Strongest, _towerB.TargetingMode);
-            Assert.AreEqual(TargetingMode.Strongest, _towerC.TargetingMode);
+            Assert.AreEqual(recipe, _towerA.Targeting);
+            Assert.AreEqual(recipe, _towerB.Targeting);
+            Assert.AreEqual(recipe, _towerC.Targeting);
         }
 
         [Test]
         public void Apply_DoesNothingWhenSelectedNull()
         {
-            TargetingService.Apply(TargetingMode.Closest, TargetingApplyScope.AllTowers, null, _allTowers);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostArmor,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            TargetingService.Apply(recipe, TargetingApplyScope.AllTowers, null, _allTowers);
 
-            Assert.AreEqual(TargetingMode.First, _towerA.TargetingMode);
-            Assert.AreEqual(TargetingMode.First, _towerB.TargetingMode);
-            Assert.AreEqual(TargetingMode.First, _towerC.TargetingMode);
+            Assert.AreEqual(TargetingRecipe.Default, _towerA.Targeting);
+            Assert.AreEqual(TargetingRecipe.Default, _towerB.Targeting);
+            Assert.AreEqual(TargetingRecipe.Default, _towerC.Targeting);
         }
 
         [Test]
         public void Apply_DoesNothingWhenAllTowersNull()
         {
-            TargetingService.Apply(TargetingMode.Closest, TargetingApplyScope.AllTowers, _towerA, null);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostArmor,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            TargetingService.Apply(recipe, TargetingApplyScope.AllTowers, _towerA, null);
 
-            Assert.AreEqual(TargetingMode.First, _towerA.TargetingMode);
+            Assert.AreEqual(TargetingRecipe.Default, _towerA.Targeting);
         }
     }
 }

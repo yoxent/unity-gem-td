@@ -37,11 +37,11 @@ namespace GemTD.Tests.EditMode
 
             var near = new EnemyRuntime();
             near.Init(_def, waypoints);
-            near.TickMove(0.5f); // progress ~0.1
+            near.TickMove(0.5f);
 
             var far = new EnemyRuntime();
             far.Init(_def, waypoints);
-            far.TickMove(2.5f); // progress ~0.5
+            far.TickMove(2.5f);
 
             var towerPos = CellCenter(0, 0);
             var candidates = new List<EnemyRuntime> { near, far };
@@ -87,95 +87,158 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TrySelect_Last_PicksLowestProgressAmongLivingInRange()
+        public void Recipe_MostArmor_ThenMostHpPct_ThenFirst_PicksArmored()
         {
-            var waypoints = BuildWorldWaypoints(
-                new Vector2Int(0, 0),
-                new Vector2Int(10, 0));
+            var tankDef = ScriptableObject.CreateInstance<EnemyDefinition>();
+            tankDef.MaxHealth = 50f;
+            tankDef.Armor = 100;
+            tankDef.MoveSpeed = 2f;
+            var squishDef = ScriptableObject.CreateInstance<EnemyDefinition>();
+            squishDef.MaxHealth = 100f;
+            squishDef.Armor = 0;
+            squishDef.MoveSpeed = 2f;
 
-            var near = new EnemyRuntime();
-            near.Init(_def, waypoints);
-            near.TickMove(0.5f);
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var a = new EnemyRuntime(); a.Init(squishDef, waypoints); a.TickMove(2.5f);
+            var b = new EnemyRuntime(); b.Init(squishDef, waypoints); b.TickMove(0.5f);
+            var tank = new EnemyRuntime(); tank.Init(tankDef, waypoints); tank.TickMove(1f);
 
-            var far = new EnemyRuntime();
-            far.Init(_def, waypoints);
-            far.TickMove(2.5f);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostArmor,
+                Priority2 = TargetingKey.MostHpPct,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { a, b, tank }, out var target));
+            Assert.AreSame(tank, target);
 
-            var towerPos = CellCenter(0, 0);
-            var candidates = new List<EnemyRuntime> { near, far };
+            Object.DestroyImmediate(tankDef);
+            Object.DestroyImmediate(squishDef);
+        }
 
-            Assert.IsTrue(_selector.TrySelect(TargetingMode.Last, towerPos, range: 20f, candidates, out var target));
+        [Test]
+        public void Recipe_MostArmor_AllZeroArmor_FallsThroughToMostHpPct()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            _def.MaxHealth = 100f;
+            _def.Armor = 0;
+            var low = new EnemyRuntime(); low.Init(_def, waypoints); low.ApplyDamage(60f);
+            var high = new EnemyRuntime(); high.Init(_def, waypoints);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostArmor,
+                Priority2 = TargetingKey.MostHpPct,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { low, high }, out var target));
+            Assert.AreSame(high, target);
+        }
+
+        [Test]
+        public void Recipe_EqualHpPct_FallsThroughToFirst()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var near = new EnemyRuntime(); near.Init(_def, waypoints); near.TickMove(0.5f);
+            var far = new EnemyRuntime(); far.Init(_def, waypoints); far.TickMove(2.5f);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostHpPct,
+                Priority2 = TargetingKey.MostHpPct,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { near, far }, out var target));
+            Assert.AreSame(far, target);
+        }
+
+        [Test]
+        public void Recipe_LeastHpPct_PicksDamaged()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var hurt = new EnemyRuntime(); hurt.Init(_def, waypoints); hurt.ApplyDamage(25f);
+            var full = new EnemyRuntime(); full.Init(_def, waypoints);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.LeastHpPct,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { full, hurt }, out var target));
+            Assert.AreSame(hurt, target);
+        }
+
+        [Test]
+        public void Recipe_Fastest_UsesCurrentMoveSpeed()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var slow = new EnemyRuntime(); slow.Init(_def, waypoints); slow.MoveSpeedMultiplier = 0.5f;
+            var fast = new EnemyRuntime(); fast.Init(_def, waypoints); fast.MoveSpeedMultiplier = 1f;
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.Fastest,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { slow, fast }, out var target));
+            Assert.AreSame(fast, target);
+        }
+
+        [Test]
+        public void Recipe_MostShield_PicksHigherShieldHp()
+        {
+            var shieldedDef = ScriptableObject.CreateInstance<EnemyDefinition>();
+            shieldedDef.MaxHealth = 50f;
+            shieldedDef.ShieldMax = 20f;
+            var noneDef = ScriptableObject.CreateInstance<EnemyDefinition>();
+            noneDef.MaxHealth = 50f;
+            noneDef.ShieldMax = 0f;
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var shielded = new EnemyRuntime(); shielded.Init(shieldedDef, waypoints);
+            var none = new EnemyRuntime(); none.Init(noneDef, waypoints);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.MostShield,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { none, shielded }, out var target));
+            Assert.AreSame(shielded, target);
+            Object.DestroyImmediate(shieldedDef);
+            Object.DestroyImmediate(noneDef);
+        }
+
+        [Test]
+        public void Recipe_ZeroMaxHealth_DoesNotThrow()
+        {
+            _def.MaxHealth = 0f;
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var enemy = new EnemyRuntime(); enemy.Init(_def, waypoints);
+            var recipe = TargetingRecipe.Default;
+            recipe.Priority1 = TargetingKey.MostHpPct;
+            Assert.DoesNotThrow(() => _selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { enemy }, out _));
+        }
+
+        [Test]
+        public void TrySelect_Last_UsesRecipe()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var near = new EnemyRuntime(); near.Init(_def, waypoints); near.TickMove(0.5f);
+            var far = new EnemyRuntime(); far.Init(_def, waypoints); far.TickMove(2.5f);
+            var recipe = new TargetingRecipe
+            {
+                Priority1 = TargetingKey.Last,
+                Priority2 = TargetingKey.First,
+                Priority3 = TargetingKey.First
+            };
+            Assert.IsTrue(_selector.TrySelect(recipe, CellCenter(0, 0), 20f,
+                new List<EnemyRuntime> { near, far }, out var target));
             Assert.AreSame(near, target);
-            Assert.Less(near.Progress, far.Progress);
-        }
-
-        [Test]
-        public void TrySelect_Closest_PicksNearestEnemyInRange()
-        {
-            var waypointsNear = BuildWorldWaypoints(
-                new Vector2Int(1, 0),
-                new Vector2Int(10, 0));
-            var waypointsFar = BuildWorldWaypoints(
-                new Vector2Int(5, 0),
-                new Vector2Int(10, 0));
-
-            var closest = new EnemyRuntime();
-            closest.Init(_def, waypointsNear);
-
-            var distant = new EnemyRuntime();
-            distant.Init(_def, waypointsFar);
-
-            var towerPos = CellCenter(0, 0);
-            var candidates = new List<EnemyRuntime> { distant, closest };
-
-            Assert.IsTrue(_selector.TrySelect(TargetingMode.Closest, towerPos, range: 20f, candidates, out var target));
-            Assert.AreSame(closest, target);
-        }
-
-        [Test]
-        public void TrySelect_Strongest_PicksHighestHp()
-        {
-            var waypoints = BuildWorldWaypoints(
-                new Vector2Int(0, 0),
-                new Vector2Int(10, 0));
-
-            var weak = new EnemyRuntime();
-            weak.Init(_def, waypoints);
-            weak.ApplyDamage(25f);
-
-            var strong = new EnemyRuntime();
-            strong.Init(_def, waypoints);
-
-            var towerPos = CellCenter(0, 0);
-            var candidates = new List<EnemyRuntime> { weak, strong };
-
-            Assert.IsTrue(_selector.TrySelect(TargetingMode.Strongest, towerPos, range: 20f, candidates, out var target));
-            Assert.AreSame(strong, target);
-            Assert.Greater(strong.Hp, weak.Hp);
-        }
-
-        [Test]
-        public void TrySelect_Strongest_TieBreaksOnHigherProgress()
-        {
-            var waypoints = BuildWorldWaypoints(
-                new Vector2Int(0, 0),
-                new Vector2Int(10, 0));
-
-            var lowProgress = new EnemyRuntime();
-            lowProgress.Init(_def, waypoints);
-            lowProgress.TickMove(0.5f);
-
-            var highProgress = new EnemyRuntime();
-            highProgress.Init(_def, waypoints);
-            highProgress.TickMove(2.5f);
-
-            var towerPos = CellCenter(0, 0);
-            var candidates = new List<EnemyRuntime> { lowProgress, highProgress };
-
-            Assert.IsTrue(_selector.TrySelect(TargetingMode.Strongest, towerPos, range: 20f, candidates, out var target));
-            Assert.AreSame(highProgress, target);
-            Assert.AreEqual(lowProgress.Hp, highProgress.Hp);
-            Assert.Greater(highProgress.Progress, lowProgress.Progress);
         }
 
         static Vector3 CellCenter(int x, int y)

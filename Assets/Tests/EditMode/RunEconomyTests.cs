@@ -117,6 +117,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(20, config.StartingLives);
             Assert.AreEqual(25, config.EndWaveGold);
             Assert.AreEqual(10, config.InventoryCapacity);
+            Assert.AreEqual(1, config.OpenArmCount);
             Object.DestroyImmediate(config);
         }
 

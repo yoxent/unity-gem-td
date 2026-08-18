@@ -8,8 +8,18 @@ namespace GemTD.Gameplay.Map
     {
         const int CorridorLength = 4;
 
+        // Open-arm order for future difficulty (this pass places the first arm only).
+        static readonly EdgeFlags[] ArmOrder =
+        {
+            EdgeFlags.East,
+            EdgeFlags.South,
+            EdgeFlags.North,
+            EdgeFlags.West
+        };
+
         public static void Build(ChunkGrid grid, ChunkStampService stamp, PathGraph path,
-            GridBoard board, IChunkCatalog catalog, MapChunkStamp landPrefab, System.Random rng)
+            GridBoard board, IChunkCatalog catalog, MapChunkStamp landPrefab, System.Random rng,
+            int openArmCount = 1)
         {
             var keep = new Vector2Int(grid.ChunksW / 2, grid.ChunksH / 2);
 
@@ -17,38 +27,37 @@ namespace GemTD.Gameplay.Map
             var keepRes = stamp.StampTentative(keep, landPrefab, 0, path, board);
             stamp.Commit(keep, landPrefab, 0, keepRes.Mask, grid);
 
-            var dir = RandomCardinal(rng);
-            var offset = OffsetFor(dir);
-            var requiredEdge = dir.Opposite();
+            if (openArmCount < 1) openArmCount = 1;
+            else if (openArmCount > 4) openArmCount = 4;
+            // Single PathGraph.Home: ignore extra arms until multi-home exists.
+            var armsToPlace = openArmCount > 1 ? 1 : openArmCount;
 
             Vector2Int firstCoord = keep;
-            for (var i = 1; i <= CorridorLength; i++)
+            var firstRequiredEdge = ArmOrder[0].Opposite();
+
+            for (var a = 0; a < armsToPlace; a++)
             {
-                var coord = new Vector2Int(keep.x + offset.x * i, keep.y + offset.y * i);
-                if (!grid.InBounds(coord.x, coord.y)) break;
+                var dir = ArmOrder[a];
+                var offset = OffsetFor(dir);
+                var requiredEdge = dir.Opposite();
 
-                var straight = PickStraight(catalog, rng);
-                var yaw = PickYawForEdge(straight, requiredEdge, rng);
-                var res = stamp.StampTentative(coord, straight, yaw, path, board);
-                stamp.Commit(coord, straight, yaw, res.Mask, grid);
+                for (var i = 1; i <= CorridorLength; i++)
+                {
+                    var coord = new Vector2Int(keep.x + offset.x * i, keep.y + offset.y * i);
+                    if (!grid.InBounds(coord.x, coord.y)) break;
 
-                if (i == 1) firstCoord = coord;
+                    var straight = PickStraight(catalog, rng);
+                    var yaw = PickYawForEdge(straight, requiredEdge, rng);
+                    var res = stamp.StampTentative(coord, straight, yaw, path, board);
+                    stamp.Commit(coord, straight, yaw, res.Mask, grid);
+
+                    if (a == 0 && i == 1) firstCoord = coord;
+                }
             }
 
             // Home = gate-sink = middle cell of the first Straight's requiredEdge (touching the keep).
-            var home = EdgeMiddleCell(firstCoord, requiredEdge);
+            var home = EdgeMiddleCell(firstCoord, firstRequiredEdge);
             path.SetHome(home.x, home.y);
-        }
-
-        static EdgeFlags RandomCardinal(System.Random rng)
-        {
-            switch (rng.Next(4))
-            {
-                case 0: return EdgeFlags.North;
-                case 1: return EdgeFlags.East;
-                case 2: return EdgeFlags.South;
-                default: return EdgeFlags.West;
-            }
         }
 
         static Vector2Int OffsetFor(EdgeFlags dir)

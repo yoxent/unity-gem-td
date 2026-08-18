@@ -10,7 +10,7 @@ namespace GemTD.Gameplay.Towers
         public TowerDefinition Def { get; }
         public GemDefinition[] Sockets { get; }
         public float Cooldown { get; set; }
-        public TargetingMode TargetingMode { get; set; }
+        public TargetingRecipe Targeting { get; set; }
         public float OutgoingDamageMultiplier { get; set; }
         public int PurchaseCost { get; }
         public int UpgradeSpend { get; set; }
@@ -24,7 +24,7 @@ namespace GemTD.Gameplay.Towers
             OutgoingDamageMultiplier = 1f;
             var socketCount = def != null && def.SocketCount > 0 ? def.SocketCount : 1;
             Sockets = new GemDefinition[socketCount];
-            TargetingMode = TargetingMode.First;
+            Targeting = TargetingRecipe.Default;
         }
 
         public bool HasSocketedGems

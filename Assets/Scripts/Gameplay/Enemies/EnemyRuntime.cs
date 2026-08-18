@@ -16,6 +16,17 @@ namespace GemTD.Gameplay.Enemies
         public float HopPeriod { get; private set; }
         public float Hp { get; private set; }
         public float ShieldHp { get; private set; }
+        public float MaxHealth => _def != null ? _def.MaxHealth : 0f;
+        public int Armor => _def != null ? _def.Armor : 0;
+        public float CurrentMoveSpeed
+        {
+            get
+            {
+                var baseSpeed = _def != null ? _def.MoveSpeed : 0f;
+                var multiplier = MoveSpeedMultiplier < 0f ? 0f : MoveSpeedMultiplier;
+                return baseSpeed * multiplier;
+            }
+        }
         public float MoveSpeedMultiplier { get; set; }
         public bool IsAlive => _alive;
         public Vector3 WorldPosition { get; private set; }

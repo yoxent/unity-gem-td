@@ -64,31 +64,53 @@ namespace GemTD.Tests.EditMode
             if (_land != null) Object.DestroyImmediate(_land.gameObject);
         }
 
-        [Test] public void Build_PlacesFiveChunks_OneKeepFourStraights()
+        [Test] public void Build_PlacesFiveChunks_KeepPlusFixedEastArm()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, _land, new System.Random(1));
             Assert.AreEqual(5, _grid.Count);
             Assert.IsTrue(_grid.IsOccupied(4, 4)); // keep
+            Assert.IsTrue(_grid.IsOccupied(5, 4));
+            Assert.IsTrue(_grid.IsOccupied(6, 4));
+            Assert.IsTrue(_grid.IsOccupied(7, 4));
+            Assert.IsTrue(_grid.IsOccupied(8, 4));
+            Assert.IsFalse(_grid.IsOccupied(4, 5)); // north empty
+            Assert.IsFalse(_grid.IsOccupied(4, 3)); // south empty
+            Assert.IsFalse(_grid.IsOccupied(3, 4)); // west empty
         }
 
         [Test] public void Build_HomeIsGateSinkCell_FirstStraightInnerMiddle()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, _land, new System.Random(7));
-            var home = _path.Home;
-            Assert.IsTrue(_path.IsPath(home.x, home.y));
+            // East arm, first Straight at (5,4), west-edge middle.
+            Assert.AreEqual(new Vector2Int(25, 22), _path.Home);
+            Assert.IsTrue(_path.IsPath(_path.Home.x, _path.Home.y));
         }
 
         [Test] public void Build_SpawnTipIsOnOuterEdgeOfFourthStraight()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, _land, new System.Random(2));
             var tips = new List<Vector2Int>();
-            Assert.GreaterOrEqual(_path.CollectSpawnTips(tips), 1);
+            Assert.AreEqual(1, _path.CollectSpawnTips(tips));
+            // East arm, fourth Straight at (8,4), east-edge middle.
+            Assert.AreEqual(new Vector2Int(44, 22), tips[0]);
         }
 
         [Test] public void Build_AllTipsReachHome_True()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, _land, new System.Random(3));
             Assert.IsTrue(_path.AllTipsReachHome());
+        }
+
+        [Test]
+        public void Build_OpenArmCountTwo_StillPlacesOnlyEastArm()
+        {
+            StartLayoutBuilder.Build(
+                _grid, _stamp, _path, _board, _catalog, _land, new System.Random(1), 2);
+            Assert.AreEqual(5, _grid.Count);
+            Assert.IsTrue(_grid.IsOccupied(5, 4));
+            Assert.IsTrue(_grid.IsOccupied(8, 4));
+            Assert.IsFalse(_grid.IsOccupied(4, 3)); // south must stay empty this pass
+            Assert.AreEqual(new Vector2Int(25, 22), _path.Home);
         }
     }
 }

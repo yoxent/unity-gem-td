@@ -40,5 +40,17 @@ namespace GemTD.Tests.EditMode
             GameEvents.RaiseEvolutionUnlocked();
             Assert.AreEqual(1, count);
         }
+
+        [Test]
+        public void RequestTargetingAllConfirm_RaisesAndClears()
+        {
+            var count = 0;
+            GameEvents.RequestTargetingAllConfirm += () => count++;
+            GameEvents.RaiseRequestTargetingAllConfirm();
+            Assert.AreEqual(1, count);
+            GameEvents.ClearAll();
+            GameEvents.RaiseRequestTargetingAllConfirm();
+            Assert.AreEqual(1, count);
+        }
     }
 }

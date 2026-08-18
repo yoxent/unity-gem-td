@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.CameraControl.RunCameraController
   pitchDegrees: 40
-  yawDegrees: 225
+  yawDegrees: 315
   yawStepDegrees: 45
   distance: 22
   panSpeed: 40
@@ -228,8 +228,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 48385507}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.13088542, y: 0.8681628, z: -0.3159854, w: -0.35960478}
-  m_LocalPosition: {x: 44.416855, y: 14.141327, z: 44.41686}
+  m_LocalRotation: {x: -0.3159854, y: 0.35960484, z: -0.13088547, w: -0.86816275}
+  m_LocalPosition: {x: 44.416855, y: 14.141327, z: 20.583145}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1407,10 +1407,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: CodexPanel
       objectReference: {fileID: 0}
-    - target: {fileID: 3323455151463498142, guid: f2d6dd9e702dcdb4dbe486878d28fda2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1919,11 +1915,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4172973914656373370, guid: 21ce64b4ed30a3e4c96ad0a4d8bcb542, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4172973914656373370, guid: 21ce64b4ed30a3e4c96ad0a4d8bcb542, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 20
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4172973914656373370, guid: 21ce64b4ed30a3e4c96ad0a4d8bcb542, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -1940,10 +1936,6 @@ PrefabInstance:
     - target: {fileID: 6320378160859574276, guid: 21ce64b4ed30a3e4c96ad0a4d8bcb542, type: 3}
       propertyPath: m_Name
       value: TowerDetailsPanel
-      objectReference: {fileID: 0}
-    - target: {fileID: 6320378160859574276, guid: 21ce64b4ed30a3e4c96ad0a4d8bcb542, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8517723998088587961, guid: 21ce64b4ed30a3e4c96ad0a4d8bcb542, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2057,10 +2049,6 @@ PrefabInstance:
     - target: {fileID: 5368920249656867953, guid: 605a8f770ac46834a84ba87a204be1c8, type: 3}
       propertyPath: m_Name
       value: BuildBar
-      objectReference: {fileID: 0}
-    - target: {fileID: 5368920249656867953, guid: 605a8f770ac46834a84ba87a204be1c8, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5596412413005199749, guid: 605a8f770ac46834a84ba87a204be1c8, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2539,10 +2527,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: DraftPanel
       objectReference: {fileID: 0}
-    - target: {fileID: 7032268563523015392, guid: 99b13b2d0db1c244bbf2214de634c44d, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 7851938090103415881, guid: 99b13b2d0db1c244bbf2214de634c44d, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -2663,10 +2647,6 @@ PrefabInstance:
     - target: {fileID: 898112536679038492, guid: 5e74a87ba2221194a94a65da7920066a, type: 3}
       propertyPath: m_Name
       value: TooltipPanel
-      objectReference: {fileID: 0}
-    - target: {fileID: 898112536679038492, guid: 5e74a87ba2221194a94a65da7920066a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2818356512036135091, guid: 5e74a87ba2221194a94a65da7920066a, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2888,10 +2868,6 @@ PrefabInstance:
     - target: {fileID: 1814185317240765888, guid: 116a3bb9f52b2264d9bf527ff450afb8, type: 3}
       propertyPath: m_Name
       value: InventoryPanel
-      objectReference: {fileID: 0}
-    - target: {fileID: 1814185317240765888, guid: 116a3bb9f52b2264d9bf527ff450afb8, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2312301576143283354, guid: 116a3bb9f52b2264d9bf527ff450afb8, type: 3}
       propertyPath: m_AnchorMax.y

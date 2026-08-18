@@ -143,12 +143,13 @@ namespace GemTD.Gameplay
             _placementGhost?.Hide();
         }
 
-        public TargetingMode SelectedTargetingMode =>
-            HasSelectedTower ? Placement.Selected.TargetingMode : TargetingMode.First;
+        public TargetingRecipe SelectedTargeting =>
+            HasSelectedTower ? Placement.Selected.Targeting : TargetingRecipe.Default;
         public TargetingApplyScope CurrentApplyScope => _applyScope;
 
         TowerDefinition _placeDef;
         TargetingApplyScope _applyScope = TargetingApplyScope.ThisTower;
+        readonly TargetingClipboard _targetingClipboard = new TargetingClipboard();
 
         GridBoard _board;
         PathGraph _path;
@@ -364,7 +365,9 @@ namespace GemTD.Gameplay
             if (chunkBoardView != null)
                 chunkBoardView.Bind(_chunkGrid);
 
-            StartLayoutBuilder.Build(_chunkGrid, _stamp, _path, _board, chunkCatalog, landPrefab, _rng);
+            var openArmCount = runConfig != null ? runConfig.OpenArmCount : 1;
+            StartLayoutBuilder.Build(
+                _chunkGrid, _stamp, _path, _board, chunkCatalog, landPrefab, _rng, openArmCount);
             EnsureHomeMarker();
 
             Economy = new RunEconomy(gold, lives);
@@ -621,19 +624,56 @@ namespace GemTD.Gameplay
             }
         }
 
-        public void CycleTargetingMode()
+        public void CyclePriority(int slot)
         {
             if (!HasSelectedTower)
                 return;
 
             var selected = Placement.Selected;
-            var next = (TargetingMode)(((int)selected.TargetingMode + 1) % 4);
+            var next = selected.Targeting.WithCycled(slot);
             TargetingService.Apply(next, _applyScope, selected, _towers);
         }
 
-        public void CycleTargetingScope()
+        public bool TryCycleApplyScope(out bool needsAllConfirm)
         {
-            _applyScope = (TargetingApplyScope)(((int)_applyScope + 1) % 3);
+            needsAllConfirm = false;
+            if (!HasSelectedTower)
+                return false;
+
+            var next = TargetingScopeRequests.Next(_applyScope);
+            if (TargetingScopeRequests.NeedsAllConfirm(_applyScope, next))
+            {
+                needsAllConfirm = true;
+                return true;
+            }
+
+            SetApplyScope(next);
+            return true;
+        }
+
+        public void SetApplyScope(TargetingApplyScope scope)
+        {
+            _applyScope = scope;
+            if (!HasSelectedTower)
+                return;
+
+            TargetingService.Apply(Placement.Selected.Targeting, _applyScope, Placement.Selected, _towers);
+        }
+
+        public void CopySelectedTargeting()
+        {
+            if (!HasSelectedTower)
+                return;
+
+            _targetingClipboard.Copy(Placement.Selected.Targeting);
+        }
+
+        public void PasteSelectedTargeting()
+        {
+            if (!HasSelectedTower || !_targetingClipboard.TryGet(out var recipe))
+                return;
+
+            TargetingService.Apply(recipe, TargetingApplyScope.ThisTower, Placement.Selected, _towers);
         }
 
         public void SelectTower(TowerView view)

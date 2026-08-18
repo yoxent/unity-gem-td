@@ -16,6 +16,7 @@ namespace GemTD.Core
         public static event Action<bool> PauseChanged;
         public static event Action RequestCloseTopMost;
         public static event Action CodexToggled;
+        public static event Action RequestTargetingAllConfirm;
         public static event Action<Vector2Int> ChunkPlaced;
 
         public static void RaiseGoldChanged(int gold) => GoldChanged?.Invoke(gold);
@@ -27,6 +28,7 @@ namespace GemTD.Core
         public static void RaisePauseChanged(bool paused) => PauseChanged?.Invoke(paused);
         public static void RaiseRequestCloseTopMost() => RequestCloseTopMost?.Invoke();
         public static void RaiseCodexToggled() => CodexToggled?.Invoke();
+        public static void RaiseRequestTargetingAllConfirm() => RequestTargetingAllConfirm?.Invoke();
         public static void RaiseChunkPlaced(Vector2Int coord) => ChunkPlaced?.Invoke(coord);
 
         public static void ClearAll()
@@ -39,6 +41,7 @@ namespace GemTD.Core
             PauseChanged = null;
             RequestCloseTopMost = null;
             CodexToggled = null;
+            RequestTargetingAllConfirm = null;
             ChunkPlaced = null;
         }
     }

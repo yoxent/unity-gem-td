@@ -4,22 +4,21 @@ using GemTD.Gameplay.Enemies;
 
 namespace GemTD.Gameplay.Combat
 {
-    /// <summary>
-    /// Nordhold-style targeting: First, Last, Closest, Strongest among living enemies in range.
-    /// </summary>
     public sealed class TargetSelector
     {
+        const float TieEpsilon = 1e-4f;
+
         public bool TrySelectFirst(
             Vector3 towerPos,
             float range,
             List<EnemyRuntime> candidates,
             out EnemyRuntime target)
         {
-            return TrySelect(TargetingMode.First, towerPos, range, candidates, out target);
+            return TrySelect(TargetingRecipe.Default, towerPos, range, candidates, out target);
         }
 
         public bool TrySelect(
-            TargetingMode mode,
+            TargetingRecipe recipe,
             Vector3 towerPos,
             float range,
             List<EnemyRuntime> candidates,
@@ -30,12 +29,6 @@ namespace GemTD.Gameplay.Combat
                 return false;
 
             var rangeSq = range * range;
-            var bestProgress = mode == TargetingMode.Last
-                ? float.PositiveInfinity
-                : float.NegativeInfinity;
-            var bestDistSq = float.PositiveInfinity;
-            var bestHp = float.NegativeInfinity;
-
             for (var i = 0; i < candidates.Count; i++)
             {
                 var enemy = candidates[i];
@@ -43,49 +36,65 @@ namespace GemTD.Gameplay.Combat
                     continue;
 
                 var delta = enemy.WorldPosition - towerPos;
-                var distSq = delta.sqrMagnitude;
-                if (distSq > rangeSq)
+                if (delta.sqrMagnitude > rangeSq)
                     continue;
 
-                switch (mode)
-                {
-                    case TargetingMode.First:
-                        if (enemy.Progress > bestProgress)
-                        {
-                            bestProgress = enemy.Progress;
-                            target = enemy;
-                        }
-                        break;
-
-                    case TargetingMode.Last:
-                        if (enemy.Progress < bestProgress)
-                        {
-                            bestProgress = enemy.Progress;
-                            target = enemy;
-                        }
-                        break;
-
-                    case TargetingMode.Closest:
-                        if (distSq < bestDistSq)
-                        {
-                            bestDistSq = distSq;
-                            target = enemy;
-                        }
-                        break;
-
-                    case TargetingMode.Strongest:
-                        if (enemy.Hp > bestHp ||
-                            (enemy.Hp == bestHp && enemy.Progress > bestProgress))
-                        {
-                            bestHp = enemy.Hp;
-                            bestProgress = enemy.Progress;
-                            target = enemy;
-                        }
-                        break;
-                }
+                if (target == null || IsBetter(enemy, target, recipe))
+                    target = enemy;
             }
 
             return target != null;
+        }
+
+        static bool IsBetter(EnemyRuntime challenger, EnemyRuntime incumbent, TargetingRecipe recipe)
+        {
+            for (var slot = 0; slot < TargetingRecipe.SlotCount; slot++)
+            {
+                var cmp = CompareKey(recipe.Get(slot), challenger, incumbent);
+                if (cmp > 0) return true;
+                if (cmp < 0) return false;
+            }
+
+            return CompareKey(TargetingKey.First, challenger, incumbent) > 0;
+        }
+
+        static int CompareKey(TargetingKey key, EnemyRuntime a, EnemyRuntime b)
+        {
+            switch (key)
+            {
+                case TargetingKey.Last:
+                    return CompareFloat(b.Progress, a.Progress);
+                case TargetingKey.LeastHpPct:
+                    return CompareFloat(HpPct(b), HpPct(a));
+                case TargetingKey.MostHpPct:
+                    return CompareFloat(HpPct(a), HpPct(b));
+                case TargetingKey.MostArmor:
+                    return a.Armor.CompareTo(b.Armor);
+                case TargetingKey.MostShield:
+                    return CompareFloat(a.ShieldHp, b.ShieldHp);
+                case TargetingKey.Fastest:
+                    return CompareFloat(a.CurrentMoveSpeed, b.CurrentMoveSpeed);
+                case TargetingKey.Slowest:
+                    return CompareFloat(b.CurrentMoveSpeed, a.CurrentMoveSpeed);
+                default:
+                    return CompareFloat(a.Progress, b.Progress);
+            }
+        }
+
+        static float HpPct(EnemyRuntime e)
+        {
+            var max = e.MaxHealth;
+            if (max <= 0f)
+                return 0f;
+            return e.Hp / max;
+        }
+
+        static int CompareFloat(float left, float right)
+        {
+            var d = left - right;
+            if (d > TieEpsilon) return 1;
+            if (d < -TieEpsilon) return -1;
+            return 0;
         }
     }
 }

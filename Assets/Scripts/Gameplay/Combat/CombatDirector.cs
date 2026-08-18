@@ -83,7 +83,7 @@ namespace GemTD.Gameplay.Combat
                     var towerPos = CellToWorld(tower.Cell);
                     var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
                     var range = tower.Def.Range * rangeMul;
-                    if (!_selector.TrySelect(tower.TargetingMode, towerPos, range, living, out var primary))
+                    if (!_selector.TrySelect(tower.Targeting, towerPos, range, living, out var primary))
                         continue;
 
                     var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
