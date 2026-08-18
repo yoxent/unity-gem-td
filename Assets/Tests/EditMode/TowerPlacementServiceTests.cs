@@ -137,6 +137,7 @@ namespace GemTD.Tests.EditMode
             {
                 tower.TrySocket(socketGem, 0, allowSocket: true);
 
+                Assert.IsFalse(_placement.CanSell(tower, RunStateId.Plan, inventory));
                 Assert.IsFalse(_placement.TrySell(tower, RunStateId.Plan, inventory));
                 Assert.AreEqual(50, _economy.Gold);
                 Assert.IsTrue(_placement.IsOccupied(cell));
@@ -145,6 +146,82 @@ namespace GemTD.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(socketGem);
+            }
+        }
+
+        [Test]
+        public void TrySell_AllSocketsFilled_ReturnsEveryGemWhenBagFits()
+        {
+            _ballista.SocketCount = 3;
+            var cell = new Vector2Int(3, 4);
+            var inventory = new GemInventory(3);
+
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out var tower));
+
+            var chain = ScriptableObject.CreateInstance<GemDefinition>();
+            chain.Id = GemId.Chain;
+            var fork = ScriptableObject.CreateInstance<GemDefinition>();
+            fork.Id = GemId.Fork;
+            try
+            {
+                Assert.IsTrue(tower.TrySocket(_lmp, 0, allowSocket: true));
+                Assert.IsTrue(tower.TrySocket(chain, 1, allowSocket: true));
+                Assert.IsTrue(tower.TrySocket(fork, 2, allowSocket: true));
+                Assert.AreEqual(3, tower.Sockets.Length);
+
+                Assert.IsTrue(_placement.CanSell(tower, RunStateId.Plan, inventory));
+                Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, inventory));
+                Assert.AreEqual(75, _economy.Gold);
+                Assert.IsFalse(_placement.IsOccupied(cell));
+                Assert.IsTrue(ContainsGem(inventory, _lmp));
+                Assert.IsTrue(ContainsGem(inventory, chain));
+                Assert.IsTrue(ContainsGem(inventory, fork));
+                Assert.AreEqual(3, inventory.OccupiedCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(chain);
+                Object.DestroyImmediate(fork);
+            }
+        }
+
+        [Test]
+        public void TrySell_AllSocketsFilled_BlockedWhenBagHasTooFewFreeSlots()
+        {
+            _ballista.SocketCount = 3;
+            var cell = new Vector2Int(3, 4);
+            var inventory = new GemInventory(4);
+            inventory.TryAdd(_lmp);
+            inventory.TryAdd(_lmp);
+
+            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, out var tower));
+
+            var chain = ScriptableObject.CreateInstance<GemDefinition>();
+            chain.Id = GemId.Chain;
+            var fork = ScriptableObject.CreateInstance<GemDefinition>();
+            fork.Id = GemId.Fork;
+            var pierce = ScriptableObject.CreateInstance<GemDefinition>();
+            pierce.Id = GemId.Pierce;
+            try
+            {
+                Assert.IsTrue(tower.TrySocket(chain, 0, allowSocket: true));
+                Assert.IsTrue(tower.TrySocket(fork, 1, allowSocket: true));
+                Assert.IsTrue(tower.TrySocket(pierce, 2, allowSocket: true));
+
+                Assert.IsFalse(_placement.CanSell(tower, RunStateId.Plan, inventory));
+                Assert.IsFalse(_placement.TrySell(tower, RunStateId.Plan, inventory));
+                Assert.AreEqual(50, _economy.Gold);
+                Assert.IsTrue(_placement.IsOccupied(cell));
+                Assert.AreSame(chain, tower.Sockets[0]);
+                Assert.AreSame(fork, tower.Sockets[1]);
+                Assert.AreSame(pierce, tower.Sockets[2]);
+                Assert.AreEqual(2, inventory.OccupiedCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(chain);
+                Object.DestroyImmediate(fork);
+                Object.DestroyImmediate(pierce);
             }
         }
 

@@ -17,25 +17,23 @@ namespace GemTD.UI
         GameCompositionRoot _root;
         bool _buttonsBound = false;
 
-        void Start()
+        void Awake()
         {
-            if (panel == null) panel = gameObject;
-
-            for (var i = 0; i < buildButtonsParent.childCount; i++)
+            if (panel == null)
+                Debug.LogError("BuildBarController: assign Panel on the prefab.", this);
+            if (buildButtons == null || buildButtons.Count == 0)
+                Debug.LogError("BuildBarController: assign BuildTowerButton refs on the prefab.", this);
+            else
             {
-                BuildTowerButton buildTowerButton = null;
-                buildButtonsParent.GetChild(i).TryGetComponent(out buildTowerButton);
-
-                if (buildTowerButton != null)
+                for (var i = 0; i < buildButtons.Count; i++)
                 {
                     var idx = i;
-                    buildButtons.Add(buildTowerButton);
-                    buildButtons[i].GetButton().onClick.AddListener(() => _root?.SetPlaceTower(idx));
-                    // Tower name label set in Update once _root resolves.
+                    if (buildButtons[i] != null)
+                        buildButtons[i].GetButton().onClick.AddListener(() => _root?.SetPlaceTower(idx));
                 }
             }
 
-            _buttonsBound = true;
+            _buttonsBound = buildButtons != null && buildButtons.Count > 0;
         }
 
         void Update()

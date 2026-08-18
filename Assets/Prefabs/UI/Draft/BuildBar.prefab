@@ -255,7 +255,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.UI::GemTD.UI.BuildBarController
   panel: {fileID: 5482247862792943633}
   buildButtonsParent: {fileID: 2817660821795022828}
-  buildButtons: []
+  buildButtons:
+  - {fileID: 252150536886152727}
+  - {fileID: 1150872010840404081}
+  - {fileID: 3235840077751356953}
 --- !u!114 &8707853762123230908
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -500,6 +503,17 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 6159520179233868178}
   m_SourcePrefab: {fileID: 100100000, guid: eaeb1452590611848af63215ba15b048, type: 3}
+--- !u!114 &252150536886152727 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1506173690861673490, guid: eaeb1452590611848af63215ba15b048, type: 3}
+  m_PrefabInstance: {fileID: 1700339130394522117}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7294202412734981489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b1c85eef2e84e54c9e05e85133ed615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.BuildTowerButton
 --- !u!224 &4696433198649042915 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6248116054838433254, guid: eaeb1452590611848af63215ba15b048, type: 3}
@@ -630,6 +644,17 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 5175264903110015532}
   m_SourcePrefab: {fileID: 100100000, guid: eaeb1452590611848af63215ba15b048, type: 3}
+--- !u!114 &1150872010840404081 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1506173690861673490, guid: eaeb1452590611848af63215ba15b048, type: 3}
+  m_PrefabInstance: {fileID: 1954481986442472547}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7619334236302785303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b1c85eef2e84e54c9e05e85133ed615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.BuildTowerButton
 --- !u!224 &5596412413005199749 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6248116054838433254, guid: eaeb1452590611848af63215ba15b048, type: 3}
@@ -760,6 +785,17 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 4188057266087891771}
   m_SourcePrefab: {fileID: 100100000, guid: eaeb1452590611848af63215ba15b048, type: 3}
+--- !u!114 &3235840077751356953 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1506173690861673490, guid: eaeb1452590611848af63215ba15b048, type: 3}
+  m_PrefabInstance: {fileID: 4039451333379412491}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5381208408710956415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b1c85eef2e84e54c9e05e85133ed615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.BuildTowerButton
 --- !u!1 &5381208408710956415 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8260418776579774324, guid: eaeb1452590611848af63215ba15b048, type: 3}

@@ -12,7 +12,7 @@ namespace GemTD.Gameplay.Run
             var root = GameCompositionRoot.Instance;
             if (root == null || root.States == null) return;
 
-            var label = $"State: {root.States.Current}   |  HUD Start Wave / click + / place   |  F5 debug advance   |  WASD pan  MMB drag  scroll zoom  Q/E rotate";
+            var label = $"State: {root.States.Current}   |  HUD Start Wave / click + / place   |  F5 debug advance   |  F6 fill bag (sell-block test)   |  WASD pan  MMB drag  scroll zoom  Q/E rotate";
             GUI.Label(new Rect(12f, 12f, 1100f, 28f), label);
         }
     }

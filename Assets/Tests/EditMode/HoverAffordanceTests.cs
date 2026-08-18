@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using GemTD.UI;
 
 namespace GemTD.Tests.EditMode
@@ -9,35 +8,18 @@ namespace GemTD.Tests.EditMode
     public sealed class HoverAffordanceTests
     {
         [Test]
-        public void Bind_AddsEventTrigger_WhenNone()
+        public void Bind_WiresExistingRelays_DoesNotAddComponents()
         {
-            var slotGo = new GameObject("slot", typeof(Image), typeof(Button));
-            var xGo = new GameObject("x");
+            var slotGo = new GameObject("slot", typeof(Image), typeof(Button), typeof(HoverPointerRelay));
+            var xGo = new GameObject("x", typeof(HoverPointerRelay));
             try
             {
-                HoverAffordance.BindXHover(slotGo.GetComponent<Button>(), xGo, () => true);
-                var trigger = slotGo.GetComponent<EventTrigger>();
-                Assert.IsNotNull(trigger);
-                Assert.GreaterOrEqual(trigger.triggers.Count, 2); // enter + exit
-            }
-            finally
-            {
-                Object.DestroyImmediate(slotGo);
-                Object.DestroyImmediate(xGo);
-            }
-        }
-
-        [Test]
-        public void Bind_ReusesExistingEventTrigger()
-        {
-            var slotGo = new GameObject("slot", typeof(Image), typeof(Button));
-            var xGo = new GameObject("x");
-            try
-            {
-                var existing = slotGo.AddComponent<EventTrigger>();
-                HoverAffordance.BindXHover(slotGo.GetComponent<Button>(), xGo, () => true);
-                Assert.AreSame(existing, slotGo.GetComponent<EventTrigger>());
-                Assert.GreaterOrEqual(slotGo.GetComponent<EventTrigger>().triggers.Count, 2);
+                var slotRelay = slotGo.GetComponent<HoverPointerRelay>();
+                var xRelay = xGo.GetComponent<HoverPointerRelay>();
+                HoverAffordance.BindXHover(slotRelay, xRelay, xGo, () => true);
+                Assert.AreEqual(1, slotGo.GetComponents<HoverPointerRelay>().Length);
+                Assert.IsNotNull(slotRelay.OnEnter);
+                Assert.IsNotNull(slotRelay.OnExit);
             }
             finally
             {
@@ -49,17 +31,37 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Bind_HidesXByDefault()
         {
-            var slotGo = new GameObject("slot", typeof(Image), typeof(Button));
-            var xGo = new GameObject("x");
+            var slotGo = new GameObject("slot", typeof(HoverPointerRelay));
+            var xGo = new GameObject("x", typeof(HoverPointerRelay));
             xGo.SetActive(true);
             try
             {
-                HoverAffordance.BindXHover(slotGo.GetComponent<Button>(), xGo, () => true);
+                HoverAffordance.BindXHover(
+                    slotGo.GetComponent<HoverPointerRelay>(),
+                    xGo.GetComponent<HoverPointerRelay>(),
+                    xGo,
+                    () => true);
                 Assert.IsFalse(xGo.activeSelf);
             }
             finally
             {
                 Object.DestroyImmediate(slotGo);
+                Object.DestroyImmediate(xGo);
+            }
+        }
+
+        [Test]
+        public void Bind_NullSlotRelay_DoesNothing()
+        {
+            var xGo = new GameObject("x");
+            xGo.SetActive(true);
+            try
+            {
+                HoverAffordance.BindXHover(null, null, xGo, () => true);
+                Assert.IsTrue(xGo.activeSelf);
+            }
+            finally
+            {
                 Object.DestroyImmediate(xGo);
             }
         }

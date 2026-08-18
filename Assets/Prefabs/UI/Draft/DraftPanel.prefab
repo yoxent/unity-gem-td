@@ -827,7 +827,10 @@ MonoBehaviour:
   panel: {fileID: 3884693520187971811}
   titleText: {fileID: 4003900552396151087}
   draftPicksParent: {fileID: 6612864078163377804}
-  picks: []
+  picks:
+  - {fileID: 6890006228940311719}
+  - {fileID: 2747789208324940490}
+  - {fileID: 3246792975250237079}
   skipButton: {fileID: 6567183161765591998}
   replaceHintText: {fileID: 8651158627604416457}
 --- !u!1001 &1489024951687070346
@@ -959,6 +962,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
+--- !u!114 &2747789208324940490 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3641177839725469760, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
+  m_PrefabInstance: {fileID: 1489024951687070346}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb124ecd3a3bcf84cb94135529eb965b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.DraftPick
 --- !u!224 &6249104869175088134 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4761241079344797324, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
@@ -1104,6 +1118,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
+--- !u!114 &3246792975250237079 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3641177839725469760, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
+  m_PrefabInstance: {fileID: 2271752608946996951}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb124ecd3a3bcf84cb94135529eb965b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.DraftPick
 --- !u!114 &6650174514190068210 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4885500193597681445, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
@@ -1246,3 +1271,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4761241079344797324, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
   m_PrefabInstance: {fileID: 7860531622031600871}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6890006228940311719 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3641177839725469760, guid: 973edf7fd76f6f44d821b8667eed7b5e, type: 3}
+  m_PrefabInstance: {fileID: 7860531622031600871}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb124ecd3a3bcf84cb94135529eb965b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.DraftPick

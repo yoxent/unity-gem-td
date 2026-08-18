@@ -148,6 +148,7 @@ GameObject:
   - component: {fileID: 4195401411404011623}
   - component: {fileID: 5540571429965403617}
   - component: {fileID: 7686866917370272820}
+  - component: {fileID: 5540571429965403703}
   m_Layer: 0
   m_Name: InventoryGemSlot
   m_TagString: Untagged
@@ -190,7 +191,9 @@ MonoBehaviour:
   icon: {fileID: 633197837398192653}
   nameLabel: {fileID: 76827808116609328}
   xButton: {fileID: 1696105195794926267}
-  slotButton: {fileID: 4891703688750081636}
+  slotEvents: {fileID: 5540571429965403701}
+  canvasGroup: {fileID: 5540571429965403703}
+  xHover: {fileID: 5540571429965403702}
 --- !u!114 &7686866917370272820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,6 +220,18 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!225 &5540571429965403703
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4204492734280157760}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7026753591456068069
 GameObject:
   m_ObjectHideFlags: 0
@@ -227,8 +242,8 @@ GameObject:
   m_Component:
   - component: {fileID: 9060092752027301604}
   - component: {fileID: 4985810362003817985}
+  - component: {fileID: 5540571429965403701}
   - component: {fileID: 1943525883663566163}
-  - component: {fileID: 4891703688750081636}
   - component: {fileID: 4555051040446435360}
   m_Layer: 0
   m_Name: Slot
@@ -266,6 +281,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7026753591456068069}
   m_CullTransparentMesh: 1
+--- !u!114 &5540571429965403701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7026753591456068069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 012e94840c018cc43b9e8974525f20fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.SlotEventHandler
+  targetGraphic: {fileID: 1943525883663566163}
+  colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
 --- !u!114 &1943525883663566163
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -296,50 +332,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &4891703688750081636
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7026753591456068069}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 0
-  m_TargetGraphic: {fileID: 1943525883663566163}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &4555051040446435360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -585,6 +577,7 @@ GameObject:
   - component: {fileID: 3630729360262073414}
   - component: {fileID: 2141667496473011196}
   - component: {fileID: 1696105195794926267}
+  - component: {fileID: 5540571429965403702}
   m_Layer: 0
   m_Name: XButton
   m_TagString: Untagged
@@ -694,3 +687,15 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5540571429965403702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8772088764353493470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f2be115d3105bc458a8a3f91f95a517, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.HoverPointerRelay

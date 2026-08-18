@@ -33,6 +33,7 @@ When a suggestion is suboptimal: (1) acknowledge goal (2) why not (3) better opt
 - No `System.Linq` in combat ticks — use `for` / reused lists.
 - Git: feature branch + PR into protected `main` only.
 - Never `git commit` or `git push` unless the user explicitly asks.
+- Same-prefab components: inspector `[SerializeField]` refs. No `AddComponent` / `GetComponent` (incl. children) in `Awake`/`Start` for those. See `gem-td-ui.mdc`.
 
 ## Conventional TD shell (Bloons-first)
 

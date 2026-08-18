@@ -63,6 +63,21 @@ namespace GemTD.Gameplay.Gems
             return false;
         }
 
+        public bool TryAddAt(int index, GemDefinition gem)
+        {
+            if (gem == null)
+                return false;
+
+            if (index < 0 || index >= _slots.Length)
+                return false;
+
+            if (_slots[index] != null)
+                return false;
+
+            _slots[index] = gem;
+            return true;
+        }
+
         public bool TryTake(GemId id, out GemDefinition gem)
         {
             for (var i = 0; i < _slots.Length; i++)
@@ -102,6 +117,29 @@ namespace GemTD.Gameplay.Gems
 
             gem = _slots[index];
             _slots[index] = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Moves a gem from <paramref name="fromIndex"/> to <paramref name="toIndex"/>.
+        /// If <paramref name="toIndex"/> is occupied, swaps the two gems.
+        /// </summary>
+        public bool TryMoveOrSwapAt(int fromIndex, int toIndex)
+        {
+            if (fromIndex == toIndex)
+                return false;
+
+            if (fromIndex < 0 || fromIndex >= _slots.Length
+                || toIndex < 0 || toIndex >= _slots.Length)
+                return false;
+
+            var fromGem = _slots[fromIndex];
+            if (fromGem == null)
+                return false;
+
+            var toGem = _slots[toIndex]; // may be null
+            _slots[fromIndex] = toGem;
+            _slots[toIndex] = fromGem;
             return true;
         }
     }

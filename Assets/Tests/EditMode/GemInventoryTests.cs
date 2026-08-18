@@ -116,6 +116,45 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TryAddAt_AddsToExactIndex()
+        {
+            var inv = new GemInventory(3);
+            Assert.IsTrue(inv.TryAddAt(2, _lmp));
+            Assert.AreSame(_lmp, inv.Slots[2]);
+        }
+
+        [Test]
+        public void TryAddAt_FailsWhenIndexOccupied()
+        {
+            var inv = new GemInventory(2);
+            Assert.IsTrue(inv.TryAddAt(0, _lmp));
+            Assert.IsFalse(inv.TryAddAt(0, _chain));
+            Assert.AreSame(_lmp, inv.Slots[0]);
+        }
+
+        [Test]
+        public void TryMoveOrSwapAt_MovesToEmptySlot()
+        {
+            var inv = new GemInventory(3);
+            inv.Seed(new[] { _lmp });
+
+            Assert.IsTrue(inv.TryMoveOrSwapAt(0, 2));
+            Assert.IsNull(inv.Slots[0]);
+            Assert.AreSame(_lmp, inv.Slots[2]);
+        }
+
+        [Test]
+        public void TryMoveOrSwapAt_SwapsWhenDestinationOccupied()
+        {
+            var inv = new GemInventory(3);
+            inv.Seed(new[] { _lmp, _chain });
+
+            Assert.IsTrue(inv.TryMoveOrSwapAt(0, 1));
+            Assert.AreSame(_chain, inv.Slots[0]);
+            Assert.AreSame(_lmp, inv.Slots[1]);
+        }
+
+        [Test]
         public void TowerRuntime_SocketsLengthMatchesDefSocketCount()
         {
             var tower = new TowerRuntime(new Vector2Int(2, 3), _ballista);

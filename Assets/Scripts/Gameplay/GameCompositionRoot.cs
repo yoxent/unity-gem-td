@@ -63,6 +63,11 @@ namespace GemTD.Gameplay
         public bool SelectedHasSocketedGems =>
             Placement?.Selected != null && Placement.Selected.HasSocketedGems;
 
+        public bool CanSellSelected =>
+            Placement != null
+            && Inventory != null
+            && Placement.CanSell(Placement.Selected, States != null ? States.Current : RunStateId.Boot, Inventory);
+
         public bool SelectedSocketOccupied(int socketIndex)
         {
             var tower = Placement?.Selected;
@@ -177,6 +182,7 @@ namespace GemTD.Gameplay
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
+        InputAction _debugFillBag;
         InputActionMap _debugMap;
         bool _loggedExpandSkip;
         int _nextTipIndex;
@@ -213,6 +219,8 @@ namespace GemTD.Gameplay
             _debugMap = new InputActionMap("RunDebug");
             _debugAdvance = _debugMap.AddAction("AdvancePhase", InputActionType.Button);
             _debugAdvance.AddBinding("<Keyboard>/f5");
+            _debugFillBag = _debugMap.AddAction("FillBag", InputActionType.Button);
+            _debugFillBag.AddBinding("<Keyboard>/f6");
             _debugMap.Enable();
 #endif
         }
@@ -241,6 +249,7 @@ namespace GemTD.Gameplay
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             TryDebugAdvance();
+            TryDebugFillBag();
 #endif
             if (States == null
                 || States.Current == RunStateId.Defeat
@@ -659,7 +668,19 @@ namespace GemTD.Gameplay
 
             if (!Placement.TrySell(selected, States.Current, Inventory))
             {
-                Debug.Log($"[GemTD] Sell rejected (phase={States.Current})");
+                var gemCount = 0;
+                for (var s = 0; s < selected.Sockets.Length; s++)
+                {
+                    if (selected.Sockets[s] != null)
+                        gemCount++;
+                }
+
+                var bagBlocked = States.Current == RunStateId.Plan
+                                 && Inventory != null
+                                 && gemCount > Inventory.FreeSlotCount;
+                Debug.Log(bagBlocked
+                    ? "[GemTD] Sell blocked — inventory cannot fit socketed gems (discard first)."
+                    : $"[GemTD] Sell rejected (phase={States.Current})");
                 return;
             }
 
@@ -752,7 +773,14 @@ namespace GemTD.Gameplay
 
             if (!socketed)
             {
-                Inventory.TryAdd(gem);
+                // Important: keep the gem in its original inventory index.
+                // If we fall back to TryAdd(), GemInventory picks the first empty slot,
+                // which looks like the gem "teleports" when a tower has fewer sockets.
+                if (!Inventory.TryAddAt(inventoryIndex, gem))
+                {
+                    // Defensive fallback: should not happen because we just removed from this index.
+                    Inventory.TryAdd(gem);
+                }
                 Debug.Log($"[GemTD] Could not socket {gem.DisplayName} (full sockets or duplicate GemId).");
                 return;
             }
@@ -838,6 +866,21 @@ namespace GemTD.Gameplay
                 return;
 
             Debug.Log($"[GemTD] Discarded {discarded.DisplayName} from inventory slot {inventoryIndex}.");
+        }
+
+        /// <summary>
+        /// Plan-only: drag/drop reorders inventory gems. If destination is empty it moves,
+        /// if occupied it swaps.
+        /// </summary>
+        public void RequestMoveOrSwapInventoryAt(int fromIndex, int toIndex)
+        {
+            if (Inventory == null)
+                return;
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
+                return;
+
+            if (!Inventory.TryMoveOrSwapAt(fromIndex, toIndex))
+                return;
         }
 
         /// <summary>
@@ -1122,6 +1165,54 @@ namespace GemTD.Gameplay
                     States.WaveCleared(offerDraft: false);
                     break;
             }
+        }
+
+        void TryDebugFillBag()
+        {
+            if (_debugFillBag == null || !_debugFillBag.WasPressedThisFrame())
+                return;
+            if (Inventory == null)
+                return;
+
+            var filler = ResolveDebugFillGem();
+            if (filler == null)
+            {
+                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or draftPool.");
+                return;
+            }
+
+            var added = 0;
+            while (Inventory.FreeSlotCount > 0)
+            {
+                if (!Inventory.TryAdd(filler))
+                    break;
+                added++;
+            }
+
+            Debug.Log($"[GemTD] F6 filled {added} bag slot(s) with {filler.DisplayName}. Free={Inventory.FreeSlotCount}.");
+        }
+
+        GemDefinition ResolveDebugFillGem()
+        {
+            if (runConfig != null && runConfig.SeedGems != null)
+            {
+                for (var i = 0; i < runConfig.SeedGems.Length; i++)
+                {
+                    if (runConfig.SeedGems[i] != null)
+                        return runConfig.SeedGems[i];
+                }
+            }
+
+            if (draftPool != null)
+            {
+                for (var i = 0; i < draftPool.Length; i++)
+                {
+                    if (draftPool[i] != null)
+                        return draftPool[i];
+                }
+            }
+
+            return null;
         }
 #endif
     }

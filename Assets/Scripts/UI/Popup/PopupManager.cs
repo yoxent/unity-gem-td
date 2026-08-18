@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using GemTD.Core;
+using GemTD.Gameplay;
 
 namespace GemTD.UI
 {
@@ -37,6 +38,13 @@ namespace GemTD.UI
             if (yesButton != null) yesButton.onClick.AddListener(OnYesClicked);
             if (noButton != null) noButton.onClick.AddListener(OnNoClicked);
             if (rootPanel != null) rootPanel.SetActive(false);
+
+            // Late-wired: UI asmdef depends on GemTD.Gameplay, but gameplay should not depend on UI.
+            // This keeps popup pause-for-fairness working without requiring explicit Init wiring.
+            if (_speed == null && GameCompositionRoot.Instance != null)
+            {
+                _speed = GameCompositionRoot.Instance.Speed;
+            }
         }
 
         public void ShowConfirm(string id, string title, string body, Action onConfirm,

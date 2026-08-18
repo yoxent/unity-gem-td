@@ -23,29 +23,26 @@ namespace GemTD.UI
         bool _replacePopupShown;
         bool _buttonsBound = false;
 
-        void Start()
+        void Awake()
         {
-            picks.Clear();
-
-            if (panel == null) panel = gameObject;
-
-            for (var i = 0; i < draftPicksParent.childCount; i++)
+            if (panel == null)
+                Debug.LogError("DraftController: assign Panel on the prefab.", this);
+            if (picks == null || picks.Count == 0)
+                Debug.LogError("DraftController: assign DraftPick refs on the prefab.", this);
+            else
             {
-                DraftPick draftPick = null;
-                draftPicksParent.GetChild(i).TryGetComponent(out draftPick);
-
-                if (draftPick != null)
+                for (var i = 0; i < picks.Count; i++)
                 {
                     var idx = i;
-                    picks.Add(draftPick);
-                    picks[i].GetButton().onClick.AddListener(() => _root?.RequestDraftPick(idx));
+                    if (picks[i] != null)
+                        picks[i].GetButton().onClick.AddListener(() => _root?.RequestDraftPick(idx));
                 }
             }
 
             if (skipButton != null) skipButton.onClick.AddListener(() => _root?.RequestDraftSkip());
             if (replaceHintText != null) replaceHintText.gameObject.SetActive(false);
 
-            _buttonsBound = true;
+            _buttonsBound = picks != null && picks.Count > 0;
         }
 
         void Update()

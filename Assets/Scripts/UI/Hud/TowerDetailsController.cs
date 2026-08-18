@@ -42,7 +42,8 @@ namespace GemTD.UI
             if (detailsText != null) detailsText.text = _root.BuildSelectedTowerDetailsText();
 
             var plan = _root.States != null && _root.States.Current == RunStateId.Plan;
-            if (sellButton != null) sellButton.interactable = plan && _root.HasSelectedTower;
+            if (sellButton != null)
+                sellButton.gameObject.SetActive(plan);
 
             var tower = _root.Placement?.Selected;
             for (var i = 0; i < socketSlots.Length; i++)
@@ -58,13 +59,29 @@ namespace GemTD.UI
             if (_root == null || !_root.HasSelectedTower) return;
 
             var popup = FindFirstObjectByType<PopupManager>(FindObjectsInactive.Include);
-            if (popup == null) { _root.RequestSellSelected(); return; }
+
+            if (!_root.CanSellSelected)
+            {
+                if (popup != null)
+                {
+                    popup.ShowInfo(
+                        title: "Can't sell",
+                        body: "Inventory cannot fit this tower's socketed gems. Discard gems first.");
+                }
+                return;
+            }
+
+            if (popup == null)
+            {
+                _root.RequestSellSelected();
+                return;
+            }
 
             popup.ShowConfirmOnceSuppressed(
                 id: "SellConfirm",
                 title: "Sell tower?",
                 body: _root.SelectedHasSocketedGems
-                    ? "This tower has a socketed gem; selling unsockets it back to your inventory. 50% refund."
+                    ? "Socketed gems return to inventory. 50% refund of purchase + upgrade spend."
                     : "50% refund of purchase + upgrade spend.",
                 onConfirm: () => _root.RequestSellSelected(),
                 pauseForFairness: false,

@@ -65,7 +65,7 @@ namespace GemTD.Gameplay.Towers
             return true;
         }
 
-        public bool TrySell(TowerRuntime tower, RunStateId phase, GemInventory inventory)
+        public bool CanSell(TowerRuntime tower, RunStateId phase, GemInventory inventory)
         {
             if (tower == null || inventory == null)
                 return false;
@@ -73,23 +73,27 @@ namespace GemTD.Gameplay.Towers
             if (phase != RunStateId.Plan)
                 return false;
 
-            var gemCount = 0;
-            for (var i = 0; i < tower.Sockets.Length; i++)
-            {
-                if (tower.Sockets[i] != null)
-                    gemCount++;
-            }
+            return CountSocketedGems(tower) <= inventory.FreeSlotCount;
+        }
 
-            if (gemCount > inventory.FreeSlotCount)
+        public bool TrySell(TowerRuntime tower, RunStateId phase, GemInventory inventory)
+        {
+            if (!CanSell(tower, phase, inventory))
                 return false;
 
-            _economy.AddGold(RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend));
-
             for (var i = 0; i < tower.Sockets.Length; i++)
             {
-                if (tower.TryUnsocket(i, out var gem, allowSocket: true))
-                    inventory.TryAdd(gem);
+                if (!tower.TryUnsocket(i, out var gem, allowSocket: true))
+                    continue;
+
+                if (inventory.TryAdd(gem))
+                    continue;
+
+                tower.TrySocket(gem, i, allowSocket: true);
+                return false;
             }
+
+            _economy.AddGold(RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend));
 
             var cell = tower.Cell;
             _occupied.Remove(cell);
@@ -98,6 +102,18 @@ namespace GemTD.Gameplay.Towers
                 Selected = null;
 
             return true;
+        }
+
+        static int CountSocketedGems(TowerRuntime tower)
+        {
+            var gemCount = 0;
+            for (var i = 0; i < tower.Sockets.Length; i++)
+            {
+                if (tower.Sockets[i] != null)
+                    gemCount++;
+            }
+
+            return gemCount;
         }
     }
 }

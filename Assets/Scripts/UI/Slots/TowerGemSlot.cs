@@ -13,6 +13,8 @@ namespace GemTD.UI
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] Button xButton;
         [SerializeField] Button slotButton;
+        [SerializeField] HoverPointerRelay slotHover;
+        [SerializeField] HoverPointerRelay xHover;
 
         GameCompositionRoot _root;
         int _socketIndex = -1;
@@ -22,10 +24,20 @@ namespace GemTD.UI
 
         void Awake()
         {
-            if (xButton != null) xButton.onClick.AddListener(OnXClicked);
-            if (slotButton != null)
-                HoverAffordance.BindXHover(slotButton, xButton != null ? xButton.gameObject : null,
-                    () => _root != null && _root.SelectedSocketLockRemaining <= 0f && _gem != null);
+            if (xButton != null)
+                xButton.onClick.AddListener(OnXClicked);
+
+            if (slotHover == null)
+            {
+                Debug.LogError("TowerGemSlot: assign Slot Hover (HoverPointerRelay) on the prefab.", this);
+                return;
+            }
+
+            HoverAffordance.BindXHover(
+                slotHover,
+                xHover,
+                xButton != null ? xButton.gameObject : null,
+                () => _root != null && _root.SelectedSocketLockRemaining <= 0f && _gem != null);
         }
 
         public void Configure(GameCompositionRoot root, int socketIndex, GemDefinition gem)

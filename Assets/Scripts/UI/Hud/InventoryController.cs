@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
@@ -21,24 +20,13 @@ namespace GemTD.UI
         bool _buttonsBound;
         string _lastSignature;
 
-        void Start()
+        void Awake()
         {
-            if (panel == null) panel = gameObject;
-
-            for (var i = 0; i < inventorySlot.childCount; i++)
-            {
-                InventoryGemSlot gemslot = null;
-                inventorySlot.transform.GetChild(i).TryGetComponent(out gemslot);
-
-                if (gemslot != null)
-                {
-                    var idx = i;
-                    slots.Add(gemslot);
-                    slots[i].GetButton().onClick.AddListener(() => OnSlotClicked(idx));
-                }
-            }
-
-            _buttonsBound = true;
+            if (panel == null)
+                Debug.LogError("InventoryController: assign Panel on the prefab.", this);
+            if (slots == null || slots.Count == 0)
+                Debug.LogError("InventoryController: assign InventoryGemSlot refs on the prefab.", this);
+            _buttonsBound = slots != null && slots.Count > 0;
         }
 
         void Update()
@@ -88,25 +76,9 @@ namespace GemTD.UI
 
                 slots[i].Configure(_root, _popup, i, gem);
 
-                var btn = slots[i].SlotButton;
-
-                if (btn != null)
-                {
-                    var filled = gem != null;
-                    btn.interactable = filled && (canSocket || replacePick || inPlan);
-                    var img = btn.GetComponent<Image>();
-                    if (img != null)
-                        img.color = filled ? new Color(0.28f, 0.42f, 0.32f, 1f) : new Color(0.16f, 0.17f, 0.2f, 1f);
-                }
+                var filled = gem != null;
+                slots[i].SetPointerInteractable(filled && (canSocket || replacePick || inPlan));
             }
-        }
-
-        void OnSlotClicked(int index)
-        {
-            if (_root == null) return;
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            var shift = kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed);
-            _root.RequestInventorySlotClick(index, shift);
         }
     }
 }
