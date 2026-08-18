@@ -159,8 +159,8 @@ MonoBehaviour:
   mousePanSpeed: 0.02
   zoomSpeed: 4
   minOrthoSize: 4
-  maxOrthoSize: 10
-  focus: {x: 4, y: 0, z: 4}
+  focus: {x: 32.5, y: 0, z: 32.5}
+  maxOrthoSize: 18
 --- !u!81 &48385509
 AudioListener:
   m_ObjectHideFlags: 0
@@ -204,7 +204,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 8
+  orthographic size: 12
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -229,7 +229,7 @@ Transform:
   m_GameObject: {fileID: 48385507}
   serializedVersion: 2
   m_LocalRotation: {x: 0.3159854, y: 0.3596048, z: -0.13088545, w: 0.86816275}
-  m_LocalPosition: {x: -7.916856, y: 14.141327, z: -7.916856}
+  m_LocalPosition: {x: 15.583144, y: 14.141327, z: 15.583144}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -505,13 +505,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 32ec5286f68b693498cda05a44714e22, type: 2}
   - {fileID: 11400000, guid: 6215bb12aa862d946924f84a63c0b182, type: 2}
   codexCatalog: {fileID: 11400000, guid: ba6e968f6809e404c9aaf73ca92d32f7, type: 2}
-  gridView: {fileID: 1395327583}
+  chunkCatalog: {fileID: 11400000, guid: 023e5156a863e5a438aef101044e8367, type: 2}
+  chunkBoardView: {fileID: 1395327585}
   inputController: {fileID: 484406977}
   poolRoot: {fileID: 1924562253}
   enemyPrefab: {fileID: 8983046479639338321, guid: a951088e0b66e4443bf4b325ca038906, type: 3}
   projectilePrefab: {fileID: 6558561485013009353, guid: ee4ea4938fb83aa499bb230b52583eb0, type: 3}
   towerPrefab: {fileID: 5918877022978656449, guid: 8d8f34f2e4fb8c6479b74953fde4bd78, type: 3}
-  expandMarkerPrefab: {fileID: 991969025749414361, guid: 0a8a88d584daa5d4589ce4e5bcc8dcce, type: 3}
+  expandMarkerPrefab: {fileID: 6145271686858662982, guid: 653b1367dd70ecb4ea08b08af6fec6f7, type: 3}
+  landPrefab: {fileID: 5160771917499768149, guid: 39b17f0a331394e418132259f2d5ca1c, type: 3}
   projectileSpeed: 20
 --- !u!4 &484406976
 Transform:
@@ -707,6 +709,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1395327584}
   - component: {fileID: 1395327583}
+  - component: {fileID: 1395327585}
   m_Layer: 0
   m_Name: GridRoot
   m_TagString: Untagged
@@ -726,9 +729,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 203b28b07de01524593d09c9d1fba492, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Grid.GridBoardView
-  cellSize: 1
-  tileMaterial: {fileID: 2100000, guid: 7e0a720ee972fd9488ab4e236df11c1d, type: 2}
-  pathMaterial: {fileID: 2100000, guid: 0402be9d30af2d84296616793b53195f, type: 2}
 --- !u!4 &1395327584
 Transform:
   m_ObjectHideFlags: 0
@@ -744,6 +744,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1395327585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1395327582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c66d95e8cc7e045a58c12c5ada56cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Map.ChunkBoardView
+  cellSize: 1
+  chunkParent: {fileID: 0}
 --- !u!224 &1684093073 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6568137612445742015, guid: 99b13b2d0db1c244bbf2214de634c44d, type: 3}

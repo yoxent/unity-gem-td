@@ -18,8 +18,8 @@ namespace GemTD.Gameplay.CameraControl
         [SerializeField] float mousePanSpeed = 0.02f;
         [SerializeField] float zoomSpeed = 4f;
         [SerializeField] float minOrthoSize = 4f;
-        [SerializeField] float maxOrthoSize = 10f;
-        [SerializeField] Vector3 focus = new Vector3(4f, 0f, 4f);
+        [SerializeField] Vector3 focus = new Vector3(32.5f, 0f, 32.5f);
+        [SerializeField] float maxOrthoSize = 18f;
 
         Camera _camera;
         InputAction _move;

@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace GemTD.Core
 {
@@ -15,6 +16,7 @@ namespace GemTD.Core
         public static event Action<bool> PauseChanged;
         public static event Action RequestCloseTopMost;
         public static event Action CodexToggled;
+        public static event Action<Vector2Int> ChunkPlaced;
 
         public static void RaiseGoldChanged(int gold) => GoldChanged?.Invoke(gold);
         public static void RaiseLivesChanged(int lives) => LivesChanged?.Invoke(lives);
@@ -25,6 +27,7 @@ namespace GemTD.Core
         public static void RaisePauseChanged(bool paused) => PauseChanged?.Invoke(paused);
         public static void RaiseRequestCloseTopMost() => RequestCloseTopMost?.Invoke();
         public static void RaiseCodexToggled() => CodexToggled?.Invoke();
+        public static void RaiseChunkPlaced(Vector2Int coord) => ChunkPlaced?.Invoke(coord);
 
         public static void ClearAll()
         {
@@ -36,6 +39,7 @@ namespace GemTD.Core
             PauseChanged = null;
             RequestCloseTopMost = null;
             CodexToggled = null;
+            ChunkPlaced = null;
         }
     }
 }

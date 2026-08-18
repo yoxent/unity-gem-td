@@ -28,9 +28,10 @@ namespace GemTD.Gameplay
         [SerializeField] WaveDefinition[] waves;
         [SerializeField] GemDefinition[] draftPool;
         [SerializeField] CodexCatalog codexCatalog;
+        [SerializeField] ChunkCatalog chunkCatalog;
 
         [Header("Scene")]
-        [SerializeField] GridBoardView gridView;
+        [SerializeField] ChunkBoardView chunkBoardView;
         [SerializeField] RunInputController inputController;
         [SerializeField] Transform poolRoot;
 
@@ -39,6 +40,7 @@ namespace GemTD.Gameplay
         [SerializeField] ProjectileView projectilePrefab;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] ExpandMarkerView expandMarkerPrefab;
+        [SerializeField] MapChunkStamp landPrefab;
 
         [Header("Tuning")]
         [SerializeField] float projectileSpeed = 20f;
@@ -144,7 +146,10 @@ namespace GemTD.Gameplay
 
         GridBoard _board;
         PathGraph _path;
-        MapExpandService _expand;
+        ChunkExpandService _expand;
+        ChunkGrid _chunkGrid;
+        ChunkStampService _stamp;
+        System.Random _rng;
         EnemyRegistry _registry;
         CombatDirector _combat;
         BeaconAuraSystem _beaconAura;
@@ -158,7 +163,8 @@ namespace GemTD.Gameplay
         readonly List<EnemyView> _enemyViews = new List<EnemyView>(32);
         readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
         readonly List<ExpandMarkerView> _markers = new List<ExpandMarkerView>(16);
-        readonly List<Vector2Int> _legalExpands = new List<Vector2Int>(16);
+        readonly List<Vector2Int> _legalChunks = new List<Vector2Int>(16);
+        readonly HashSet<Vector2Int> _legalChunkSet = new HashSet<Vector2Int>();
         readonly List<Vector2Int> _polylineCells = new List<Vector2Int>(16);
         readonly List<Vector3> _polylineWorld = new List<Vector3>(16);
         readonly List<Vector2Int> _spawnTips = new List<Vector2Int>(8);
@@ -166,6 +172,7 @@ namespace GemTD.Gameplay
 
         ViewObjectPool<EnemyView> _enemyPool;
         ViewObjectPool<ProjectileView> _projectilePool;
+        ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
         InputActionMap _debugMap;
@@ -245,7 +252,7 @@ namespace GemTD.Gameplay
 
                 if (States.Current == RunStateId.Combat)
                 {
-                    var cellSize = gridView != null ? gridView.CellSize : 1f;
+                    var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
                     _beaconAura?.Tick(_towers, _registry, cellSize);
                     if (_statuses != null && _registry != null)
                     {
@@ -278,7 +285,7 @@ namespace GemTD.Gameplay
         /// <summary>Bloons-style ghost: snap to hovered tile while a build type is armed.</summary>
         public void TickPlacementGhost()
         {
-            if (!HasPlaceTowerSelected || gridView == null || Placement == null || States == null)
+            if (!HasPlaceTowerSelected || chunkBoardView == null || Placement == null || States == null)
             {
                 _placementGhost?.Hide();
                 return;
@@ -314,11 +321,11 @@ namespace GemTD.Gameplay
             }
 
             var world = ray.GetPoint(enter);
-            var cell = gridView.WorldToCell(world);
+            var cell = chunkBoardView.WorldToCell(world);
             var valid = Placement.CanPlace(_placeDef, cell, phase);
             var range = _placeDef != null ? _placeDef.Range : 3f;
             _placementGhost.SetRange(range);
-            _placementGhost.ShowAt(gridView.CellToWorld(cell), valid);
+            _placementGhost.ShowAt(chunkBoardView.CellToWorld(cell), valid);
         }
 
         void BootstrapServices()
@@ -327,18 +334,21 @@ namespace GemTD.Gameplay
             var lives = runConfig != null ? runConfig.StartingLives : 20;
             var endWaveGold = runConfig != null ? runConfig.EndWaveGold : 25;
 
-            _board = new GridBoard(8, 8);
-            _path = new PathGraph(8, 8);
+            const int ChunksW = 13;
+            const int ChunksH = 13;
+            var cellW = ChunksW * ChunkMask.Size;
+            var cellH = ChunksH * ChunkMask.Size;
+            _board = new GridBoard(cellW, cellH);
+            _path = new PathGraph(cellW, cellH);
             _path.BindBoard(_board);
-            _path.SetHome(0, 3);
-            for (var x = 0; x <= 7; x++)
-                _path.SetPathTile(x, 3, true);
+            _chunkGrid = new ChunkGrid(ChunksW, ChunksH);
+            _stamp = new ChunkStampService();
+            _rng = new System.Random();
 
-            if (gridView != null)
-            {
-                gridView.Bind(_board, _path);
-            }
+            if (chunkBoardView != null)
+                chunkBoardView.Bind(_chunkGrid);
 
+            StartLayoutBuilder.Build(_chunkGrid, _stamp, _path, _board, chunkCatalog, landPrefab, _rng);
             EnsureHomeMarker();
 
             Economy = new RunEconomy(gold, lives);
@@ -356,10 +366,10 @@ namespace GemTD.Gameplay
             Codex = new CodexProgress(new JsonFileCodexStore());
             _statuses = new StatusRuntime();
 
-            _expand = new MapExpandService(_path, _board);
-            Placement = new TowerPlacementService(_board, _path, _expand, Economy);
+            _expand = new ChunkExpandService(_chunkGrid, _path, _board, _stamp, chunkCatalog, _rng);
+            Placement = new TowerPlacementService(_board, _path, Economy);
             _registry = new EnemyRegistry();
-            var cellSize = gridView != null ? gridView.CellSize : 1f;
+            var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
             _combat = new CombatDirector(cellSize, projectileSpeed);
             _beaconAura = new BeaconAuraSystem();
             _pipeline = new GemModifierPipeline();
@@ -382,6 +392,8 @@ namespace GemTD.Gameplay
                 _enemyPool = new ViewObjectPool<EnemyView>(enemyPrefab, parent);
             if (projectilePrefab != null)
                 _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, parent);
+            if (expandMarkerPrefab != null)
+                _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
         }
 
         void OnStateChanged(RunStateId prev, RunStateId next)
@@ -448,13 +460,16 @@ namespace GemTD.Gameplay
         void RefreshExpandMarkers()
         {
             ClearExpandMarkers();
-            if (_expand == null || expandMarkerPrefab == null || gridView == null)
+            if (_expand == null || _markerPool == null || chunkBoardView == null)
                 return;
 
             if (States.Current != RunStateId.Plan || States.ExpandSatisfiedThisCycle)
                 return;
 
-            var count = _expand.CollectLegalExpands(_legalExpands);
+            var count = _expand.CollectLegalExpands(_legalChunks);
+            _legalChunkSet.Clear();
+            for (var i = 0; i < _legalChunks.Count; i++) _legalChunkSet.Add(_legalChunks[i]);
+
             if (count == 0)
             {
                 if (!_loggedExpandSkip)
@@ -466,11 +481,12 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            for (var i = 0; i < _legalExpands.Count; i++)
+            var chunkWorldSize = ChunkMask.Size * chunkBoardView.CellSize;
+            for (var i = 0; i < _legalChunks.Count; i++)
             {
-                var cell = _legalExpands[i];
-                var marker = Instantiate(expandMarkerPrefab, transform);
-                marker.Bind(cell, gridView.CellToWorld(cell));
+                var coord = _legalChunks[i];
+                var marker = _markerPool.Get();
+                marker.Bind(coord, chunkBoardView.ChunkCenterWorld(coord), chunkWorldSize);
                 _markers.Add(marker);
             }
         }
@@ -479,24 +495,40 @@ namespace GemTD.Gameplay
         {
             for (var i = 0; i < _markers.Count; i++)
             {
-                if (_markers[i] != null)
-                    Destroy(_markers[i].gameObject);
+                if (_markers[i] != null && _markerPool != null)
+                    _markerPool.Release(_markers[i]);
             }
             _markers.Clear();
         }
 
-        public bool TryConfirmExpand(Vector2Int cell)
+        public bool TryChunkExpandAtWorld(Vector3 world)
+        {
+            if (chunkBoardView == null) return false;
+            var cell = chunkBoardView.WorldToCell(world);
+            var coord = new Vector2Int(
+                Mathf.FloorToInt(cell.x / (float)ChunkMask.Size),
+                Mathf.FloorToInt(cell.y / (float)ChunkMask.Size));
+            return TryConfirmChunkExpand(coord);
+        }
+
+        public bool TryConfirmChunkExpand(Vector2Int coord)
         {
             if (States.Current != RunStateId.Plan || States.ExpandSatisfiedThisCycle)
                 return false;
 
-            if (!_expand.TryExpand(cell))
+            if (!_legalChunkSet.Contains(coord))
             {
-                Debug.Log($"[GemTD] Expand rejected at {cell}");
+                Debug.Log($"[GemTD] Expand rejected at chunk {coord} (not in legal set).");
                 return false;
             }
 
-            gridView?.SetPath(_path);
+            if (!_expand.TryExpand(coord))
+            {
+                Debug.Log($"[GemTD] Expand rejected at chunk {coord}");
+                return false;
+            }
+
+            // ChunkBoardView self-updates via ChunkPlaced event — no explicit SetPath call.
             ClearExpandMarkers();
             States.NotifyExpandDone();
             return true;
@@ -504,14 +536,14 @@ namespace GemTD.Gameplay
 
         public void TryPlaceAtWorld(Vector3 world, bool keepPlacementSelected = false)
         {
-            if (gridView == null || _placeDef == null || Placement == null)
+            if (chunkBoardView == null || _placeDef == null || Placement == null)
                 return;
 
             var phase = States.Current;
             if (phase != RunStateId.Plan && phase != RunStateId.Combat)
                 return;
 
-            var cell = gridView.WorldToCell(world);
+            var cell = chunkBoardView.WorldToCell(world);
             if (!Placement.TryPlace(_placeDef, cell, phase, out var tower))
             {
                 Debug.Log($"[GemTD] Place rejected at {cell} (phase={phase}, gold={Economy.Gold})");
@@ -522,7 +554,7 @@ namespace GemTD.Gameplay
             if (towerPrefab != null)
             {
                 var view = Instantiate(towerPrefab, transform);
-                view.Bind(tower, gridView.CellToWorld(cell));
+                view.Bind(tower, chunkBoardView.CellToWorld(cell));
                 _towerViews.Add(view);
             }
 
@@ -869,7 +901,7 @@ namespace GemTD.Gameplay
 
         void SpawnEnemy(EnemyDefinition def)
         {
-            if (def == null || gridView == null || _path == null)
+            if (def == null || chunkBoardView == null || _path == null)
                 return;
 
             _path.CollectSpawnTips(_spawnTips);
@@ -886,7 +918,7 @@ namespace GemTD.Gameplay
 
             _polylineWorld.Clear();
             for (var i = 0; i < _polylineCells.Count; i++)
-                _polylineWorld.Add(gridView.CellToWorld(_polylineCells[i]));
+                _polylineWorld.Add(chunkBoardView.CellToWorld(_polylineCells[i]));
 
             var runtime = new EnemyRuntime();
             runtime.Init(def, _polylineWorld);
@@ -1009,7 +1041,7 @@ namespace GemTD.Gameplay
 
         void EnsureHomeMarker()
         {
-            if (gridView == null || _path == null)
+            if (chunkBoardView == null || _path == null)
                 return;
 
             if (_homeMarker == null)
@@ -1035,7 +1067,7 @@ namespace GemTD.Gameplay
                 }
             }
 
-            _homeMarker.Bind(_path.Home, gridView.CellToWorld(_path.Home));
+            _homeMarker.Bind(_path.Home, chunkBoardView.CellToWorld(_path.Home));
         }
 
         void ClearSelectionHighlight()
@@ -1055,8 +1087,8 @@ namespace GemTD.Gameplay
                 case RunStateId.Plan:
                     if (!States.ExpandSatisfiedThisCycle)
                     {
-                        if (_legalExpands.Count > 0)
-                            TryConfirmExpand(_legalExpands[0]);
+                        if (_legalChunks.Count > 0)
+                            TryConfirmChunkExpand(_legalChunks[0]);
                         else
                             States.WaiveExpandRequirement();
                     }

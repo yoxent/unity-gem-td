@@ -2,7 +2,6 @@ using NUnit.Framework;
 using UnityEngine;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Grid;
-using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 
@@ -12,7 +11,6 @@ namespace GemTD.Tests.EditMode
     {
         GridBoard _board;
         PathGraph _graph;
-        MapExpandService _map;
         RunEconomy _economy;
         TowerPlacementService _placement;
         TowerDefinition _ballista;
@@ -22,9 +20,8 @@ namespace GemTD.Tests.EditMode
         public void SetUp()
         {
             _board = CreateBoard(out _graph);
-            _map = new MapExpandService(_graph, _board);
             _economy = new RunEconomy(100, 20);
-            _placement = new TowerPlacementService(_board, _graph, _map, _economy);
+            _placement = new TowerPlacementService(_board, _graph, _economy);
 
             _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
             _ballista.DisplayName = "Ballista";
@@ -74,7 +71,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(cell, tower.Cell);
             Assert.AreSame(_ballista, tower.Def);
             Assert.AreEqual(50, _economy.Gold);
-            Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+            Assert.IsTrue(_placement.IsOccupied(cell));
             Assert.AreEqual(50, tower.PurchaseCost);
             Assert.AreEqual(0, tower.UpgradeSpend);
         }
@@ -88,7 +85,7 @@ namespace GemTD.Tests.EditMode
 
             Assert.IsNotNull(tower);
             Assert.AreEqual(50, _economy.Gold);
-            Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+            Assert.IsTrue(_placement.IsOccupied(cell));
         }
 
         [Test]
@@ -100,7 +97,7 @@ namespace GemTD.Tests.EditMode
 
             Assert.IsFalse(_placement.TrySell(tower, RunStateId.Combat, new GemInventory(6)));
             Assert.AreEqual(50, _economy.Gold);
-            Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+            Assert.IsTrue(_placement.IsOccupied(cell));
         }
 
         [Test]
@@ -118,7 +115,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, inventory));
 
             Assert.AreEqual(75, _economy.Gold);
-            Assert.IsFalse(_map.IsBlocked(cell.x, cell.y));
+            Assert.IsFalse(_placement.IsOccupied(cell));
             Assert.IsNull(_placement.Selected);
             Assert.IsTrue(ContainsGem(inventory, _lmp));
         }
@@ -142,7 +139,7 @@ namespace GemTD.Tests.EditMode
 
                 Assert.IsFalse(_placement.TrySell(tower, RunStateId.Plan, inventory));
                 Assert.AreEqual(50, _economy.Gold);
-                Assert.IsTrue(_map.IsBlocked(cell.x, cell.y));
+                Assert.IsTrue(_placement.IsOccupied(cell));
                 Assert.AreSame(socketGem, tower.Sockets[0]);
             }
             finally

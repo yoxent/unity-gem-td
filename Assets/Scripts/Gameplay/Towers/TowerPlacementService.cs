@@ -1,7 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Grid;
-using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Run;
 
 namespace GemTD.Gameplay.Towers
@@ -10,7 +10,7 @@ namespace GemTD.Gameplay.Towers
     {
         readonly GridBoard _board;
         readonly PathGraph _graph;
-        readonly MapExpandService _map;
+        readonly HashSet<Vector2Int> _occupied = new HashSet<Vector2Int>();
         readonly RunEconomy _economy;
 
         public TowerRuntime Selected { get; set; }
@@ -18,14 +18,14 @@ namespace GemTD.Gameplay.Towers
         public TowerPlacementService(
             GridBoard board,
             PathGraph graph,
-            MapExpandService map,
             RunEconomy economy)
         {
             _board = board;
             _graph = graph;
-            _map = map;
             _economy = economy;
         }
+
+        public bool IsOccupied(Vector2Int cell) => _occupied.Contains(cell);
 
         public bool CanPlace(TowerDefinition def, Vector2Int cell, RunStateId phase)
         {
@@ -41,7 +41,7 @@ namespace GemTD.Gameplay.Towers
             if (_graph.IsPath(cell.x, cell.y))
                 return false;
 
-            if (_map.IsBlocked(cell.x, cell.y))
+            if (_occupied.Contains(cell))
                 return false;
 
             if (def.Cost > _economy.Gold)
@@ -61,7 +61,7 @@ namespace GemTD.Gameplay.Towers
                 return false;
 
             tower = new TowerRuntime(cell, def);
-            _map.SetOccupied(cell.x, cell.y, true);
+            _occupied.Add(cell);
             return true;
         }
 
@@ -92,7 +92,7 @@ namespace GemTD.Gameplay.Towers
             }
 
             var cell = tower.Cell;
-            _map.SetOccupied(cell.x, cell.y, false);
+            _occupied.Remove(cell);
 
             if (Selected == tower)
                 Selected = null;

@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using GemTD.Core;
-using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Run
@@ -95,13 +94,6 @@ namespace GemTD.Gameplay.Run
 
             if (Physics.Raycast(ray, out var hit, 500f, clickMask))
             {
-                var marker = hit.collider.GetComponentInParent<ExpandMarkerView>();
-                if (marker != null)
-                {
-                    _root.TryConfirmExpand(marker.Cell);
-                    return;
-                }
-
                 var tower = hit.collider.GetComponentInParent<TowerView>();
                 if (tower != null)
                 {
@@ -122,6 +114,14 @@ namespace GemTD.Gameplay.Run
             {
                 _root.TryPlaceAtWorld(world, keepPlacementSelected: shift);
                 return;
+            }
+
+            // Plan-phase expand: resolve world -> chunk coord and confirm if legal.
+            if (_root.States != null && _root.States.Current == RunStateId.Plan
+                && !_root.States.ExpandSatisfiedThisCycle)
+            {
+                if (_root.TryChunkExpandAtWorld(world))
+                    return;
             }
 
             // Empty board click — deselect tower (hides Tower Details).
