@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine;
 using GemTD.Gameplay.Map;
 
 namespace GemTD.Tests.EditMode
@@ -27,6 +28,27 @@ namespace GemTD.Tests.EditMode
             var mask = new ChunkMask(Set((2, 4)));
             Assert.AreEqual(EdgeFlags.North, mask.OpenEdges);
             Assert.AreEqual(ChunkType.DeadEnd, mask.Type);
+        }
+
+        [Test] public void EdgeMidWorldCell_NorthPortalOfChunk45()
+        {
+            var cell = ChunkMask.EdgeMidWorldCell(new Vector2Int(4, 5), EdgeFlags.North);
+            Assert.AreEqual(new Vector2Int(22, 29), cell);
+        }
+
+        [Test] public void EdgeMidWorldCell_SouthPortalOfChunk45()
+        {
+            var cell = ChunkMask.EdgeMidWorldCell(new Vector2Int(4, 5), EdgeFlags.South);
+            Assert.AreEqual(new Vector2Int(22, 25), cell);
+        }
+
+        [Test] public void AdjacentExpandCell_NorthOpening_IsOneCellBeyondPortal()
+        {
+            var occupied = new Vector2Int(4, 5);
+            var portal = ChunkMask.EdgeMidWorldCell(occupied, EdgeFlags.North);
+            var adjacent = ChunkMask.AdjacentExpandCell(occupied, EdgeFlags.North);
+            Assert.AreEqual(new Vector2Int(22, 29), portal);
+            Assert.AreEqual(new Vector2Int(22, 30), adjacent);
         }
 
         [Test] public void MiddleNAndS_IsStraight()

@@ -19,6 +19,15 @@ namespace GemTD.Gameplay.Map
             _ => EdgeFlags.None
         };
 
+        public static int YawTurnsCW(this EdgeFlags e) => e switch
+        {
+            EdgeFlags.North => 0,
+            EdgeFlags.East => 1,
+            EdgeFlags.South => 2,
+            EdgeFlags.West => 3,
+            _ => 0
+        };
+
         public static int Count(this EdgeFlags e)
         {
             var n = 0;

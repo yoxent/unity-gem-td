@@ -60,7 +60,7 @@ namespace GemTD.Gameplay.Map
             var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
             if (!_path.AllTipsReachHome())
             {
-                _stamp.Rollback(coord, res.PrevPath, _path, _board);
+                _stamp.Rollback(coord, res, _path, _board);
                 return false;
             }
             _stamp.Commit(coord, prefab, yaw, res.Mask, _grid);
@@ -155,7 +155,7 @@ namespace GemTD.Gameplay.Map
         {
             var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
             var ok = _path.AllTipsReachHome();
-            _stamp.Rollback(coord, res.PrevPath, _path, _board);
+            _stamp.Rollback(coord, res, _path, _board);
             return ok;
         }
     }

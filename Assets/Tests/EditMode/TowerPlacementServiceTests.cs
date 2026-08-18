@@ -165,8 +165,16 @@ namespace GemTD.Tests.EditMode
             graph = new PathGraph(8, 8);
             graph.BindBoard(board);
             graph.SetHome(0, 3);
-            for (var x = 0; x <= 7; x++)
-                graph.SetPathTile(x, 3, true);
+            for (var y = 0; y < 8; y++)
+            {
+                for (var x = 0; x < 8; x++)
+                {
+                    if (y == 3)
+                        graph.SetPathTile(x, 3, true);
+                    else
+                        board.SetBuildable(x, y, true);
+                }
+            }
             return board;
         }
     }

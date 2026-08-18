@@ -24,6 +24,10 @@ namespace GemTD.Gameplay.Map
         public int Count => _slots.Count;
 
         readonly Dictionary<Vector2Int, ChunkSlot> _slots = new Dictionary<Vector2Int, ChunkSlot>(32);
+        static readonly EdgeFlags[] Cardinals =
+        {
+            EdgeFlags.North, EdgeFlags.East, EdgeFlags.South, EdgeFlags.West
+        };
 
         public ChunkGrid(int chunksW, int chunksH)
         {
@@ -58,6 +62,25 @@ namespace GemTD.Gameplay.Map
                 case EdgeFlags.West:  return new Vector2Int(coord.x - 1, coord.y);
                 default: return coord;
             }
+        }
+
+        public bool TryGetOpeningInto(Vector2Int empty, out Vector2Int occupied, out EdgeFlags outward)
+        {
+            occupied = empty;
+            outward = EdgeFlags.None;
+            var dirs = Cardinals;
+            for (var i = 0; i < dirs.Length; i++)
+            {
+                var towardOccupied = dirs[i];
+                var nb = NeighborCoord(empty, towardOccupied);
+                var towardEmpty = towardOccupied.Opposite();
+                if (!OpenEdgeAt(nb.x, nb.y, towardEmpty))
+                    continue;
+                occupied = nb;
+                outward = towardEmpty;
+                return true;
+            }
+            return false;
         }
     }
 }

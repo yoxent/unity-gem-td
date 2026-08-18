@@ -1,7 +1,8 @@
 namespace GemTD.Gameplay.Grid
 {
     /// <summary>
-    /// Plain tile occupancy model. PathGraph comes in Phase 2.
+    /// Plain tile occupancy model. Cells start unbuildable (unstamped void);
+    /// stamped tower cells become buildable via SetPathTile / SetBuildable.
     /// </summary>
     public sealed class GridBoard
     {
@@ -15,8 +16,6 @@ namespace GemTD.Gameplay.Grid
             Width = width > 0 ? width : 1;
             Height = height > 0 ? height : 1;
             _buildable = new bool[Width * Height];
-            for (var i = 0; i < _buildable.Length; i++)
-                _buildable[i] = true;
         }
 
         public bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;

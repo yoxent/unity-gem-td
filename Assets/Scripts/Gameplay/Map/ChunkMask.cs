@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace GemTD.Gameplay.Map
 {
@@ -17,6 +18,28 @@ namespace GemTD.Gameplay.Map
 
         public bool IsPath(int x, int y) =>
             x >= 0 && x < Size && y >= 0 && y < Size && _isPath[y * Size + x];
+
+        public static Vector2Int EdgeMidWorldCell(Vector2Int chunkCoord, EdgeFlags edge)
+        {
+            var lx = 2;
+            var ly = 2;
+            if (edge == EdgeFlags.North) ly = Size - 1;
+            else if (edge == EdgeFlags.South) ly = 0;
+            else if (edge == EdgeFlags.East) lx = Size - 1;
+            else if (edge == EdgeFlags.West) lx = 0;
+            return new Vector2Int(chunkCoord.x * Size + lx, chunkCoord.y * Size + ly);
+        }
+
+        /// <summary>1x1 cell on the empty side of an occupied opening (expand-marker seat).</summary>
+        public static Vector2Int AdjacentExpandCell(Vector2Int occupied, EdgeFlags outward)
+        {
+            var portal = EdgeMidWorldCell(occupied, outward);
+            if (outward == EdgeFlags.North) return portal + new Vector2Int(0, 1);
+            if (outward == EdgeFlags.South) return portal + new Vector2Int(0, -1);
+            if (outward == EdgeFlags.East) return portal + new Vector2Int(1, 0);
+            if (outward == EdgeFlags.West) return portal + new Vector2Int(-1, 0);
+            return portal;
+        }
 
         public EdgeFlags OpenEdges
         {

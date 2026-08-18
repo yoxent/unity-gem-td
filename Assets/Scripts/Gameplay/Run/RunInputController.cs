@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using GemTD.Core;
+using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Run
@@ -94,6 +95,16 @@ namespace GemTD.Gameplay.Run
 
             if (Physics.Raycast(ray, out var hit, 500f, clickMask))
             {
+                var marker = hit.collider.GetComponentInParent<ExpandMarkerView>();
+                if (marker != null
+                    && _root.States != null
+                    && _root.States.Current == RunStateId.Plan
+                    && !_root.States.ExpandSatisfiedThisCycle)
+                {
+                    if (_root.TryConfirmChunkExpand(marker.ChunkCoord))
+                        return;
+                }
+
                 var tower = hit.collider.GetComponentInParent<TowerView>();
                 if (tower != null)
                 {

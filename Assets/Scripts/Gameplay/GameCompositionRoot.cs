@@ -481,12 +481,16 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            var chunkWorldSize = ChunkMask.Size * chunkBoardView.CellSize;
+            var cellSize = chunkBoardView.CellSize;
             for (var i = 0; i < _legalChunks.Count; i++)
             {
                 var coord = _legalChunks[i];
+                if (!_chunkGrid.TryGetOpeningInto(coord, out var occupied, out var outward))
+                    continue;
+
+                var portal = ChunkMask.AdjacentExpandCell(occupied, outward);
                 var marker = _markerPool.Get();
-                marker.Bind(coord, chunkBoardView.ChunkCenterWorld(coord), chunkWorldSize);
+                marker.Bind(coord, chunkBoardView.CellCenterWorld(portal.x, portal.y), cellSize, outward);
                 _markers.Add(marker);
             }
         }

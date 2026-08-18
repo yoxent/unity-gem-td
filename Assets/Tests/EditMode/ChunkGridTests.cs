@@ -67,6 +67,16 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(new Vector2Int(3, 4), grid.NeighborCoord(c, EdgeFlags.West));
         }
 
+        [Test] public void TryGetOpeningInto_EmptyNorthOfStraight_FindsNorthOutward()
+        {
+            var grid = new ChunkGrid(9, 9);
+            grid.Place(new Vector2Int(4, 5), new ChunkSlot(null, 0, StraightNS()));
+
+            Assert.IsTrue(grid.TryGetOpeningInto(new Vector2Int(4, 6), out var occupied, out var outward));
+            Assert.AreEqual(new Vector2Int(4, 5), occupied);
+            Assert.AreEqual(EdgeFlags.North, outward);
+        }
+
         [Test] public void InBounds_RespectsGridSize()
         {
             var grid = new ChunkGrid(9, 9);

@@ -61,9 +61,33 @@ namespace GemTD.Tests.EditMode
             path.SetPathTile(coord.x * ChunkMask.Size + 0, coord.y * ChunkMask.Size + 0, true);
             var res = stamp.StampTentative(coord, prefab, yaw: 0, path, board);
 
-            stamp.Rollback(coord, res.PrevPath, path, board);
+            stamp.Rollback(coord, res, path, board);
 
             Assert.IsTrue(path.IsPath(coord.x * ChunkMask.Size + 0, coord.y * ChunkMask.Size + 0));
+            Object.DestroyImmediate(prefab.gameObject);
+        }
+
+        [Test] public void Rollback_RestoresUnbuildableOnVoid()
+        {
+            var board = new GridBoard(45, 45);
+            var path = new PathGraph(45, 45);
+            path.BindBoard(board);
+            var stamp = new ChunkStampService();
+            var prefab = MakeStamp(StraightNS());
+
+            var coord = new Vector2Int(4, 4);
+            var res = stamp.StampTentative(coord, prefab, yaw: 0, path, board);
+            stamp.Rollback(coord, res, path, board);
+
+            for (var lx = 0; lx < ChunkMask.Size; lx++)
+                for (var ly = 0; ly < ChunkMask.Size; ly++)
+                {
+                    var wx = coord.x * ChunkMask.Size + lx;
+                    var wy = coord.y * ChunkMask.Size + ly;
+                    Assert.IsFalse(path.IsPath(wx, wy));
+                    Assert.IsFalse(board.IsBuildable(wx, wy),
+                        $"void cell ({wx},{wy}) should stay unbuildable after rollback");
+                }
             Object.DestroyImmediate(prefab.gameObject);
         }
 
