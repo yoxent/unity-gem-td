@@ -28,6 +28,12 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 8. **Conventional TD shell** — gems/sockets are the unique fantasy; place/select/sell/upgrade/waves/hotkeys/previews follow **Bloons TD 5/6** first (see `.cursor/rules/gem-td-bloons-mechanics.mdc`).
 9. **Prefab-based UI** — UI panels are prefabs pre-placed in the scene, referenced via serialized `[SerializeField]` fields (inspector-dragged). Runtime NEVER calls `new GameObject`/`Instantiate` or sets `RectTransform` math for **static, bounded UI** — use layout groups in the inspector. **Exception:** runtime-generated/unbounded entities (enemies, projectiles, gems, VFX) may be instantiated/pooled at runtime. All text is **TextMeshPro** (`TMP_Text`), not legacy `Text`. No new bootstrap/wire-menu code (existing `Phase2Pr*WireScene` frozen, deleted pre-release). See `UI-SPEC.md` "Implementation conventions."
 
+## Testing responsibility
+
+Unless the user explicitly asks the agent to run verification, the user is responsible for confirming **EditMode** and **PlayMode** tests/behavior.
+
+The agent must not imply that tests were run unless it was explicitly instructed to handle testing in the current request; when not instructed, doc wording should describe checks as "to be confirmed by you."
+
 ## Stack notes
 
 UGUI + feature.2d (UI sprites). LitMotion for juice. Custom PathGraph (no NavMesh). See ARCHITECTURE.md.
