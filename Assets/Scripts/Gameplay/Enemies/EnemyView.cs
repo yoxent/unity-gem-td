@@ -51,14 +51,13 @@ namespace GemTD.Gameplay.Enemies
 
         void TryStartHop(IMotionScheduler hopScheduler)
         {
-            if (hopScheduler == null || Runtime == null || Runtime.Definition == null)
+            if (hopScheduler == null || Runtime == null)
                 return;
 
-            var def = Runtime.Definition;
-            if (def.Locomotion != LocomotionStyle.Hop || def.HopHeight <= 0f || def.HopPeriod <= 0f)
+            if (Runtime.LocomotionStyle != LocomotionStyle.Hop || Runtime.HopHeight <= 0f || Runtime.HopPeriod <= 0f)
                 return;
 
-            _hopHandle = LMotion.Create(0f, def.HopHeight, def.HopPeriod * 0.5f)
+            _hopHandle = LMotion.Create(0f, Runtime.HopHeight, Runtime.HopPeriod * 0.5f)
                 .WithEase(Ease.OutQuad)
                 .WithLoops(-1, LoopType.Yoyo)
                 .WithScheduler(hopScheduler)

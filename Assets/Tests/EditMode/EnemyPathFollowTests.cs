@@ -84,6 +84,27 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Runtime_SnapshotsLocomotionOnInit()
+        {
+            _def.Locomotion = LocomotionStyle.Hop;
+            _def.HopHeight = 0.11f;
+            _def.HopPeriod = 0.22f;
+
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            // Mutate the ScriptableObject after spawn; the runtime locomotion must not change.
+            _def.Locomotion = LocomotionStyle.Slide;
+            _def.HopHeight = 1.7f;
+            _def.HopPeriod = 3.3f;
+
+            Assert.AreEqual(LocomotionStyle.Hop, enemy.LocomotionStyle);
+            Assert.AreEqual(0.11f, enemy.HopHeight, 1e-4f);
+            Assert.AreEqual(0.22f, enemy.HopPeriod, 1e-4f);
+        }
+
+        [Test]
         public void Registry_RegisterUnregisterAndCopyAlive()
         {
             var registry = new EnemyRegistry();

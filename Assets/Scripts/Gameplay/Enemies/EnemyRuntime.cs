@@ -11,6 +11,9 @@ namespace GemTD.Gameplay.Enemies
         bool _alive;
 
         public EnemyDefinition Definition => _def;
+        public LocomotionStyle LocomotionStyle { get; private set; }
+        public float HopHeight { get; private set; }
+        public float HopPeriod { get; private set; }
         public float Hp { get; private set; }
         public float ShieldHp { get; private set; }
         public float MoveSpeedMultiplier { get; set; }
@@ -46,6 +49,21 @@ namespace GemTD.Gameplay.Enemies
             ShieldHp = def != null ? def.ShieldMax : 0f;
             MoveSpeedMultiplier = 1f;
             _segmentIndex = 0;
+            
+            // Snapshot locomotion parameters at spawn time so view behavior cannot change later
+            // if the underlying ScriptableObject fields are modified (in-editor or by tooling).
+            if (def != null)
+            {
+                LocomotionStyle = def.Locomotion;
+                HopHeight = def.HopHeight;
+                HopPeriod = def.HopPeriod;
+            }
+            else
+            {
+                LocomotionStyle = LocomotionStyle.Slide;
+                HopHeight = 0f;
+                HopPeriod = 0f;
+            }
 
             if (worldWaypoints == null || worldWaypoints.Count == 0)
             {
