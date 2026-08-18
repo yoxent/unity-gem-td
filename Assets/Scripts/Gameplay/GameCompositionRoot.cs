@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using LitMotion;
 using GemTD.Core;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
@@ -171,6 +172,7 @@ namespace GemTD.Gameplay
         readonly List<EnemyRuntime> _livingScratch = new List<EnemyRuntime>(32);
 
         ViewObjectPool<EnemyView> _enemyPool;
+        ManualMotionDispatcher _enemyHopDispatcher;
         ViewObjectPool<ProjectileView> _projectilePool;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
@@ -196,6 +198,7 @@ namespace GemTD.Gameplay
             _placeDef = null;
 
             Clock = new RunClock();
+            _enemyHopDispatcher = new ManualMotionDispatcher();
             Speed = new SpeedControl(Clock);
             States = new RunStateMachine(Speed, Clock);
             States.StateChanged += OnStateChanged;
@@ -264,6 +267,10 @@ namespace GemTD.Gameplay
                     SocketLockdown?.Tick(dt);
                 }
             }
+
+            ApplyEnemyHopPlaybackSpeeds();
+            if (_enemyHopDispatcher != null)
+                _enemyHopDispatcher.Update(dt);
 
             SyncProjectileViews();
             SyncEnemyViews();
@@ -931,7 +938,7 @@ namespace GemTD.Gameplay
             if (_enemyPool != null)
             {
                 var view = _enemyPool.Get();
-                view.Bind(runtime);
+                view.Bind(runtime, _enemyHopDispatcher != null ? _enemyHopDispatcher.Scheduler : null);
                 _enemyViews.Add(view);
             }
         }
@@ -993,6 +1000,12 @@ namespace GemTD.Gameplay
                 else if (view != null)
                     Destroy(view.gameObject);
             }
+        }
+
+        void ApplyEnemyHopPlaybackSpeeds()
+        {
+            for (var i = 0; i < _enemyViews.Count; i++)
+                _enemyViews[i]?.ApplyHopPlaybackSpeed();
         }
 
         void SyncEnemyViews()

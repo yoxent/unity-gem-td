@@ -63,6 +63,27 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Definition_DefaultsToSlideHopParams()
+        {
+            Assert.AreEqual(LocomotionStyle.Slide, _def.Locomotion);
+            Assert.AreEqual(0.35f, _def.HopHeight, 1e-4f);
+            Assert.AreEqual(0.4f, _def.HopPeriod, 1e-4f);
+        }
+
+        [Test]
+        public void TickMove_WhenLocomotionHop_StillReachesExit()
+        {
+            _def.Locomotion = LocomotionStyle.Hop;
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            Assert.IsFalse(enemy.TickMove(0.25f));
+            Assert.IsTrue(enemy.TickMove(0.25f));
+            Assert.AreEqual(waypoints[1], enemy.WorldPosition);
+        }
+
+        [Test]
         public void Registry_RegisterUnregisterAndCopyAlive()
         {
             var registry = new EnemyRegistry();
