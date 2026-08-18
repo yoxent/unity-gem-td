@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Ballista
   Kind: 0
-  Cost: 50
+  Cost: 20
+  BuildIncrement: 15
   Range: 5
   Damage: 10
   AttackInterval: 1
@@ -24,3 +25,4 @@ MonoBehaviour:
   EnemyAuraRadius: 3
   EnemySlowMultiplier: 0.7
   SocketCount: 3
+  AllowsHydraEvolution: 1

@@ -15,6 +15,8 @@ namespace GemTD.Gameplay.Towers
         public string DisplayName = "Tower";
         public TowerKind Kind = TowerKind.Projectile;
         public int Cost = 50;
+        [Tooltip("Added per same-type tower already on map. placeCost = Cost + BuildIncrement × countOnMap")]
+        public int BuildIncrement = 25;
         public float Range = 5f;
         public float Damage = 10f;
         public float AttackInterval = 1f;
@@ -24,5 +26,6 @@ namespace GemTD.Gameplay.Towers
         public float EnemyAuraRadius = 3f;
         public float EnemySlowMultiplier = 0.7f;
         public int SocketCount = 3;
+        public bool AllowsHydraEvolution;
     }
 }

@@ -14,6 +14,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text tooltipText;
         [SerializeField] Canvas rootCanvas;
         [SerializeField] float padding = 12f;
+        [SerializeField] float yOffset = 16f;
 
         PointerEventData _eventData;
         readonly System.Collections.Generic.List<RaycastResult> _hits = new System.Collections.Generic.List<RaycastResult>(8);
@@ -33,9 +34,9 @@ namespace GemTD.UI
                 tooltipPanel.gameObject.SetActive(true);
                 tooltipText.text = text;
                 var rt = tooltipPanel;
-                var size = rt.rect.size;
-                var anchored = RepositionWithinScreen(screenPos, size, new Vector2(Screen.width, Screen.height), padding);
-                rt.position = anchored;
+                rt.position = RepositionAroundCursor(
+                    screenPos, rt.rect.size, rt.pivot,
+                    new Vector2(Screen.width, Screen.height), padding, yOffset);
             }
             else
             {
@@ -67,6 +68,33 @@ namespace GemTD.UI
                 }
             }
             return false;
+        }
+
+        /// <summary>Places the tooltip above the cursor; flips below if the above rect would leave the screen. Testable.</summary>
+        public static Vector2 RepositionAroundCursor(
+            Vector2 cursorPos, Vector2 tooltipSize, Vector2 pivot, Vector2 screenDim, float pad, float yOff)
+        {
+            var maxY = screenDim.y - pad;
+            var topIfAbove = cursorPos.y + yOff + tooltipSize.y;
+            var y = topIfAbove > maxY
+                ? cursorPos.y - yOff - tooltipSize.y * (1f - pivot.y)
+                : cursorPos.y + yOff + tooltipSize.y * pivot.y;
+
+            var x = cursorPos.x;
+            var left = x - tooltipSize.x * pivot.x;
+            if (left + tooltipSize.x > screenDim.x - pad)
+                x = screenDim.x - pad - tooltipSize.x * (1f - pivot.x);
+            if (x - tooltipSize.x * pivot.x < pad)
+                x = pad + tooltipSize.x * pivot.x;
+
+            var bottom = y - tooltipSize.y * pivot.y;
+            if (bottom < pad)
+                y = pad + tooltipSize.y * pivot.y;
+            var top = y + tooltipSize.y * (1f - pivot.y);
+            if (top > maxY)
+                y = maxY - tooltipSize.y * (1f - pivot.y);
+
+            return new Vector2(x, y);
         }
 
         /// <summary>Clamps a tooltip rect (pivot assumed top-left at anchor) within screen bounds. Testable.</summary>

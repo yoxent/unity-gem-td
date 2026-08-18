@@ -125,7 +125,7 @@ namespace GemTD.UI
                 _speed.PushPause("popup-" + id);
         }
 
-        // Called by yesButton.onClick (wired in Awake or via wire menu).
+        // Called by yesButton.onClick (wired in Awake).
         public void OnYesClicked()
         {
             if (dontShowAgain != null && dontShowAgain.isOn && !string.IsNullOrEmpty(_currentId))

@@ -11,6 +11,10 @@ namespace GemTD.Gameplay.Run
         public int EndWaveGold = 25;
         public int InventoryCapacity = 10;
         public int OpenArmCount = 1;
+        public int ChunkGridWidth = 13;
+        public int ChunkGridHeight = 13;
+        public float SocketLockdownSeconds = 3f;
+        public int DraftSkipGold = 75;
         public bool SeedHydraRecipeGems = true;
         public GemDefinition[] SeedGems;
     }

@@ -15,11 +15,11 @@ namespace GemTD.Gameplay.Towers
         public int PurchaseCost { get; }
         public int UpgradeSpend { get; set; }
 
-        public TowerRuntime(Vector2Int cell, TowerDefinition def)
+        public TowerRuntime(Vector2Int cell, TowerDefinition def, int purchaseCost = -1)
         {
             Cell = cell;
             Def = def;
-            PurchaseCost = def != null ? def.Cost : 0;
+            PurchaseCost = purchaseCost >= 0 ? purchaseCost : (def != null ? def.Cost : 0);
             UpgradeSpend = 0;
             OutgoingDamageMultiplier = 1f;
             var socketCount = def != null && def.SocketCount > 0 ? def.SocketCount : 1;

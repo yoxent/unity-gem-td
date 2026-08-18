@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Run;
 using System.Collections.Generic;
@@ -12,19 +13,32 @@ namespace GemTD.UI
     {
         [SerializeField] GameObject panel;
         [SerializeField] TMP_Text titleText;
-        [SerializeField] Transform draftPicksParent;
         [SerializeField] List<DraftPick> picks = new List<DraftPick>();
         [SerializeField] Button skipButton;
         [SerializeField] TMP_Text replaceHintText;
 
         GameCompositionRoot _root;
         PopupManager _popup;
-
         bool _replacePopupShown;
-        bool _buttonsBound = false;
+        bool _buttonsBound;
+        DraftReplacePhase _lastReplacePhase = DraftReplacePhase.None;
 
-        void Awake()
+        void OnEnable()
         {
+            GameEvents.RunStateChanged += Refresh;
+            GameEvents.DraftOfferChanged += Refresh;
+        }
+
+        void OnDisable()
+        {
+            GameEvents.RunStateChanged -= Refresh;
+            GameEvents.DraftOfferChanged -= Refresh;
+        }
+
+        public void Bind(GameCompositionRoot root, PopupManager popup)
+        {
+            _root = root;
+            _popup = popup;
             if (panel == null)
                 Debug.LogError("DraftController: assign Panel on the prefab.", this);
             if (picks == null || picks.Count == 0)
@@ -43,26 +57,23 @@ namespace GemTD.UI
             if (replaceHintText != null) replaceHintText.gameObject.SetActive(false);
 
             _buttonsBound = picks != null && picks.Count > 0;
-        }
-
-        void Update()
-        {
-            if (!_buttonsBound) return;
-
-            if (_root == null) _root = GameCompositionRoot.Instance;
-            if (_root == null) return;
-            if (_popup == null) _popup = FindFirstObjectByType<PopupManager>(FindObjectsInactive.Include);
-
-            var inDraft = _root.States != null && _root.States.Current == RunStateId.Draft;
-            panel.SetActive(inDraft);
-
-            if (!inDraft) { _replacePopupShown = false; return; }
-
             Refresh();
         }
 
         void Refresh()
         {
+            if (!_buttonsBound || _root == null) return;
+
+            var inDraft = _root.States != null && _root.States.Current == RunStateId.Draft;
+            panel.SetActive(inDraft);
+
+            if (!inDraft)
+            {
+                _replacePopupShown = false;
+                _lastReplacePhase = DraftReplacePhase.None;
+                return;
+            }
+
             var draft = _root.Draft;
             if (draft == null) return;
             if (titleText != null) titleText.text = "Draft — pick a gem";
@@ -93,23 +104,22 @@ namespace GemTD.UI
                 skipButton.interactable = draft.AllowSkip && draft.ReplacePhase == DraftReplacePhase.None;
             }
 
-            // Replace hint + popup routing.
             var phase = draft.ReplacePhase;
-            if (phase == DraftReplacePhase.AwaitingConfirm)
+            if (phase == DraftReplacePhase.AwaitingConfirm
+                && _lastReplacePhase != DraftReplacePhase.AwaitingConfirm
+                && !_replacePopupShown
+                && _popup != null)
             {
-                if (replaceHintText != null) { replaceHintText.text = ""; replaceHintText.gameObject.SetActive(false); }
-                if (!_replacePopupShown && _popup != null)
-                {
-                    _replacePopupShown = true;
-                    var name = draft.PendingReplaceGem != null ? draft.PendingReplaceGem.DisplayName : "gem";
-                    _popup.ShowConfirm("DraftReplace", "Bag full — replace a gem?",
-                        $"Take {name}? You'll destroy an inventory gem. Pick an inventory slot, or Cancel.",
-                        onConfirm: () => _root.RequestDraftReplaceYes(),
-                        onCancel: () => _root.RequestDraftReplaceCancel(),
-                        pauseForFairness: true, yesText: "Pick slot", noText: "Cancel");
-                }
+                _replacePopupShown = true;
+                var name = draft.PendingReplaceGem != null ? draft.PendingReplaceGem.DisplayName : "gem";
+                _popup.ShowConfirm("DraftReplace", "Bag full — replace a gem?",
+                    $"Take {name}? You'll destroy an inventory gem. Pick an inventory slot, or Cancel.",
+                    onConfirm: () => _root.RequestDraftReplaceYes(),
+                    onCancel: () => _root.RequestDraftReplaceCancel(),
+                    pauseForFairness: true, yesText: "Pick slot", noText: "Cancel");
             }
-            else if (phase == DraftReplacePhase.AwaitingInventoryPick)
+
+            if (phase == DraftReplacePhase.AwaitingInventoryPick)
             {
                 if (replaceHintText != null)
                 {
@@ -119,9 +129,16 @@ namespace GemTD.UI
             }
             else
             {
-                _replacePopupShown = false;
-                if (replaceHintText != null) { replaceHintText.text = ""; replaceHintText.gameObject.SetActive(false); }
+                if (phase == DraftReplacePhase.None)
+                    _replacePopupShown = false;
+                if (replaceHintText != null)
+                {
+                    replaceHintText.text = "";
+                    replaceHintText.gameObject.SetActive(false);
+                }
             }
+
+            _lastReplacePhase = phase;
         }
     }
 }

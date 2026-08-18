@@ -1,63 +1,85 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Run;
 using System.Collections.Generic;
 
 namespace GemTD.UI
 {
-    /// <summary>Lives on BuildBar prefab. 3 BuildTowerButton children. Mouse-only placement.</summary>
+    /// <summary>Lives on BuildBar prefab. Build-tower buttons for Plan + Combat placement.</summary>
     public sealed class BuildBarController : MonoBehaviour
     {
         [SerializeField] GameObject panel;
-        [SerializeField] Transform buildButtonsParent;
         [SerializeField] List<BuildTowerButton> buildButtons = new List<BuildTowerButton>();
 
         GameCompositionRoot _root;
-        bool _buttonsBound = false;
+        bool _buttonsBound;
 
-        void Awake()
+        void OnEnable()
         {
-            if (panel == null)
-                Debug.LogError("BuildBarController: assign Panel on the prefab.", this);
-            if (buildButtons == null || buildButtons.Count == 0)
-                Debug.LogError("BuildBarController: assign BuildTowerButton refs on the prefab.", this);
-            else
-            {
-                for (var i = 0; i < buildButtons.Count; i++)
-                {
-                    var idx = i;
-                    if (buildButtons[i] != null)
-                        buildButtons[i].GetButton().onClick.AddListener(() => _root?.SetPlaceTower(idx));
-                }
-            }
-
-            _buttonsBound = buildButtons != null && buildButtons.Count > 0;
+            GameEvents.RunStateChanged += Refresh;
+            GameEvents.GoldChanged += OnGoldChanged;
+            GameEvents.PlaceModeChanged += Refresh;
+            GameEvents.TowerRosterChanged += Refresh;
         }
 
-        void Update()
+        void OnDisable()
         {
-            if (!_buttonsBound) return;
+            GameEvents.RunStateChanged -= Refresh;
+            GameEvents.GoldChanged -= OnGoldChanged;
+            GameEvents.PlaceModeChanged -= Refresh;
+            GameEvents.TowerRosterChanged -= Refresh;
+        }
 
-            if (_root == null) _root = GameCompositionRoot.Instance;
-            if (_root == null) return;
-
-            // Set tower name labels once root is available.
-            for (var i = 0; i < buildButtons.Count; i++)
+        public void Bind(GameCompositionRoot root)
+        {
+            _root = root;
+            if (buildButtons == null || buildButtons.Count == 0)
             {
-                if (buildButtons[i] != null)
-                    buildButtons[i].UpdateLabel($"{_root.GetPlaceTowerName(i)}");
+                Debug.LogError("BuildBarController: assign BuildTowerButton refs on the prefab.", this);
+                return;
             }
 
-            var plan = _root.States != null && _root.States.Current == RunStateId.Plan;
-            panel.SetActive(plan);
-            if (!plan) return;
+            for (var i = 0; i < buildButtons.Count; i++)
+            {
+                var idx = i;
+                if (buildButtons[i] != null)
+                    buildButtons[i].GetButton().onClick.AddListener(() => _root?.SetPlaceTower(idx));
+            }
+
+            _buttonsBound = true;
+            Refresh();
+        }
+
+        void OnGoldChanged(int _) => Refresh();
+
+        void Refresh()
+        {
+            if (!_buttonsBound || _root == null) return;
+            if (panel == null)
+            {
+                Debug.LogError("BuildBarController: assign Panel on the prefab.", this);
+                return;
+            }
+
+            var state = _root.States != null ? _root.States.Current : RunStateId.Boot;
+            var showBar = state == RunStateId.Plan || state == RunStateId.Combat;
+            panel.SetActive(showBar);
+            if (!showBar) return;
+
+            var gold = _root.Economy != null ? _root.Economy.Gold : 0;
+            var towerCount = _root.BuildBarTowerCount;
             for (var i = 0; i < buildButtons.Count; i++)
             {
                 if (buildButtons[i] == null) continue;
+                var show = i < towerCount;
+                buildButtons[i].gameObject.SetActive(show);
+                if (!show) continue;
+                buildButtons[i].UpdateTowerButton(_root.GetPlaceTowerName(i), _root.GetPlaceTowerCost(i));
                 var btn = buildButtons[i].GetButton();
-                if (btn != null) btn.interactable = plan;
+                if (btn != null)
+                    btn.interactable = gold >= _root.GetPlaceTowerCost(i);
             }
         }
     }

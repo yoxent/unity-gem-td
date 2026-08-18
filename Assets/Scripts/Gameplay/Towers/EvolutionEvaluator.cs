@@ -23,10 +23,7 @@ namespace GemTD.Gameplay.Towers
             if (tower.Def.Kind != TowerKind.Projectile)
                 return false;
 
-            if (string.IsNullOrEmpty(tower.Def.DisplayName))
-                return false;
-
-            if (!string.Equals(tower.Def.DisplayName, "Ballista", System.StringComparison.OrdinalIgnoreCase))
+            if (!tower.Def.AllowsHydraEvolution)
                 return false;
 
             var hasLmp = false;

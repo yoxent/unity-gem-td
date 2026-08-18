@@ -50,11 +50,11 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void ComputeSellRefund_FloorsHalfOfPurchasePlusUpgrade()
+        public void ComputeSellRefund_ReturnsFullPurchasePlusUpgrade()
         {
-            Assert.AreEqual(25, RunEconomy.ComputeSellRefund(50, 0));
-            Assert.AreEqual(40, RunEconomy.ComputeSellRefund(50, 30));
-            Assert.AreEqual(0, RunEconomy.ComputeSellRefund(1, 0));
+            Assert.AreEqual(50, RunEconomy.ComputeSellRefund(50, 0));
+            Assert.AreEqual(80, RunEconomy.ComputeSellRefund(50, 30));
+            Assert.AreEqual(1, RunEconomy.ComputeSellRefund(1, 0));
         }
 
         [Test]

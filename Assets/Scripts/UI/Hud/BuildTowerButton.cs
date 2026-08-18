@@ -8,15 +8,17 @@ namespace GemTD.UI
     {
         [SerializeField] Button buildButton;
         [SerializeField] TMP_Text buildButtonLabel;
+        [SerializeField] TMP_Text buildButtonCost;
 
         public Button GetButton()
         {
             return buildButton;
         }
 
-        public void UpdateLabel(string label)
+        public void UpdateTowerButton(string label, int cost)
         {
             buildButtonLabel.text = label;
+            buildButtonCost.text = cost.ToString();
         }
     }
 }

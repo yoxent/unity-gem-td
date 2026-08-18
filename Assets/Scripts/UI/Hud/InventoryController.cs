@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
@@ -12,42 +13,49 @@ namespace GemTD.UI
     {
         [SerializeField] TMP_Text inventoryHintText;
         [SerializeField] GameObject panel;
-        [SerializeField] Transform inventorySlot;
         [SerializeField] List<InventoryGemSlot> slots = new List<InventoryGemSlot>();
 
         GameCompositionRoot _root;
         PopupManager _popup;
         bool _buttonsBound;
-        string _lastSignature;
 
-        void Awake()
+        void OnEnable()
         {
+            GameEvents.RunStateChanged += Refresh;
+            GameEvents.InventoryChanged += Refresh;
+            GameEvents.TowerSelectionChanged += Refresh;
+        }
+
+        void OnDisable()
+        {
+            GameEvents.RunStateChanged -= Refresh;
+            GameEvents.InventoryChanged -= Refresh;
+            GameEvents.TowerSelectionChanged -= Refresh;
+        }
+
+        public void Bind(GameCompositionRoot root, PopupManager popup)
+        {
+            _root = root;
+            _popup = popup;
             if (panel == null)
                 Debug.LogError("InventoryController: assign Panel on the prefab.", this);
             if (slots == null || slots.Count == 0)
                 Debug.LogError("InventoryController: assign InventoryGemSlot refs on the prefab.", this);
             _buttonsBound = slots != null && slots.Count > 0;
-        }
-
-        void Update()
-        {
-            if ((!_buttonsBound)) return;
-
-            if (_root == null) _root = GameCompositionRoot.Instance;
-            if (_root == null) return;
-            if (_popup == null) _popup = FindFirstObjectByType<PopupManager>(FindObjectsInactive.Include);
-            var show = _root.Inventory != null && _root.States != null
-                       && _root.States.Current != RunStateId.Boot
-                       && _root.States.Current != RunStateId.Defeat
-                       && _root.States.Current != RunStateId.VictorySummary;
-            panel.SetActive(show);
-
-            if (!show) return;
             Refresh();
         }
 
         void Refresh()
         {
+            if (!_buttonsBound || _root == null) return;
+
+            var show = _root.Inventory != null && _root.States != null
+                       && _root.States.Current != RunStateId.Boot
+                       && _root.States.Current != RunStateId.Defeat
+                       && _root.States.Current != RunStateId.VictorySummary;
+            panel.SetActive(show);
+            if (!show) return;
+
             var inv = _root.Inventory;
             if (inv == null) return;
             var canSocket = (_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat)

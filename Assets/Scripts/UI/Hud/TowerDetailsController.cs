@@ -22,20 +22,32 @@ namespace GemTD.UI
         [SerializeField] Button scopeAllButton;
 
         GameCompositionRoot _root;
+        PopupManager _popup;
         bool _priorityClicksWired;
+        bool _visible;
 
         void OnEnable()
         {
+            GameEvents.RunStateChanged += OnHudDirty;
+            GameEvents.TowerSelectionChanged += OnHudDirty;
+            GameEvents.TargetingChanged += OnHudDirty;
+            GameEvents.InventoryChanged += OnHudDirty;
             GameEvents.RequestTargetingAllConfirm += OnRequestTargetingAllConfirm;
         }
 
         void OnDisable()
         {
+            GameEvents.RunStateChanged -= OnHudDirty;
+            GameEvents.TowerSelectionChanged -= OnHudDirty;
+            GameEvents.TargetingChanged -= OnHudDirty;
+            GameEvents.InventoryChanged -= OnHudDirty;
             GameEvents.RequestTargetingAllConfirm -= OnRequestTargetingAllConfirm;
         }
 
-        void Start()
+        public void Bind(GameCompositionRoot root, PopupManager popup)
         {
+            _root = root;
+            _popup = popup;
             if (panel == null) panel = gameObject;
             if (sellButton != null) sellButton.onClick.AddListener(OnSell);
 
@@ -53,6 +65,8 @@ namespace GemTD.UI
                 scopeTypeButton.onClick.AddListener(() => _root?.SetApplyScope(TargetingApplyScope.ThisType));
             if (scopeAllButton != null)
                 scopeAllButton.onClick.AddListener(ConfirmAllThenSet);
+
+            Refresh();
         }
 
         void WirePriorityClicks()
@@ -71,31 +85,41 @@ namespace GemTD.UI
 
         void Update()
         {
-            if (_root == null) _root = GameCompositionRoot.Instance;
-            if (_root == null) return;
-
-            var show = _root.HasSelectedTower && _root.States != null
-                       && _root.States.Current != RunStateId.Defeat
-                       && _root.States.Current != RunStateId.VictorySummary;
-
-            panel.SetActive(show);
-            if (!show) return;
-
-            Refresh();
+            if (!_visible || _root == null)
+                return;
+            if (_root.SelectedSocketLockRemaining > 0f)
+                RefreshDetailsText();
         }
+
+        void OnHudDirty() => Refresh();
 
         void Refresh()
         {
-            if (detailsText != null) detailsText.text = _root.BuildSelectedTowerDetailsText();
+            if (_root == null) return;
 
-            var plan = _root.States != null && _root.States.Current == RunStateId.Plan;
+            _visible = _root.HasSelectedTower && _root.States != null
+                       && _root.States.Current != RunStateId.Defeat
+                       && _root.States.Current != RunStateId.VictorySummary;
+
+            panel.SetActive(_visible);
+            if (!_visible) return;
+
+            RefreshDetailsText();
+
+            var planOrCombat = _root.States != null
+                               && (_root.States.Current == RunStateId.Plan
+                                   || _root.States.Current == RunStateId.Combat);
             if (sellButton != null)
-                sellButton.gameObject.SetActive(plan);
+                sellButton.gameObject.SetActive(planOrCombat);
 
             var tower = _root.Placement?.Selected;
+            var socketCount = tower?.Def != null ? tower.Def.SocketCount : 0;
             for (var i = 0; i < socketSlots.Length; i++)
             {
-                if (socketSlots[i] == null || tower == null) continue;
+                if (socketSlots[i] == null) continue;
+                var showSlot = tower != null && i < socketCount;
+                socketSlots[i].gameObject.SetActive(showSlot);
+                if (!showSlot) continue;
                 var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : null;
                 socketSlots[i].Configure(_root, i, gem);
             }
@@ -110,6 +134,12 @@ namespace GemTD.UI
             }
 
             HighlightScope(_root.CurrentApplyScope);
+        }
+
+        void RefreshDetailsText()
+        {
+            if (detailsText != null && _root != null)
+                detailsText.text = _root.BuildSelectedTowerDetailsText();
         }
 
         void HighlightScope(TargetingApplyScope scope)
@@ -133,14 +163,13 @@ namespace GemTD.UI
             if (_root.CurrentApplyScope == TargetingApplyScope.AllTowers)
                 return;
 
-            var popup = FindFirstObjectByType<PopupManager>(FindObjectsInactive.Include);
-            if (popup == null)
+            if (_popup == null)
             {
                 _root.SetApplyScope(TargetingApplyScope.AllTowers);
                 return;
             }
 
-            popup.ShowConfirmOnceSuppressed(
+            _popup.ShowConfirmOnceSuppressed(
                 id: "TargetingApplyAll",
                 title: "Apply to all towers?",
                 body: "This targeting will apply to every placed tower.",
@@ -156,31 +185,29 @@ namespace GemTD.UI
         {
             if (_root == null || !_root.HasSelectedTower) return;
 
-            var popup = FindFirstObjectByType<PopupManager>(FindObjectsInactive.Include);
-
             if (!_root.CanSellSelected)
             {
-                if (popup != null)
+                if (_popup != null)
                 {
-                    popup.ShowInfo(
+                    _popup.ShowInfo(
                         title: "Can't sell",
                         body: "Inventory cannot fit this tower's socketed gems. Discard gems first.");
                 }
                 return;
             }
 
-            if (popup == null)
+            if (_popup == null)
             {
                 _root.RequestSellSelected();
                 return;
             }
 
-            popup.ShowConfirmOnceSuppressed(
+            _popup.ShowConfirmOnceSuppressed(
                 id: "SellConfirm",
                 title: "Sell tower?",
                 body: _root.SelectedHasSocketedGems
-                    ? "Socketed gems return to inventory. 50% refund of purchase + upgrade spend."
-                    : "50% refund of purchase + upgrade spend.",
+                    ? "Socketed gems return to inventory. Full refund of purchase + upgrade spend."
+                    : "Full refund of purchase + upgrade spend.",
                 onConfirm: () => _root.RequestSellSelected(),
                 pauseForFairness: false,
                 yesText: "Yes", noText: "No");

@@ -100,7 +100,7 @@ namespace GemTD.Editor
             var cannon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Cannon.asset");
             if (cannon != null)
             {
-                cannon.SocketCount = 2;
+                cannon.SocketCount = 3;
                 EditorUtility.SetDirty(cannon);
             }
 

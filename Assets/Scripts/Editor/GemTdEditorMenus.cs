@@ -74,7 +74,9 @@ namespace GemTD.Editor
 
             var root = new GameObject("GameCompositionRoot");
             root.AddComponent<GameCompositionRoot>();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             root.AddComponent<RunStateDebugHud>();
+#endif
 
             var gridGo = new GameObject("GridRoot");
             var chunkBoardView = gridGo.AddComponent<ChunkBoardView>();
@@ -90,7 +92,7 @@ namespace GemTD.Editor
             EditorSceneManager.SaveScene(scene, RunScenePath);
             AddRunSceneToBuild();
             AssetDatabase.Refresh();
-            Debug.Log($"[Gem TD] Bootstrapped {RunScenePath}. Press Play, then Space/F5 to cycle Expand→Build→Combat.");
+            Debug.Log($"[Gem TD] Bootstrapped {RunScenePath}. Press Play, then use HUD / F5 debug advance.");
         }
 
         static void AddRunSceneToBuild()

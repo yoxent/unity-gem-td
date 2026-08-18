@@ -18,6 +18,7 @@ namespace GemTD.Tests.EditMode
             _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
             _ballista.DisplayName = "Ballista";
             _ballista.Kind = TowerKind.Projectile;
+            _ballista.AllowsHydraEvolution = true;
             _ballista.SocketCount = 3;
             _ballista.Damage = 10f;
             _ballista.Range = 20f;
@@ -62,9 +63,9 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void IsHydra_False_WhenNotBallistaDisplayName()
+        public void IsHydra_False_WhenNotHydraEligible()
         {
-            _ballista.DisplayName = "Cannon";
+            _ballista.AllowsHydraEvolution = false;
             var tower = MakeBallistaWith(_lmp, _chain, _fork);
             Assert.IsFalse(EvolutionEvaluator.IsHydraBallista(tower));
         }

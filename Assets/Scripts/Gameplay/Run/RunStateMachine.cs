@@ -55,24 +55,6 @@ namespace GemTD.Gameplay.Run
 
         public void WaiveExpandRequirement() => NotifyExpandDone();
 
-        /// <summary>
-        /// Obsolete PR4 migration shim until Task 10 rewires CompositionRoot / tests.
-        /// Old Expand→Build becomes Plan + expand satisfied (and Draft→Plan if still in starter Draft).
-        /// </summary>
-        public void ExpandConfirmed()
-        {
-            if (Current == RunStateId.Draft)
-                DraftResolved();
-
-            if (Current == RunStateId.Plan)
-            {
-                NotifyExpandDone();
-                return;
-            }
-
-            throw new InvalidOperationException($"Invalid transition from {Current}");
-        }
-
         public void StartWave()
         {
             Ensure(RunStateId.Plan);

@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Cannon
   Kind: 1
-  Cost: 60
+  Cost: 30
+  BuildIncrement: 20
   Range: 4.5
   Damage: 8
   AttackInterval: 1.2
@@ -23,4 +24,5 @@ MonoBehaviour:
   AllyDamageMultiplier: 1.25
   EnemyAuraRadius: 3
   EnemySlowMultiplier: 0.7
-  SocketCount: 2
+  SocketCount: 3
+  AllowsHydraEvolution: 0

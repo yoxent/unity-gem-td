@@ -33,40 +33,29 @@ namespace GemTD.UI
             GameEvents.PauseChanged -= OnPauseChanged;
         }
 
-        void Start()
+        public void Bind(GameCompositionRoot root)
         {
-            speed1Button.onClick.AddListener(() => _root?.Speed?.SetSpeed(1f));
-            speed2Button.onClick.AddListener(() => _root?.Speed?.SetSpeed(2f));
-            speed4Button.onClick.AddListener(() => _root?.Speed?.SetSpeed(4f));
-            if (pauseChip != null) pauseChip.SetActive(false);
-        }
-
-        private bool _appliedInitial;
-
-        void Update()
-        {
-            if (_root == null) _root = GameCompositionRoot.Instance;
+            _root = root;
             if (_root == null) return;
-            if (!_appliedInitial)
-            {
-                _appliedInitial = true;
-                OnSpeedChanged(_root.Speed != null ? _root.Speed.CurrentSpeed : 1f);
-            }
+
+            if (speed1Button != null) speed1Button.onClick.AddListener(() => _root.Speed?.SetSpeed(1f));
+            if (speed2Button != null) speed2Button.onClick.AddListener(() => _root.Speed?.SetSpeed(2f));
+            if (speed4Button != null) speed4Button.onClick.AddListener(() => _root.Speed?.SetSpeed(4f));
+            if (pauseChip != null) pauseChip.SetActive(false);
+
+            OnSpeedChanged(_root.Speed != null ? _root.Speed.CurrentSpeed : 1f);
         }
 
         void OnSpeedChanged(float scale)
         {
-            if (_root == null) _root = GameCompositionRoot.Instance;
-            var active = scale;
-            if (speed1Label != null) speed1Label.color = Mathf.Approximately(active, 1f) ? Lit : Dim;
-            if (speed2Label != null) speed2Label.color = Mathf.Approximately(active, 2f) ? Lit : Dim;
-            if (speed4Label != null) speed4Label.color = Mathf.Approximately(active, 4f) ? Lit : Dim;
+            if (speed1Label != null) speed1Label.color = Mathf.Approximately(scale, 1f) ? Lit : Dim;
+            if (speed2Label != null) speed2Label.color = Mathf.Approximately(scale, 2f) ? Lit : Dim;
+            if (speed4Label != null) speed4Label.color = Mathf.Approximately(scale, 4f) ? Lit : Dim;
         }
 
         void OnPauseChanged(bool paused)
         {
             if (pauseChip != null) pauseChip.SetActive(paused);
-            // Speed buttons remain clickable while paused (sets pending speed).
         }
     }
 }

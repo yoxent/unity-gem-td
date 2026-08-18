@@ -23,9 +23,7 @@ namespace GemTD.Gameplay
 
         [Header("Data")]
         [SerializeField] RunConfig runConfig;
-        [SerializeField] TowerDefinition ballistaDef;
-        [SerializeField] TowerDefinition cannonDef;
-        [SerializeField] TowerDefinition beaconDef;
+        [SerializeField] TowerDefinition[] buildBarTowers;
         [SerializeField] WaveDefinition[] waves;
         [SerializeField] GemDefinition[] draftPool;
         [SerializeField] CodexCatalog codexCatalog;
@@ -81,21 +79,26 @@ namespace GemTD.Gameplay
             && States.Current == RunStateId.Plan
             && States.ExpandSatisfiedThisCycle
             && WaveController != null;
-        public string PlaceTowerName =>
-            _placeDef != null && !string.IsNullOrEmpty(_placeDef.DisplayName)
-                ? _placeDef.DisplayName
-                : (_placeDef != null ? _placeDef.name : "None");
 
         public string GetPlaceTowerName(int index)
         {
-            return index switch
-            {
-                0 => ballistaDef != null ? ballistaDef.DisplayName : "Ballista",
-                1 => cannonDef != null ? cannonDef.DisplayName : "Cannon",
-                2 => beaconDef != null ? beaconDef.DisplayName : "Beacon",
-                _ => "?"
-            };
+            if (!TryGetBuildBarTower(index, out var def))
+                return "?";
+            return !string.IsNullOrEmpty(def.DisplayName) ? def.DisplayName : def.name;
         }
+
+        public int GetPlaceTowerCost(int index)
+        {
+            if (!TryGetBuildBarTower(index, out var def))
+                return 0;
+            return ComputePlaceCost(def);
+        }
+
+        public int ComputePlaceCost(TowerDefinition def) =>
+            TowerCostCalculator.ComputePlaceCost(def, _towers);
+
+        public int BuildBarTowerCount => buildBarTowers != null ? buildBarTowers.Length : 0;
+
         public bool HasPlaceTowerSelected => _placeDef != null;
         public float SelectedSocketLockRemaining
         {
@@ -141,6 +144,7 @@ namespace GemTD.Gameplay
         {
             _placeDef = null;
             _placementGhost?.Hide();
+            GameEvents.RaisePlaceModeChanged();
         }
 
         public TargetingRecipe SelectedTargeting =>
@@ -339,7 +343,7 @@ namespace GemTD.Gameplay
 
             var world = ray.GetPoint(enter);
             var cell = chunkBoardView.WorldToCell(world);
-            var valid = Placement.CanPlace(_placeDef, cell, phase);
+            var valid = Placement.CanPlace(_placeDef, cell, phase, ComputePlaceCost(_placeDef));
             var range = _placeDef != null ? _placeDef.Range : 3f;
             _placementGhost.SetRange(range);
             _placementGhost.ShowAt(chunkBoardView.CellToWorld(cell), valid);
@@ -347,18 +351,21 @@ namespace GemTD.Gameplay
 
         void BootstrapServices()
         {
+            if (runConfig == null)
+                Debug.LogError("[GemTD] Assign RunConfig on GameCompositionRoot in the inspector.");
+
             var gold = runConfig != null ? runConfig.StartingGold : 100;
             var lives = runConfig != null ? runConfig.StartingLives : 20;
             var endWaveGold = runConfig != null ? runConfig.EndWaveGold : 25;
 
-            const int ChunksW = 13;
-            const int ChunksH = 13;
-            var cellW = ChunksW * ChunkMask.Size;
-            var cellH = ChunksH * ChunkMask.Size;
+            var chunksW = runConfig != null && runConfig.ChunkGridWidth > 0 ? runConfig.ChunkGridWidth : 13;
+            var chunksH = runConfig != null && runConfig.ChunkGridHeight > 0 ? runConfig.ChunkGridHeight : 13;
+            var cellW = chunksW * ChunkMask.Size;
+            var cellH = chunksH * ChunkMask.Size;
             _board = new GridBoard(cellW, cellH);
             _path = new PathGraph(cellW, cellH);
             _path.BindBoard(_board);
-            _chunkGrid = new ChunkGrid(ChunksW, ChunksH);
+            _chunkGrid = new ChunkGrid(chunksW, chunksH);
             _stamp = new ChunkStampService();
             _rng = new System.Random();
 
@@ -379,9 +386,13 @@ namespace GemTD.Gameplay
                 : 10;
             Inventory = new GemInventory(capacity);
             SeedHydraRecipeInventory();
+            GameEvents.RaiseInventoryChanged();
 
             Draft = new DraftService(new System.Random());
-            SocketLockdown = new SocketLockdown(3f);
+            var lockdownSeconds = runConfig != null && runConfig.SocketLockdownSeconds > 0f
+                ? runConfig.SocketLockdownSeconds
+                : 3f;
+            SocketLockdown = new SocketLockdown(lockdownSeconds);
             Codex = new CodexProgress(new JsonFileCodexStore());
             _statuses = new StatusRuntime();
 
@@ -417,6 +428,8 @@ namespace GemTD.Gameplay
 
         void OnStateChanged(RunStateId prev, RunStateId next)
         {
+            GameEvents.RaiseRunStateChanged();
+
             if (IsCombatPhase(prev) && !IsCombatPhase(next))
             {
                 _combat?.ClearProjectiles();
@@ -466,11 +479,12 @@ namespace GemTD.Gameplay
             {
                 Debug.LogError(
                     "[GemTD] draftPool needs at least 3 assigned gems on GameCompositionRoot " +
-                    $"(found {usable}). Run menu: Gem TD / Phase 2 PR4 Wire Draft Pool + Waves");
+                    $"(found {usable}). Assign GemDefinition assets in the inspector (see RunConfig / Data/Gems).");
                 return;
             }
 
             Draft.BeginOffer(draftPool, allowSkip);
+            GameEvents.RaiseDraftOfferChanged();
             Debug.Log(
                 $"[GemTD] Draft offer ({(allowSkip ? "skip OK" : "must pick")}): " +
                 $"{Draft.CurrentOffer[0].DisplayName} / {Draft.CurrentOffer[1].DisplayName} / {Draft.CurrentOffer[2].DisplayName}");
@@ -497,6 +511,7 @@ namespace GemTD.Gameplay
                     _loggedExpandSkip = true;
                 }
                 States.WaiveExpandRequirement();
+                StartWaveAfterExpand();
                 return;
             }
 
@@ -554,7 +569,20 @@ namespace GemTD.Gameplay
             // ChunkBoardView self-updates via ChunkPlaced event — no explicit SetPath call.
             ClearExpandMarkers();
             States.NotifyExpandDone();
+            StartWaveAfterExpand();
             return true;
+        }
+
+        void StartWaveAfterExpand()
+        {
+            if (WaveController == null || States == null)
+                return;
+            if (States.Current != RunStateId.Plan || !States.ExpandSatisfiedThisCycle)
+                return;
+
+            WaveController.StartWave();
+            GameEvents.RaiseWaveChanged(WaveController.CurrentWaveNumber);
+            GameEvents.RaiseRunStateChanged();
         }
 
         public void TryPlaceAtWorld(Vector3 world, bool keepPlacementSelected = false)
@@ -567,9 +595,10 @@ namespace GemTD.Gameplay
                 return;
 
             var cell = chunkBoardView.WorldToCell(world);
-            if (!Placement.TryPlace(_placeDef, cell, phase, out var tower))
+            var placeCost = ComputePlaceCost(_placeDef);
+            if (!Placement.TryPlace(_placeDef, cell, phase, placeCost, out var tower))
             {
-                Debug.Log($"[GemTD] Place rejected at {cell} (phase={phase}, gold={Economy.Gold})");
+                Debug.Log($"[GemTD] Place rejected at {cell} (phase={phase}, gold={Economy.Gold}, cost={placeCost})");
                 return;
             }
 
@@ -584,6 +613,8 @@ namespace GemTD.Gameplay
             // Classic TD: one build-bar pick = one place, unless Shift is held.
             if (!keepPlacementSelected)
                 ClearPlaceTower();
+
+            GameEvents.RaiseTowerRosterChanged();
         }
 
         public void ClearTowerSelection()
@@ -596,32 +627,33 @@ namespace GemTD.Gameplay
                 if (_towerViews[i] != null)
                     _towerViews[i].SetSelected(false);
             }
+
+            GameEvents.RaiseTowerSelectionChanged();
         }
 
         public void SetPlaceTower(int index)
         {
             ClearTowerSelection();
-            switch (index)
-            {
-                case 0:
-                    if (ballistaDef != null)
-                        _placeDef = ballistaDef;
-                    break;
-                case 1:
-                    if (cannonDef != null)
-                        _placeDef = cannonDef;
-                    break;
-                case 2:
-                    if (beaconDef != null)
-                        _placeDef = beaconDef;
-                    break;
-            }
+            _placeDef = null;
+            if (TryGetBuildBarTower(index, out var def))
+                _placeDef = def;
 
             if (_placeDef != null)
             {
                 EnsurePlacementGhost();
                 TickPlacementGhost();
             }
+
+            GameEvents.RaisePlaceModeChanged();
+        }
+
+        bool TryGetBuildBarTower(int index, out TowerDefinition def)
+        {
+            def = null;
+            if (buildBarTowers == null || index < 0 || index >= buildBarTowers.Length)
+                return false;
+            def = buildBarTowers[index];
+            return def != null;
         }
 
         public void CyclePriority(int slot)
@@ -632,6 +664,7 @@ namespace GemTD.Gameplay
             var selected = Placement.Selected;
             var next = selected.Targeting.WithCycled(slot);
             TargetingService.Apply(next, _applyScope, selected, _towers);
+            GameEvents.RaiseTargetingChanged();
         }
 
         public bool TryCycleApplyScope(out bool needsAllConfirm)
@@ -658,6 +691,7 @@ namespace GemTD.Gameplay
                 return;
 
             TargetingService.Apply(Placement.Selected.Targeting, _applyScope, Placement.Selected, _towers);
+            GameEvents.RaiseTargetingChanged();
         }
 
         public void CopySelectedTargeting()
@@ -674,6 +708,7 @@ namespace GemTD.Gameplay
                 return;
 
             TargetingService.Apply(recipe, TargetingApplyScope.ThisTower, Placement.Selected, _towers);
+            GameEvents.RaiseTargetingChanged();
         }
 
         public void SelectTower(TowerView view)
@@ -689,6 +724,8 @@ namespace GemTD.Gameplay
                 if (tv != null)
                     tv.SetSelected(tv == view);
             }
+
+            GameEvents.RaiseTowerSelectionChanged();
         }
 
         public void RequestStartWave()
@@ -715,8 +752,7 @@ namespace GemTD.Gameplay
                         gemCount++;
                 }
 
-                var bagBlocked = States.Current == RunStateId.Plan
-                                 && Inventory != null
+                var bagBlocked = Inventory != null
                                  && gemCount > Inventory.FreeSlotCount;
                 Debug.Log(bagBlocked
                     ? "[GemTD] Sell blocked — inventory cannot fit socketed gems (discard first)."
@@ -734,46 +770,9 @@ namespace GemTD.Gameplay
 
             _towers.Remove(selected);
             ClearSelectionHighlight();
-        }
-
-        public void RequestSocket(GemId id)
-        {
-            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
-            {
-                Debug.Log("[GemTD] Socket frozen outside Plan/Combat.");
-                return;
-            }
-
-            var tower = Placement?.Selected;
-            if (tower == null)
-                return;
-
-            if (SocketLockdown != null && !SocketLockdown.CanSocket(tower, States.Current))
-            {
-                Debug.Log($"[GemTD] Tower sockets locked ({SocketLockdown.Remaining(tower):0.0}s).");
-                return;
-            }
-
-            if (!Inventory.TryTake(id, out var gem))
-                return;
-
-            var socketed = false;
-            for (var i = 0; i < tower.Sockets.Length; i++)
-            {
-                if (tower.TrySocket(gem, i, allowSocket: true))
-                {
-                    socketed = true;
-                    break;
-                }
-            }
-
-            if (!socketed)
-            {
-                Inventory.TryAdd(gem);
-                return;
-            }
-
-            OnSocketChanged(tower);
+            GameEvents.RaiseTowerSelectionChanged();
+            GameEvents.RaiseInventoryChanged();
+            GameEvents.RaiseTowerRosterChanged();
         }
 
         /// <summary>Socket the gem in a specific bag slot onto the selected tower.</summary>
@@ -826,6 +825,7 @@ namespace GemTD.Gameplay
             }
 
             OnSocketChanged(tower);
+            GameEvents.RaiseInventoryChanged();
         }
 
         public void RequestUnsocket(int socketIndex)
@@ -859,6 +859,7 @@ namespace GemTD.Gameplay
             }
 
             OnSocketChanged(tower);
+            GameEvents.RaiseInventoryChanged();
         }
 
         void OnSocketChanged(TowerRuntime tower)
@@ -906,6 +907,7 @@ namespace GemTD.Gameplay
                 return;
 
             Debug.Log($"[GemTD] Discarded {discarded.DisplayName} from inventory slot {inventoryIndex}.");
+            GameEvents.RaiseInventoryChanged();
         }
 
         /// <summary>
@@ -921,6 +923,8 @@ namespace GemTD.Gameplay
 
             if (!Inventory.TryMoveOrSwapAt(fromIndex, toIndex))
                 return;
+
+            GameEvents.RaiseInventoryChanged();
         }
 
         /// <summary>
@@ -960,11 +964,14 @@ namespace GemTD.Gameplay
             if (resolved)
             {
                 States.DraftResolved();
+                GameEvents.RaiseDraftOfferChanged();
+                GameEvents.RaiseInventoryChanged();
                 return;
             }
 
             if (Draft.ReplacePhase == DraftReplacePhase.AwaitingConfirm)
                 Debug.Log("[GemTD] Bag full — ConfirmReplaceYes/No, then pick inventory slot.");
+            GameEvents.RaiseDraftOfferChanged();
         }
 
         public void RequestDraftSkip()
@@ -972,15 +979,30 @@ namespace GemTD.Gameplay
             if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
                 return;
 
-            if (!Draft.TrySkip(Economy, 75, out var resolved) || !resolved)
+            if (!Draft.TrySkip(Economy, runConfig != null ? runConfig.DraftSkipGold : 75, out var resolved) || !resolved)
                 return;
 
             States.DraftResolved();
+            GameEvents.RaiseDraftOfferChanged();
         }
 
-        public void RequestDraftReplaceYes() => Draft?.ConfirmReplaceYes();
-        public void RequestDraftReplaceNo() => Draft?.ConfirmReplaceNo();
-        public void RequestDraftReplaceCancel() => Draft?.CancelReplace();
+        public void RequestDraftReplaceYes()
+        {
+            Draft?.ConfirmReplaceYes();
+            GameEvents.RaiseDraftOfferChanged();
+        }
+
+        public void RequestDraftReplaceNo()
+        {
+            Draft?.ConfirmReplaceNo();
+            GameEvents.RaiseDraftOfferChanged();
+        }
+
+        public void RequestDraftReplaceCancel()
+        {
+            Draft?.CancelReplace();
+            GameEvents.RaiseDraftOfferChanged();
+        }
 
         public void RequestDraftReplaceComplete(int inventoryIndex)
         {
@@ -991,6 +1013,8 @@ namespace GemTD.Gameplay
                 return;
 
             States.DraftResolved();
+            GameEvents.RaiseDraftOfferChanged();
+            GameEvents.RaiseInventoryChanged();
         }
 
         void SpawnEnemy(EnemyDefinition def)
@@ -1190,11 +1214,10 @@ namespace GemTD.Gameplay
                         if (_legalChunks.Count > 0)
                             TryConfirmChunkExpand(_legalChunks[0]);
                         else
+                        {
                             States.WaiveExpandRequirement();
-                    }
-                    else
-                    {
-                        RequestStartWave();
+                            StartWaveAfterExpand();
+                        }
                     }
                     break;
                 case RunStateId.Draft:
@@ -1230,6 +1253,8 @@ namespace GemTD.Gameplay
             }
 
             Debug.Log($"[GemTD] F6 filled {added} bag slot(s) with {filler.DisplayName}. Free={Inventory.FreeSlotCount}.");
+            if (added > 0)
+                GameEvents.RaiseInventoryChanged();
         }
 
         GemDefinition ResolveDebugFillGem()

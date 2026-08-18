@@ -19,8 +19,14 @@ namespace GemTD.UI
         void Start()
         {
             if (panel == null) panel = gameObject;
-            if (closeButton != null) closeButton.onClick.AddListener(() => _root?.ToggleCodexPanel());
+            if (closeButton != null)
+                closeButton.onClick.AddListener(() => _root?.ToggleCodexPanel());
             panel.SetActive(false);
+        }
+
+        public void Bind(GameCompositionRoot root)
+        {
+            _root = root;
         }
 
         void OnEnable() => GameEvents.CodexToggled += OnCodexToggled;
@@ -28,7 +34,6 @@ namespace GemTD.UI
 
         void OnCodexToggled()
         {
-            if (_root == null) _root = GameCompositionRoot.Instance;
             if (_root == null) return;
             var open = _root.CodexPanelOpen;
             panel.SetActive(open);

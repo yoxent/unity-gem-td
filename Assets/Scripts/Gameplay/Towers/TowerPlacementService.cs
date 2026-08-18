@@ -27,7 +27,7 @@ namespace GemTD.Gameplay.Towers
 
         public bool IsOccupied(Vector2Int cell) => _occupied.Contains(cell);
 
-        public bool CanPlace(TowerDefinition def, Vector2Int cell, RunStateId phase)
+        public bool CanPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, int placeCost)
         {
             if (def == null)
                 return false;
@@ -44,23 +44,23 @@ namespace GemTD.Gameplay.Towers
             if (_occupied.Contains(cell))
                 return false;
 
-            if (def.Cost > _economy.Gold)
+            if (placeCost > _economy.Gold)
                 return false;
 
             return true;
         }
 
-        public bool TryPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, out TowerRuntime tower)
+        public bool TryPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, int placeCost, out TowerRuntime tower)
         {
             tower = null;
 
-            if (!CanPlace(def, cell, phase))
+            if (!CanPlace(def, cell, phase, placeCost))
                 return false;
 
-            if (!_economy.TrySpend(def.Cost))
+            if (!_economy.TrySpend(placeCost))
                 return false;
 
-            tower = new TowerRuntime(cell, def);
+            tower = new TowerRuntime(cell, def, placeCost);
             _occupied.Add(cell);
             return true;
         }
@@ -70,7 +70,7 @@ namespace GemTD.Gameplay.Towers
             if (tower == null || inventory == null)
                 return false;
 
-            if (phase != RunStateId.Plan)
+            if (phase != RunStateId.Plan && phase != RunStateId.Combat)
                 return false;
 
             return CountSocketedGems(tower) <= inventory.FreeSlotCount;

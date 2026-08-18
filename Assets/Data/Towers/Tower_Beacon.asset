@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Beacon
   Kind: 2
-  Cost: 40
+  Cost: 30
+  BuildIncrement: 25
   Range: 3
   Damage: 0
   AttackInterval: 1
@@ -24,3 +25,4 @@ MonoBehaviour:
   EnemyAuraRadius: 3
   EnemySlowMultiplier: 0.7
   SocketCount: 1
+  AllowsHydraEvolution: 0
