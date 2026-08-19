@@ -33,6 +33,7 @@ namespace GemTD.UI
         int _slotIndex = -1;
         GemDefinition _gem;
         bool _pointerOverSlot;
+        bool _pointerOverX;
 
         public void Configure(GameCompositionRoot root, PopupManager popup, int slotIndex, GemDefinition gem)
         {
@@ -68,6 +69,7 @@ namespace GemTD.UI
 
             slotEvents.CanBeginDrag = CanStartDrag;
             slotEvents.Clicked = OnSlotClicked;
+            slotEvents.RightClicked = OnSlotRightClicked;
             slotEvents.BeginDrag = OnBeginDrag;
             slotEvents.Drag = OnDrag;
             slotEvents.EndDrag = OnEndDrag;
@@ -76,8 +78,8 @@ namespace GemTD.UI
 
             if (xHover != null)
             {
-                xHover.OnEnter = () => { _pointerOverSlot = true; RefreshXVisible(); };
-                xHover.OnExit = () => { _pointerOverSlot = false; RefreshXVisible(); };
+                xHover.OnEnter = () => { _pointerOverX = true; RefreshXVisible(); };
+                xHover.OnExit = () => { _pointerOverX = false; RefreshXVisible(); };
             }
             else if (xButton != null)
             {
@@ -101,7 +103,7 @@ namespace GemTD.UI
             if (xButton == null)
                 return;
             var dragging = slotEvents != null && slotEvents.DragStarted;
-            var show = _pointerOverSlot
+            var show = (_pointerOverSlot || _pointerOverX)
                        && _root != null && _root.States != null
                        && _root.States.Current == RunStateId.Plan
                        && _gem != null
@@ -137,9 +139,24 @@ namespace GemTD.UI
             _root.RequestInventorySlotClick(_slotIndex, shift);
         }
 
+        void OnSlotRightClicked(PointerEventData eventData)
+        {
+            if (_root == null || _gem == null)
+                return;
+            if (_root.States == null)
+                return;
+            var s = _root.States.Current;
+            if (s != RunStateId.Plan && s != RunStateId.Combat)
+                return;
+
+            // Socket into the selected tower's first free socket.
+            _root.RequestSocketFromInventory(_slotIndex);
+        }
+
         void OnBeginDrag(PointerEventData eventData)
         {
             s_dragSource = this;
+            GemDragState.SetInventory(_slotIndex, _gem);
             canvasGroup.alpha = 0.35f;
             canvasGroup.blocksRaycasts = false;
             RefreshXVisible();
@@ -159,20 +176,38 @@ namespace GemTD.UI
             canvasGroup.blocksRaycasts = true;
             DestroyGhost();
             s_dragSource = null;
+            GemDragState.Clear();
             RefreshXVisible();
         }
 
         void OnDrop(PointerEventData eventData)
         {
-            var source = s_dragSource;
-            if (source == null || source == this)
-                return;
             if (_root == null || _root.States == null)
                 return;
             if (!IsReorderState(_root.States.Current))
                 return;
+            if (!GemDragState.HasDrag)
+                return;
 
-            _root.RequestMoveOrSwapInventoryAt(source.SlotIndex, _slotIndex);
+            if (GemDragState.Kind == GemDragState.SourceKind.Inventory)
+            {
+                var fromIndex = GemDragState.InventoryIndex;
+                if (fromIndex < 0 || fromIndex == _slotIndex)
+                    return;
+
+                _root.RequestMoveOrSwapInventoryAt(fromIndex, _slotIndex);
+                return;
+            }
+
+            if (GemDragState.Kind == GemDragState.SourceKind.Socket)
+            {
+                var fromSocketIndex = GemDragState.SocketIndex;
+                if (fromSocketIndex < 0)
+                    return;
+
+                _root.RequestUnsocketToInventoryAt(fromSocketIndex, _slotIndex);
+                return;
+            }
         }
 
         static bool IsReorderState(RunStateId state)

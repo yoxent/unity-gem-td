@@ -25,6 +25,7 @@ namespace GemTD.UI
 
         public Func<PointerEventData, bool> CanBeginDrag;
         public Action<PointerEventData> Clicked;
+        public Action<PointerEventData> RightClicked;
         public Action<PointerEventData> BeginDrag;
         public Action<PointerEventData> Drag;
         public Action<PointerEventData> EndDrag;
@@ -95,7 +96,11 @@ namespace GemTD.UI
             }
             if (!_interactable)
                 return;
-            Clicked?.Invoke(eventData);
+
+            if (eventData.button == PointerEventData.InputButton.Right)
+                RightClicked?.Invoke(eventData);
+            else
+                Clicked?.Invoke(eventData);
         }
 
         void IBeginDragHandler.OnBeginDrag(PointerEventData eventData)

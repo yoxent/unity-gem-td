@@ -828,6 +828,91 @@ namespace GemTD.Gameplay
             GameEvents.RaiseInventoryChanged();
         }
 
+        /// <summary>
+        /// Socket the gem from a specific inventory index onto a specific tower socket index.
+        /// Supports swapping: if the destination socket is occupied, the existing gem is moved
+        /// into inventory (if possible) and the dragged gem takes that socket.
+        /// </summary>
+        public void RequestSocketFromInventoryAt(int inventoryIndex, int socketIndex)
+        {
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
+            {
+                Debug.Log("[GemTD] Socket frozen outside Plan/Combat.");
+                return;
+            }
+
+            var tower = Placement?.Selected;
+            if (tower == null)
+            {
+                Debug.Log("[GemTD] Select a tower before socketing from inventory.");
+                return;
+            }
+
+            if (SocketLockdown != null && !SocketLockdown.CanSocket(tower, States.Current))
+            {
+                Debug.Log($"[GemTD] Tower sockets locked ({SocketLockdown.Remaining(tower):0.0}s).");
+                return;
+            }
+
+            if (!Inventory.TryTakeAt(inventoryIndex, out var gem))
+                return;
+
+            // If the socket is empty, just socket the dragged gem back onto the exact target.
+            var socketWasOccupied = socketIndex >= 0
+                                     && tower.Sockets != null
+                                     && socketIndex < tower.Sockets.Length
+                                     && tower.Sockets[socketIndex] != null;
+
+            if (!socketWasOccupied)
+            {
+                if (tower.TrySocket(gem, socketIndex, allowSocket: true))
+                {
+                    OnSocketChanged(tower);
+                    GameEvents.RaiseInventoryChanged();
+                    return;
+                }
+
+                // Socket rejected (usually uniqueness). Put the gem back.
+                Inventory.TryAdd(gem);
+                GameEvents.RaiseInventoryChanged();
+                return;
+            }
+
+            // Swap path: remove existing gem from the target socket, try socketing dragged gem,
+            // and only then move the displaced gem into inventory.
+            if (!tower.TryUnsocket(socketIndex, out var displacedGem, allowSocket: true))
+            {
+                // Defensive fallback; shouldn't happen because we detected "occupied".
+                Inventory.TryAdd(gem);
+                return;
+            }
+
+            if (!tower.TrySocket(gem, socketIndex, allowSocket: true))
+            {
+                // Rejected (usually uniqueness); restore displaced gem and return dragged gem.
+                tower.TrySocket(displacedGem, socketIndex, allowSocket: true);
+                Inventory.TryAdd(gem);
+                GameEvents.RaiseInventoryChanged();
+                return;
+            }
+
+            // Dragged gem is now in the target socket; move displaced gem back into the exact
+            // inventory slot the dragged gem came from (swap semantics).
+            if (!Inventory.TryAddAt(inventoryIndex, displacedGem))
+            {
+                // Very defensive: slot should be empty because we just took from it.
+                // Restore previous state.
+                tower.TryUnsocket(socketIndex, out _, allowSocket: true);
+                tower.TrySocket(displacedGem, socketIndex, allowSocket: true);
+                Inventory.TryAddAt(inventoryIndex, gem);
+                GameEvents.RaiseInventoryChanged();
+                return;
+            }
+
+            OnSocketChanged(tower);
+            GameEvents.RaiseInventoryChanged();
+        }
+
         public void RequestUnsocket(int socketIndex)
         {
             if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
@@ -856,6 +941,66 @@ namespace GemTD.Gameplay
             {
                 tower.TrySocket(gem, socketIndex, allowSocket: true);
                 return;
+            }
+
+            OnSocketChanged(tower);
+            GameEvents.RaiseInventoryChanged();
+        }
+
+        /// <summary>
+        /// Drag socket → inventory: unsocket and place into a specific inventory slot.
+        /// If the target slot is occupied, swap: the existing inventory gem sockets into
+        /// the vacated socket, and the unsocketed gem lands in the target inventory slot.
+        /// </summary>
+        public void RequestUnsocketToInventoryAt(int socketIndex, int inventoryIndex)
+        {
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
+                return;
+
+            var tower = Placement?.Selected;
+            if (tower == null || Inventory == null)
+                return;
+
+            if (SocketLockdown != null && !SocketLockdown.CanSocket(tower, States.Current))
+            {
+                Debug.Log($"[GemTD] Tower sockets locked ({SocketLockdown.Remaining(tower):0.0}s).");
+                return;
+            }
+
+            if (inventoryIndex < 0 || inventoryIndex >= Inventory.Capacity)
+                return;
+
+            var targetInventoryGem = Inventory.Slots[inventoryIndex]; // null if empty
+
+            // Remove gem from socket.
+            if (!tower.TryUnsocket(socketIndex, out var unsocketed, allowSocket: true))
+                return;
+
+            if (targetInventoryGem == null)
+            {
+                // Target slot is empty — place directly.
+                if (!Inventory.TryAddAt(inventoryIndex, unsocketed))
+                {
+                    // Defensive: restore.
+                    tower.TrySocket(unsocketed, socketIndex, allowSocket: true);
+                    return;
+                }
+            }
+            else
+            {
+                // Target slot is occupied — swap: take the existing gem, put unsocketed gem there,
+                // then try to socket the displaced inventory gem into the now-empty socket.
+                Inventory.TryTakeAt(inventoryIndex, out var displaced);
+                Inventory.TryAddAt(inventoryIndex, unsocketed);
+
+                if (!tower.TrySocket(displaced, socketIndex, allowSocket: true))
+                {
+                    // Socket rejected the displaced gem (uniqueness). Restore everything.
+                    Inventory.TryTakeAt(inventoryIndex, out _);
+                    Inventory.TryAddAt(inventoryIndex, targetInventoryGem);
+                    tower.TrySocket(unsocketed, socketIndex, allowSocket: true);
+                    return;
+                }
             }
 
             OnSocketChanged(tower);

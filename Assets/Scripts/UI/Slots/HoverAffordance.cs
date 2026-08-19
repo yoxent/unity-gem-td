@@ -18,10 +18,11 @@ namespace GemTD.UI
                 return;
 
             var overSlot = false;
+            var overX = false;
 
             void Refresh()
             {
-                var show = overSlot && (canShow == null || canShow());
+                var show = (overSlot || overX) && (canShow == null || canShow());
                 xChild.SetActive(show);
             }
 
@@ -30,8 +31,8 @@ namespace GemTD.UI
 
             if (xRelay != null)
             {
-                xRelay.OnEnter = () => { overSlot = true; Refresh(); };
-                xRelay.OnExit = () => { overSlot = false; Refresh(); };
+                xRelay.OnEnter = () => { overX = true; Refresh(); };
+                xRelay.OnExit = () => { overX = false; Refresh(); };
             }
 
             xChild.SetActive(false);

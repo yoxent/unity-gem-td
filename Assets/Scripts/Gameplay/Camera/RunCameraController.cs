@@ -26,6 +26,7 @@ namespace GemTD.Gameplay.CameraControl
         InputAction _lookDelta;
         InputAction _zoom;
         InputAction _middleButton;
+        InputAction _rightButton;
         InputAction _rotateLeft;
         InputAction _rotateRight;
         InputActionMap _map;
@@ -46,6 +47,7 @@ namespace GemTD.Gameplay.CameraControl
             _lookDelta = _map.AddAction("LookDelta", InputActionType.Value, "<Mouse>/delta");
             _zoom = _map.AddAction("Zoom", InputActionType.Value, "<Mouse>/scroll");
             _middleButton = _map.AddAction("Middle", InputActionType.Button, "<Mouse>/middleButton");
+            _rightButton = _map.AddAction("Right", InputActionType.Button, "<Mouse>/rightButton");
             _rotateLeft = _map.AddAction("RotateLeft", InputActionType.Button, "<Keyboard>/q");
             _rotateRight = _map.AddAction("RotateRight", InputActionType.Button, "<Keyboard>/e");
             _map.Enable();
@@ -75,7 +77,7 @@ namespace GemTD.Gameplay.CameraControl
             if (move.sqrMagnitude > 0.0001f)
                 focus += (right * move.x + forward * move.y) * (panSpeed * Time.unscaledDeltaTime);
 
-            if (_middleButton.IsPressed())
+            if (_middleButton.IsPressed() || _rightButton.IsPressed())
             {
                 var mouse = _lookDelta.ReadValue<Vector2>();
                 focus += (-right * mouse.x - forward * mouse.y) * mousePanSpeed;

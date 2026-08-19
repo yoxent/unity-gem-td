@@ -14,10 +14,16 @@ namespace GemTD.Gameplay.Run
         [SerializeField] Camera worldCamera;
         [SerializeField] LayerMask clickMask = ~0;
 
+        // RMB drag threshold in pixels — moves beyond this suppress the deselect-on-release.
+        const float RmbDragThresholdPx = 4f;
+
         GameCompositionRoot _root;
         InputAction _click;
         InputAction _rightClick;
         InputAction _escape;
+
+        bool _rmbDragging;
+        Vector2 _rmbPressPos;
 
         readonly List<RaycastResult> _uiHits = new List<RaycastResult>(16);
 
@@ -71,15 +77,28 @@ namespace GemTD.Gameplay.Run
             if (_root == null)
                 return;
 
-            // RMB (GDD): cancel place → else deselect tower / close Tower Details.
-            // Ignore when over UI so Tower Details / inventory right-clicks don't steal focus.
-            if (_rightClick != null && _rightClick.WasPressedThisFrame())
+            // RMB: track press to detect drag vs click.
+            // Camera also pans on RMB hold; only fire cancel layer on release if it was a clean click.
+            if (_rightClick != null)
             {
-                if (IsPointerOverUi())
-                    return;
+                if (_rightClick.WasPressedThisFrame())
+                {
+                    _rmbDragging = false;
+                    _rmbPressPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+                }
 
-                if (HandleCancelLayer())
-                    return;
+                if (_rightClick.IsPressed() && Mouse.current != null)
+                {
+                    var delta = Mouse.current.position.ReadValue() - _rmbPressPos;
+                    if (delta.magnitude > RmbDragThresholdPx)
+                        _rmbDragging = true;
+                }
+
+                if (_rightClick.WasReleasedThisFrame() && !_rmbDragging)
+                {
+                    if (!IsPointerOverUi())
+                        HandleCancelLayer();
+                }
             }
 
             if (_click == null || !_click.WasPressedThisFrame())
