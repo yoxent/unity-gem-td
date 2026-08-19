@@ -63,13 +63,7 @@ namespace GemTD.UI
                 stateText.text = $"State: {_root.States.Current}" + (planLocked ? " (expand)" : "");
             }
             if (defeatText != null)
-            {
-                var defeat = _root.States != null && _root.States.Current == RunStateId.Defeat;
-                var victory = _root.States != null && _root.States.Current == RunStateId.VictorySummary;
-                defeatText.gameObject.SetActive(defeat || victory);
-                if (defeat) defeatText.text = "DEFEAT";
-                else if (victory) defeatText.text = "VICTORY";
-            }
+                defeatText.gameObject.SetActive(false);
         }
 
         public void BindSettings(SettingsController settingsController)

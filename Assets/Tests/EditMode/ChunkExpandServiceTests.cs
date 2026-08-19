@@ -136,6 +136,25 @@ namespace GemTD.Tests.EditMode
             _path.SetHome(4 * ChunkMask.Size + 2, 5 * ChunkMask.Size + 0); // (22,20)
         }
 
+        void StampCrossCorridorWithHome()
+        {
+            StampKeep();
+            var cross = MakeCross();
+            var r = _stamp.StampTentative(new Vector2Int(4, 5), cross, 0, _path, _board);
+            _stamp.Commit(new Vector2Int(4, 5), cross, 0, r.Mask, _grid);
+            Object.DestroyImmediate(cross.gameObject);
+            _path.SetHome(4 * ChunkMask.Size + 2, 5 * ChunkMask.Size + 0);
+        }
+
+        void StampEastWestLoopGap()
+        {
+            StampCrossCorridorWithHome();
+            StampStraight(new Vector2Int(3, 5), 1);
+            StampStraight(new Vector2Int(3, 6), 1);
+            StampStraight(new Vector2Int(5, 5), 1);
+            StampStraight(new Vector2Int(5, 6), 1);
+        }
+
         [Test] public void CollectLegalExpands_EmptyGrid_ReturnsZero()
         {
             var into = new List<Vector2Int>();
@@ -277,6 +296,44 @@ namespace GemTD.Tests.EditMode
             _expand.CollectLegalExpands(into);
 
             Assert.IsTrue(into.Contains(new Vector2Int(4, 8)));
+        }
+
+        [Test]
+        public void CollectLegalExpands_RejectsLoopCloserWithNoOutwardArm()
+        {
+            StampEastWestLoopGap();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight()); // E-W at yaw 1 closes the gap with no outward arm
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test]
+        public void TryExpand_RejectsLoopCloserWithNoOutwardArm()
+        {
+            StampEastWestLoopGap();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+
+            var before = _grid.Count;
+            Assert.IsFalse(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.AreEqual(before, _grid.Count);
+        }
+
+        [Test]
+        public void CollectLegalExpands_AcceptsLoopWhenExpandedChunkKeepsOutwardArm()
+        {
+            StampEastWestLoopGap();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeCross()); // W+E+S connect the loop; north stays open
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsTrue(into.Contains(new Vector2Int(4, 6)));
         }
 
         void StampCross(Vector2Int coord, int yaw)

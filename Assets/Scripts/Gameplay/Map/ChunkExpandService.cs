@@ -99,6 +99,7 @@ namespace GemTD.Gameplay.Map
                 {
                     var mask = baseMask.Rotated(yaw);
                     if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
+                    if (!HasOutwardExpandArm(coord, mask)) continue;
                     if (TentativeReachesHome(coord, prefab, yaw))
                         return true;
                 }
@@ -117,6 +118,7 @@ namespace GemTD.Gameplay.Map
                 {
                     var mask = baseMask.Rotated(yaw);
                     if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
+                    if (!HasOutwardExpandArm(coord, mask)) continue;
                     if (TentativeReachesHome(coord, prefab, yaw))
                         into.Add((prefab, yaw));
                 }
@@ -149,6 +151,23 @@ namespace GemTD.Gameplay.Map
                     anyOpenMatch = true;
             }
             return anyOpenMatch;
+        }
+
+        /// <summary>
+        /// At least one open edge must face an empty in-bounds chunk slot so a loop
+        /// closure cannot seal the map with no continuation arm.
+        /// </summary>
+        bool HasOutwardExpandArm(Vector2Int coord, ChunkMask mask)
+        {
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                var dir = _dirs[d];
+                if ((mask.OpenEdges & dir) == 0) continue;
+                var nb = _grid.NeighborCoord(coord, dir);
+                if (!_grid.InBounds(nb.x, nb.y)) continue;
+                if (!_grid.IsOccupied(nb.x, nb.y)) return true;
+            }
+            return false;
         }
 
         bool TentativeReachesHome(Vector2Int coord, MapChunkStamp prefab, int yaw)

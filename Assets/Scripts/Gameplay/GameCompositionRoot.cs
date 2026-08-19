@@ -23,8 +23,8 @@ namespace GemTD.Gameplay
 
         [Header("Data")]
         [SerializeField] RunConfig runConfig;
-        [SerializeField] TowerDefinition[] buildBarTowers;
-        [SerializeField] WaveDefinition[] waves;
+        [SerializeField] BuildBarCatalog buildBarCatalog;
+        [SerializeField] WaveCatalog waveCatalog;
         [SerializeField] GemDefinition[] draftPool;
         [SerializeField] CodexCatalog codexCatalog;
         [SerializeField] ChunkCatalog chunkCatalog;
@@ -56,6 +56,7 @@ namespace GemTD.Gameplay
         public CodexProgress Codex { get; private set; }
         public CodexCatalog CodexCatalog => codexCatalog;
         public StatusRuntime Statuses => _statuses;
+        public RunStatsTracker RunStats => _runStats;
         public int CurrentWaveNumber => WaveController != null ? WaveController.CurrentWaveNumber : 0;
         public bool HasSelectedTower => Placement != null && Placement.Selected != null;
         public bool SelectedHasSocketedGems =>
@@ -97,7 +98,12 @@ namespace GemTD.Gameplay
         public int ComputePlaceCost(TowerDefinition def) =>
             TowerCostCalculator.ComputePlaceCost(def, _towers);
 
-        public int BuildBarTowerCount => buildBarTowers != null ? buildBarTowers.Length : 0;
+        public int BuildBarTowerCount => buildBarCatalog != null ? buildBarCatalog.Count : 0;
+
+        public TowerDefinition[] GetBuildBarTowers() =>
+            buildBarCatalog != null && buildBarCatalog.Towers != null
+                ? buildBarCatalog.Towers
+                : System.Array.Empty<TowerDefinition>();
 
         public bool HasPlaceTowerSelected => _placeDef != null;
         public float SelectedSocketLockRemaining
@@ -166,6 +172,7 @@ namespace GemTD.Gameplay
         BeaconAuraSystem _beaconAura;
         GemModifierPipeline _pipeline;
         StatusRuntime _statuses;
+        readonly RunStatsTracker _runStats = new RunStatsTracker();
         EnemySpawnerGate _spawnerGate;
 
         readonly List<TowerRuntime> _towers = new List<TowerRuntime>(16);
@@ -232,6 +239,7 @@ namespace GemTD.Gameplay
 
         void Start()
         {
+            _runStats.Reset();
             States.StartRun();
             BeginDraftOffer(allowSkip: false);
         }
@@ -400,17 +408,15 @@ namespace GemTD.Gameplay
             Placement = new TowerPlacementService(_board, _path, Economy);
             _registry = new EnemyRegistry();
             var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
-            _combat = new CombatDirector(cellSize, projectileSpeed);
+            _combat = new CombatDirector(cellSize, projectileSpeed, _runStats.RecordDamage);
             _beaconAura = new BeaconAuraSystem();
             _pipeline = new GemModifierPipeline();
 
             _spawnerGate = new EnemySpawnerGate(SpawnEnemy, () => CountLivingEnemies());
 
-            var waveDefs = waves != null && waves.Length > 0
-                ? waves
-                : System.Array.Empty<WaveDefinition>();
+            var waveDefs = waveCatalog != null ? waveCatalog.GetWavesOrEmpty() : System.Array.Empty<WaveDefinition>();
             if (waveDefs.Length == 0)
-                Debug.LogError("[GemTD] No wave definitions assigned on GameCompositionRoot.");
+                Debug.LogError("[GemTD] No wave definitions assigned on WaveCatalog.");
             else
                 WaveController = new WaveController(waveDefs, States, Economy, endWaveGold);
         }
@@ -603,6 +609,7 @@ namespace GemTD.Gameplay
             }
 
             _towers.Add(tower);
+            _runStats.RecordTowerPlaced(tower.Def);
             if (towerPrefab != null)
             {
                 var view = Instantiate(towerPrefab, transform);
@@ -650,10 +657,7 @@ namespace GemTD.Gameplay
         bool TryGetBuildBarTower(int index, out TowerDefinition def)
         {
             def = null;
-            if (buildBarTowers == null || index < 0 || index >= buildBarTowers.Length)
-                return false;
-            def = buildBarTowers[index];
-            return def != null;
+            return buildBarCatalog != null && buildBarCatalog.TryGet(index, out def);
         }
 
         public void CyclePriority(int slot, int delta = 1)
@@ -824,8 +828,15 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            OnSocketChanged(tower);
+            NotifySocketChanged(tower, gem);
             GameEvents.RaiseInventoryChanged();
+        }
+
+        void NotifySocketChanged(TowerRuntime tower, GemDefinition socketedGem)
+        {
+            if (socketedGem != null)
+                _runStats.RecordGemSocketed(socketedGem.Id);
+            OnSocketChanged(tower);
         }
 
         /// <summary>
@@ -867,7 +878,7 @@ namespace GemTD.Gameplay
             {
                 if (tower.TrySocket(gem, socketIndex, allowSocket: true))
                 {
-                    OnSocketChanged(tower);
+                    NotifySocketChanged(tower, gem);
                     GameEvents.RaiseInventoryChanged();
                     return;
                 }
@@ -909,7 +920,7 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            OnSocketChanged(tower);
+            NotifySocketChanged(tower, gem);
             GameEvents.RaiseInventoryChanged();
         }
 
@@ -1001,9 +1012,10 @@ namespace GemTD.Gameplay
                     tower.TrySocket(unsocketed, socketIndex, allowSocket: true);
                     return;
                 }
+
+                NotifySocketChanged(tower, displaced);
             }
 
-            OnSocketChanged(tower);
             GameEvents.RaiseInventoryChanged();
         }
 
@@ -1217,6 +1229,9 @@ namespace GemTD.Gameplay
 
                 if (!enemy.IsAlive)
                 {
+                    if (enemy.LastDamageSource != null)
+                        _runStats.RecordKill(enemy.LastDamageSource);
+
                     var killGold = enemy.Definition != null ? enemy.Definition.KillGold : 0;
                     Economy.GrantKillGold(killGold);
                     RemoveEnemy(enemy);

@@ -17,6 +17,7 @@ namespace GemTD.UI
         [SerializeField] SpeedPanelController speedPanel;
         [SerializeField] CodexController codex;
         [SerializeField] SettingsController settings;
+        [SerializeField] RunSummaryController runSummary;
 
         void Awake()
         {
@@ -52,6 +53,8 @@ namespace GemTD.UI
                 settings.BindSpeed(root.Speed);
                 topHud?.BindSettings(settings);
             }
+
+            runSummary?.Bind(root);
         }
     }
 }

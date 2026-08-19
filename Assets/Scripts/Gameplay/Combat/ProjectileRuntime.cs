@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using GemTD.Gameplay.Enemies;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Combat
 {
@@ -51,6 +53,8 @@ namespace GemTD.Gameplay.Combat
         List<ProjectileRuntime> _spawnBuffer;
         EnemyRuntime _lastHit;
         Vector3 _seekOffset;
+        TowerDefinition _sourceTower;
+        Action<TowerDefinition, float> _recordDamage;
 
         public void Init(
             Vector3 origin,
@@ -70,7 +74,9 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses = null,
             List<ProjectileRuntime> spawnBuffer = null,
             bool softSeek = false,
-            Vector3 seekOffset = default)
+            Vector3 seekOffset = default,
+            TowerDefinition sourceTower = null,
+            Action<TowerDefinition, float> recordDamage = null)
         {
             Position = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
@@ -92,6 +98,8 @@ namespace GemTD.Gameplay.Combat
             _statuses = statuses;
             _spawnBuffer = spawnBuffer;
             _lastHit = null;
+            _sourceTower = sourceTower;
+            _recordDamage = recordDamage;
             IsActive = true;
         }
 
@@ -236,10 +244,15 @@ namespace GemTD.Gameplay.Combat
 
         void ApplyHitDamage(EnemyRuntime enemy)
         {
+            if (_sourceTower != null)
+                enemy.LastDamageSource = _sourceTower;
+
             if (_statuses != null)
                 _statuses.ApplyDamage(enemy, Damage);
             else
                 enemy.ApplyDamage(Damage);
+
+            _recordDamage?.Invoke(_sourceTower, Damage);
         }
 
         void ApplyStatusesOnHit(EnemyRuntime hit, List<EnemyRuntime> livingCandidates)
@@ -289,7 +302,9 @@ namespace GemTD.Gameplay.Combat
                 _shock,
                 _prolif,
                 _statuses,
-                _spawnBuffer);
+                _spawnBuffer,
+                sourceTower: _sourceTower,
+                recordDamage: _recordDamage);
             child._lastHit = _lastHit;
             _spawnBuffer.Add(child);
         }

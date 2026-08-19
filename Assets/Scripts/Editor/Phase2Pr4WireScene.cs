@@ -10,7 +10,7 @@ namespace GemTD.Editor
         public static void Wire()
         {
             Debug.LogError(
-                "[PR4 Wire] Obsolete — do not run. Assign draftPool and waves on " +
+                "[PR4 Wire] Obsolete — do not run. Assign draftPool, BuildBarCatalog, and WaveCatalog on " +
                 "GameCompositionRoot in Run.unity. Use Gem TD / Phase 2 PR5 Wire Gems + Hydra Seed instead.");
         }
 

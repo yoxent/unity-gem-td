@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using GemTD.Gameplay.Towers;
+
 namespace GemTD.Gameplay.Enemies
 {
     public sealed class EnemyRuntime
@@ -11,6 +13,7 @@ namespace GemTD.Gameplay.Enemies
         bool _alive;
 
         public EnemyDefinition Definition => _def;
+        public TowerDefinition LastDamageSource { get; set; }
         public LocomotionStyle LocomotionStyle { get; private set; }
         public float HopHeight { get; private set; }
         public float HopPeriod { get; private set; }
@@ -59,6 +62,7 @@ namespace GemTD.Gameplay.Enemies
             Hp = def != null ? def.MaxHealth : 0f;
             ShieldHp = def != null ? def.ShieldMax : 0f;
             MoveSpeedMultiplier = 1f;
+            LastDamageSource = null;
             _segmentIndex = 0;
             
             // Snapshot locomotion parameters at spawn time so view behavior cannot change later

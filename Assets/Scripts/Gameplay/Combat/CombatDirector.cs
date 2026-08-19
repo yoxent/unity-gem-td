@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using GemTD.Core;
@@ -17,13 +18,15 @@ namespace GemTD.Gameplay.Combat
         readonly TargetSelector _selector = new TargetSelector();
         readonly List<ProjectileRuntime> _projectiles = new List<ProjectileRuntime>(32);
         readonly List<ProjectileRuntime> _spawnBuffer = new List<ProjectileRuntime>(16);
+        readonly Action<TowerDefinition, float> _recordDamage;
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
 
-        public CombatDirector(float cellSize = 1f, float projectileSpeed = 20f)
+        public CombatDirector(float cellSize = 1f, float projectileSpeed = 20f, Action<TowerDefinition, float> recordDamage = null)
         {
             _cellSize = cellSize > 0f ? cellSize : 1f;
             _projectileSpeed = projectileSpeed > 0f ? projectileSpeed : 20f;
+            _recordDamage = recordDamage;
         }
 
         /// <summary>Despawn all in-flight bolts (wave end / leave combat). Views pool via sync.</summary>
@@ -104,11 +107,11 @@ namespace GemTD.Gameplay.Combat
                             var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                             var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
                             for (var h = 0; h < laterals.Length; h++)
-                                SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, yaws[h], laterals[h]);
+                                SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, tower.Def, yaws[h], laterals[h]);
                         }
                         else
                         {
-                            SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, 0f, 0f);
+                            SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, tower.Def, 0f, 0f);
                         }
                     }
                 }
@@ -151,6 +154,7 @@ namespace GemTD.Gameplay.Combat
             float damage,
             float speed,
             StatusRuntime statuses,
+            TowerDefinition sourceTower,
             float headYawDegrees,
             float headLateral)
         {
@@ -217,7 +221,9 @@ namespace GemTD.Gameplay.Combat
                     statuses,
                     _spawnBuffer,
                     softSeek,
-                    seekOffset);
+                    seekOffset,
+                    sourceTower,
+                    _recordDamage);
                 _projectiles.Add(projectile);
             }
         }

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139bb0e6a3fdaeb45bc077ecc2fcb8ae, type: 3}
+  m_Name: Wave_12
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Run.WaveDefinition
+  WaveNumber: 12
+  SpawnInterval: 0.26
+  Entries:
+  - Enemy: {fileID: 11400000, guid: 32ae34bfa8ca7af48b720cfe5a9559da, type: 2}
+    Count: 10
+  - Enemy: {fileID: 11400000, guid: 3c0b49c545ed4b99807c80e3af754e8b, type: 2}
+    Count: 6
+  - Enemy: {fileID: 11400000, guid: 0515298f729f41fdb4dfc4d4adbb054f, type: 2}
+    Count: 4
+  OfferDraftAfterClear: 1
+  EndsCampaign: 0
