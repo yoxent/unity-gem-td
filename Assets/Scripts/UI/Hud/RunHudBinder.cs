@@ -1,4 +1,5 @@
 using UnityEngine;
+using GemTD.Core;
 using GemTD.Gameplay;
 
 namespace GemTD.UI
@@ -15,38 +16,27 @@ namespace GemTD.UI
         [SerializeField] TopHudController topHud;
         [SerializeField] SpeedPanelController speedPanel;
         [SerializeField] CodexController codex;
+        [SerializeField] SettingsController settings;
 
         void Awake()
         {
             if (root == null)
-                root = GameCompositionRoot.Instance;
-            if (popup == null)
-                popup = GetComponentInChildren<PopupManager>(true);
-            if (buildBar == null)
-                buildBar = GetComponentInChildren<BuildBarController>(true);
-            if (towerDetails == null)
-                towerDetails = GetComponentInChildren<TowerDetailsController>(true);
-            if (inventory == null)
-                inventory = GetComponentInChildren<InventoryController>(true);
-            if (draft == null)
-                draft = GetComponentInChildren<DraftController>(true);
-            if (topHud == null)
-                topHud = GetComponentInChildren<TopHudController>(true);
-            if (speedPanel == null)
-                speedPanel = GetComponentInChildren<SpeedPanelController>(true);
-            if (codex == null)
-                codex = GetComponentInChildren<CodexController>(true);
-
-            if (root == null)
             {
-                Debug.LogError("RunHudBinder: assign GameCompositionRoot.", this);
+                Debug.LogError("RunHudBinder: root is not assigned.", this);
                 return;
             }
 
-            if (popup == null)
-                Debug.LogError("RunHudBinder: assign PopupManager.", this);
-            else
-                popup.Init(root.Speed);
+            if (popup == null) Debug.LogError("RunHudBinder: popup is not assigned.", this);
+            if (buildBar == null) Debug.LogError("RunHudBinder: buildBar is not assigned.", this);
+            if (towerDetails == null) Debug.LogError("RunHudBinder: towerDetails is not assigned.", this);
+            if (inventory == null) Debug.LogError("RunHudBinder: inventory is not assigned.", this);
+            if (draft == null) Debug.LogError("RunHudBinder: draft is not assigned.", this);
+            if (topHud == null) Debug.LogError("RunHudBinder: topHud is not assigned.", this);
+            if (speedPanel == null) Debug.LogError("RunHudBinder: speedPanel is not assigned.", this);
+            if (codex == null) Debug.LogError("RunHudBinder: codex is not assigned.", this);
+            if (settings == null) Debug.LogError("RunHudBinder: settings is not assigned.", this);
+
+            if (popup != null) popup.Init(root.Speed);
 
             buildBar?.Bind(root);
             towerDetails?.Bind(root, popup);
@@ -55,6 +45,13 @@ namespace GemTD.UI
             topHud?.Bind(root, popup);
             speedPanel?.Bind(root);
             codex?.Bind(root);
+
+            GameSettings.ApplyAudio();
+            if (settings != null)
+            {
+                settings.BindSpeed(root.Speed);
+                topHud?.BindSettings(settings);
+            }
         }
     }
 }

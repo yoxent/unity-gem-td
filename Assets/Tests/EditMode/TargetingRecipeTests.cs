@@ -27,6 +27,17 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void WithCycledBackward_WrapsP1ThroughEightKeys()
+        {
+            var r = TargetingRecipe.Default;
+            r = r.WithCycled(0, -1);
+            Assert.AreEqual(TargetingKey.Last, r.Priority1);
+            for (var i = 0; i < 7; i++)
+                r = r.WithCycled(0, -1);
+            Assert.AreEqual(TargetingKey.First, r.Priority1);
+        }
+
+        [Test]
         public void WithCycled_InvalidSlot_ReturnsUnchanged()
         {
             var r = TargetingRecipe.Default;

@@ -57,17 +57,19 @@ namespace GemTD.Gameplay.Run
 
         void Update()
         {
-            HandleHotkeys();
-
-            if (_root == null)
-                return;
-
-            // Esc: route to HUD for layered close (popup -> Codex -> place/deselect).
             if (_escape != null && _escape.WasPressedThisFrame())
             {
                 GameEvents.RaiseRequestCloseTopMost();
                 return;
             }
+
+            if (GameSettings.IsPanelOpen)
+                return;
+
+            HandleHotkeys();
+
+            if (_root == null)
+                return;
 
             // RMB (GDD): cancel place → else deselect tower / close Tower Details.
             // Ignore when over UI so Tower Details / inventory right-clicks don't steal focus.
@@ -214,7 +216,6 @@ namespace GemTD.Gameplay.Run
             }
 
             var ctrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
-            var shift = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
             var planOrCombat = states != null &&
                 (states.Current == RunStateId.Plan || states.Current == RunStateId.Combat);
 
@@ -224,16 +225,8 @@ namespace GemTD.Gameplay.Run
                     _root.CopySelectedTargeting();
                 else if (ctrl && kb.vKey.wasPressedThisFrame)
                     _root.PasteSelectedTargeting();
-                else if (!ctrl && kb.rKey.wasPressedThisFrame)
-                {
-                    if (shift)
-                    {
-                        if (_root.TryCycleApplyScope(out var needsAllConfirm) && needsAllConfirm)
-                            GameEvents.RaiseRequestTargetingAllConfirm();
-                    }
-                    else
-                        _root.CyclePriority(0);
-                }
+                // R / Shift+R (cycle priority / apply-scope) are intentionally disabled
+                // until the Tower Details targeting UI is re-enabled.
             }
 
             // C: Codex — skip when Ctrl held (copy). Plan + Combat only.

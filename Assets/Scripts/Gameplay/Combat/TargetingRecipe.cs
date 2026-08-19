@@ -29,12 +29,14 @@ namespace GemTD.Gameplay.Combat
             }
         }
 
-        public TargetingRecipe WithCycled(int slot)
+        public TargetingRecipe WithCycled(int slot) => WithCycled(slot, 1);
+
+        public TargetingRecipe WithCycled(int slot, int delta)
         {
-            if (slot < 0 || slot >= SlotCount)
+            if (slot < 0 || slot >= SlotCount || delta == 0)
                 return this;
 
-            var next = (TargetingKey)(((int)Get(slot) + 1) % KeyCount);
+            var next = (TargetingKey)(((int)Get(slot) + delta % KeyCount + KeyCount) % KeyCount);
             var copy = this;
             switch (slot)
             {

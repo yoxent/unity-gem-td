@@ -656,14 +656,14 @@ namespace GemTD.Gameplay
             return def != null;
         }
 
-        public void CyclePriority(int slot)
+        public void CyclePriority(int slot, int delta = 1)
         {
             if (!HasSelectedTower)
                 return;
 
             var selected = Placement.Selected;
-            var next = selected.Targeting.WithCycled(slot);
-            TargetingService.Apply(next, _applyScope, selected, _towers);
+            var next = selected.Targeting.WithCycled(slot, delta);
+            TargetingService.Apply(next, TargetingApplyScope.ThisTower, selected, _towers);
             GameEvents.RaiseTargetingChanged();
         }
 

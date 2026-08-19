@@ -15,15 +15,13 @@ namespace GemTD.UI
         [SerializeField] TMP_Text detailsText;
         [SerializeField] TowerGemSlot[] socketSlots = new TowerGemSlot[3];
         [SerializeField] Button sellButton;
-        [SerializeField] Button[] priorityButtons = new Button[3];
-        [SerializeField] TMP_Text[] priorityLabels = new TMP_Text[3];
+        [SerializeField] TowerTargetPriority[] priorityButtons = new TowerTargetPriority[3];
         [SerializeField] Button scopeThisButton;
         [SerializeField] Button scopeTypeButton;
         [SerializeField] Button scopeAllButton;
 
         GameCompositionRoot _root;
         PopupManager _popup;
-        bool _priorityClicksWired;
         bool _visible;
 
         void OnEnable()
@@ -52,13 +50,14 @@ namespace GemTD.UI
             if (sellButton != null) sellButton.onClick.AddListener(OnSell);
 
             if (priorityButtons == null || priorityButtons.Length != 3)
-                Debug.LogError("TowerDetailsController: priorityButtons must be 3 inspector-dragged Buttons.", this);
-            if (priorityLabels == null || priorityLabels.Length != 3)
-                Debug.LogError("TowerDetailsController: priorityLabels must be 3 inspector-dragged TMP_Texts.", this);
-            if (scopeThisButton == null || scopeTypeButton == null || scopeAllButton == null)
-                Debug.LogError("TowerDetailsController: scope This/Type/All Buttons must be assigned.", this);
+                Debug.LogError("TowerDetailsController: priorityButtons must be 3 inspector-dragged TowerTargetPriority rows.", this);
 
-            WirePriorityClicks();
+            for (var i = 0; i < priorityButtons.Length; i++)
+            {
+                if (priorityButtons[i] != null)
+                    priorityButtons[i].Bind(_root, i);
+            }
+
             if (scopeThisButton != null)
                 scopeThisButton.onClick.AddListener(() => _root?.SetApplyScope(TargetingApplyScope.ThisTower));
             if (scopeTypeButton != null)
@@ -67,20 +66,6 @@ namespace GemTD.UI
                 scopeAllButton.onClick.AddListener(ConfirmAllThenSet);
 
             Refresh();
-        }
-
-        void WirePriorityClicks()
-        {
-            if (_priorityClicksWired || priorityButtons == null)
-                return;
-            for (var i = 0; i < priorityButtons.Length; i++)
-            {
-                if (priorityButtons[i] == null)
-                    continue;
-                var slot = i;
-                priorityButtons[i].onClick.AddListener(() => _root?.CyclePriority(slot));
-            }
-            _priorityClicksWired = true;
         }
 
         void Update()
@@ -124,12 +109,12 @@ namespace GemTD.UI
                 socketSlots[i].Configure(_root, i, gem);
             }
 
-            if (tower != null && priorityLabels != null)
+            if (tower != null && priorityButtons != null)
             {
-                for (var i = 0; i < priorityLabels.Length; i++)
+                for (var i = 0; i < priorityButtons.Length; i++)
                 {
-                    if (priorityLabels[i] == null) continue;
-                    priorityLabels[i].text = TargetingKeyLabels.For(tower.Targeting.Get(i));
+                    if (priorityButtons[i] == null) continue;
+                    priorityButtons[i].Refresh(tower.Targeting.Get(i));
                 }
             }
 

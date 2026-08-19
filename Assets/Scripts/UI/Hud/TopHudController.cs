@@ -18,6 +18,7 @@ namespace GemTD.UI
 
         GameCompositionRoot _root;
         PopupManager _popup;
+        SettingsController _settings;
 
         void OnEnable()
         {
@@ -71,13 +72,21 @@ namespace GemTD.UI
             }
         }
 
+        public void BindSettings(SettingsController settingsController)
+        {
+            _settings = settingsController;
+        }
+
         void OnRequestCloseTopMost()
         {
             if (_root == null) return;
             if (_popup != null && _popup.IsOpen) { _popup.Hide(); return; }
+            if (_settings != null && _settings.IsOpen) { _settings.Close(); return; }
             if (_root.CodexPanelOpen) { _root.ToggleCodexPanel(); return; }
             if (_root.HasPlaceTowerSelected) { _root.ClearPlaceTower(); return; }
             if (_root.HasSelectedTower) { _root.ClearTowerSelection(); return; }
+            if (_settings != null) _settings.Open();
+            else Debug.LogError("TopHudController: settings is not assigned.", this);
         }
     }
 }
