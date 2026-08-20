@@ -25,6 +25,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text waveText;
         [SerializeField] TMP_Text totalDamageText;
         [SerializeField] TMP_Text totalKillsText;
+        [SerializeField] TMP_Text totalGoldText;
         [SerializeField] TMP_Text totalBuiltText;
         [SerializeField] TMP_Text skillsText;
         [SerializeField] Transform towerSectionsParent;
@@ -92,6 +93,8 @@ namespace GemTD.UI
                 totalDamageText.text = $"Total damage: {Mathf.RoundToInt(snapshot.TotalDamage)}";
             if (totalKillsText != null)
                 totalKillsText.text = $"Total kills: {snapshot.TotalKills}";
+            if (totalGoldText != null)
+                totalGoldText.text = $"Gold earned: {snapshot.TotalGoldEarned}";
             if (totalBuiltText != null)
                 totalBuiltText.text = $"Towers built: {snapshot.TotalBuilt}";
             if (skillsText != null)

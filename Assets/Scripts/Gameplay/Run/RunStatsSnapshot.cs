@@ -37,6 +37,7 @@ namespace GemTD.Gameplay.Run
         public int SkillsCount { get; }
         public float TotalDamage { get; }
         public int TotalKills { get; }
+        public int TotalGoldEarned { get; }
         public int TotalBuilt { get; }
         public RunStatsTowerEntry[] TowersByType { get; }
 
@@ -45,6 +46,7 @@ namespace GemTD.Gameplay.Run
             int skillsCount,
             float totalDamage,
             int totalKills,
+            int totalGoldEarned,
             int totalBuilt,
             RunStatsTowerEntry[] towersByType)
         {
@@ -52,6 +54,7 @@ namespace GemTD.Gameplay.Run
             SkillsCount = skillsCount;
             TotalDamage = totalDamage;
             TotalKills = totalKills;
+            TotalGoldEarned = totalGoldEarned;
             TotalBuilt = totalBuilt;
             TowersByType = towersByType ?? System.Array.Empty<RunStatsTowerEntry>();
         }

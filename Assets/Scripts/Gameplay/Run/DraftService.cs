@@ -124,7 +124,7 @@ namespace GemTD.Gameplay.Run
                 return false;
 
             if (skipGold > 0)
-                economy.AddGold(skipGold);
+                economy.GrantDraftSkipGold(skipGold);
 
             ClearOffer();
             resolved = true;

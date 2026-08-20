@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using UnityEditor;
 using GemTD.UI;
 
@@ -51,15 +52,50 @@ namespace GemTD.Editor
             var sectionsParent = EnsureSectionsParent(panel);
             ClearChildren(sectionsParent);
 
+            var totalGoldText = EnsureTotalGoldText(panel);
+
             var so = new SerializedObject(controller);
             so.FindProperty("towerSectionsParent").objectReferenceValue = sectionsParent;
             so.FindProperty("towerSummarySectionPrefab").objectReferenceValue = sectionPrefab;
+            so.FindProperty("totalGoldText").objectReferenceValue = totalGoldText;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             PrefabUtility.UnloadPrefabContents(root);
             AssetDatabase.SaveAssets();
             Debug.Log("RunSummaryPanelFix: cleaned and wired " + PrefabPath);
+        }
+
+        static TMP_Text EnsureTotalGoldText(Transform panel)
+        {
+            var existing = panel.Find("TotalGoldText");
+            if (existing != null)
+            {
+                var tmp = existing.GetComponent<TMP_Text>();
+                if (tmp != null)
+                    return tmp;
+            }
+
+            var kills = panel.Find("TotalKillsText");
+            var go = new GameObject("TotalGoldText", typeof(RectTransform), typeof(CanvasRenderer));
+            go.transform.SetParent(panel, false);
+            if (kills != null)
+                go.transform.SetSiblingIndex(kills.GetSiblingIndex() + 1);
+
+            var text = go.AddComponent<TextMeshProUGUI>();
+            text.text = "Gold earned: 0";
+            text.fontSize = 22;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = Color.white;
+
+            var layout = go.AddComponent<LayoutElement>();
+            layout.preferredHeight = 28f;
+
+            var panelRect = panel as RectTransform;
+            if (panelRect != null && panelRect.sizeDelta.y < 760f)
+                panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, 760f);
+
+            return text;
         }
 
         static Transform EnsureSectionsParent(Transform panel)

@@ -110,6 +110,22 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void EarnMethods_InvokeOnGoldEarnedCallback()
+        {
+            var earned = 0;
+            var economy = new RunEconomy(0, 20, amount => earned += amount);
+
+            economy.GrantKillGold(5);
+            economy.GrantEndWaveGold(25);
+            economy.GrantDraftSkipGold(75);
+            economy.AddGold(50);
+            economy.RefundFull(10);
+
+            Assert.AreEqual(105, earned);
+            Assert.AreEqual(165, economy.Gold);
+        }
+
+        [Test]
         public void RunConfig_HasLockedDefaults()
         {
             var config = ScriptableObject.CreateInstance<RunConfig>();

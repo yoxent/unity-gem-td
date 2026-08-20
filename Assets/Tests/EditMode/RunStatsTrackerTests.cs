@@ -91,12 +91,25 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void RecordGoldEarned_TracksTotal()
+        {
+            _tracker.RecordGoldEarned(5);
+            _tracker.RecordGoldEarned(25);
+            _tracker.RecordGoldEarned(0);
+            _tracker.RecordGoldEarned(-3);
+
+            var snapshot = _tracker.Snapshot(3, _catalog);
+            Assert.AreEqual(30, snapshot.TotalGoldEarned);
+        }
+
+        [Test]
         public void Reset_ClearsAllStats()
         {
             _tracker.RecordTowerPlaced(_ballista);
             _tracker.RecordGemSocketed(GemId.Fork);
             _tracker.RecordDamage(_ballista, 10f);
             _tracker.RecordKill(_ballista);
+            _tracker.RecordGoldEarned(40);
 
             _tracker.Reset();
 
@@ -104,6 +117,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, snapshot.TotalBuilt);
             Assert.AreEqual(0, snapshot.TotalDamage);
             Assert.AreEqual(0, snapshot.TotalKills);
+            Assert.AreEqual(0, snapshot.TotalGoldEarned);
             Assert.AreEqual(0, snapshot.SkillsCount);
             Assert.AreEqual(0, snapshot.TowersByType[0].Damage);
             Assert.AreEqual(0, snapshot.TowersByType[0].Kills);

@@ -13,9 +13,11 @@ namespace GemTD.Gameplay.Run
         readonly List<RunStatsTowerEntry> _snapshotScratch = new List<RunStatsTowerEntry>(4);
 
         int _towersBuilt;
+        int _totalGoldEarned;
 
         public int TowersBuilt => _towersBuilt;
         public int SkillsCount => _socketedGems.Count;
+        public int TotalGoldEarned => _totalGoldEarned;
 
         public void Reset()
         {
@@ -24,6 +26,7 @@ namespace GemTD.Gameplay.Run
             _builtByTower.Clear();
             _socketedGems.Clear();
             _towersBuilt = 0;
+            _totalGoldEarned = 0;
         }
 
         public void RecordTowerPlaced(TowerDefinition def)
@@ -66,6 +69,14 @@ namespace GemTD.Gameplay.Run
                 _killsByTower[sourceTower] = count + 1;
             else
                 _killsByTower[sourceTower] = 1;
+        }
+
+        public void RecordGoldEarned(int amount)
+        {
+            if (amount <= 0)
+                return;
+
+            _totalGoldEarned += amount;
         }
 
         public RunStatsSnapshot Snapshot(int waveReached, TowerDefinition[] catalogOrder)
@@ -111,6 +122,7 @@ namespace GemTD.Gameplay.Run
                 _socketedGems.Count,
                 totalDamage,
                 totalKills,
+                _totalGoldEarned,
                 _towersBuilt,
                 _snapshotScratch.ToArray());
         }

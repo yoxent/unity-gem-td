@@ -1,17 +1,21 @@
+using System;
 using GemTD.Core;
 
 namespace GemTD.Gameplay.Run
 {
     public sealed class RunEconomy
     {
+        readonly Action<int> _onGoldEarned;
+
         public int Gold { get; private set; }
         public int Lives { get; private set; }
         public bool IsDefeated { get; private set; }
 
-        public RunEconomy(int gold, int lives)
+        public RunEconomy(int gold, int lives, Action<int> onGoldEarned = null)
         {
             Gold = gold;
             Lives = lives;
+            _onGoldEarned = onGoldEarned;
         }
 
         public bool TrySpend(int amount)
@@ -33,9 +37,11 @@ namespace GemTD.Gameplay.Run
             GameEvents.RaiseGoldChanged(Gold);
         }
 
-        public void GrantKillGold(int amount) => AddGold(amount);
+        public void GrantKillGold(int amount) => EarnGold(amount);
 
-        public void GrantEndWaveGold(int amount) => AddGold(amount);
+        public void GrantEndWaveGold(int amount) => EarnGold(amount);
+
+        public void GrantDraftSkipGold(int amount) => EarnGold(amount);
 
         public void RefundFull(int amount) => AddGold(amount);
 
@@ -55,6 +61,16 @@ namespace GemTD.Gameplay.Run
 
             if (Lives <= 0)
                 IsDefeated = true;
+        }
+
+        void EarnGold(int amount)
+        {
+            if (amount <= 0)
+                return;
+
+            Gold += amount;
+            _onGoldEarned?.Invoke(amount);
+            GameEvents.RaiseGoldChanged(Gold);
         }
     }
 }
