@@ -5,24 +5,58 @@ namespace GemTD.Gameplay.Map
 {
     public readonly struct ChunkMask
     {
-        public const int Size = 5;
+        public const int Size = 7;
+        public const int Mid = Size / 2;
         public const int CellCount = Size * Size;
         readonly bool[] _isPath;
+        readonly bool[] _elevationLocked;
+        readonly int _homeIndex;
 
-        public ChunkMask(bool[] isPath)
+        public bool HasHome => _homeIndex >= 0 && _homeIndex < CellCount;
+        public Vector2Int HomeLocal => HasHome
+            ? new Vector2Int(_homeIndex % Size, _homeIndex / Size)
+            : new Vector2Int(-1, -1);
+
+        public ChunkMask(bool[] isPath, int homeIndex = -1, bool[] elevationLocked = null)
         {
             _isPath = new bool[CellCount];
+            _elevationLocked = new bool[CellCount];
             for (var i = 0; i < CellCount && i < isPath.Length; i++)
                 _isPath[i] = isPath[i];
+            if (elevationLocked != null)
+            {
+                for (var i = 0; i < CellCount && i < elevationLocked.Length; i++)
+                    _elevationLocked[i] = elevationLocked[i];
+            }
+            _homeIndex = homeIndex >= 0 && homeIndex < CellCount ? homeIndex : -1;
+            if (_homeIndex >= 0)
+                _isPath[_homeIndex] = true;
+            // Path and home always stay at default height (layer 0).
+            for (var i = 0; i < CellCount; i++)
+            {
+                if (_isPath[i])
+                    _elevationLocked[i] = true;
+            }
         }
 
         public bool IsPath(int x, int y) =>
             x >= 0 && x < Size && y >= 0 && y < Size && _isPath[y * Size + x];
 
+        public bool IsElevationLocked(int x, int y) =>
+            x >= 0 && x < Size && y >= 0 && y < Size && _elevationLocked[y * Size + x];
+
+        public void CopyElevationLocked(bool[] into)
+        {
+            if (into == null) return;
+            var n = into.Length < CellCount ? into.Length : CellCount;
+            for (var i = 0; i < n; i++)
+                into[i] = _elevationLocked[i];
+        }
+
         public static Vector2Int EdgeMidWorldCell(Vector2Int chunkCoord, EdgeFlags edge)
         {
-            var lx = 2;
-            var ly = 2;
+            var lx = Mid;
+            var ly = Mid;
             if (edge == EdgeFlags.North) ly = Size - 1;
             else if (edge == EdgeFlags.South) ly = 0;
             else if (edge == EdgeFlags.East) lx = Size - 1;
@@ -46,10 +80,10 @@ namespace GemTD.Gameplay.Map
             get
             {
                 var e = EdgeFlags.None;
-                if (IsPath(2, 0)) e |= EdgeFlags.South;
-                if (IsPath(2, 4)) e |= EdgeFlags.North;
-                if (IsPath(0, 2)) e |= EdgeFlags.West;
-                if (IsPath(4, 2)) e |= EdgeFlags.East;
+                if (IsPath(Mid, 0)) e |= EdgeFlags.South;
+                if (IsPath(Mid, Size - 1)) e |= EdgeFlags.North;
+                if (IsPath(0, Mid)) e |= EdgeFlags.West;
+                if (IsPath(Size - 1, Mid)) e |= EdgeFlags.East;
                 return e;
             }
         }
@@ -58,6 +92,8 @@ namespace GemTD.Gameplay.Map
         {
             get
             {
+                // Keep / homebase: openings scale with difficulty (1–4); home cell is the type signal.
+                if (HasHome) return ChunkType.Homebase;
                 var edges = OpenEdges;
                 switch (edges.Count())
                 {
@@ -77,16 +113,36 @@ namespace GemTD.Gameplay.Map
         public ChunkMask Rotated(int quarterTurnsCW)
         {
             var turns = ((quarterTurnsCW % 4) + 4) % 4;
-            var src = _isPath;
+            var srcPath = _isPath;
+            var srcLock = _elevationLocked;
+            var home = _homeIndex;
             for (var t = 0; t < turns; t++)
             {
-                var dst = new bool[CellCount];
+                var dstPath = new bool[CellCount];
+                var dstLock = new bool[CellCount];
                 for (var y = 0; y < Size; y++)
                     for (var x = 0; x < Size; x++)
-                        dst[(Size - 1 - x) * Size + y] = src[y * Size + x];
-                src = dst;
+                    {
+                        var di = (Size - 1 - x) * Size + y;
+                        dstPath[di] = srcPath[y * Size + x];
+                        dstLock[di] = srcLock[y * Size + x];
+                    }
+                if (home >= 0)
+                {
+                    var hx = home % Size;
+                    var hy = home / Size;
+                    home = hy + (Size - 1 - hx) * Size;
+                }
+                srcPath = dstPath;
+                srcLock = dstLock;
             }
-            return new ChunkMask(src);
+            return new ChunkMask(srcPath, home, srcLock);
+        }
+
+        public Vector2Int HomeWorldCell(Vector2Int chunkCoord)
+        {
+            var local = HomeLocal;
+            return new Vector2Int(chunkCoord.x * Size + local.x, chunkCoord.y * Size + local.y);
         }
 
         public bool AreOpeningsConnected()
@@ -95,10 +151,10 @@ namespace GemTD.Gameplay.Map
             if (edges == EdgeFlags.None) return true;
 
             var starts = new List<int>(4);
-            if ((edges & EdgeFlags.North) != 0) starts.Add(Idx(2, 4));
-            if ((edges & EdgeFlags.South) != 0) starts.Add(Idx(2, 0));
-            if ((edges & EdgeFlags.East)  != 0) starts.Add(Idx(4, 2));
-            if ((edges & EdgeFlags.West)  != 0) starts.Add(Idx(0, 2));
+            if ((edges & EdgeFlags.North) != 0) starts.Add(Idx(Mid, Size - 1));
+            if ((edges & EdgeFlags.South) != 0) starts.Add(Idx(Mid, 0));
+            if ((edges & EdgeFlags.East)  != 0) starts.Add(Idx(Size - 1, Mid));
+            if ((edges & EdgeFlags.West)  != 0) starts.Add(Idx(0, Mid));
             if (starts.Count < 2) return true;
 
             var visited = new bool[CellCount];

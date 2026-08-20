@@ -8,7 +8,7 @@ namespace GemTD.Gameplay.Map
     {
         const int CorridorLength = 4;
 
-        // Open-arm order for future difficulty (this pass places the first arm only).
+        // Open-arm order by difficulty: 1=E, 2=E+S, 3=E+S+N, 4=all.
         static readonly EdgeFlags[] ArmOrder =
         {
             EdgeFlags.East,
@@ -18,22 +18,37 @@ namespace GemTD.Gameplay.Map
         };
 
         public static void Build(ChunkGrid grid, ChunkStampService stamp, PathGraph path,
-            GridBoard board, IChunkCatalog catalog, MapChunkStamp landPrefab, System.Random rng,
+            GridBoard board, IChunkCatalog catalog, System.Random rng,
             int openArmCount = 1)
         {
             var keep = new Vector2Int(grid.ChunksW / 2, grid.ChunksH / 2);
 
-            // Keep (Land, yaw 0).
-            var keepRes = stamp.StampTentative(keep, landPrefab, 0, path, board);
-            stamp.Commit(keep, landPrefab, 0, keepRes.Mask, grid);
-
             if (openArmCount < 1) openArmCount = 1;
             else if (openArmCount > 4) openArmCount = 4;
-            // Single PathGraph.Home: ignore extra arms until multi-home exists.
-            var armsToPlace = openArmCount > 1 ? 1 : openArmCount;
 
-            Vector2Int firstCoord = keep;
-            var firstRequiredEdge = ArmOrder[0].Opposite();
+            var keepPrefab = PickKeep(catalog, openArmCount);
+            if (keepPrefab == null)
+            {
+                Debug.LogError(
+                    "[GemTD] No Homebase stamp with " + openArmCount +
+                    " opening(s). Assign one keep per difficulty to ChunkTypeCatalog_Homebase.");
+                return;
+            }
+
+            // One keep per difficulty (opening count). Yaw so openings match
+            // ArmOrder (E → S → N → W); painted keeps are South-first.
+            var keepYaw = PickKeepYaw(keepPrefab, openArmCount);
+            var keepRes = stamp.StampTentative(keep, keepPrefab, keepYaw, path, board);
+            stamp.Commit(keep, keepPrefab, keepYaw, keepRes.Mask, grid);
+            if (keepRes.Mask.HasHome)
+            {
+                var home = keepRes.Mask.HomeWorldCell(keep);
+                path.SetHome(home.x, home.y);
+            }
+            if ((keepRes.Mask.OpenEdges & ArmOrder[0]) == 0)
+                Debug.LogError("[GemTD] Keep has no mid-edge opening toward the start arm. Paint a path to a mid-edge cell.");
+
+            var armsToPlace = openArmCount;
 
             for (var a = 0; a < armsToPlace; a++)
             {
@@ -50,14 +65,11 @@ namespace GemTD.Gameplay.Map
                     var yaw = PickYawForEdge(straight, requiredEdge, rng);
                     var res = stamp.StampTentative(coord, straight, yaw, path, board);
                     stamp.Commit(coord, straight, yaw, res.Mask, grid);
-
-                    if (a == 0 && i == 1) firstCoord = coord;
                 }
             }
 
-            // Home = gate-sink = middle cell of the first Straight's requiredEdge (touching the keep).
-            var home = EdgeMiddleCell(firstCoord, firstRequiredEdge);
-            path.SetHome(home.x, home.y);
+            if (!keepRes.Mask.HasHome)
+                Debug.LogError("[GemTD] Keep chunk has no painted home. Enemies leak at PathGraph.Home — paint a home cell on the keep prefab.");
         }
 
         static Vector2Int OffsetFor(EdgeFlags dir)
@@ -72,22 +84,53 @@ namespace GemTD.Gameplay.Map
             }
         }
 
-        // Picks a Straight prefab from the catalog's flat snapshot (CopyAll), filtering by
-        // ChunkType.Straight. Honors the Task 3 decision that IChunkCatalog
-        // exposes only CopyAll (no per-bucket properties on the interface).
+        // Homebase catalog only — never expand picks. One prefab per opening count.
+        static MapChunkStamp PickKeep(IChunkCatalog catalog, int openArmCount)
+        {
+            var keeps = new List<MapChunkStamp>(4);
+            catalog.CopyType(ChunkType.Homebase, keeps);
+            for (var i = 0; i < keeps.Count; i++)
+            {
+                var keep = keeps[i];
+                if (keep == null) continue;
+                if (keep.GetMask().OpenEdges.Count() == openArmCount)
+                    return keep;
+            }
+            return null;
+        }
+
+        static int PickKeepYaw(MapChunkStamp prefab, int openArmCount)
+        {
+            var required = EdgeFlags.None;
+            for (var i = 0; i < openArmCount; i++)
+                required |= ArmOrder[i];
+            var baseMask = prefab.GetMask();
+            for (var yaw = 0; yaw < 4; yaw++)
+                if (baseMask.Rotated(yaw).OpenEdges == required)
+                    return yaw;
+            for (var yaw = 0; yaw < 4; yaw++)
+                if ((baseMask.Rotated(yaw).OpenEdges & ArmOrder[0]) != 0)
+                    return yaw;
+            return 0;
+        }
+
+        // Straight type catalog only so DeadEnd / Corner / T / Cross are never start-arm picks.
         static MapChunkStamp PickStraight(IChunkCatalog catalog, System.Random rng)
         {
-            var all = new List<MapChunkStamp>(16);
-            catalog.CopyAll(all);
-            var straights = new List<MapChunkStamp>(all.Count);
-            for (var i = 0; i < all.Count; i++)
-                if (all[i] != null && all[i].GetMask().Type == ChunkType.Straight)
-                    straights.Add(all[i]);
-            var count = straights.Count;
+            var straights = new List<MapChunkStamp>(16);
+            catalog.CopyType(ChunkType.Straight, straights);
+            return PickNonNull(straights, rng);
+        }
+
+        static MapChunkStamp PickNonNull(List<MapChunkStamp> stamps, System.Random rng)
+        {
+            var count = 0;
+            for (var i = 0; i < stamps.Count; i++)
+                if (stamps[i] != null) count++;
             if (count == 0) return null;
             for (;;)
             {
-                var pick = straights[rng.Next(count)];
+                var pick = stamps[rng.Next(stamps.Count)];
                 if (pick != null) return pick;
             }
         }
@@ -103,20 +146,6 @@ namespace GemTD.Gameplay.Map
                     valid[n++] = yaw;
             if (n == 0) return 0; // shouldn't happen for a Straight facing any edge
             return valid[rng.Next(n)];
-        }
-
-        static Vector2Int EdgeMiddleCell(Vector2Int chunkCoord, EdgeFlags edge)
-        {
-            int lx, ly;
-            switch (edge)
-            {
-                case EdgeFlags.North: lx = 2; ly = 4; break;
-                case EdgeFlags.South: lx = 2; ly = 0; break;
-                case EdgeFlags.West:  lx = 0; ly = 2; break;
-                case EdgeFlags.East:  lx = 4; ly = 2; break;
-                default: lx = 2; ly = 2; break;
-            }
-            return new Vector2Int(chunkCoord.x * ChunkMask.Size + lx, chunkCoord.y * ChunkMask.Size + ly);
         }
     }
 }

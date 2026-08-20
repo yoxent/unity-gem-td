@@ -11,7 +11,7 @@ namespace GemTD.Tests.EditMode
         static ChunkMask StraightNS()
         {
             var m = new bool[ChunkMask.CellCount];
-            for (var y = 0; y < ChunkMask.Size; y++) m[y * ChunkMask.Size + 2] = true;
+            for (var y = 0; y < ChunkMask.Size; y++) m[y * ChunkMask.Size + ChunkMask.Mid] = true;
             return new ChunkMask(m);
         }
 
@@ -30,11 +30,11 @@ namespace GemTD.Tests.EditMode
 
         [Test] public void StampTentative_WritesRotatedMaskIntoPath()
         {
-            var board = new GridBoard(45, 45);
-            var path = new PathGraph(45, 45);
+            var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);
+            var path = new PathGraph(9 * ChunkMask.Size, 9 * ChunkMask.Size);
             path.BindBoard(board);
             var stamp = new ChunkStampService();
-            var prefab = MakeStamp(StraightNS()); // N|S column x=2
+            var prefab = MakeStamp(StraightNS()); // N|S column x=Mid
 
             var coord = new Vector2Int(4, 4);
             var res = stamp.StampTentative(coord, prefab, yaw: 1, path, board); // yaw1 -> E|W
@@ -51,8 +51,8 @@ namespace GemTD.Tests.EditMode
 
         [Test] public void Rollback_RestoresPriorPathCells()
         {
-            var board = new GridBoard(45, 45);
-            var path = new PathGraph(45, 45);
+            var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);
+            var path = new PathGraph(9 * ChunkMask.Size, 9 * ChunkMask.Size);
             path.BindBoard(board);
             var stamp = new ChunkStampService();
             var prefab = MakeStamp(StraightNS());
@@ -69,8 +69,8 @@ namespace GemTD.Tests.EditMode
 
         [Test] public void Rollback_RestoresUnbuildableOnVoid()
         {
-            var board = new GridBoard(45, 45);
-            var path = new PathGraph(45, 45);
+            var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);
+            var path = new PathGraph(9 * ChunkMask.Size, 9 * ChunkMask.Size);
             path.BindBoard(board);
             var stamp = new ChunkStampService();
             var prefab = MakeStamp(StraightNS());
@@ -93,8 +93,8 @@ namespace GemTD.Tests.EditMode
 
         [Test] public void Stamp_LandChunk_AllCellsBuildable()
         {
-            var board = new GridBoard(45, 45);
-            var path = new PathGraph(45, 45);
+            var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);
+            var path = new PathGraph(9 * ChunkMask.Size, 9 * ChunkMask.Size);
             path.BindBoard(board);
             var stamp = new ChunkStampService();
             var prefab = MakeStamp(Land());
@@ -115,8 +115,8 @@ namespace GemTD.Tests.EditMode
 
         [Test] public void Stamp_PathChunk_PathCellsUnbuildable_TowerCellsBuildable()
         {
-            var board = new GridBoard(45, 45);
-            var path = new PathGraph(45, 45);
+            var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);
+            var path = new PathGraph(9 * ChunkMask.Size, 9 * ChunkMask.Size);
             path.BindBoard(board);
             var stamp = new ChunkStampService();
             var prefab = MakeStamp(StraightNS());
@@ -145,8 +145,8 @@ namespace GemTD.Tests.EditMode
 
         [Test] public void Commit_RaisesChunkPlacedEvent()
         {
-            var board = new GridBoard(45, 45);
-            var path = new PathGraph(45, 45);
+            var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);
+            var path = new PathGraph(9 * ChunkMask.Size, 9 * ChunkMask.Size);
             path.BindBoard(board);
             var grid = new ChunkGrid(9, 9);
             var stamp = new ChunkStampService();

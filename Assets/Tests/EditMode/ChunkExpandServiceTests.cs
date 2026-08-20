@@ -24,6 +24,16 @@ namespace GemTD.Tests.EditMode
                 into.Clear();
                 for (var i = 0; i < Stamps.Count; i++) into.Add(Stamps[i]);
             }
+
+            public void CopyType(ChunkType type, List<MapChunkStamp> into)
+            {
+                into.Clear();
+                for (var i = 0; i < Stamps.Count; i++)
+                {
+                    var s = Stamps[i];
+                    if (s != null && s.GetMask().Type == type) into.Add(s);
+                }
+            }
         }
 
         static MapChunkStamp MakeCross()
@@ -31,10 +41,11 @@ namespace GemTD.Tests.EditMode
             var go = new GameObject("cross");
             var s = go.AddComponent<MapChunkStamp>();
             var m = new bool[ChunkMask.CellCount];
+            var mid = ChunkMask.Mid;
             for (var i = 0; i < ChunkMask.Size; i++)
             {
-                m[i * ChunkMask.Size + 2] = true;
-                m[2 * ChunkMask.Size + i] = true;
+                m[i * ChunkMask.Size + mid] = true;
+                m[mid * ChunkMask.Size + i] = true;
             }
             s.ApplyMask(new ChunkMask(m));
             return s;
@@ -45,7 +56,20 @@ namespace GemTD.Tests.EditMode
             var go = new GameObject("straight");
             var s = go.AddComponent<MapChunkStamp>();
             var m = new bool[ChunkMask.CellCount];
-            for (var y = 0; y < ChunkMask.Size; y++) m[y * ChunkMask.Size + 2] = true;
+            for (var y = 0; y < ChunkMask.Size; y++) m[y * ChunkMask.Size + ChunkMask.Mid] = true;
+            s.ApplyMask(new ChunkMask(m));
+            return s;
+        }
+
+        static MapChunkStamp MakeDeadEnd()
+        {
+            var go = new GameObject("deadend");
+            var s = go.AddComponent<MapChunkStamp>();
+            var m = new bool[ChunkMask.CellCount];
+            var mid = ChunkMask.Mid;
+            // North opening down to center spawn tip
+            for (var y = mid; y < ChunkMask.Size; y++)
+                m[y * ChunkMask.Size + mid] = true;
             s.ApplyMask(new ChunkMask(m));
             return s;
         }
@@ -55,23 +79,34 @@ namespace GemTD.Tests.EditMode
             var go = new GameObject("corner");
             var s = go.AddComponent<MapChunkStamp>();
             var m = new bool[ChunkMask.CellCount];
-            m[2 * ChunkMask.Size + 4] = true; // North opening
-            for (var y = 2; y < ChunkMask.Size; y++) m[y * ChunkMask.Size + 2] = true; // vertical arm down
-            m[2 * ChunkMask.Size + 2] = true; // join
-            m[2 * ChunkMask.Size + 0] = true; // West opening (local (0,2))
-            for (var x = 0; x <= 2; x++) m[2 * ChunkMask.Size + x] = true; // horizontal arm west
+            var mid = ChunkMask.Mid;
+            for (var y = mid; y < ChunkMask.Size; y++) m[y * ChunkMask.Size + mid] = true;
+            for (var x = 0; x <= mid; x++) m[mid * ChunkMask.Size + x] = true;
             s.ApplyMask(new ChunkMask(m));
             return s;
         }
 
-        // Unconnectable prefab: a single path cell at the center (2,2). Rotation-invariant,
-        // so OpenEdges=None for every yaw -> HasRequiredEdge rejects it for all yaws.
+        // T: East + West + South (closed North) — fills a 3-opening pocket with no outward arm.
+        static MapChunkStamp MakeTJunction()
+        {
+            var go = new GameObject("t");
+            var s = go.AddComponent<MapChunkStamp>();
+            var m = new bool[ChunkMask.CellCount];
+            var mid = ChunkMask.Mid;
+            for (var x = 0; x < ChunkMask.Size; x++) m[mid * ChunkMask.Size + x] = true;
+            for (var y = 0; y <= mid; y++) m[y * ChunkMask.Size + mid] = true;
+            s.ApplyMask(new ChunkMask(m));
+            return s;
+        }
+
+        // Unconnectable prefab: a single path cell at the center. Rotation-invariant,
+        // so OpenEdges=None for every yaw.
         static MapChunkStamp MakeDisconnected()
         {
             var go = new GameObject("disc");
             var s = go.AddComponent<MapChunkStamp>();
             var m = new bool[ChunkMask.CellCount];
-            m[2 * ChunkMask.Size + 2] = true; // (2,2) center, no edge opening
+            m[ChunkMask.Mid * ChunkMask.Size + ChunkMask.Mid] = true;
             s.ApplyMask(new ChunkMask(m));
             return s;
         }
@@ -79,8 +114,9 @@ namespace GemTD.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            _board = new GridBoard(45, 45);
-            _path = new PathGraph(45, 45);
+            var cells = 9 * ChunkMask.Size;
+            _board = new GridBoard(cells, cells);
+            _path = new PathGraph(cells, cells);
             _path.BindBoard(_board);
             _grid = new ChunkGrid(9, 9);
             _stamp = new ChunkStampService();
@@ -126,14 +162,13 @@ namespace GemTD.Tests.EditMode
         }
 
         // Keep + one Straight corridor north of keep, with Home set to the corridor's
-        // inner path cell (south tip at world (22,20)) touching the keep. Mirrors the
-        // runtime state established by StartLayoutBuilder (Task 5).
+        // inner path cell (south tip) touching the keep.
         void StampCorridorNorthWithHome()
         {
             StampKeep();
             _catalog.Stamps.Add(MakeStraight());
             StampStraight(new Vector2Int(4, 5), yaw: 0); // N|S straight; north tip open
-            _path.SetHome(4 * ChunkMask.Size + 2, 5 * ChunkMask.Size + 0); // (22,20)
+            _path.SetHome(4 * ChunkMask.Size + ChunkMask.Mid, 5 * ChunkMask.Size + 0);
         }
 
         void StampCrossCorridorWithHome()
@@ -143,7 +178,7 @@ namespace GemTD.Tests.EditMode
             var r = _stamp.StampTentative(new Vector2Int(4, 5), cross, 0, _path, _board);
             _stamp.Commit(new Vector2Int(4, 5), cross, 0, r.Mask, _grid);
             Object.DestroyImmediate(cross.gameObject);
-            _path.SetHome(4 * ChunkMask.Size + 2, 5 * ChunkMask.Size + 0);
+            _path.SetHome(4 * ChunkMask.Size + ChunkMask.Mid, 5 * ChunkMask.Size + 0);
         }
 
         void StampEastWestLoopGap()
@@ -271,7 +306,7 @@ namespace GemTD.Tests.EditMode
             StampStraight(new Vector2Int(4, 5), 0);
             StampStraight(new Vector2Int(4, 6), 0);
             StampStraight(new Vector2Int(4, 7), 0);
-            _path.SetHome(4 * ChunkMask.Size + 2, 5 * ChunkMask.Size + 0);
+            _path.SetHome(4 * ChunkMask.Size + ChunkMask.Mid, 5 * ChunkMask.Size + 0);
             _catalog.Stamps.Clear();
             _catalog.Stamps.Add(MakeCross());
 
@@ -288,7 +323,7 @@ namespace GemTD.Tests.EditMode
             StampStraight(new Vector2Int(4, 5), 0);
             StampStraight(new Vector2Int(4, 6), 0);
             StampStraight(new Vector2Int(4, 7), 0);
-            _path.SetHome(4 * ChunkMask.Size + 2, 5 * ChunkMask.Size + 0);
+            _path.SetHome(4 * ChunkMask.Size + ChunkMask.Mid, 5 * ChunkMask.Size + 0);
             _catalog.Stamps.Clear();
             _catalog.Stamps.Add(MakeCorner()); // N+W; yaw 2 -> S+E, closed on the north rim
 
@@ -312,6 +347,37 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void CollectLegalExpands_ThreeNeighborGap_TJunctionIsLegal()
+        {
+            // Same pocket as the loop-gap: west, east, and south all open into (4,6).
+            // A T (E+W+S) matches every opening but has no empty-facing arm.
+            StampEastWestLoopGap();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeTJunction());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsTrue(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test]
+        public void CollectLegalExpands_TwoNeighborMerge_StraightRejected()
+        {
+            StampKeep();
+            StampStraight(new Vector2Int(3, 6), 1);
+            StampStraight(new Vector2Int(5, 6), 1);
+            _path.SetHome(3 * ChunkMask.Size + 0, 6 * ChunkMask.Size + ChunkMask.Mid);
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test]
         public void TryExpand_RejectsLoopCloserWithNoOutwardArm()
         {
             StampEastWestLoopGap();
@@ -321,6 +387,40 @@ namespace GemTD.Tests.EditMode
             var before = _grid.Count;
             Assert.IsFalse(_expand.TryExpand(new Vector2Int(4, 6)));
             Assert.AreEqual(before, _grid.Count);
+        }
+
+        [Test]
+        public void CollectLegalExpands_AcceptsDeadEndAtOpenTip()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsTrue(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test]
+        public void TryExpand_DeadEndAtTip_CommitsAndCenterIsSpawnTip()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.IsOccupied(4, 6));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreEqual(ChunkType.DeadEnd, slot.Mask.Type);
+
+            var tips = new List<Vector2Int>();
+            _path.CollectSpawnTips(tips);
+            Assert.Contains(new Vector2Int(4 * ChunkMask.Size + ChunkMask.Mid, 6 * ChunkMask.Size + ChunkMask.Mid), tips);
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 7)));
         }
 
         [Test]

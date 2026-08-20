@@ -15,7 +15,8 @@ namespace GemTD.Gameplay.Map
         {
             ChunkCoord = chunkCoord;
             Outward = outward;
-            transform.position = world;
+            // Slight lift to avoid being visually/selection-occluded by neighboring chunk meshes.
+            transform.position = world + new Vector3(0f, 0.02f, 0f);
             transform.localScale = new Vector3(cellSize, 1f, cellSize);
             transform.rotation = Quaternion.Euler(0f, outward.YawTurnsCW() * 90f, 0f);
             gameObject.SetActive(true);

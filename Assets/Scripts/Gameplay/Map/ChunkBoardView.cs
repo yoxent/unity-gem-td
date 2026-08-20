@@ -35,7 +35,7 @@ namespace GemTD.Gameplay.Map
 
         /// <summary>
         /// Prefab pivot is the SW corner (painter tiles at x+0.5, z+0.5). Mask rotation is
-        /// in-place around the 5x5 center, so the instance must orbit that same center.
+        /// in-place around the chunk center, so the instance must orbit that same center.
         /// </summary>
         public static Vector3 ChunkInstanceLocalPosition(Vector2Int coord, int yaw, float cellSize)
         {

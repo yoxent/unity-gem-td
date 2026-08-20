@@ -39,7 +39,6 @@ namespace GemTD.Gameplay
         [SerializeField] ProjectileView projectilePrefab;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] ExpandMarkerView expandMarkerPrefab;
-        [SerializeField] MapChunkStamp landPrefab;
 
         [Header("Tuning")]
         [SerializeField] float projectileSpeed = 20f;
@@ -183,6 +182,10 @@ namespace GemTD.Gameplay
         readonly List<ExpandMarkerView> _markers = new List<ExpandMarkerView>(16);
         readonly List<Vector2Int> _legalChunks = new List<Vector2Int>(16);
         readonly HashSet<Vector2Int> _legalChunkSet = new HashSet<Vector2Int>();
+        static readonly EdgeFlags[] MarkerDirs =
+        {
+            EdgeFlags.North, EdgeFlags.East, EdgeFlags.South, EdgeFlags.West
+        };
         readonly List<Vector2Int> _polylineCells = new List<Vector2Int>(16);
         readonly List<Vector3> _polylineWorld = new List<Vector3>(16);
         readonly List<Vector2Int> _spawnTips = new List<Vector2Int>(8);
@@ -381,11 +384,14 @@ namespace GemTD.Gameplay
                 chunkBoardView.Bind(_chunkGrid);
 
             var openArmCount = runConfig != null ? runConfig.OpenArmCount : 1;
-            StartLayoutBuilder.Build(
-                _chunkGrid, _stamp, _path, _board, chunkCatalog, landPrefab, _rng, openArmCount);
+            if (chunkCatalog == null)
+                Debug.LogError("[GemTD] ChunkCatalog is not assigned on GameCompositionRoot.");
+            else
+                StartLayoutBuilder.Build(
+                    _chunkGrid, _stamp, _path, _board, chunkCatalog, _rng, openArmCount);
             EnsureHomeMarker();
 
-            Economy = new RunEconomy(gold, lives);
+            Economy = new RunEconomy(gold, lives, _runStats.RecordGoldEarned);
             GameEvents.RaiseGoldChanged(Economy.Gold);
             GameEvents.RaiseLivesChanged(Economy.Lives);
 
@@ -521,17 +527,31 @@ namespace GemTD.Gameplay
                 return;
             }
 
+            // One plate per occupied open edge whose empty neighbor is a legal
+            // expand slot — B and C both opening into x each get a button.
             var cellSize = chunkBoardView.CellSize;
-            for (var i = 0; i < _legalChunks.Count; i++)
+            for (var cy = 0; cy < _chunkGrid.ChunksH; cy++)
             {
-                var coord = _legalChunks[i];
-                if (!_chunkGrid.TryGetOpeningInto(coord, out var occupied, out var outward))
-                    continue;
+                for (var cx = 0; cx < _chunkGrid.ChunksW; cx++)
+                {
+                    if (!_chunkGrid.TryGet(cx, cy, out var slot)) continue;
+                    var occupied = new Vector2Int(cx, cy);
+                    for (var d = 0; d < MarkerDirs.Length; d++)
+                    {
+                        var outward = MarkerDirs[d];
+                        if ((slot.Mask.OpenEdges & outward) == 0) continue;
+                        var dest = _chunkGrid.NeighborCoord(occupied, outward);
+                        if (!_chunkGrid.InBounds(dest.x, dest.y) || _chunkGrid.IsOccupied(dest.x, dest.y))
+                            continue;
+                        if (!_legalChunkSet.Contains(dest))
+                            continue;
 
-                var portal = ChunkMask.AdjacentExpandCell(occupied, outward);
-                var marker = _markerPool.Get();
-                marker.Bind(coord, chunkBoardView.CellCenterWorld(portal.x, portal.y), cellSize, outward);
-                _markers.Add(marker);
+                        var portal = ChunkMask.AdjacentExpandCell(occupied, outward);
+                        var marker = _markerPool.Get();
+                        marker.Bind(dest, chunkBoardView.CellCenterWorld(portal.x, portal.y), cellSize, outward);
+                        _markers.Add(marker);
+                    }
+                }
             }
         }
 

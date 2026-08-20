@@ -82,5 +82,27 @@ namespace GemTD.Gameplay.Map
             }
             return false;
         }
+
+        /// <summary>
+        /// Every occupied neighbor that opens into <paramref name="empty"/>.
+        /// Used so B–x–C merge pockets get a marker seat on each open edge.
+        /// </summary>
+        public int CollectOpeningsInto(Vector2Int empty, List<Vector2Int> occupiedOut, List<EdgeFlags> outwardOut)
+        {
+            occupiedOut.Clear();
+            outwardOut.Clear();
+            var dirs = Cardinals;
+            for (var i = 0; i < dirs.Length; i++)
+            {
+                var towardOccupied = dirs[i];
+                var nb = NeighborCoord(empty, towardOccupied);
+                var towardEmpty = towardOccupied.Opposite();
+                if (!OpenEdgeAt(nb.x, nb.y, towardEmpty))
+                    continue;
+                occupiedOut.Add(nb);
+                outwardOut.Add(towardEmpty);
+            }
+            return occupiedOut.Count;
+        }
     }
 }

@@ -17,6 +17,9 @@ namespace GemTD.Gameplay.Map
         readonly HashSet<Vector2Int> _candidateSet = new HashSet<Vector2Int>();
         readonly List<Vector2Int> _candidates = new List<Vector2Int>(8);
         readonly List<(MapChunkStamp prefab, int yaw)> _passing = new List<(MapChunkStamp, int)>(16);
+        readonly List<Vector2Int> _tipScratch = new List<Vector2Int>(8);
+        readonly List<int> _pickTipCounts = new List<int>(16);
+        readonly List<int> _bestPickIndices = new List<int>(16);
         readonly EdgeFlags[] _dirs = { EdgeFlags.North, EdgeFlags.East, EdgeFlags.South, EdgeFlags.West };
 
         public ChunkExpandService(ChunkGrid grid, PathGraph path, GridBoard board,
@@ -55,7 +58,7 @@ namespace GemTD.Gameplay.Map
             CollectPassing(coord, _all, _passing);
             if (_passing.Count == 0) return false;
 
-            var pick = _rng.Next(_passing.Count);
+            var pick = PickHighestTipCountIndex(coord, _passing);
             var (prefab, yaw) = _passing[pick];
             var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
             if (!_path.AllTipsReachHome())
@@ -154,11 +157,16 @@ namespace GemTD.Gameplay.Map
         }
 
         /// <summary>
-        /// At least one open edge must face an empty in-bounds chunk slot so a loop
-        /// closure cannot seal the map with no continuation arm.
+        /// Straights that match two occupied openings and have no empty-facing arm
+        /// seal a corridor with no continuation (the original loop-closer bug).
+        /// T / Cross / Corner / DeadEnd may fill a multi-opening pocket — those
+        /// open edges still need expand markers, and other tips remain elsewhere.
         /// </summary>
         bool HasOutwardExpandArm(Vector2Int coord, ChunkMask mask)
         {
+            if (mask.Type != ChunkType.Straight)
+                return true;
+
             for (var d = 0; d < _dirs.Length; d++)
             {
                 var dir = _dirs[d];
@@ -176,6 +184,35 @@ namespace GemTD.Gameplay.Map
             var ok = _path.AllTipsReachHome();
             _stamp.Rollback(coord, res, _path, _board);
             return ok;
+        }
+
+        /// <summary>
+        /// Among passing prefab+yaws, prefer the most spawn tips after stamp (keep branches open).
+        /// Ties broken uniformly at random.
+        /// </summary>
+        int PickHighestTipCountIndex(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
+        {
+            _pickTipCounts.Clear();
+            var maxTips = -1;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                var (prefab, yaw) = passing[i];
+                var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
+                var tips = _path.CollectSpawnTips(_tipScratch);
+                _stamp.Rollback(coord, res, _path, _board);
+                _pickTipCounts.Add(tips);
+                if (tips > maxTips)
+                    maxTips = tips;
+            }
+
+            _bestPickIndices.Clear();
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (_pickTipCounts[i] == maxTips)
+                    _bestPickIndices.Add(i);
+            }
+
+            return _bestPickIndices[_rng.Next(_bestPickIndices.Count)];
         }
     }
 }

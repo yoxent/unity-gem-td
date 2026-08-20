@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace GemTD.Gameplay.CameraControl
@@ -18,7 +20,8 @@ namespace GemTD.Gameplay.CameraControl
         [SerializeField] float mousePanSpeed = 0.02f;
         [SerializeField] float zoomSpeed = 4f;
         [SerializeField] float minOrthoSize = 4f;
-        [SerializeField] Vector3 focus = new Vector3(32.5f, 0f, 32.5f);
+        // Default keep center for 13×13 chunks × 7 cells (91×91 board).
+        [SerializeField] Vector3 focus = new Vector3(45.5f, 0f, 45.5f);
         [SerializeField] float maxOrthoSize = 18f;
 
         Camera _camera;
@@ -30,6 +33,7 @@ namespace GemTD.Gameplay.CameraControl
         InputAction _rotateLeft;
         InputAction _rotateRight;
         InputActionMap _map;
+        readonly List<RaycastResult> _uiHits = new List<RaycastResult>(8);
 
         void Awake()
         {
@@ -83,16 +87,35 @@ namespace GemTD.Gameplay.CameraControl
                 focus += (-right * mouse.x - forward * mouse.y) * mousePanSpeed;
             }
 
-            var scroll = _zoom.ReadValue<Vector2>().y;
-            if (Mathf.Abs(scroll) > 0.01f)
+            if (!IsPointerOverUi())
             {
-                _camera.orthographicSize = Mathf.Clamp(
-                    _camera.orthographicSize - scroll * zoomSpeed * 0.01f,
-                    minOrthoSize,
-                    maxOrthoSize);
+                var scroll = _zoom.ReadValue<Vector2>().y;
+                if (Mathf.Abs(scroll) > 0.01f)
+                {
+                    _camera.orthographicSize = Mathf.Clamp(
+                        _camera.orthographicSize - scroll * zoomSpeed * 0.01f,
+                        minOrthoSize,
+                        maxOrthoSize);
+                }
             }
 
             ApplyPose();
+        }
+
+        bool IsPointerOverUi()
+        {
+            var es = EventSystem.current;
+            if (es == null || Mouse.current == null)
+                return false;
+
+            var eventData = new PointerEventData(es)
+            {
+                position = Mouse.current.position.ReadValue()
+            };
+
+            _uiHits.Clear();
+            es.RaycastAll(eventData, _uiHits);
+            return _uiHits.Count > 0;
         }
 
         void ApplyPose()
