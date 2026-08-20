@@ -69,8 +69,9 @@ namespace GemTD.Tests.EditMode
             AddTower(_ballista, 50);
             AddTower(_ballista, 75);
             AddTower(_ballista, 100);
+            Assert.AreEqual(125, TowerCostCalculator.ComputePlaceCost(_ballista, _roster));
             _roster.RemoveAt(2);
-            Assert.AreEqual(75, TowerCostCalculator.ComputePlaceCost(_ballista, _roster));
+            Assert.AreEqual(100, TowerCostCalculator.ComputePlaceCost(_ballista, _roster));
         }
 
         [Test]

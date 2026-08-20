@@ -236,6 +236,7 @@ namespace GemTD.Tests.EditMode
             ballista.DisplayName = "Ballista";
             ballista.Kind = TowerKind.Projectile;
             ballista.SocketCount = 3;
+            ballista.AllowsHydraEvolution = true;
             ballista.Range = 20f;
             ballista.Damage = 10f;
             ballista.AttackInterval = 1f;

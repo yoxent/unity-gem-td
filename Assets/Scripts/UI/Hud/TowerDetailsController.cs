@@ -15,6 +15,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text detailsText;
         [SerializeField] TowerGemSlot[] socketSlots = new TowerGemSlot[3];
         [SerializeField] Button sellButton;
+        [SerializeField] TMP_Text sellLabel;
         [SerializeField] TowerTargetPriority[] priorityButtons = new TowerTargetPriority[3];
         [SerializeField] Button scopeThisButton;
         [SerializeField] Button scopeTypeButton;
@@ -98,6 +99,9 @@ namespace GemTD.UI
                 sellButton.gameObject.SetActive(planOrCombat);
 
             var tower = _root.Placement?.Selected;
+            if (sellLabel != null && planOrCombat && tower != null)
+                sellLabel.text = $"Sell {RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend)}";
+
             var socketCount = tower?.Def != null ? tower.Def.SocketCount : 0;
             for (var i = 0; i < socketSlots.Length; i++)
             {

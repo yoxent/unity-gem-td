@@ -50,9 +50,9 @@ namespace GemTD.Tests.EditMode
         public void AroundCursor_RoomAbove_PlacesAbove()
         {
             var pos = TooltipController.RepositionAroundCursor(
-                new Vector2(100f, 500f), new Vector2(200f, 100f), new Vector2(0.5f, 0.5f),
+                new Vector2(400f, 500f), new Vector2(200f, 100f), new Vector2(0.5f, 0.5f),
                 new Vector2(1920f, 1080f), 12f, 16f);
-            Assert.AreEqual(100f, pos.x, 0.01f);
+            Assert.AreEqual(400f, pos.x, 0.01f);
             Assert.AreEqual(566f, pos.y, 0.01f); // 500 + 16 + 50
         }
 

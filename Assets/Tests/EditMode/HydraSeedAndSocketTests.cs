@@ -14,6 +14,7 @@ namespace GemTD.Tests.EditMode
             def.DisplayName = "Ballista";
             def.Kind = TowerKind.Projectile;
             def.SocketCount = 3;
+            def.AllowsHydraEvolution = true;
 
             var lmp = ScriptableObject.CreateInstance<GemDefinition>();
             lmp.Id = GemId.Lmp;
