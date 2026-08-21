@@ -128,6 +128,86 @@ namespace GemTD.Gameplay.Grid
             return true;
         }
 
+        /// <summary>Hop distance from home to <paramref name="tip"/> along path tiles (BFS), or -1 if unreachable.</summary>
+        public int HopDistanceFromHome(Vector2Int tip)
+        {
+            if (!InBounds(tip.x, tip.y))
+                return -1;
+
+            var dist = ComputeHopDistancesFromHome();
+            return dist[Index(tip.x, tip.y)];
+        }
+
+        /// <summary>
+        /// Ranks <paramref name="tips"/> by hop distance from home (descending), then by
+        /// coord (x desc, then y desc) for deterministic tiebreaks. Used to pick boss spawn
+        /// tips — furthest tips first. Does not mutate <paramref name="tips"/>.
+        /// </summary>
+        public void RankTipsByHopDescending(List<Vector2Int> tips, List<Vector2Int> rankedInto)
+        {
+            rankedInto.Clear();
+            if (tips == null || tips.Count == 0)
+                return;
+
+            var dist = ComputeHopDistancesFromHome();
+            rankedInto.AddRange(tips);
+            rankedInto.Sort((a, b) =>
+            {
+                var ha = dist[Index(a.x, a.y)];
+                var hb = dist[Index(b.x, b.y)];
+                if (ha != hb)
+                    return hb.CompareTo(ha);
+                if (a.x != b.x)
+                    return b.x.CompareTo(a.x);
+                return b.y.CompareTo(a.y);
+            });
+        }
+
+        int[] ComputeHopDistancesFromHome()
+        {
+            var dist = new int[Width * Height];
+            for (var i = 0; i < dist.Length; i++)
+                dist[i] = -1;
+
+            if (!IsPath(Home.x, Home.y))
+                return dist;
+
+            var qx = new int[Width * Height];
+            var qy = new int[Width * Height];
+            var head = 0;
+            var tail = 0;
+            qx[tail] = Home.x;
+            qy[tail] = Home.y;
+            tail++;
+            dist[Index(Home.x, Home.y)] = 0;
+
+            while (head < tail)
+            {
+                var x = qx[head];
+                var y = qy[head];
+                var d = dist[Index(x, y)];
+                head++;
+
+                TryEnqueueHop(x + 1, y, d, dist, qx, qy, ref tail);
+                TryEnqueueHop(x - 1, y, d, dist, qx, qy, ref tail);
+                TryEnqueueHop(x, y + 1, d, dist, qx, qy, ref tail);
+                TryEnqueueHop(x, y - 1, d, dist, qx, qy, ref tail);
+            }
+
+            return dist;
+        }
+
+        void TryEnqueueHop(int x, int y, int parentDist, int[] dist, int[] qx, int[] qy, ref int tail)
+        {
+            if (!InBounds(x, y) || !IsPath(x, y)) return;
+            var i = Index(x, y);
+            if (dist[i] >= 0) return;
+            dist[i] = parentDist + 1;
+            qx[tail] = x;
+            qy[tail] = y;
+            tail++;
+        }
+
         public bool HasPathBetween(Vector2Int from, Vector2Int to)
         {
             if (!IsPath(from.x, from.y) || !IsPath(to.x, to.y))

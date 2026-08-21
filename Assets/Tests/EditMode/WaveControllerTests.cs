@@ -167,6 +167,128 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void BuildSpawnQueue_SkipsAuthoredBossEntries_RegardlessOfBossEnemyWiring()
+        {
+            var authoredBoss = ScriptableObject.CreateInstance<EnemyDefinition>();
+            authoredBoss.IsBoss = true;
+            var wave = CreateWave(
+                1,
+                new[]
+                {
+                    new WaveSpawnEntry { Enemy = _enemyDef, Count = 2 },
+                    new WaveSpawnEntry { Enemy = authoredBoss, Count = 1 },
+                },
+                interval: 0f);
+
+            try
+            {
+                // No bossEnemy wired, and wave 1 isn't a cadence boss wave — authored boss
+                // entry must still never reach the spawn queue (cadence owns all bosses).
+                var controller = CreateController(new[] { wave }, endWaveGold: 25, bossEnemy: null);
+                var gate = new TestSpawnerGate();
+                EnterPlanReady();
+                controller.StartWave(spawnTipCount: 1);
+
+                Assert.AreEqual(0, controller.CurrentBossCount);
+                controller.Tick(0f, gate.Gate);
+
+                Assert.AreEqual(2, gate.SpawnCount);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[0]);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[1]);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(wave);
+                UnityEngine.Object.DestroyImmediate(authoredBoss);
+            }
+        }
+
+        [Test]
+        public void StartWave_NonBossWave_CurrentBossCountIsZero_EvenWithBossEnemyWired()
+        {
+            var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
+            boss.IsBoss = true;
+            try
+            {
+                var controller = CreateController(new[] { _wave1 }, endWaveGold: 25, bossEnemy: boss);
+                EnterPlanReady();
+
+                controller.StartWave(spawnTipCount: 4);
+
+                Assert.AreEqual(0, controller.CurrentBossCount);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(boss);
+            }
+        }
+
+        [Test]
+        public void StartWave_BossWaveTen_InjectsOneCadenceBossAfterRegulars()
+        {
+            var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
+            boss.IsBoss = true;
+            var waves = BuildWaveArrayUpTo(10, regularCountForLastWave: 2);
+
+            try
+            {
+                var controller = CreateController(waves, endWaveGold: 25, bossEnemy: boss);
+                var gate = new TestSpawnerGate();
+                AdvanceThroughWaves(controller, gate, waveCount: 9);
+
+                EnterPlanReady();
+                controller.StartWave(spawnTipCount: 3); // min(10/10, 3) = 1 boss
+                Assert.AreEqual(1, controller.CurrentBossCount);
+
+                gate.ResetCounts();
+                controller.Tick(0f, gate.Gate); // interval 0 — one Tick drains the queue
+
+                Assert.AreEqual(3, gate.SpawnCount); // 2 regulars + 1 boss
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[0]);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[1]);
+                Assert.AreEqual(boss, gate.SpawnedEnemies[2]);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(boss);
+                for (var i = 0; i < waves.Length; i++)
+                    UnityEngine.Object.DestroyImmediate(waves[i]);
+            }
+        }
+
+        [Test]
+        public void StartWave_BossWaveTwenty_InjectsTwoBosses_CappedAtLiveTipCount()
+        {
+            var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
+            boss.IsBoss = true;
+            var waves = BuildWaveArrayUpTo(20, regularCountForLastWave: 1);
+
+            try
+            {
+                var controller = CreateController(waves, endWaveGold: 25, bossEnemy: boss);
+                var gate = new TestSpawnerGate();
+                AdvanceThroughWaves(controller, gate, waveCount: 19);
+
+                EnterPlanReady();
+                // Design: min(wave/10, tipCount). Wave 20 wants 2 but only 1 tip exists.
+                controller.StartWave(spawnTipCount: 1);
+                Assert.AreEqual(1, controller.CurrentBossCount);
+
+                gate.ResetCounts();
+                controller.Tick(0f, gate.Gate);
+
+                Assert.AreEqual(2, gate.SpawnCount); // 1 regular + 1 boss (capped)
+                Assert.AreEqual(boss, gate.SpawnedEnemies[1]);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(boss);
+                for (var i = 0; i < waves.Length; i++)
+                    UnityEngine.Object.DestroyImmediate(waves[i]);
+            }
+        }
+
+        [Test]
         public void Clear_WaveWithOfferDraft_GoesDraft()
         {
             _wave1.OfferDraftAfterClear = true;
@@ -237,6 +359,9 @@ namespace GemTD.Tests.EditMode
         WaveController CreateController(WaveDefinition[] waves, int endWaveGold) =>
             new WaveController(waves, _states, _economy, endWaveGold);
 
+        WaveController CreateController(WaveDefinition[] waves, int endWaveGold, EnemyDefinition bossEnemy) =>
+            new WaveController(waves, _states, _economy, endWaveGold, bossEnemy);
+
         void EnterPlanReady()
         {
             if (_states.Current == RunStateId.Boot)
@@ -262,6 +387,31 @@ namespace GemTD.Tests.EditMode
 
             gate.ClearLive();
             controller.Tick(0f, gate.Gate);
+        }
+
+        /// <summary>
+        /// Builds a <paramref name="waveCount"/>-length array of trivial 1-enemy/0-interval
+        /// waves (indices 0..waveCount-2), with the final wave (index waveCount-1, i.e. wave
+        /// number == waveCount) carrying <paramref name="regularCountForLastWave"/> regulars
+        /// of <c>_enemyDef</c> so boss-cadence tests can drive up to a target wave number.
+        /// </summary>
+        WaveDefinition[] BuildWaveArrayUpTo(int waveCount, int regularCountForLastWave)
+        {
+            var waves = new WaveDefinition[waveCount];
+            for (var i = 0; i < waveCount - 1; i++)
+                waves[i] = CreateWave(i + 1, _enemyDef, count: 1, interval: 0f);
+            waves[waveCount - 1] = CreateWave(waveCount, _enemyDef, count: regularCountForLastWave, interval: 0f);
+            return waves;
+        }
+
+        /// <summary>Clears <paramref name="waveCount"/> trivial 1-enemy waves (see BuildWaveArrayUpTo) in order.</summary>
+        void AdvanceThroughWaves(WaveController controller, TestSpawnerGate gate, int waveCount)
+        {
+            for (var w = 0; w < waveCount; w++)
+            {
+                EnterPlanReady();
+                ClearWave(controller, gate, expectedSpawns: 1);
+            }
         }
 
         static WaveDefinition CreateWave(int number, EnemyDefinition enemy, int count, float interval) =>

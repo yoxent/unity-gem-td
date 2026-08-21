@@ -25,6 +25,7 @@ namespace GemTD.Gameplay
         [SerializeField] RunConfig runConfig;
         [SerializeField] BuildBarCatalog buildBarCatalog;
         [SerializeField] WaveCatalog waveCatalog;
+        [SerializeField] EnemyDefinition bossEnemy;
         [SerializeField] GemDefinition[] draftPool;
         [SerializeField] CodexCatalog codexCatalog;
         [SerializeField] ChunkCatalog chunkCatalog;
@@ -189,6 +190,8 @@ namespace GemTD.Gameplay
         readonly List<Vector2Int> _polylineCells = new List<Vector2Int>(16);
         readonly List<Vector3> _polylineWorld = new List<Vector3>(16);
         readonly List<Vector2Int> _spawnTips = new List<Vector2Int>(8);
+        readonly List<Vector2Int> _rankedTipsScratch = new List<Vector2Int>(8);
+        readonly List<Vector2Int> _bossSpawnTips = new List<Vector2Int>(8);
         readonly List<EnemyRuntime> _livingScratch = new List<EnemyRuntime>(32);
 
         ViewObjectPool<EnemyView> _enemyPool;
@@ -201,6 +204,7 @@ namespace GemTD.Gameplay
         InputActionMap _debugMap;
         bool _loggedExpandSkip;
         int _nextTipIndex;
+        int _bossSpawnCursor;
         HomeBaseView _homeMarker;
 
         void Awake()
@@ -424,7 +428,7 @@ namespace GemTD.Gameplay
             if (waveDefs.Length == 0)
                 Debug.LogError("[GemTD] No wave definitions assigned on WaveCatalog.");
             else
-                WaveController = new WaveController(waveDefs, States, Economy, endWaveGold);
+                WaveController = new WaveController(waveDefs, States, Economy, endWaveGold, bossEnemy);
         }
 
         void SetupPools()
@@ -616,9 +620,41 @@ namespace GemTD.Gameplay
             if (States.Current != RunStateId.Plan || !States.ExpandSatisfiedThisCycle)
                 return;
 
-            WaveController.StartWave();
+            BeginWaveWithBossCadence();
             GameEvents.RaiseWaveChanged(WaveController.CurrentWaveNumber);
             GameEvents.RaiseRunStateChanged();
+        }
+
+        /// <summary>
+        /// Shared by every <c>WaveController.StartWave</c> call site: collects the live spawn
+        /// tip count (same combat about to start), starts the wave with it (boss cadence =
+        /// min(wave/10, tipCount)), then snapshots the furthest-tip boss routing for that wave.
+        /// Callers still raise their own events afterward.
+        /// </summary>
+        void BeginWaveWithBossCadence()
+        {
+            var tipCount = _path != null ? _path.CollectSpawnTips(_spawnTips) : 0;
+            WaveController.StartWave(tipCount);
+            PrepareBossSpawnTips();
+        }
+
+        /// <summary>
+        /// Snapshot the furthest tips (hop BFS from home, coord tiebreak) for this wave's
+        /// boss cadence, using the same live tip set <see cref="WaveController.StartWave"/>
+        /// just used to compute <see cref="WaveController.CurrentBossCount"/>.
+        /// </summary>
+        void PrepareBossSpawnTips()
+        {
+            _bossSpawnTips.Clear();
+            _bossSpawnCursor = 0;
+
+            var bossCount = WaveController != null ? WaveController.CurrentBossCount : 0;
+            if (bossCount <= 0 || _path == null)
+                return;
+
+            _path.RankTipsByHopDescending(_spawnTips, _rankedTipsScratch);
+            for (var i = 0; i < bossCount && i < _rankedTipsScratch.Count; i++)
+                _bossSpawnTips.Add(_rankedTipsScratch[i]);
         }
 
         public void TryPlaceAtWorld(Vector3 world, bool keepPlacementSelected = false)
@@ -767,7 +803,7 @@ namespace GemTD.Gameplay
             if (!CanStartWave)
                 return;
 
-            WaveController.StartWave();
+            BeginWaveWithBossCadence();
             GameEvents.RaiseWaveChanged(WaveController.CurrentWaveNumber);
         }
 
@@ -1209,14 +1245,25 @@ namespace GemTD.Gameplay
             if (def == null || chunkBoardView == null || _path == null)
                 return;
 
-            _path.CollectSpawnTips(_spawnTips);
-            if (_spawnTips.Count == 0)
+            Vector2Int tip;
+            if (def.IsBoss && _bossSpawnCursor < _bossSpawnTips.Count)
             {
-                Debug.LogWarning("[GemTD] No spawn tips — cannot spawn.");
-                return;
+                // Bosses spawn 1-per-tip from the pre-ranked furthest tips for this wave
+                // (see PrepareBossSpawnTips) — not the regular round-robin scheduler.
+                tip = _bossSpawnTips[_bossSpawnCursor];
+                _bossSpawnCursor++;
             }
+            else
+            {
+                _path.CollectSpawnTips(_spawnTips);
+                if (_spawnTips.Count == 0)
+                {
+                    Debug.LogWarning("[GemTD] No spawn tips — cannot spawn.");
+                    return;
+                }
 
-            var tip = SpawnTipScheduler.Next(_spawnTips, ref _nextTipIndex);
+                tip = SpawnTipScheduler.Next(_spawnTips, ref _nextTipIndex);
+            }
 
             if (!_path.TryGetWaypointPolyline(tip, _polylineCells))
                 return;

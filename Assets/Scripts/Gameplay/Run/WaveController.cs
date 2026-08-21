@@ -11,6 +11,7 @@ namespace GemTD.Gameplay.Run
         readonly RunStateMachine _states;
         readonly RunEconomy _economy;
         readonly int _endWaveGold;
+        readonly EnemyDefinition _bossEnemy;
         readonly List<EnemyDefinition> _spawnQueue = new List<EnemyDefinition>();
 
         int _nextWaveIndex;
@@ -23,11 +24,15 @@ namespace GemTD.Gameplay.Run
 
         public int NextWaveNumber => _nextWaveIndex + 1;
 
+        /// <summary>Bosses injected into the current wave's spawn queue by cadence (Task 6).</summary>
+        public int CurrentBossCount { get; private set; }
+
         public WaveController(
             WaveDefinition[] waves,
             RunStateMachine states,
             RunEconomy economy,
-            int endWaveGold)
+            int endWaveGold,
+            EnemyDefinition bossEnemy = null)
         {
             _waves = waves ?? throw new ArgumentNullException(nameof(waves));
             if (_waves.Length == 0)
@@ -36,9 +41,16 @@ namespace GemTD.Gameplay.Run
             _states = states ?? throw new ArgumentNullException(nameof(states));
             _economy = economy ?? throw new ArgumentNullException(nameof(economy));
             _endWaveGold = endWaveGold;
+            _bossEnemy = bossEnemy;
         }
 
-        public void StartWave()
+        /// <summary>
+        /// <paramref name="spawnTipCount"/> is the live tip count for the combat about to
+        /// start (from <c>PathGraph.CollectSpawnTips</c>) — used only for boss cadence
+        /// (min(wave/10, tipCount)). Callers that don't care about boss cadence (e.g. waves
+        /// before the first boss wave) may omit it.
+        /// </summary>
+        public void StartWave(int spawnTipCount = 1)
         {
             if (_nextWaveIndex >= _waves.Length)
                 throw new InvalidOperationException("Campaign complete — no more waves.");
@@ -47,7 +59,10 @@ namespace GemTD.Gameplay.Run
 
             _activeWave = _waves[_nextWaveIndex];
             CurrentWaveNumber = _nextWaveIndex + 1;
-            BuildSpawnQueue(_activeWave);
+            CurrentBossCount = _bossEnemy != null
+                ? BossCadence.BossCount(CurrentWaveNumber, spawnTipCount)
+                : 0;
+            BuildSpawnQueue(_activeWave, CurrentBossCount);
             _spawnIndex = 0;
             _spawnTimer = 0f;
             _waveCleared = false;
@@ -82,22 +97,31 @@ namespace GemTD.Gameplay.Run
             }
         }
 
-        void BuildSpawnQueue(WaveDefinition wave)
+        void BuildSpawnQueue(WaveDefinition wave, int bossCount)
         {
             _spawnQueue.Clear();
             var entries = wave.Entries;
-            if (entries == null)
-                return;
-
-            for (var i = 0; i < entries.Length; i++)
+            if (entries != null)
             {
-                var entry = entries[i];
-                if (entry.Enemy == null || entry.Count <= 0)
-                    continue;
+                for (var i = 0; i < entries.Length; i++)
+                {
+                    var entry = entries[i];
+                    if (entry.Enemy == null || entry.Count <= 0)
+                        continue;
 
-                for (var c = 0; c < entry.Count; c++)
-                    _spawnQueue.Add(entry.Enemy);
+                    // Cadence owns all boss placement — authored boss entries are dropped
+                    // even outside boss waves (see BossCadence / Task 6 brief).
+                    if (entry.Enemy.IsBoss)
+                        continue;
+
+                    for (var c = 0; c < entry.Count; c++)
+                        _spawnQueue.Add(entry.Enemy);
+                }
             }
+
+            // Bosses spawn after regulars — the wave's finale.
+            for (var c = 0; c < bossCount; c++)
+                _spawnQueue.Add(_bossEnemy);
         }
     }
 }
