@@ -58,6 +58,7 @@ namespace GemTD.Gameplay.Map
             CollectPassing(coord, _all, _passing);
             if (_passing.Count == 0) return false;
 
+            DropOptionalDeadEnds(_passing);
             var pick = PickHighestTipCountIndex(coord, _passing);
             var (prefab, yaw) = _passing[pick];
             var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
@@ -102,7 +103,7 @@ namespace GemTD.Gameplay.Map
                 {
                     var mask = baseMask.Rotated(yaw);
                     if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
-                    if (!HasOutwardExpandArm(coord, mask)) continue;
+                    if (!KeepsTreeSeparation(coord, mask)) continue;
                     if (TentativeReachesHome(coord, prefab, yaw))
                         return true;
                 }
@@ -121,7 +122,7 @@ namespace GemTD.Gameplay.Map
                 {
                     var mask = baseMask.Rotated(yaw);
                     if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
-                    if (!HasOutwardExpandArm(coord, mask)) continue;
+                    if (!KeepsTreeSeparation(coord, mask)) continue;
                     if (TentativeReachesHome(coord, prefab, yaw))
                         into.Add((prefab, yaw));
                 }
@@ -157,25 +158,118 @@ namespace GemTD.Gameplay.Map
         }
 
         /// <summary>
-        /// Straights that match two occupied openings and have no empty-facing arm
-        /// seal a corridor with no continuation (the original loop-closer bug).
-        /// T / Cross / Corner / DeadEnd may fill a multi-opening pocket — those
-        /// open edges still need expand markers, and other tips remain elsewhere.
+        /// Paths are a permanent tree: once they split they never merge back.
+        /// 1-away must be empty; then a cross on that cell: occupied neighbors
+        /// that open into it are merges, and occupied neighbors adjacent to the
+        /// incoming chunk are "run along own path." Closed walls are allowed
+        /// (horseshoe / dead-end channel). Sealed 1-cell cavities stay T→DeadEnd.
+        /// Both flanks merge-blocked + free continuation → Straight.
         /// </summary>
-        bool HasOutwardExpandArm(Vector2Int coord, ChunkMask mask)
+        bool KeepsTreeSeparation(Vector2Int coord, ChunkMask mask)
         {
-            if (mask.Type != ChunkType.Straight)
-                return true;
+            if (!TryUniqueIncoming(coord, out var incoming))
+                return false;
+            if ((mask.OpenEdges & incoming) == 0)
+                return false;
 
             for (var d = 0; d < _dirs.Length; d++)
             {
                 var dir = _dirs[d];
+                if (dir == incoming) continue;
                 if ((mask.OpenEdges & dir) == 0) continue;
-                var nb = _grid.NeighborCoord(coord, dir);
-                if (!_grid.InBounds(nb.x, nb.y)) continue;
-                if (!_grid.IsOccupied(nb.x, nb.y)) return true;
+                if (!CanOpenWithoutMerge(coord, dir, incoming))
+                    return false;
+            }
+
+            if (!BothFlanksBlocked(coord, incoming))
+                return true;
+
+            var continuation = incoming.Opposite();
+            if (CanOpenWithoutMerge(coord, continuation, incoming))
+                return mask.OpenEdges == (incoming | continuation);
+
+            return (mask.OpenEdges & ~incoming) == EdgeFlags.None;
+        }
+
+        bool BothFlanksBlocked(Vector2Int coord, EdgeFlags incoming)
+        {
+            var continuation = incoming.Opposite();
+            var blocked = 0;
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                var dir = _dirs[d];
+                if (dir == incoming || dir == continuation) continue;
+                if (!CanOpenWithoutMerge(coord, dir, incoming))
+                    blocked++;
+            }
+            return blocked == 2;
+        }
+
+        bool CanOpenWithoutMerge(Vector2Int coord, EdgeFlags dir, EdgeFlags incoming)
+        {
+            var one = _grid.NeighborCoord(coord, dir);
+            if (!_grid.InBounds(one.x, one.y))
+                return false;
+            if (_grid.IsOccupied(one.x, one.y))
+                return false;
+            if (IsForcedDeadEndPocket(one, coord))
+                return true;
+
+            var from = _grid.NeighborCoord(coord, incoming);
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                var side = _dirs[d];
+                var nb = _grid.NeighborCoord(one, side);
+                if (nb == coord) continue;
+                if (!_grid.InBounds(nb.x, nb.y) || !_grid.IsOccupied(nb.x, nb.y))
+                    continue;
+                if (_grid.OpenEdgeAt(nb.x, nb.y, side.Opposite()))
+                    return false;
+                if (IsCardinallyAdjacent(nb, from))
+                    return false;
+            }
+
+            return true;
+        }
+
+        bool IsCardinallyAdjacent(Vector2Int a, Vector2Int b)
+        {
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                if (_grid.NeighborCoord(a, _dirs[d]) == b)
+                    return true;
             }
             return false;
+        }
+
+        bool IsForcedDeadEndPocket(Vector2Int hole, Vector2Int expandCoord)
+        {
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                var dir = _dirs[d];
+                var nb = _grid.NeighborCoord(hole, dir);
+                if (nb == expandCoord) continue;
+                if (!_grid.InBounds(nb.x, nb.y)) continue;
+                if (!_grid.IsOccupied(nb.x, nb.y)) return false;
+                if (_grid.OpenEdgeAt(nb.x, nb.y, dir.Opposite())) return false;
+            }
+            return true;
+        }
+
+        bool TryUniqueIncoming(Vector2Int coord, out EdgeFlags incoming)
+        {
+            incoming = EdgeFlags.None;
+            var count = 0;
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                var dir = _dirs[d];
+                var nb = _grid.NeighborCoord(coord, dir);
+                if (!_grid.OpenEdgeAt(nb.x, nb.y, dir.Opposite()))
+                    continue;
+                incoming = dir;
+                count++;
+            }
+            return count == 1;
         }
 
         bool TentativeReachesHome(Vector2Int coord, MapChunkStamp prefab, int yaw)
@@ -184,6 +278,36 @@ namespace GemTD.Gameplay.Map
             var ok = _path.AllTipsReachHome();
             _stamp.Rollback(coord, res, _path, _board);
             return ok;
+        }
+
+        /// <summary>
+        /// DeadEnds never win a random tip-count tie. Drop them whenever any
+        /// other type is legal. Forced DeadEnds (only remaining type: sealed
+        /// hole, rim cap) still pick.
+        /// </summary>
+        void DropOptionalDeadEnds(List<(MapChunkStamp prefab, int yaw)> passing)
+        {
+            var hasOther = false;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (passing[i].prefab.GetMask().Type != ChunkType.DeadEnd)
+                {
+                    hasOther = true;
+                    break;
+                }
+            }
+            if (!hasOther) return;
+
+            var n = 0;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (passing[i].prefab.GetMask().Type == ChunkType.DeadEnd)
+                    continue;
+                passing[n] = passing[i];
+                n++;
+            }
+            for (var i = passing.Count - 1; i >= n; i--)
+                passing.RemoveAt(i);
         }
 
         /// <summary>

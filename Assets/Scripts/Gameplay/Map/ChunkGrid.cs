@@ -85,7 +85,8 @@ namespace GemTD.Gameplay.Map
 
         /// <summary>
         /// Every occupied neighbor that opens into <paramref name="empty"/>.
-        /// Used so B–x–C merge pockets get a marker seat on each open edge.
+        /// Marker seating uses this together with legal-slot checks (split
+        /// arms that already face the same empty cell are not legal expands).
         /// </summary>
         public int CollectOpeningsInto(Vector2Int empty, List<Vector2Int> occupiedOut, List<EdgeFlags> outwardOut)
         {

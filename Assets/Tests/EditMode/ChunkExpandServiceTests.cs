@@ -234,6 +234,19 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(_grid.IsOccupied(4, 6));
         }
 
+        [Test]
+        public void TryExpand_NearHome_PicksCornerOverDeadEnd()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeCorner());
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreEqual(ChunkType.Corner, slot.Mask.Type);
+        }
+
         [Test] public void TryExpand_UnconnectablePrefab_ReturnsFalse_NoMutation()
         {
             StampCorridorNorthWithHome();
@@ -347,10 +360,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void CollectLegalExpands_ThreeNeighborGap_TJunctionIsLegal()
+        public void CollectLegalExpands_ThreeNeighborGap_TJunctionRejected()
         {
             // Same pocket as the loop-gap: west, east, and south all open into (4,6).
-            // A T (E+W+S) matches every opening but has no empty-facing arm.
+            // Merging split arms back together is illegal — paths stay a tree.
             StampEastWestLoopGap();
             _catalog.Stamps.Clear();
             _catalog.Stamps.Add(MakeTJunction());
@@ -358,7 +371,7 @@ namespace GemTD.Tests.EditMode
             var into = new List<Vector2Int>();
             _expand.CollectLegalExpands(into);
 
-            Assert.IsTrue(into.Contains(new Vector2Int(4, 6)));
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
         }
 
         [Test]
@@ -424,16 +437,173 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void CollectLegalExpands_AcceptsLoopWhenExpandedChunkKeepsOutwardArm()
+        public void CollectLegalExpands_RejectsLoopFillEvenWithOutwardArm()
         {
             StampEastWestLoopGap();
             _catalog.Stamps.Clear();
-            _catalog.Stamps.Add(MakeCross()); // W+E+S connect the loop; north stays open
+            _catalog.Stamps.Add(MakeCross()); // would reconnect split arms even with a free north
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test]
+        public void CollectLegalExpands_OccupiedTwoAwayOnSide_ClosedWallStillAllowsCross()
+        {
+            StampCorridorNorthWithHome();
+            StampLand(new Vector2Int(6, 6)); // closed wall two chunks east — not a merge
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeCross());
 
             var into = new List<Vector2Int>();
             _expand.CollectLegalExpands(into);
 
             Assert.IsTrue(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test]
+        public void TryExpand_OccupiedTwoAwayOnSide_MayOpenTowardClosedWall()
+        {
+            StampCorridorNorthWithHome();
+            StampLand(new Vector2Int(6, 6));
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeCross());
+            _catalog.Stamps.Add(MakeStraight());
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.IsOccupied(4, 6));
+        }
+
+        [Test]
+        public void CollectLegalExpands_OccupiedTwoAwayAhead_ClosedWallAllowsStraight()
+        {
+            StampCorridorNorthWithHome();
+            StampLand(new Vector2Int(4, 8)); // closed wall two chunks north
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+            Assert.IsTrue(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        // xxy      y = last expand (N-S), o = next slot, - = 1-cell hole
+        // x-o
+        // xxx
+        [Test]
+        public void TryExpand_SealedSideHole_PicksTJunctionOpeningIntoHole()
+        {
+            StampHorseshoeDeadEndPocket();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeCorner());
+            _catalog.Stamps.Add(MakeTJunction());
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(5, 5)));
+            Assert.IsTrue(_grid.TryGet(5, 5, out var slot));
+            Assert.AreEqual(ChunkType.TJunction, slot.Mask.Type);
+            Assert.AreNotEqual(0, (int)(slot.Mask.OpenEdges & EdgeFlags.West));
+            Assert.AreNotEqual(0, (int)(slot.Mask.OpenEdges & EdgeFlags.East));
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+            Assert.IsTrue(into.Contains(new Vector2Int(4, 5)), "hole becomes a DeadEnd expand");
+            Assert.IsTrue(into.Contains(new Vector2Int(6, 5)), "free arm stays expandable");
+        }
+
+        [Test]
+        public void TryExpand_SealedSideHole_FreeArmAlwaysPicksStraight()
+        {
+            StampHorseshoeDeadEndPocket();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeTJunction());
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(5, 5)));
+
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeCorner());
+            _catalog.Stamps.Add(MakeCross());
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(6, 5)));
+            Assert.IsTrue(_grid.TryGet(6, 5, out var arm));
+            Assert.AreEqual(ChunkType.Straight, arm.Mask.Type);
+            Assert.AreEqual(0, (int)(arm.Mask.OpenEdges & (EdgeFlags.North | EdgeFlags.South)));
+        }
+
+        [Test]
+        public void TryExpand_SealedSideHole_HoleAlwaysPicksDeadEnd()
+        {
+            StampHorseshoeDeadEndPocket();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeTJunction());
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(5, 5)));
+
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeCross());
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 5)));
+            Assert.IsTrue(_grid.TryGet(4, 5, out var hole));
+            Assert.AreEqual(ChunkType.DeadEnd, hole.Mask.Type);
+        }
+
+        // xxx
+        // x-x
+        // x-x
+        // x-y
+        // x-o   left wall + empty channel; o must be able to turn into the channel
+        [Test]
+        public void CollectLegalExpands_ParallelChannel_AcceptsCornerOpeningIntoChannel()
+        {
+            StampParallelChannel();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeCorner());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsTrue(into.Contains(new Vector2Int(8, 2)));
+        }
+
+        [Test]
+        public void TryExpand_ParallelChannel_PicksWestOpening()
+        {
+            StampParallelChannel();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeCorner());
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(8, 2)));
+            Assert.IsTrue(_grid.TryGet(8, 2, out var slot));
+            Assert.AreNotEqual(0, (int)(slot.Mask.OpenEdges & EdgeFlags.West));
+        }
+
+        void StampHorseshoeDeadEndPocket()
+        {
+            StampLand(new Vector2Int(5, 7));
+            StampStraight(new Vector2Int(5, 6), yaw: 0);
+            _path.SetHome(5 * ChunkMask.Size + ChunkMask.Mid, 6 * ChunkMask.Size + 0);
+            StampLand(new Vector2Int(3, 6));
+            StampLand(new Vector2Int(4, 6));
+            StampLand(new Vector2Int(3, 5));
+            StampLand(new Vector2Int(3, 4));
+            StampLand(new Vector2Int(4, 4));
+            StampLand(new Vector2Int(5, 4));
+        }
+
+        void StampParallelChannel()
+        {
+            StampLand(new Vector2Int(8, 8));
+            StampLand(new Vector2Int(7, 8));
+            StampLand(new Vector2Int(6, 8));
+            StampStraight(new Vector2Int(8, 7), yaw: 0);
+            StampStraight(new Vector2Int(8, 6), yaw: 0);
+            StampStraight(new Vector2Int(8, 5), yaw: 0);
+            StampStraight(new Vector2Int(8, 4), yaw: 0);
+            StampStraight(new Vector2Int(8, 3), yaw: 0);
+            _path.SetHome(8 * ChunkMask.Size + ChunkMask.Mid, 7 * ChunkMask.Size + 0);
+            for (var y = 2; y <= 7; y++)
+                StampLand(new Vector2Int(6, y));
         }
 
         void StampCross(Vector2Int coord, int yaw)
