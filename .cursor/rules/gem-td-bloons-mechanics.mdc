@@ -1,0 +1,36 @@
+---
+description: Conventional TD UX — Bloons TD 5/6 is the primary reference
+alwaysApply: true
+---
+
+# Conventional TD mechanics (Bloons-first)
+
+Gem TD’s unique fantasy is **support gems + sockets** (and map expansion). Everything else in the run loop should feel like a **conventional tower defense**.
+
+## Reference order
+
+When implementing or changing **place / select / sell / upgrade / waves / hotkeys / cancel / previews**:
+
+1. Check how **Bloons TD 5 / Bloons TD 6** does it (wiki, in-game, or trusted guides).
+2. Match that convention unless GDD/docs explicitly override.
+3. If BTD is silent, fall back to common TD/RTS (Desktop TD, WC3/SC2 place+Shift).
+4. Document any intentional deviation in the docs repo (`UI-SPEC.md` / design notes).
+
+## Locked placement UX (BTD-style)
+
+- Select tower type from build bar / hotkey → **ghost preview** follows cursor (low opacity).
+- Ghost **snaps to tile**; **valid** = green-tint translucent, **invalid** = red-tint translucent.
+- Left-click valid tile → place. Without Shift → clear place mode. **Shift+click** → keep type selected (multi-place).
+- Releasing Shift alone does **not** cancel place mode.
+- **Esc**: cancel place → else deselect tower / close **Tower Details**.
+- **Right-click** (Gem TD GDD override): cancel place → else deselect tower / close **Tower Details**. Ignore when pointer is over UI.
+- World left-click is ignored when pointer is over UI (inventory / build bar / Tower Details must not count as empty-board).
+- No default tower armed at run start.
+
+## Naming
+
+Call the selected-tower HUD panel **Tower Details** (never “inspector” — that means Unity’s Editor Inspector).
+
+## Do not reinvent
+
+Do not invent alternate place/sell/wave UX “for originality.” Gems are the originality; the shell stays conventional.

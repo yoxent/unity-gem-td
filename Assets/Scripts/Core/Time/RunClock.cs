@@ -21,15 +21,5 @@ namespace GemTD.Core
             if (scale <= 0f) throw new ArgumentOutOfRangeException(nameof(scale));
             TimeScale = scale;
         }
-
-        public void CycleSpeed()
-        {
-            TimeScale = TimeScale switch
-            {
-                <= 1.01f => 2f,
-                <= 2.01f => 4f,
-                _ => 1f
-            };
-        }
     }
 }

@@ -5,18 +5,22 @@ using GemTD.Core;
 namespace GemTD.Gameplay.Run
 {
     /// <summary>
-    /// Explicit run phase machine. Expand → Build → Combat → (Draft?) → Expand …
+    /// Explicit run phase machine. Draft → Plan → Combat → (Draft?) → Plan …
     /// </summary>
     public sealed class RunStateMachine
     {
         public RunStateId Current { get; private set; } = RunStateId.Boot;
 
+        public bool ExpandSatisfiedThisCycle { get; private set; }
+
         public event Action<RunStateId, RunStateId> StateChanged;
 
         readonly RunClock _clock;
+        readonly SpeedControl _speed;
 
-        public RunStateMachine(RunClock clock)
+        public RunStateMachine(SpeedControl speed, RunClock clock)
         {
+            _speed = speed ?? throw new ArgumentNullException(nameof(speed));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         }
 
@@ -32,31 +36,50 @@ namespace GemTD.Gameplay.Run
 
         public void StartRun()
         {
-            ForceState(RunStateId.Expand);
-        }
-
-        public void ExpandConfirmed()
-        {
-            Ensure(RunStateId.Expand);
-            ForceState(RunStateId.Build);
-        }
-
-        public void StartWave()
-        {
-            Ensure(RunStateId.Build);
-            ForceState(RunStateId.Combat);
-        }
-
-        public void WaveCleared(bool offerDraft)
-        {
-            Ensure(RunStateId.Combat, RunStateId.Boss);
-            ForceState(offerDraft ? RunStateId.Draft : RunStateId.Expand);
+            _speed.ResetSpeedForNewRun();
+            ForceState(RunStateId.Draft);
         }
 
         public void DraftResolved()
         {
             Ensure(RunStateId.Draft);
-            ForceState(RunStateId.Expand);
+            ExpandSatisfiedThisCycle = false;
+            ForceState(RunStateId.Plan);
+        }
+
+        public void NotifyExpandDone()
+        {
+            Ensure(RunStateId.Plan);
+            ExpandSatisfiedThisCycle = true;
+        }
+
+        public void WaiveExpandRequirement() => NotifyExpandDone();
+
+        public void StartWave()
+        {
+            Ensure(RunStateId.Plan);
+            if (!ExpandSatisfiedThisCycle)
+                throw new InvalidOperationException("Expand required before Start Wave");
+            ForceState(RunStateId.Combat);
+        }
+
+        public void WaveCleared(bool offerDraft, bool endsCampaign = false)
+        {
+            Ensure(RunStateId.Combat, RunStateId.Boss);
+            if (endsCampaign)
+            {
+                ForceState(RunStateId.VictorySummary);
+                return;
+            }
+
+            if (offerDraft)
+            {
+                ForceState(RunStateId.Draft);
+                return;
+            }
+
+            ExpandSatisfiedThisCycle = false;
+            ForceState(RunStateId.Plan);
         }
 
         public void TriggerDefeat() => ForceState(RunStateId.Defeat);
@@ -78,15 +101,15 @@ namespace GemTD.Gameplay.Run
                 case RunStateId.Combat:
                 case RunStateId.Boss:
                 case RunStateId.Endless:
-                    _clock.SetPaused(false);
+                    _speed.PopPause("draft");
                     break;
                 case RunStateId.Draft:
                 case RunStateId.Defeat:
                 case RunStateId.VictorySummary:
-                    _clock.SetPaused(true);
+                    _speed.PushPause("draft");
                     break;
                 default:
-                    _clock.SetPaused(false);
+                    _speed.PushPause("draft"); // Plan stays paused
                     break;
             }
         }

@@ -4,6 +4,7 @@ using UnityEngine;
 using GemTD.Gameplay;
 using GemTD.Gameplay.CameraControl;
 using GemTD.Gameplay.Grid;
+using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Run;
 
 namespace GemTD.Editor
@@ -73,17 +74,12 @@ namespace GemTD.Editor
 
             var root = new GameObject("GameCompositionRoot");
             root.AddComponent<GameCompositionRoot>();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             root.AddComponent<RunStateDebugHud>();
+#endif
 
             var gridGo = new GameObject("GridRoot");
-            var gridView = gridGo.AddComponent<GridBoardView>();
-            var tileMat = AssetDatabase.LoadAssetAtPath<Material>($"{PlaceholderMatFolder}/Grid_Tile.mat");
-            if (tileMat != null)
-            {
-                var so = new SerializedObject(gridView);
-                so.FindProperty("tileMaterial").objectReferenceValue = tileMat;
-                so.ApplyModifiedPropertiesWithoutUndo();
-            }
+            var chunkBoardView = gridGo.AddComponent<ChunkBoardView>();
 
             if (Object.FindFirstObjectByType<Light>() == null)
             {
@@ -96,7 +92,7 @@ namespace GemTD.Editor
             EditorSceneManager.SaveScene(scene, RunScenePath);
             AddRunSceneToBuild();
             AssetDatabase.Refresh();
-            Debug.Log($"[Gem TD] Bootstrapped {RunScenePath}. Press Play, then Space/F5 to cycle Expand→Build→Combat.");
+            Debug.Log($"[Gem TD] Bootstrapped {RunScenePath}. Press Play, then use HUD / F5 debug advance.");
         }
 
         static void AddRunSceneToBuild()

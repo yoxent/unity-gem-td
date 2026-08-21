@@ -12,8 +12,13 @@ namespace GemTD.Gameplay.Combat
         public int ForkCount;
         public float AoeRadius;
         public float FireRateMultiplier;
+        public float RangeMultiplier;
+        public float ProjectileSpeedMultiplier;
+        public int EchoVolleyCount;
+        public float EchoDamageFactor;
         public bool Pierce;
         public bool Ignite;
+        public bool Chill;
         public bool Shock;
         public bool Proliferate;
 
@@ -28,8 +33,13 @@ namespace GemTD.Gameplay.Combat
                 ForkCount = 0,
                 AoeRadius = aoe,
                 FireRateMultiplier = 1f,
+                RangeMultiplier = 1f,
+                ProjectileSpeedMultiplier = 1f,
+                EchoVolleyCount = 1,
+                EchoDamageFactor = 1f,
                 Pierce = false,
                 Ignite = false,
+                Chill = false,
                 Shock = false,
                 Proliferate = false
             };

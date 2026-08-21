@@ -3,7 +3,8 @@ namespace GemTD.Gameplay.Run
     public enum RunStateId
     {
         Boot = 0,
-        Expand = 1,
+        Plan = 1,
+        Expand = Plan,
         Build = 2,
         Combat = 3,
         Draft = 4,

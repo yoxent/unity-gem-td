@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace GemTD.Gameplay.CameraControl
@@ -18,17 +20,20 @@ namespace GemTD.Gameplay.CameraControl
         [SerializeField] float mousePanSpeed = 0.02f;
         [SerializeField] float zoomSpeed = 4f;
         [SerializeField] float minOrthoSize = 4f;
-        [SerializeField] float maxOrthoSize = 10f;
-        [SerializeField] Vector3 focus = new Vector3(4f, 0f, 4f);
+        // Default keep center for 13×13 chunks × 7 cells (91×91 board).
+        [SerializeField] Vector3 focus = new Vector3(45.5f, 0f, 45.5f);
+        [SerializeField] float maxOrthoSize = 18f;
 
         Camera _camera;
         InputAction _move;
         InputAction _lookDelta;
         InputAction _zoom;
         InputAction _middleButton;
+        InputAction _rightButton;
         InputAction _rotateLeft;
         InputAction _rotateRight;
         InputActionMap _map;
+        readonly List<RaycastResult> _uiHits = new List<RaycastResult>(8);
 
         void Awake()
         {
@@ -46,6 +51,7 @@ namespace GemTD.Gameplay.CameraControl
             _lookDelta = _map.AddAction("LookDelta", InputActionType.Value, "<Mouse>/delta");
             _zoom = _map.AddAction("Zoom", InputActionType.Value, "<Mouse>/scroll");
             _middleButton = _map.AddAction("Middle", InputActionType.Button, "<Mouse>/middleButton");
+            _rightButton = _map.AddAction("Right", InputActionType.Button, "<Mouse>/rightButton");
             _rotateLeft = _map.AddAction("RotateLeft", InputActionType.Button, "<Keyboard>/q");
             _rotateRight = _map.AddAction("RotateRight", InputActionType.Button, "<Keyboard>/e");
             _map.Enable();
@@ -75,22 +81,41 @@ namespace GemTD.Gameplay.CameraControl
             if (move.sqrMagnitude > 0.0001f)
                 focus += (right * move.x + forward * move.y) * (panSpeed * Time.unscaledDeltaTime);
 
-            if (_middleButton.IsPressed())
+            if (_middleButton.IsPressed() || _rightButton.IsPressed())
             {
                 var mouse = _lookDelta.ReadValue<Vector2>();
                 focus += (-right * mouse.x - forward * mouse.y) * mousePanSpeed;
             }
 
-            var scroll = _zoom.ReadValue<Vector2>().y;
-            if (Mathf.Abs(scroll) > 0.01f)
+            if (!IsPointerOverUi())
             {
-                _camera.orthographicSize = Mathf.Clamp(
-                    _camera.orthographicSize - scroll * zoomSpeed * 0.01f,
-                    minOrthoSize,
-                    maxOrthoSize);
+                var scroll = _zoom.ReadValue<Vector2>().y;
+                if (Mathf.Abs(scroll) > 0.01f)
+                {
+                    _camera.orthographicSize = Mathf.Clamp(
+                        _camera.orthographicSize - scroll * zoomSpeed * 0.01f,
+                        minOrthoSize,
+                        maxOrthoSize);
+                }
             }
 
             ApplyPose();
+        }
+
+        bool IsPointerOverUi()
+        {
+            var es = EventSystem.current;
+            if (es == null || Mouse.current == null)
+                return false;
+
+            var eventData = new PointerEventData(es)
+            {
+                position = Mouse.current.position.ReadValue()
+            };
+
+            _uiHits.Clear();
+            es.RaycastAll(eventData, _uiHits);
+            return _uiHits.Count > 0;
         }
 
         void ApplyPose()
