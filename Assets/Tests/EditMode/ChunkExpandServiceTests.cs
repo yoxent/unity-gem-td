@@ -441,6 +441,24 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TryForceDeadEndCap_CapsOpenTip_EvenWhenStraightAlsoLegal()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeDeadEnd());
+
+            Assert.IsTrue(_expand.TryForceDeadEndCap());
+            Assert.IsTrue(_grid.IsOccupied(4, 6));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreEqual(ChunkType.DeadEnd, slot.Mask.Type);
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 7)));
+        }
+
+        [Test]
         public void CollectLegalExpands_RejectsLoopFillEvenWithOutwardArm()
         {
             StampEastWestLoopGap();

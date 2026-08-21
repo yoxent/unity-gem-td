@@ -80,6 +80,39 @@ namespace GemTD.Gameplay.Map
             return true;
         }
 
+        /// <summary>
+        /// Force a DeadEnd on the first legal tip expand slot (ignores tip-count lottery /
+        /// optional-DeadEnd drop). Used after EndWave clear to cap the last open tip before
+        /// Victory (Task 7). Returns false if no DeadEnd combo fits.
+        /// </summary>
+        public bool TryForceDeadEndCap()
+        {
+            _catalog.CopyAll(_all);
+            CollectCandidates();
+            for (var i = 0; i < _candidates.Count; i++)
+            {
+                var coord = _candidates[i];
+                _passing.Clear();
+                CollectPassing(coord, _all, _passing);
+                KeepOnlyDeadEnds(_passing);
+                if (_passing.Count == 0)
+                    continue;
+
+                var (prefab, yaw) = _passing[0];
+                var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
+                if (!_path.AllTipsReachHome())
+                {
+                    _stamp.Rollback(coord, res, _path, _board);
+                    continue;
+                }
+
+                _stamp.Commit(coord, prefab, yaw, res.Mask, _grid);
+                return true;
+            }
+
+            return false;
+        }
+
         void CollectCandidates()
         {
             _candidateSet.Clear();

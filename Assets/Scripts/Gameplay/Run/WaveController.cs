@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GemTD.Core;
 using GemTD.Gameplay.Enemies;
+using GemTD.Gameplay.Map;
 
 namespace GemTD.Gameplay.Run
 {
@@ -12,6 +13,8 @@ namespace GemTD.Gameplay.Run
         readonly RunEconomy _economy;
         readonly int _endWaveGold;
         readonly EnemyDefinition _bossEnemy;
+        readonly int _endWave;
+        readonly Action _beforeCampaignVictory;
         readonly List<EnemyDefinition> _spawnQueue = new List<EnemyDefinition>();
 
         int _nextWaveIndex;
@@ -32,7 +35,9 @@ namespace GemTD.Gameplay.Run
             RunStateMachine states,
             RunEconomy economy,
             int endWaveGold,
-            EnemyDefinition bossEnemy = null)
+            EnemyDefinition bossEnemy = null,
+            int endWave = 0,
+            Action beforeCampaignVictory = null)
         {
             _waves = waves ?? throw new ArgumentNullException(nameof(waves));
             if (_waves.Length == 0)
@@ -42,6 +47,8 @@ namespace GemTD.Gameplay.Run
             _economy = economy ?? throw new ArgumentNullException(nameof(economy));
             _endWaveGold = endWaveGold;
             _bossEnemy = bossEnemy;
+            _endWave = endWave > 0 ? endWave : ExpandPickPolicy.DefaultEndWave;
+            _beforeCampaignVictory = beforeCampaignVictory;
         }
 
         /// <summary>
@@ -52,13 +59,14 @@ namespace GemTD.Gameplay.Run
         /// </summary>
         public void StartWave(int spawnTipCount = 1)
         {
-            if (_nextWaveIndex >= _waves.Length)
+            var waveNumber = _nextWaveIndex + 1;
+            if (waveNumber > _endWave)
                 throw new InvalidOperationException("Campaign complete — no more waves.");
 
             _states.StartWave();
 
-            _activeWave = _waves[_nextWaveIndex];
-            CurrentWaveNumber = _nextWaveIndex + 1;
+            _activeWave = ResolveWaveTemplate(_nextWaveIndex);
+            CurrentWaveNumber = waveNumber;
             CurrentBossCount = _bossEnemy != null
                 ? BossCadence.BossCount(CurrentWaveNumber, spawnTipCount)
                 : 0;
@@ -91,10 +99,26 @@ namespace GemTD.Gameplay.Run
                 _waveCleared = true;
                 _nextWaveIndex++;
                 _economy.GrantEndWaveGold(WaveScaling.ScaleEndWaveGold(_endWaveGold, CurrentWaveNumber));
-                var offerDraft = _activeWave != null && _activeWave.OfferDraftAfterClear;
-                var endsCampaign = _activeWave != null && _activeWave.EndsCampaign;
+
+                var endsCampaign = CurrentWaveNumber >= _endWave
+                    || (_activeWave != null && _activeWave.EndsCampaign);
+                // Victory takes priority over draft on EndWave clear.
+                var offerDraft = !endsCampaign
+                    && _activeWave != null
+                    && _activeWave.OfferDraftAfterClear;
+
+                if (endsCampaign)
+                    _beforeCampaignVictory?.Invoke();
+
                 _states.WaveCleared(offerDraft, endsCampaign);
             }
+        }
+
+        WaveDefinition ResolveWaveTemplate(int waveIndex)
+        {
+            if (waveIndex < _waves.Length)
+                return _waves[waveIndex];
+            return _waves[_waves.Length - 1];
         }
 
         void BuildSpawnQueue(WaveDefinition wave, int bossCount)

@@ -69,5 +69,12 @@ namespace GemTD.Gameplay.Map
                 return false;
             return tipCount >= (endWave - upcomingWave + 1);
         }
+
+        /// <summary>
+        /// Wave <paramref name="endWave"/> has no expand phase — combat on the last open tip,
+        /// then auto-DeadEnd after clear (Task 7).
+        /// </summary>
+        public static bool SkipExpand(int upcomingWave, int endWave) =>
+            endWave > 0 && upcomingWave >= endWave;
     }
 }

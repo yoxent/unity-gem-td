@@ -83,5 +83,14 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(ExpandPickPolicy.IsClosingWindow(49, 1, 50));
             Assert.IsFalse(ExpandPickPolicy.IsClosingWindow(1, 1, 50));
         }
+
+        [Test]
+        public void SkipExpand_TrueAtOrPastEndWave()
+        {
+            Assert.IsFalse(ExpandPickPolicy.SkipExpand(49, 50));
+            Assert.IsTrue(ExpandPickPolicy.SkipExpand(50, 50));
+            Assert.IsTrue(ExpandPickPolicy.SkipExpand(51, 50));
+            Assert.IsFalse(ExpandPickPolicy.SkipExpand(50, 0));
+        }
     }
 }

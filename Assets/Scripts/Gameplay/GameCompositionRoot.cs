@@ -428,7 +428,24 @@ namespace GemTD.Gameplay
             if (waveDefs.Length == 0)
                 Debug.LogError("[GemTD] No wave definitions assigned on WaveCatalog.");
             else
-                WaveController = new WaveController(waveDefs, States, Economy, endWaveGold, bossEnemy);
+            {
+                var endWave = ExpandPickPolicy.EndWave(runConfig);
+                WaveController = new WaveController(
+                    waveDefs, States, Economy, endWaveGold, bossEnemy, endWave, CapLastTipBeforeVictory);
+            }
+        }
+
+        void CapLastTipBeforeVictory()
+        {
+            if (_expand == null)
+            {
+                Debug.LogWarning("[GemTD] Wave EndVictory: expand service missing — cannot auto-DeadEnd last tip.");
+                return;
+            }
+
+            SyncExpandPolicy();
+            if (!_expand.TryForceDeadEndCap())
+                Debug.LogWarning("[GemTD] Wave EndVictory: failed to auto-DeadEnd last tip — proceeding to Victory anyway.");
         }
 
         void SetupPools()
@@ -516,6 +533,20 @@ namespace GemTD.Gameplay
                 return;
 
             SyncExpandPolicy();
+            var upcoming = WaveController != null ? WaveController.NextWaveNumber : 1;
+            var endWave = ExpandPickPolicy.EndWave(runConfig);
+            if (ExpandPickPolicy.SkipExpand(upcoming, endWave))
+            {
+                if (!_loggedExpandSkip)
+                {
+                    Debug.Log($"[GemTD] EndWave {endWave} — skip expand, start final combat.");
+                    _loggedExpandSkip = true;
+                }
+                States.WaiveExpandRequirement();
+                StartWaveAfterExpand();
+                return;
+            }
+
             var count = _expand.CollectLegalExpands(_legalChunks);
             _legalChunkSet.Clear();
             for (var i = 0; i < _legalChunks.Count; i++) _legalChunkSet.Add(_legalChunks[i]);

@@ -312,6 +312,59 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Clear_EndsCampaignFalse_DoesNotVictory()
+        {
+            _wave1.EndsCampaign = false;
+            var controller = CreateController(new[] { _wave1 }, endWaveGold: 25, endWave: 50);
+            var gate = new TestSpawnerGate();
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 2);
+            Assert.AreEqual(RunStateId.Plan, _states.Current);
+        }
+
+        [Test]
+        public void BeyondCatalog_ReusesLastTemplate_UntilEndWave_ThenVictory()
+        {
+            // 2 authored waves; EndWave=4 → waves 3–4 reuse last template; clear 4 → Victory.
+            var controller = CreateController(new[] { _wave1, _wave2 }, endWaveGold: 10, endWave: 4);
+            var gate = new TestSpawnerGate();
+
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 2); // wave 1
+            Assert.AreEqual(RunStateId.Plan, _states.Current);
+
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 3); // wave 2
+            Assert.AreEqual(RunStateId.Plan, _states.Current);
+
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 3); // wave 3 (reuse wave2)
+            Assert.AreEqual(3, controller.CurrentWaveNumber);
+            Assert.AreEqual(RunStateId.Plan, _states.Current);
+
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 3); // wave 4 → Victory
+            Assert.AreEqual(4, controller.CurrentWaveNumber);
+            Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
+            Assert.Throws<InvalidOperationException>(() => controller.StartWave());
+        }
+
+        [Test]
+        public void Clear_AtEndWave_WithOfferDraft_GoesVictory_NotDraft()
+        {
+            _wave1.OfferDraftAfterClear = true;
+            var capped = false;
+            var controller = new WaveController(
+                new[] { _wave1 }, _states, _economy, 25, null, endWave: 1, () => capped = true);
+            var gate = new TestSpawnerGate();
+
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 2);
+            Assert.IsTrue(capped);
+            Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
+        }
+
+        [Test]
         public void SixWaveFixture_DraftOn2And4_VictoryOn6()
         {
             var waves = new WaveDefinition[6];
@@ -361,6 +414,9 @@ namespace GemTD.Tests.EditMode
 
         WaveController CreateController(WaveDefinition[] waves, int endWaveGold, EnemyDefinition bossEnemy) =>
             new WaveController(waves, _states, _economy, endWaveGold, bossEnemy);
+
+        WaveController CreateController(WaveDefinition[] waves, int endWaveGold, int endWave) =>
+            new WaveController(waves, _states, _economy, endWaveGold, bossEnemy: null, endWave: endWave);
 
         void EnterPlanReady()
         {
