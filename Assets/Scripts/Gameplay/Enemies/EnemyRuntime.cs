@@ -12,6 +12,8 @@ namespace GemTD.Gameplay.Enemies
         int _segmentIndex;
         bool _alive;
 
+        float _maxHealth;
+
         public EnemyDefinition Definition => _def;
         public TowerDefinition LastDamageSource { get; set; }
         public LocomotionStyle LocomotionStyle { get; private set; }
@@ -19,7 +21,7 @@ namespace GemTD.Gameplay.Enemies
         public float HopPeriod { get; private set; }
         public float Hp { get; private set; }
         public float ShieldHp { get; private set; }
-        public float MaxHealth => _def != null ? _def.MaxHealth : 0f;
+        public float MaxHealth => _maxHealth;
         public int Armor => _def != null ? _def.Armor : 0;
         public float CurrentMoveSpeed
         {
@@ -55,11 +57,14 @@ namespace GemTD.Gameplay.Enemies
             }
         }
 
-        public void Init(EnemyDefinition def, IReadOnlyList<Vector3> worldWaypoints)
+        public void Init(EnemyDefinition def, IReadOnlyList<Vector3> worldWaypoints, float healthScale = 1f)
         {
             _def = def;
             _alive = true;
-            Hp = def != null ? def.MaxHealth : 0f;
+            if (healthScale < 0f)
+                healthScale = 0f;
+            _maxHealth = def != null ? def.MaxHealth * healthScale : 0f;
+            Hp = _maxHealth;
             ShieldHp = def != null ? def.ShieldMax : 0f;
             MoveSpeedMultiplier = 1f;
             LastDamageSource = null;

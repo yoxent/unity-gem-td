@@ -367,7 +367,7 @@ namespace GemTD.Gameplay
 
             var gold = runConfig != null ? runConfig.StartingGold : 100;
             var lives = runConfig != null ? runConfig.StartingLives : 20;
-            var endWaveGold = runConfig != null ? runConfig.EndWaveGold : 25;
+            var endWaveGold = runConfig != null ? runConfig.EndWaveGold : 50;
 
             var chunksW = runConfig != null && runConfig.ChunkGridWidth > 0 ? runConfig.ChunkGridWidth : 13;
             var chunksH = runConfig != null && runConfig.ChunkGridHeight > 0 ? runConfig.ChunkGridHeight : 13;
@@ -383,12 +383,12 @@ namespace GemTD.Gameplay
             if (chunkBoardView != null)
                 chunkBoardView.Bind(_chunkGrid);
 
-            var openArmCount = runConfig != null ? runConfig.OpenArmCount : 1;
+            var laneCount = runConfig != null ? runConfig.LaneCount : 1;
             if (chunkCatalog == null)
                 Debug.LogError("[GemTD] ChunkCatalog is not assigned on GameCompositionRoot.");
             else
                 StartLayoutBuilder.Build(
-                    _chunkGrid, _stamp, _path, _board, chunkCatalog, _rng, openArmCount);
+                    _chunkGrid, _stamp, _path, _board, chunkCatalog, _rng, laneCount);
             EnsureHomeMarker();
 
             Economy = new RunEconomy(gold, lives, _runStats.RecordGoldEarned);
@@ -410,7 +410,7 @@ namespace GemTD.Gameplay
             Codex = new CodexProgress(new JsonFileCodexStore());
             _statuses = new StatusRuntime();
 
-            _expand = new ChunkExpandService(_chunkGrid, _path, _board, _stamp, chunkCatalog, _rng);
+            _expand = new ChunkExpandService(_chunkGrid, _path, _board, _stamp, chunkCatalog, _rng, runConfig);
             Placement = new TowerPlacementService(_board, _path, Economy);
             _registry = new EnemyRegistry();
             var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
@@ -511,6 +511,7 @@ namespace GemTD.Gameplay
             if (States.Current != RunStateId.Plan || States.ExpandSatisfiedThisCycle)
                 return;
 
+            SyncExpandPolicy();
             var count = _expand.CollectLegalExpands(_legalChunks);
             _legalChunkSet.Clear();
             for (var i = 0; i < _legalChunks.Count; i++) _legalChunkSet.Add(_legalChunks[i]);
@@ -586,6 +587,7 @@ namespace GemTD.Gameplay
                 return false;
             }
 
+            SyncExpandPolicy();
             if (!_expand.TryExpand(coord))
             {
                 Debug.Log($"[GemTD] Expand rejected at chunk {coord}");
@@ -597,6 +599,14 @@ namespace GemTD.Gameplay
             States.NotifyExpandDone();
             StartWaveAfterExpand();
             return true;
+        }
+
+        void SyncExpandPolicy()
+        {
+            if (_expand == null)
+                return;
+            _expand.Config = runConfig;
+            _expand.UpcomingWaveNumber = WaveController != null ? WaveController.NextWaveNumber : 1;
         }
 
         void StartWaveAfterExpand()
@@ -1216,7 +1226,10 @@ namespace GemTD.Gameplay
                 _polylineWorld.Add(chunkBoardView.CellToWorld(_polylineCells[i]));
 
             var runtime = new EnemyRuntime();
-            runtime.Init(def, _polylineWorld);
+            var hpScale = WaveScaling.HpScale(
+                CurrentWaveNumber > 0 ? CurrentWaveNumber : 1,
+                runConfig != null ? runConfig.GetHpMultiplier() : 1f);
+            runtime.Init(def, _polylineWorld, hpScale);
             _registry.Register(runtime);
 
             if (_enemyPool != null)
@@ -1253,6 +1266,8 @@ namespace GemTD.Gameplay
                         _runStats.RecordKill(enemy.LastDamageSource);
 
                     var killGold = enemy.Definition != null ? enemy.Definition.KillGold : 0;
+                    if (killGold > 0 && enemy.Definition != null && enemy.Definition.IsBoss)
+                        killGold = WaveScaling.ScaleBossBounty(killGold, CurrentWaveNumber > 0 ? CurrentWaveNumber : 1);
                     Economy.GrantKillGold(killGold);
                     RemoveEnemy(enemy);
                     continue;

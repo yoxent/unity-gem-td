@@ -13,6 +13,7 @@ namespace GemTD.Gameplay.Enemies
         public bool CanDash;
         public int KillGold = 5;
         public int LeakDamage = 1;
+        public bool IsBoss;
         public LocomotionStyle Locomotion = LocomotionStyle.Slide;
         public float HopHeight = 0.35f;
         public float HopPeriod = 0.4f;

@@ -56,6 +56,25 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void NextWaveNumber_IsOneBeforeStart_ThenTwoAfterClear()
+        {
+            var controller = CreateController(_wave1, _wave2);
+            Assert.AreEqual(1, controller.NextWaveNumber);
+
+            var gate = new TestSpawnerGate();
+            EnterPlanReady();
+            controller.StartWave();
+            Assert.AreEqual(1, controller.NextWaveNumber);
+
+            controller.Tick(0f, gate.Gate);
+            controller.Tick(1f, gate.Gate);
+            gate.ClearLive();
+            controller.Tick(0f, gate.Gate);
+
+            Assert.AreEqual(2, controller.NextWaveNumber);
+        }
+
+        [Test]
         public void Tick_SpawnsOnIntervalUntilQueueEmpty()
         {
             var controller = CreateController(_wave1);

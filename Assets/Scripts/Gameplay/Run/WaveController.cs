@@ -21,6 +21,8 @@ namespace GemTD.Gameplay.Run
 
         public int CurrentWaveNumber { get; private set; }
 
+        public int NextWaveNumber => _nextWaveIndex + 1;
+
         public WaveController(
             WaveDefinition[] waves,
             RunStateMachine states,
@@ -73,7 +75,7 @@ namespace GemTD.Gameplay.Run
             {
                 _waveCleared = true;
                 _nextWaveIndex++;
-                _economy.GrantEndWaveGold(_endWaveGold);
+                _economy.GrantEndWaveGold(WaveScaling.ScaleEndWaveGold(_endWaveGold, CurrentWaveNumber));
                 var offerDraft = _activeWave != null && _activeWave.OfferDraftAfterClear;
                 var endsCampaign = _activeWave != null && _activeWave.EndsCampaign;
                 _states.WaveCleared(offerDraft, endsCampaign);
