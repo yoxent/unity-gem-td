@@ -59,7 +59,7 @@ namespace GemTD.UI
             var inv = _root.Inventory;
             if (inv == null) return;
             var canSocket = (_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat)
-                            && _root.HasSelectedTower && _root.SelectedSocketLockRemaining <= 0f;
+                            && _root.HasSelectedTower;
             var replacePick = _root.States.Current == RunStateId.Draft
                               && _root.Draft != null
                               && _root.Draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick;

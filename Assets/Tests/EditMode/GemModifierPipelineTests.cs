@@ -1,6 +1,8 @@
 using NUnit.Framework;
+using UnityEngine;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.Tests.EditMode
 {
@@ -156,6 +158,36 @@ namespace GemTD.Tests.EditMode
             Assert.IsInstanceOf<PierceModifier>(GemModifierFactory.Create(GemId.Pierce));
             Assert.IsInstanceOf<ElementalProliferationModifier>(GemModifierFactory.Create(GemId.ElementalProliferation));
             Assert.IsInstanceOf<ForkModifier>(GemModifierFactory.Create(GemId.Fork));
+        }
+
+        [Test]
+        public void Resolve_ChainThenFork_StacksDamageMultipliers()
+        {
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.Damage = 10f;
+            def.SocketCount = 2;
+            var tower = new TowerRuntime(Vector2Int.zero, def);
+            var chain = ScriptableObject.CreateInstance<GemDefinition>();
+            chain.Id = GemId.Chain;
+            var fork = ScriptableObject.CreateInstance<GemDefinition>();
+            fork.Id = GemId.Fork;
+            Assert.IsTrue(tower.TrySocket(chain, 0, allowSocket: true));
+            Assert.IsTrue(tower.TrySocket(fork, 1, allowSocket: true));
+
+            try
+            {
+                var scratch = new System.Collections.Generic.List<IAttackModifier>(2);
+                var spec = new GemModifierPipeline().Resolve(tower, scratch);
+                Assert.AreEqual(10f * 0.7f * 0.85f, spec.Damage, 0.001f);
+                Assert.AreEqual(2, spec.ChainCount);
+                Assert.AreEqual(1, spec.ForkCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+                Object.DestroyImmediate(chain);
+                Object.DestroyImmediate(fork);
+            }
         }
     }
 }

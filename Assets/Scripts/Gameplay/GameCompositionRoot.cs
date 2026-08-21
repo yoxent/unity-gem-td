@@ -116,6 +116,22 @@ namespace GemTD.Gameplay
             }
         }
 
+        public bool CanUnsocketSelected(int socketIndex)
+        {
+            var tower = Placement?.Selected;
+            if (tower == null || tower.Sockets == null)
+                return false;
+            if (socketIndex < 0 || socketIndex >= tower.Sockets.Length)
+                return false;
+            if (tower.Sockets[socketIndex] == null)
+                return false;
+            if (EvolutionEvaluator.IsHydraBallista(tower))
+                return false;
+            if (SelectedSocketLockRemaining > 0f)
+                return false;
+            return true;
+        }
+
         public string BuildSelectedTowerDetailsText()
         {
             var tower = Placement?.Selected;
@@ -129,7 +145,23 @@ namespace GemTD.Gameplay
             if (EvolutionEvaluator.IsHydraBallista(tower))
                 sb.Append(" [HYDRA]");
             sb.Append('\n');
-            sb.Append($"Dmg {def.Damage:0.#}  Rng {def.Range:0.#}  Int {def.AttackInterval:0.##}s\n");
+
+            var spec = _pipeline != null
+                ? _pipeline.Resolve(tower, _socketModScratch)
+                : AttackSpec.FromBase(def.Damage, 1, def.SplashRadius);
+            var dmg = spec.Damage * tower.OutgoingDamageMultiplier;
+            var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
+            var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
+            var interval = def.AttackInterval / fireRate;
+            var attackRate = interval > 0.01f ? 1f / interval : 0f;
+            var tags = AttackTags.EffectiveTowerTags(def);
+            sb.Append($"Damage {dmg:0.#}");
+            if (spec.ProjectileCount > 1)
+                sb.Append($" ×{spec.ProjectileCount}");
+            sb.Append('\n');
+            sb.Append($"Attack rate {attackRate:0.##}/s\n");
+            sb.Append($"Attack range {def.Range * rangeMul:0.#}\n");
+            sb.Append($"Tags {AttackTags.Format(tags)}");
 
             var lockLeft = SelectedSocketLockRemaining;
             if (lockLeft > 0f)
@@ -192,6 +224,7 @@ namespace GemTD.Gameplay
         readonly List<Vector2Int> _spawnTips = new List<Vector2Int>(8);
         readonly List<Vector2Int> _rankedTipsScratch = new List<Vector2Int>(8);
         readonly List<Vector2Int> _bossSpawnTips = new List<Vector2Int>(8);
+        readonly List<IAttackModifier> _socketModScratch = new List<IAttackModifier>(4);
         readonly List<EnemyRuntime> _livingScratch = new List<EnemyRuntime>(32);
 
         ViewObjectPool<EnemyView> _enemyPool;
@@ -407,9 +440,9 @@ namespace GemTD.Gameplay
             GameEvents.RaiseInventoryChanged();
 
             Draft = new DraftService(new System.Random());
-            var lockdownSeconds = runConfig != null && runConfig.SocketLockdownSeconds > 0f
-                ? runConfig.SocketLockdownSeconds
-                : 3f;
+            var lockdownSeconds = runConfig != null
+                ? Mathf.Max(0f, runConfig.SocketLockdownSeconds)
+                : 0f;
             SocketLockdown = new SocketLockdown(lockdownSeconds);
             Codex = new CodexProgress(new JsonFileCodexStore());
             _statuses = new StatusRuntime();
@@ -921,7 +954,7 @@ namespace GemTD.Gameplay
                     // Defensive fallback: should not happen because we just removed from this index.
                     Inventory.TryAdd(gem);
                 }
-                Debug.Log($"[GemTD] Could not socket {gem.DisplayName} (full sockets or duplicate GemId).");
+                Debug.Log($"[GemTD] Could not socket {gem.DisplayName} (full sockets, duplicate GemId, or tag mismatch).");
                 return;
             }
 
@@ -990,8 +1023,8 @@ namespace GemTD.Gameplay
             // and only then move the displaced gem into inventory.
             if (!tower.TryUnsocket(socketIndex, out var displacedGem, allowSocket: true))
             {
-                // Defensive fallback; shouldn't happen because we detected "occupied".
                 Inventory.TryAdd(gem);
+                GameEvents.RaiseInventoryChanged();
                 return;
             }
 
@@ -1119,6 +1152,7 @@ namespace GemTD.Gameplay
         void OnSocketChanged(TowerRuntime tower)
         {
             SocketLockdown?.NotifyChanged(tower, States.Current);
+            GameEvents.RaiseTowerSelectionChanged();
             if (EvolutionEvaluator.IsHydraBallista(tower) && Codex != null && codexCatalog != null)
             {
                 var entry = codexCatalog.GetById("hydra-ballista");

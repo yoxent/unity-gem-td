@@ -1,4 +1,5 @@
 using UnityEngine;
+using GemTD.Gameplay.Gems;
 
 namespace GemTD.Gameplay.Towers
 {
@@ -27,5 +28,7 @@ namespace GemTD.Gameplay.Towers
         public float EnemySlowMultiplier = 0.7f;
         public int SocketCount = 3;
         public bool AllowsHydraEvolution;
+        [Tooltip("PoE-style tags. None = infer from Kind (Ballista Attack+Projectile, Cannon +AoE, Beacon Aura).")]
+        public AttackTag Tags = AttackTag.None;
     }
 }

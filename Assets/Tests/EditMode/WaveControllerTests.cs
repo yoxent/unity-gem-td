@@ -365,6 +365,33 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ShouldOfferDraft_AuthoredFlagInsideCatalog_CadenceBeyond()
+        {
+            Assert.IsTrue(WaveController.ShouldOfferDraft(12, 15, authoredOffer: true));
+            Assert.IsFalse(WaveController.ShouldOfferDraft(15, 15, authoredOffer: false));
+            Assert.IsTrue(WaveController.ShouldOfferDraft(16, 15, authoredOffer: false));
+            Assert.IsTrue(WaveController.ShouldOfferDraft(20, 15, authoredOffer: false));
+            Assert.IsFalse(WaveController.ShouldOfferDraft(17, 15, authoredOffer: false));
+        }
+
+        [Test]
+        public void BeyondCatalog_WaveFour_OffersDraft()
+        {
+            var controller = CreateController(new[] { _wave1 }, endWaveGold: 10, endWave: 8);
+            var gate = new TestSpawnerGate();
+            for (var w = 1; w <= 4; w++)
+            {
+                if (_states.Current == RunStateId.Draft)
+                    _states.DraftResolved();
+                EnterPlanReady();
+                ClearWave(controller, gate, expectedSpawns: 2);
+            }
+
+            Assert.AreEqual(4, controller.CurrentWaveNumber);
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
+        }
+
+        [Test]
         public void SixWaveFixture_DraftOn2And4_VictoryOn6()
         {
             var waves = new WaveDefinition[6];

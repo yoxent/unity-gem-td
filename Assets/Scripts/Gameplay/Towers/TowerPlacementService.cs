@@ -83,7 +83,7 @@ namespace GemTD.Gameplay.Towers
 
             for (var i = 0; i < tower.Sockets.Length; i++)
             {
-                if (!tower.TryUnsocket(i, out var gem, allowSocket: true))
+                if (!tower.TryUnsocket(i, out var gem, allowSocket: true, ignoreHydraLock: true))
                     continue;
 
                 if (inventory.TryAdd(gem))

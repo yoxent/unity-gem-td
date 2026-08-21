@@ -49,6 +49,9 @@ namespace GemTD.Gameplay.Towers
             if (Sockets[index] != null)
                 return false;
 
+            if (!AttackTags.CanSocket(Def, gem))
+                return false;
+
             for (var i = 0; i < Sockets.Length; i++)
             {
                 var existing = Sockets[i];
@@ -60,7 +63,7 @@ namespace GemTD.Gameplay.Towers
             return true;
         }
 
-        public bool TryUnsocket(int index, out GemDefinition gem, bool allowSocket)
+        public bool TryUnsocket(int index, out GemDefinition gem, bool allowSocket, bool ignoreHydraLock = false)
         {
             if (!allowSocket || index < 0 || index >= Sockets.Length)
             {
@@ -71,6 +74,12 @@ namespace GemTD.Gameplay.Towers
             gem = Sockets[index];
             if (gem == null)
                 return false;
+
+            if (!ignoreHydraLock && EvolutionEvaluator.IsHydraBallista(this))
+            {
+                gem = null;
+                return false;
+            }
 
             Sockets[index] = null;
             return true;

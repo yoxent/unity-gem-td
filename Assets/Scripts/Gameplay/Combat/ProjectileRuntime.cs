@@ -7,13 +7,19 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain projectile: seeks target (or flies straight when piercing/forked),
-    /// applies damage on hit, optional Chain bounce with hop falloff, Fork splits, Pierce continue.
+    /// Domain projectile. Primary / fork / pierce / chain all fly straight (ballistic).
+    /// Chain: snap-aim once toward nearest living enemy within <see cref="DefaultChainRange"/>, then fly straight.
+    /// Fork continues past the hit: inbound -o&lt; two forward-angled children.
     /// </summary>
     public sealed class ProjectileRuntime
     {
         public const float ChainHopFalloff = 0.6f;
+        public const float DefaultChainRange = 10f;
         public const int DefaultPierceRemaining = 8;
+        public const float MaxLifetimeSeconds = 6f;
+        public const float MaxFlightDistance = 80f;
+        public const float ForkHalfAngleDegrees = 45f;
+        public const float ForkSpawnForwardPad = 0.08f;
 
         const float HitRadius = 0.15f;
         const float PierceLookAheadPad = 0.05f;
@@ -24,7 +30,6 @@ namespace GemTD.Gameplay.Combat
         const float ShockDuration = 3f;
         const float ShockMagnitude = 1.25f;
         const float ProlifRadius = 1.5f;
-        const float SoftSeekTurnDegPerSec = 140f;
 
         public Vector3 Position { get; private set; }
         public Vector3 Direction { get; private set; }
@@ -39,10 +44,7 @@ namespace GemTD.Gameplay.Combat
         public bool Seeking { get; private set; }
         public bool IsActive { get; private set; }
 
-        /// <summary>
-        /// When true, seeking rotates toward the aim point gradually so shotgun / Hydra
-        /// fan directions stay visible instead of collapsing onto one line every tick.
-        /// </summary>
+        /// <summary>Unused — kept for call-site / test compat.</summary>
         public bool SoftSeek { get; private set; }
 
         bool _ignite;
@@ -52,9 +54,10 @@ namespace GemTD.Gameplay.Combat
         StatusRuntime _statuses;
         List<ProjectileRuntime> _spawnBuffer;
         EnemyRuntime _lastHit;
-        Vector3 _seekOffset;
         TowerDefinition _sourceTower;
         Action<TowerDefinition, float> _recordDamage;
+        float _age;
+        float _traveled;
 
         public void Init(
             Vector3 origin,
@@ -88,9 +91,11 @@ namespace GemTD.Gameplay.Combat
             Speed = speed;
             ChainRange = chainRange;
             AoeRadius = aoeRadius > 0f ? aoeRadius : 0f;
-            Seeking = target != null;
-            SoftSeek = softSeek && Seeking;
-            _seekOffset = seekOffset;
+            // Ballistic only. Chain hop snap-aims Direction once in OnHit (no continuous homing).
+            Seeking = false;
+            SoftSeek = false;
+            _ = softSeek;
+            _ = seekOffset;
             _ignite = ignite;
             _chill = chill;
             _shock = shock;
@@ -100,6 +105,8 @@ namespace GemTD.Gameplay.Combat
             _lastHit = null;
             _sourceTower = sourceTower;
             _recordDamage = recordDamage;
+            _age = 0f;
+            _traveled = 0f;
             IsActive = true;
         }
 
@@ -113,45 +120,15 @@ namespace GemTD.Gameplay.Combat
             if (!IsActive)
                 return false;
 
-            if (Seeking)
+            if (dt > 0f)
             {
-                if (Target == null || !Target.IsAlive)
+                _age += dt;
+                _traveled += Speed * dt;
+                if (_age >= MaxLifetimeSeconds || _traveled >= MaxFlightDistance)
                 {
                     IsActive = false;
                     return false;
                 }
-
-                if (dt <= 0f)
-                    return true;
-
-                var enemyPos = Target.WorldPosition;
-                var toEnemy = enemyPos - Position;
-                var dist = toEnemy.magnitude;
-                var step = Speed * dt;
-
-                // Hit uses the real enemy body; aim may include a lateral seek offset for fans.
-                if (dist <= HitRadius || step >= dist)
-                {
-                    Position = enemyPos;
-                    OnHit(livingCandidates);
-                    return IsActive;
-                }
-
-                var aimPoint = enemyPos + _seekOffset;
-                var toAim = aimPoint - Position;
-                var desired = toAim.sqrMagnitude > 1e-8f ? toAim.normalized : toEnemy / dist;
-
-                if (SoftSeek)
-                    Direction = Vector3.RotateTowards(
-                        Direction,
-                        desired,
-                        SoftSeekTurnDegPerSec * Mathf.Deg2Rad * dt,
-                        0f);
-                else
-                    Direction = desired;
-
-                Position += Direction * step;
-                return true;
             }
 
             if (dt <= 0f)
@@ -159,14 +136,13 @@ namespace GemTD.Gameplay.Combat
 
             var from = Position;
             var stepDist = Speed * dt;
-            var movement = Direction * stepDist;
-            var to = from + movement;
+            var to = from + Direction * stepDist;
 
-            var pierceHit = FindPierceCandidate(from, to, livingCandidates);
-            if (pierceHit != null)
+            var hit = FindPierceCandidate(from, to, livingCandidates);
+            if (hit != null)
             {
-                Position = pierceHit.WorldPosition;
-                Target = pierceHit;
+                Position = hit.WorldPosition;
+                Target = hit;
                 OnHit(livingCandidates);
                 return IsActive;
             }
@@ -208,8 +184,14 @@ namespace GemTD.Gameplay.Combat
             if (PierceRemaining > 0)
             {
                 PierceRemaining--;
-                Target = null;
-                Seeking = false;
+                if (PierceRemaining > 0)
+                {
+                    Target = null;
+                    Seeking = false;
+                    return;
+                }
+
+                IsActive = false;
                 return;
             }
 
@@ -229,9 +211,9 @@ namespace GemTD.Gameplay.Combat
                     Damage *= ChainHopFalloff;
                     ChainRemaining--;
                     Target = next;
-                    Seeking = true;
+                    Seeking = false;
                     SoftSeek = false;
-                    _seekOffset = Vector3.zero;
+                    // Snap-aim once toward the nearest in-range enemy, then resume ballistic flight.
                     var aim = next.WorldPosition - Position;
                     if (aim.sqrMagnitude > 1e-8f)
                         Direction = aim.normalized;
@@ -278,16 +260,18 @@ namespace GemTD.Gameplay.Combat
             if (_spawnBuffer == null)
                 return;
 
+            // -o<  continue past the hit along inbound, then open ±ForkHalfAngleDegrees.
             var inbound = Direction.sqrMagnitude > 1e-8f ? Direction.normalized : Vector3.forward;
-            SpawnForkChild(Quaternion.Euler(0f, 45f, 0f) * inbound);
-            SpawnForkChild(Quaternion.Euler(0f, -45f, 0f) * inbound);
+            var spawnAt = Position + inbound * ForkSpawnForwardPad;
+            SpawnForkChild(spawnAt, Quaternion.Euler(0f, ForkHalfAngleDegrees, 0f) * inbound);
+            SpawnForkChild(spawnAt, Quaternion.Euler(0f, -ForkHalfAngleDegrees, 0f) * inbound);
         }
 
-        void SpawnForkChild(Vector3 childDirection)
+        void SpawnForkChild(Vector3 origin, Vector3 childDirection)
         {
             var child = new ProjectileRuntime();
             child.Init(
-                Position,
+                origin,
                 childDirection,
                 target: null,
                 Damage,

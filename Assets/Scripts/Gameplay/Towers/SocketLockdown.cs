@@ -4,7 +4,8 @@ using GemTD.Gameplay.Run;
 namespace GemTD.Gameplay.Towers
 {
     /// <summary>
-    /// Per-tower Combat socket lockdown. Plan is always free; firing is unaffected.
+    /// Optional per-tower Combat socket lockdown. Duration 0 disables it (current default).
+    /// Plan is always free; firing is unaffected.
     /// </summary>
     public sealed class SocketLockdown
     {
@@ -12,13 +13,15 @@ namespace GemTD.Gameplay.Towers
         readonly Dictionary<TowerRuntime, float> _remaining = new Dictionary<TowerRuntime, float>();
         readonly List<TowerRuntime> _scratchKeys = new List<TowerRuntime>(8);
 
-        public SocketLockdown(float duration = 3f)
+        public SocketLockdown(float duration = 0f)
         {
-            _duration = duration > 0f ? duration : 3f;
+            _duration = duration > 0f ? duration : 0f;
         }
 
         public void NotifyChanged(TowerRuntime tower, RunStateId state)
         {
+            if (_duration <= 0f)
+                return;
             if (tower == null || state != RunStateId.Combat)
                 return;
 
@@ -49,6 +52,9 @@ namespace GemTD.Gameplay.Towers
         {
             if (tower == null)
                 return false;
+
+            if (_duration <= 0f)
+                return state == RunStateId.Plan || state == RunStateId.Combat;
 
             if (state == RunStateId.Plan)
                 return true;

@@ -46,20 +46,45 @@ namespace GemTD.Tests.EditMode
                 damage: 10f,
                 chainCount: 2,
                 speed: 100f,
-                chainRange: 5f);
+                chainRange: ProjectileRuntime.DefaultChainRange);
 
             Assert.IsTrue(projectile.Tick(0.05f, living));
             Assert.AreEqual(90f, e1.Hp, 1e-3f);
             Assert.AreEqual(6f, projectile.Damage, 1e-3f);
             Assert.AreSame(e2, projectile.Target);
+            Assert.IsFalse(projectile.Seeking);
 
             Assert.IsTrue(projectile.Tick(0.05f, living));
             Assert.AreEqual(94f, e2.Hp, 1e-3f);
             Assert.AreEqual(3.6f, projectile.Damage, 1e-3f);
             Assert.AreSame(e3, projectile.Target);
+            Assert.IsFalse(projectile.Seeking);
 
             Assert.IsFalse(projectile.Tick(0.05f, living));
             Assert.AreEqual(96.4f, e3.Hp, 1e-3f);
+            Assert.IsFalse(projectile.IsActive);
+        }
+
+        [Test]
+        public void Chain_DoesNotHopBeyondRange()
+        {
+            var e1 = MakeEnemyAt(Vector3.zero, 100f);
+            var far = MakeEnemyAt(new Vector3(ProjectileRuntime.DefaultChainRange + 1f, 0f, 0f), 100f);
+            var living = Living(e1, far);
+
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: e1,
+                damage: 10f,
+                chainCount: 2,
+                speed: 100f,
+                chainRange: ProjectileRuntime.DefaultChainRange);
+
+            Assert.IsFalse(projectile.Tick(0.05f, living));
+            Assert.AreEqual(90f, e1.Hp, 1e-3f);
+            Assert.AreEqual(100f, far.Hp, 1e-3f);
             Assert.IsFalse(projectile.IsActive);
         }
 
@@ -90,12 +115,12 @@ namespace GemTD.Tests.EditMode
 
                 Assert.AreEqual(3, director.Projectiles.Count);
                 // LMP post-mod damage is base*0.8; each pellet deals that full amount (not split).
-                // Soft-seek keeps fan aim visible while still targeting the primary.
+                // Pellets fan and fly straight (no homing).
                 for (var i = 0; i < director.Projectiles.Count; i++)
                 {
                     Assert.AreSame(enemy, director.Projectiles[i].Target);
-                    Assert.IsTrue(director.Projectiles[i].Seeking);
-                    Assert.IsTrue(director.Projectiles[i].SoftSeek);
+                    Assert.IsFalse(director.Projectiles[i].Seeking);
+                    Assert.IsFalse(director.Projectiles[i].SoftSeek);
                     Assert.AreEqual(8f, director.Projectiles[i].Damage, 1e-4f);
                 }
 
@@ -138,14 +163,30 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, projectile.ForkRemaining);
             Assert.IsFalse(projectile.IsActive);
 
-            var expectedPlus = Quaternion.Euler(0f, 45f, 0f) * inbound;
-            var expectedMinus = Quaternion.Euler(0f, -45f, 0f) * inbound;
+            var expectedPlus = Quaternion.Euler(0f, ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound;
+            var expectedMinus = Quaternion.Euler(0f, -ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound;
             Assert.AreEqual(0f, Vector3.Angle(expectedPlus, spawnBuffer[0].Direction), 0.1f);
             Assert.AreEqual(0f, Vector3.Angle(expectedMinus, spawnBuffer[1].Direction), 0.1f);
+            // Forward bias: children continue past the hit (-o<), not back toward the tower.
+            Assert.Greater(Vector3.Dot(spawnBuffer[0].Direction, inbound), 0.5f);
+            Assert.Greater(Vector3.Dot(spawnBuffer[1].Direction, inbound), 0.5f);
+            Assert.Greater(Vector3.Dot(spawnBuffer[0].Position - enemy.WorldPosition, inbound), 0f);
+            Assert.Greater(Vector3.Dot(spawnBuffer[1].Position - enemy.WorldPosition, inbound), 0f);
             Assert.AreEqual(0, spawnBuffer[0].ForkRemaining);
             Assert.AreEqual(0, spawnBuffer[1].ForkRemaining);
             Assert.AreEqual(10f, spawnBuffer[0].Damage, 1e-4f);
             Assert.AreEqual(10f, spawnBuffer[1].Damage, 1e-4f);
+            Assert.IsFalse(spawnBuffer[0].Seeking);
+            Assert.IsFalse(spawnBuffer[1].Seeking);
+            Assert.IsNull(spawnBuffer[0].Target);
+            Assert.IsNull(spawnBuffer[1].Target);
+
+            var plusDir = spawnBuffer[0].Direction;
+            var minusDir = spawnBuffer[1].Direction;
+            spawnBuffer[0].Tick(0.1f, living);
+            spawnBuffer[1].Tick(0.1f, living);
+            Assert.AreEqual(0f, Vector3.Angle(plusDir, spawnBuffer[0].Direction), 0.1f);
+            Assert.AreEqual(0f, Vector3.Angle(minusDir, spawnBuffer[1].Direction), 0.1f);
         }
 
         [Test]
@@ -237,6 +278,48 @@ namespace GemTD.Tests.EditMode
                 projectile.Tick(0.05f, living);
 
             Assert.AreEqual(90f, second.Hp, 1e-3f);
+        }
+
+        [Test]
+        public void Pierce_LastRemaining_ExpiresOnHit()
+        {
+            var hit = MakeEnemyAt(Vector3.zero, 100f);
+            var living = Living(hit);
+
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: hit,
+                damage: 10f,
+                chainCount: 0,
+                speed: 100f,
+                chainRange: 0f,
+                pierceRemaining: 1);
+
+            Assert.IsFalse(projectile.Tick(0.05f, living));
+            Assert.IsFalse(projectile.IsActive);
+            Assert.AreEqual(0, projectile.PierceRemaining);
+            Assert.AreEqual(90f, hit.Hp, 1e-3f);
+        }
+
+        [Test]
+        public void NonSeeking_ExpiresAfterMaxLifetime()
+        {
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: null,
+                damage: 10f,
+                chainCount: 0,
+                speed: 10f,
+                chainRange: 0f);
+
+            Assert.IsTrue(projectile.Tick(ProjectileRuntime.MaxLifetimeSeconds - 0.01f, null));
+            Assert.IsTrue(projectile.IsActive);
+            Assert.IsFalse(projectile.Tick(0.02f, null));
+            Assert.IsFalse(projectile.IsActive);
         }
 
         EnemyRuntime MakeEnemyAt(Vector3 position, float hp)

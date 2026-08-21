@@ -78,9 +78,7 @@ namespace GemTD.Gameplay.Combat
                         continue;
 
                     var modifiers = ListPool<IAttackModifier>.Get();
-                    BuildSocketModifiers(tower, modifiers);
-                    var baseline = AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.SplashRadius);
-                    var spec = pipeline.Apply(baseline, modifiers);
+                    var spec = pipeline.Resolve(tower, modifiers);
                     ListPool<IAttackModifier>.Release(modifiers);
 
                     var towerPos = CellToWorld(tower.Cell);
@@ -107,11 +105,11 @@ namespace GemTD.Gameplay.Combat
                             var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                             var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
                             for (var h = 0; h < laterals.Length; h++)
-                                SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, tower.Def, yaws[h], laterals[h]);
+                                SpawnVolley(towerPos, primary, spec, ProjectileRuntime.DefaultChainRange, volleyDamage, speed, statuses, tower.Def, yaws[h], laterals[h]);
                         }
                         else
                         {
-                            SpawnVolley(towerPos, primary, spec, range, volleyDamage, speed, statuses, tower.Def, 0f, 0f);
+                            SpawnVolley(towerPos, primary, spec, ProjectileRuntime.DefaultChainRange, volleyDamage, speed, statuses, tower.Def, 0f, 0f);
                         }
                     }
                 }
@@ -125,25 +123,6 @@ namespace GemTD.Gameplay.Combat
             for (var i = 0; i < _spawnBuffer.Count; i++)
                 _projectiles.Add(_spawnBuffer[i]);
             _spawnBuffer.Clear();
-        }
-
-        static void BuildSocketModifiers(TowerRuntime tower, List<IAttackModifier> into)
-        {
-            into.Clear();
-            var sockets = tower.Sockets;
-            if (sockets == null)
-                return;
-
-            for (var i = 0; i < sockets.Length; i++)
-            {
-                var gem = sockets[i];
-                if (gem == null || gem.Id == GemId.None)
-                    continue;
-
-                var mod = GemModifierFactory.Create(gem.Id);
-                if (mod != null)
-                    into.Add(mod);
-            }
         }
 
         void SpawnVolley(
@@ -179,14 +158,6 @@ namespace GemTD.Gameplay.Combat
             var pierceRemaining = spec.Pierce ? ProjectileRuntime.DefaultPierceRemaining : 0;
             var forkRemaining = spec.ForkCount;
             var count = spec.ProjectileCount > 0 ? spec.ProjectileCount : 1;
-            // Soft-seek when fanning (LMP / Hydra yaw) so pellets stay visually distinct but still connect.
-            var softSeek = count > 1 || Mathf.Abs(headYawDegrees) > 1e-4f;
-            var toPrimary = Vector3.Distance(origin, primary.WorldPosition);
-            var fanLateral = Vector3.Cross(Vector3.up, aim);
-            if (fanLateral.sqrMagnitude > 1e-8f)
-                fanLateral.Normalize();
-            else
-                fanLateral = Vector3.right;
 
             for (var i = 0; i < count; i++)
             {
@@ -198,9 +169,6 @@ namespace GemTD.Gameplay.Combat
                 }
 
                 var dir = Quaternion.Euler(0f, yaw, 0f) * aim;
-                var seekOffset = Vector3.zero;
-                if (softSeek && Mathf.Abs(yaw) > 1e-4f)
-                    seekOffset = fanLateral * (Mathf.Tan(yaw * Mathf.Deg2Rad) * Mathf.Max(toPrimary, 0.5f));
 
                 var projectile = new ProjectileRuntime();
                 projectile.Init(
@@ -220,8 +188,8 @@ namespace GemTD.Gameplay.Combat
                     spec.Proliferate,
                     statuses,
                     _spawnBuffer,
-                    softSeek,
-                    seekOffset,
+                    softSeek: false,
+                    seekOffset: default,
                     sourceTower,
                     _recordDamage);
                 _projectiles.Add(projectile);

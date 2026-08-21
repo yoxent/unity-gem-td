@@ -102,16 +102,27 @@ namespace GemTD.Gameplay.Run
 
                 var endsCampaign = CurrentWaveNumber >= _endWave
                     || (_activeWave != null && _activeWave.EndsCampaign);
-                // Victory takes priority over draft on EndWave clear.
+                // Authored flags for waves 1..catalog; beyond catalog, every 4th wave (GDD 3–5).
+                var authoredOffer = _activeWave != null && _activeWave.OfferDraftAfterClear;
                 var offerDraft = !endsCampaign
-                    && _activeWave != null
-                    && _activeWave.OfferDraftAfterClear;
+                    && ShouldOfferDraft(CurrentWaveNumber, _waves.Length, authoredOffer);
 
                 if (endsCampaign)
                     _beforeCampaignVictory?.Invoke();
 
                 _states.WaveCleared(offerDraft, endsCampaign);
             }
+        }
+
+        /// <summary>
+        /// Authored <paramref name="authoredOffer"/> for waves inside the catalog.
+        /// Past the last authored wave, offer on wave numbers divisible by 4 (16, 20, …).
+        /// </summary>
+        public static bool ShouldOfferDraft(int clearedWave, int catalogLength, bool authoredOffer)
+        {
+            if (clearedWave <= catalogLength)
+                return authoredOffer;
+            return (clearedWave % 4) == 0;
         }
 
         WaveDefinition ResolveWaveTemplate(int waveIndex)

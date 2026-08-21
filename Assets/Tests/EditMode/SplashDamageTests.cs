@@ -46,8 +46,10 @@ namespace GemTD.Tests.EditMode
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
             var tower = new TowerRuntime(new Vector2Int(0, 0), _cannonDef);
 
+            // Same progress; nearby is off the flight line so ballistic hits primary first.
+            // Lateral 1.0 is inside SplashRadius 1.5.
             var primary = CreateEnemyAtProgress(0.2f);
-            var nearby = CreateEnemyAtProgress(0.15f);
+            var nearby = CreateEnemyAtProgress(0.2f, laneOffsetZ: 1f);
             var registry = new EnemyRegistry();
             registry.Register(primary);
             registry.Register(nearby);
@@ -76,7 +78,7 @@ namespace GemTD.Tests.EditMode
             var tower = new TowerRuntime(new Vector2Int(0, 0), _cannonDef);
 
             var primary = CreateEnemyAtProgress(0.2f);
-            var nearby = CreateEnemyAtProgress(0.15f);
+            var nearby = CreateEnemyAtProgress(0.2f, laneOffsetZ: 1f);
             var registry = new EnemyRegistry();
             registry.Register(primary);
             registry.Register(nearby);
@@ -92,9 +94,9 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(nearbyHpBefore, nearby.Hp, 1e-4f);
         }
 
-        EnemyRuntime CreateEnemyAtProgress(float approximateProgress)
+        EnemyRuntime CreateEnemyAtProgress(float approximateProgress, float laneOffsetZ = 0f)
         {
-            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            var waypoints = BuildWorldWaypoints(laneOffsetZ, new Vector2Int(0, 0), new Vector2Int(10, 0));
             var enemy = new EnemyRuntime();
             enemy.Init(_enemyDef, waypoints);
             _enemyDef.MoveSpeed = 1f;
@@ -105,14 +107,14 @@ namespace GemTD.Tests.EditMode
             return enemy;
         }
 
-        static List<Vector3> BuildWorldWaypoints(params Vector2Int[] cells)
+        static List<Vector3> BuildWorldWaypoints(float laneOffsetZ, params Vector2Int[] cells)
         {
             var half = CellSize * 0.5f;
             var list = new List<Vector3>(cells.Length);
             for (var i = 0; i < cells.Length; i++)
             {
                 var c = cells[i];
-                list.Add(new Vector3(c.x * CellSize + half, 0f, c.y * CellSize + half));
+                list.Add(new Vector3(c.x * CellSize + half, 0f, c.y * CellSize + half + laneOffsetZ));
             }
             return list;
         }

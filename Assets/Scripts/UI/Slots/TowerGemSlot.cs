@@ -44,7 +44,7 @@ namespace GemTD.UI
                 slotHover,
                 xHover,
                 xButton != null ? xButton.gameObject : null,
-                () => _root != null && _root.SelectedSocketLockRemaining <= 0f && _gem != null);
+                () => _root != null && _root.CanUnsocketSelected(_socketIndex));
         }
 
         public void Configure(GameCompositionRoot root, int socketIndex, GemDefinition gem)
@@ -54,6 +54,8 @@ namespace GemTD.UI
             _gem = gem;
             if (icon != null) icon.color = gem != null ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
             if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
+            if (xButton != null && (_root == null || !_root.CanUnsocketSelected(_socketIndex)))
+                xButton.gameObject.SetActive(false);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -125,7 +127,7 @@ namespace GemTD.UI
             var s = _root.States.Current;
             if (s != RunStateId.Plan && s != RunStateId.Combat)
                 return;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            if (!_root.CanUnsocketSelected(_socketIndex))
                 return;
 
             _root.RequestUnsocket(_socketIndex);
@@ -137,7 +139,7 @@ namespace GemTD.UI
                 return false;
             if (_socketIndex < 0)
                 return false;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            if (!_root.CanUnsocketSelected(_socketIndex))
                 return false;
             if (_root.States == null)
                 return false;

@@ -58,7 +58,9 @@ namespace GemTD.Tests.EditMode
         {
             var tower = MakeBallistaWith(_lmp, _chain, _fork);
             Assert.IsTrue(EvolutionEvaluator.IsHydraBallista(tower));
-            Assert.IsTrue(tower.TryUnsocket(2, out _, true));
+            Assert.IsFalse(tower.TryUnsocket(2, out _, true));
+            Assert.IsTrue(EvolutionEvaluator.IsHydraBallista(tower));
+            Assert.IsTrue(tower.TryUnsocket(2, out _, true, ignoreHydraLock: true));
             Assert.IsFalse(EvolutionEvaluator.IsHydraBallista(tower));
         }
 

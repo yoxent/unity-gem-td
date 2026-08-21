@@ -49,5 +49,14 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(lockout.CanSocket(_towerA, RunStateId.Combat));
             Assert.AreEqual(0f, lockout.Remaining(_towerA), 1e-4f);
         }
+
+        [Test]
+        public void DurationZero_NeverLocks()
+        {
+            var lockout = new SocketLockdown(0f);
+            lockout.NotifyChanged(_towerA, RunStateId.Combat);
+            Assert.IsTrue(lockout.CanSocket(_towerA, RunStateId.Combat));
+            Assert.AreEqual(0f, lockout.Remaining(_towerA), 1e-4f);
+        }
     }
 }
