@@ -363,7 +363,7 @@ namespace GemTD.Gameplay
             return tower.Def.Range * rangeMul;
         }
 
-        /// <summary>Bloons-style ghost while placing, plus range indicator when Tower Details is open.</summary>
+        /// <summary>Bloons-style ghost while placing, plus range disc when Tower Details is open.</summary>
         public void TickPlacementGhost()
         {
             if (chunkBoardView == null || States == null)
@@ -507,6 +507,18 @@ namespace GemTD.Gameplay
                 Debug.LogWarning("[GemTD] Wave EndVictory: failed to auto-DeadEnd last tip — proceeding to Victory anyway.");
         }
 
+        /// <summary>Victory Run Summary → Endless (Task 8). No expand; combat continues past EndWave.</summary>
+        public void BeginEndless()
+        {
+            if (States == null || WaveController == null)
+                return;
+            if (States.Current != RunStateId.VictorySummary)
+                return;
+
+            WaveController.BeginEndless();
+            States.EnterEndless();
+        }
+
         void SetupPools()
         {
             var parent = poolRoot != null ? poolRoot : transform;
@@ -531,6 +543,13 @@ namespace GemTD.Gameplay
             if (next == RunStateId.Plan)
             {
                 _loggedExpandSkip = false;
+                if (WaveController != null && WaveController.IsEndless && States.ExpandSatisfiedThisCycle)
+                {
+                    ClearExpandMarkers();
+                    StartWaveAfterExpand();
+                    return;
+                }
+
                 if (!States.ExpandSatisfiedThisCycle)
                     RefreshExpandMarkers();
                 else
@@ -594,11 +613,15 @@ namespace GemTD.Gameplay
             SyncExpandPolicy();
             var upcoming = WaveController != null ? WaveController.NextWaveNumber : 1;
             var endWave = ExpandPickPolicy.EndWave(runConfig);
-            if (ExpandPickPolicy.SkipExpand(upcoming, endWave))
+            if ((WaveController != null && WaveController.IsEndless)
+                || ExpandPickPolicy.SkipExpand(upcoming, endWave))
             {
                 if (!_loggedExpandSkip)
                 {
-                    Debug.Log($"[GemTD] EndWave {endWave} — skip expand, start final combat.");
+                    if (WaveController != null && WaveController.IsEndless)
+                        Debug.Log("[GemTD] Endless — skip expand, start next combat.");
+                    else
+                        Debug.Log($"[GemTD] EndWave {endWave} — skip expand, start final combat.");
                     _loggedExpandSkip = true;
                 }
                 States.WaiveExpandRequirement();
@@ -1364,9 +1387,11 @@ namespace GemTD.Gameplay
                 _polylineWorld.Add(chunkBoardView.CellToWorld(_polylineCells[i]));
 
             var runtime = new EnemyRuntime();
+            var endless = WaveController != null && WaveController.IsEndless;
             var hpScale = WaveScaling.HpScale(
                 CurrentWaveNumber > 0 ? CurrentWaveNumber : 1,
-                runConfig != null ? runConfig.GetHpMultiplier() : 1f);
+                runConfig != null ? runConfig.GetHpMultiplier() : 1f,
+                endless);
             runtime.Init(def, _polylineWorld, hpScale);
             _registry.Register(runtime);
 
@@ -1404,8 +1429,15 @@ namespace GemTD.Gameplay
                         _runStats.RecordKill(enemy.LastDamageSource);
 
                     var killGold = enemy.Definition != null ? enemy.Definition.KillGold : 0;
-                    if (killGold > 0 && enemy.Definition != null && enemy.Definition.IsBoss)
-                        killGold = WaveScaling.ScaleBossBounty(killGold, CurrentWaveNumber > 0 ? CurrentWaveNumber : 1);
+                    if (killGold > 0 && enemy.Definition != null)
+                    {
+                        var endless = WaveController != null && WaveController.IsEndless;
+                        if (enemy.Definition.IsBoss)
+                            killGold = WaveScaling.ScaleBossBounty(
+                                killGold, CurrentWaveNumber > 0 ? CurrentWaveNumber : 1, endless);
+                        else
+                            killGold = WaveScaling.ApplyEndlessGold(killGold, endless);
+                    }
                     Economy.GrantKillGold(killGold);
                     RemoveEnemy(enemy);
                     continue;

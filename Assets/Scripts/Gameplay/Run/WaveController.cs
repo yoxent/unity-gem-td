@@ -27,8 +27,11 @@ namespace GemTD.Gameplay.Run
 
         public int NextWaveNumber => _nextWaveIndex + 1;
 
-        /// <summary>Bosses injected into the current wave's spawn queue by cadence (Task 6).</summary>
+        /// <summary>Bosses injected into the current wave's spawn queue by cadence (Task 6 / 8).</summary>
         public int CurrentBossCount { get; private set; }
+
+        /// <summary>True after Victory → Endless; allows waves past EndWave and applies Endless modifiers.</summary>
+        public bool IsEndless { get; private set; }
 
         public WaveController(
             WaveDefinition[] waves,
@@ -51,16 +54,19 @@ namespace GemTD.Gameplay.Run
             _beforeCampaignVictory = beforeCampaignVictory;
         }
 
+        public void BeginEndless()
+        {
+            IsEndless = true;
+        }
+
         /// <summary>
         /// <paramref name="spawnTipCount"/> is the live tip count for the combat about to
-        /// start (from <c>PathGraph.CollectSpawnTips</c>) — used only for boss cadence
-        /// (min(wave/10, tipCount)). Callers that don't care about boss cadence (e.g. waves
-        /// before the first boss wave) may omit it.
+        /// start (from <c>PathGraph.CollectSpawnTips</c>) — used for boss cadence.
         /// </summary>
         public void StartWave(int spawnTipCount = 1)
         {
             var waveNumber = _nextWaveIndex + 1;
-            if (waveNumber > _endWave)
+            if (waveNumber > _endWave && !IsEndless)
                 throw new InvalidOperationException("Campaign complete — no more waves.");
 
             _states.StartWave();
@@ -68,7 +74,7 @@ namespace GemTD.Gameplay.Run
             _activeWave = ResolveWaveTemplate(_nextWaveIndex);
             CurrentWaveNumber = waveNumber;
             CurrentBossCount = _bossEnemy != null
-                ? BossCadence.BossCount(CurrentWaveNumber, spawnTipCount)
+                ? BossCadence.BossCount(CurrentWaveNumber, spawnTipCount, IsEndless)
                 : 0;
             BuildSpawnQueue(_activeWave, CurrentBossCount);
             _spawnIndex = 0;
@@ -98,11 +104,12 @@ namespace GemTD.Gameplay.Run
             {
                 _waveCleared = true;
                 _nextWaveIndex++;
-                _economy.GrantEndWaveGold(WaveScaling.ScaleEndWaveGold(_endWaveGold, CurrentWaveNumber));
+                _economy.GrantEndWaveGold(
+                    WaveScaling.ScaleEndWaveGold(_endWaveGold, CurrentWaveNumber, IsEndless));
 
-                var endsCampaign = CurrentWaveNumber >= _endWave
-                    || (_activeWave != null && _activeWave.EndsCampaign);
-                // Authored flags for waves 1..catalog; beyond catalog, every 4th wave (GDD 3–5).
+                var endsCampaign = !IsEndless
+                    && (CurrentWaveNumber >= _endWave
+                        || (_activeWave != null && _activeWave.EndsCampaign));
                 var authoredOffer = _activeWave != null && _activeWave.OfferDraftAfterClear;
                 var offerDraft = !endsCampaign
                     && ShouldOfferDraft(CurrentWaveNumber, _waves.Length, authoredOffer);

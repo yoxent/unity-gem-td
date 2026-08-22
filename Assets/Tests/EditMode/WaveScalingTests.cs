@@ -77,5 +77,23 @@ namespace GemTD.Tests.EditMode
                 prevBoss = boss;
             }
         }
+
+        [Test]
+        public void HpScale_Endless_AppliesOnePointTwoOnTop()
+        {
+            var campaign = WaveScaling.HpScale(51, 1f);
+            Assert.AreEqual(campaign * 1.2f, WaveScaling.HpScale(51, 1f, endless: true), 0.0001f);
+        }
+
+        [Test]
+        public void GoldScales_Endless_HalvesAfterCampaignFormula()
+        {
+            var end = WaveScaling.ScaleEndWaveGold(50, 51);
+            var boss = WaveScaling.ScaleBossBounty(50, 51);
+            Assert.AreEqual(Mathf.RoundToInt(end * 0.5f), WaveScaling.ScaleEndWaveGold(50, 51, endless: true));
+            Assert.AreEqual(Mathf.RoundToInt(boss * 0.5f), WaveScaling.ScaleBossBounty(50, 51, endless: true));
+            Assert.AreEqual(25, WaveScaling.ApplyEndlessGold(50, true));
+            Assert.AreEqual(50, WaveScaling.ApplyEndlessGold(50, false));
+        }
     }
 }

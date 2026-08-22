@@ -365,6 +365,57 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Endless_AllowsWavesPastEndWave_NoVictory()
+        {
+            var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
+            boss.IsBoss = true;
+            try
+            {
+                var controller = new WaveController(
+                    new[] { _wave1 }, _states, _economy, 20, boss, endWave: 1);
+                var gate = new TestSpawnerGate();
+
+                EnterPlanReady();
+                ClearWave(controller, gate, expectedSpawns: 2);
+                Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
+
+                controller.BeginEndless();
+                _states.EnterEndless();
+                Assert.IsTrue(controller.IsEndless);
+
+                // Wave 2 past EndWave=1 — default tipCount 1 → 1 boss + 2 regulars.
+                ClearWave(controller, gate, expectedSpawns: 2 + 1);
+                Assert.AreEqual(2, controller.CurrentWaveNumber);
+                Assert.AreEqual(1, controller.CurrentBossCount);
+                Assert.AreNotEqual(RunStateId.VictorySummary, _states.Current);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(boss);
+            }
+        }
+
+        [Test]
+        public void Endless_Clear_DoesNotVictory_AndHalvesEndWaveGold()
+        {
+            var controller = new WaveController(
+                new[] { _wave1 }, _states, _economy, 100, null, endWave: 1);
+            var gate = new TestSpawnerGate();
+
+            EnterPlanReady();
+            ClearWave(controller, gate, expectedSpawns: 2);
+            // Wave 1 end-gold (campaign): 100
+            Assert.AreEqual(100, _economy.Gold);
+
+            controller.BeginEndless();
+            _states.EnterEndless();
+            ClearWave(controller, gate, expectedSpawns: 2);
+            // Wave 2 endless: ScaleEndWaveGold(100,2)=108, then ×0.5 → 54
+            Assert.AreEqual(100 + 54, _economy.Gold);
+            Assert.AreEqual(RunStateId.Plan, _states.Current);
+        }
+
+        [Test]
         public void ShouldOfferDraft_AuthoredFlagInsideCatalog_CadenceBeyond()
         {
             Assert.IsTrue(WaveController.ShouldOfferDraft(12, 15, authoredOffer: true));

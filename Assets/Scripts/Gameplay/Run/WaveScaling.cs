@@ -14,6 +14,8 @@ namespace GemTD.Gameplay.Run
         public const float HpRateLate = 0.15f;
         public const float EndWaveGoldRate = 0.08f;
         public const float BossBountyRate = 0.12f;
+        public const float EndlessHpMultiplier = 1.2f;
+        public const float EndlessGoldMultiplier = 0.5f;
         public const int EarlyBandEnd = 15;
         public const int MidBandEnd = 30;
 
@@ -26,17 +28,26 @@ namespace GemTD.Gameplay.Run
             return HpRateLate;
         }
 
-        public static float HpScale(int wave, float modeHpMultiplier)
+        public static float HpScale(int wave, float modeHpMultiplier, bool endless = false)
         {
-            var s = Compound(wave, HpRateForWave);
-            return s * modeHpMultiplier;
+            var s = Compound(wave, HpRateForWave) * modeHpMultiplier;
+            return endless ? s * EndlessHpMultiplier : s;
         }
 
-        public static int ScaleEndWaveGold(int baseGold, int wave) =>
-            ScaleInt(baseGold, wave, w => EndWaveGoldRate);
+        public static int ScaleEndWaveGold(int baseGold, int wave, bool endless = false)
+        {
+            var amount = ScaleInt(baseGold, wave, w => EndWaveGoldRate);
+            return ApplyEndlessGold(amount, endless);
+        }
 
-        public static int ScaleBossBounty(int baseGold, int wave) =>
-            ScaleInt(baseGold, wave, w => BossBountyRate);
+        public static int ScaleBossBounty(int baseGold, int wave, bool endless = false)
+        {
+            var amount = ScaleInt(baseGold, wave, w => BossBountyRate);
+            return ApplyEndlessGold(amount, endless);
+        }
+
+        public static int ApplyEndlessGold(int amount, bool endless) =>
+            endless ? Mathf.RoundToInt(amount * EndlessGoldMultiplier) : amount;
 
         static float Compound(int wave, System.Func<int, float> rateForWave)
         {

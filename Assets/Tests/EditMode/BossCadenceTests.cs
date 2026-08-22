@@ -22,11 +22,31 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void IsBossWave_False_PastWaveFifty()
+        public void IsBossWave_False_PastWaveFifty_WhenNotEndless()
         {
-            // Endless (51+) boss cadence is Task 8 — out of scope here.
             Assert.IsFalse(BossCadence.IsBossWave(60));
             Assert.IsFalse(BossCadence.IsBossWave(51));
+            Assert.IsFalse(BossCadence.IsBossWave(51, endless: false));
+        }
+
+        [Test]
+        public void IsBossWave_True_PastWaveFifty_WhenEndless()
+        {
+            Assert.IsTrue(BossCadence.IsBossWave(51, endless: true));
+            Assert.IsTrue(BossCadence.IsBossWave(60, endless: true));
+            Assert.IsTrue(BossCadence.IsBossWave(50, endless: true)); // campaign boss wave still true
+            Assert.IsTrue(BossCadence.IsBossWave(50));
+        }
+
+        [Test]
+        public void BossCount_Endless_EqualsTipCountEveryWave()
+        {
+            Assert.AreEqual(1, BossCadence.BossCount(51, 1, endless: true));
+            Assert.AreEqual(3, BossCadence.BossCount(52, 3, endless: true));
+            Assert.AreEqual(2, BossCadence.BossCount(2, 2, endless: true));
+            Assert.AreEqual(0, BossCadence.BossCount(51, 0, endless: true));
+            // Campaign path unchanged when endless=false past 50
+            Assert.AreEqual(0, BossCadence.BossCount(51, 3, endless: false));
         }
 
         [Test]
