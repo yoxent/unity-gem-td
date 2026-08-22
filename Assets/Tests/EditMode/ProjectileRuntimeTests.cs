@@ -66,6 +66,33 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Chain_OneHop_DoesNotContinueToThird()
+        {
+            var e1 = MakeEnemyAt(Vector3.zero, 100f);
+            var e2 = MakeEnemyAt(new Vector3(1f, 0f, 0f), 100f);
+            var e3 = MakeEnemyAt(new Vector3(2f, 0f, 0f), 100f);
+            var living = Living(e1, e2, e3);
+
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: e1,
+                damage: 10f,
+                chainCount: 1,
+                speed: 100f,
+                chainRange: ProjectileRuntime.DefaultChainRange);
+
+            Assert.IsTrue(projectile.Tick(0.05f, living));
+            Assert.AreSame(e2, projectile.Target);
+
+            Assert.IsFalse(projectile.Tick(0.05f, living));
+            Assert.AreEqual(94f, e2.Hp, 1e-3f);
+            Assert.AreEqual(100f, e3.Hp, 1e-3f);
+            Assert.IsFalse(projectile.IsActive);
+        }
+
+        [Test]
         public void Chain_DoesNotHopBeyondRange()
         {
             var e1 = MakeEnemyAt(Vector3.zero, 100f);
@@ -236,7 +263,7 @@ namespace GemTD.Tests.EditMode
                 chainCount: 0,
                 speed: 100f,
                 chainRange: 0f,
-                pierceRemaining: 2,
+                pierceRemaining: 1,
                 forkRemaining: 1,
                 spawnBuffer: spawnBuffer);
 
@@ -244,7 +271,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(projectile.IsActive);
             Assert.IsFalse(projectile.Seeking);
             Assert.AreEqual(0, spawnBuffer.Count);
-            Assert.AreEqual(1, projectile.PierceRemaining);
+            Assert.AreEqual(0, projectile.PierceRemaining);
             Assert.AreEqual(1, projectile.ForkRemaining);
         }
 
@@ -265,23 +292,24 @@ namespace GemTD.Tests.EditMode
                 speed: 50f,
                 chainRange: 0f,
                 aoeRadius: 0f,
-                pierceRemaining: 8);
+                pierceRemaining: ProjectileRuntime.DefaultPierceRemaining);
 
             Assert.IsTrue(projectile.Tick(0.05f, living));
             Assert.AreEqual(90f, first.Hp, 1e-3f);
             Assert.IsTrue(projectile.IsActive);
             Assert.IsFalse(projectile.Seeking);
             Assert.IsNull(projectile.Target);
-            Assert.AreEqual(7, projectile.PierceRemaining);
+            Assert.AreEqual(0, projectile.PierceRemaining);
 
             for (var i = 0; i < 20 && projectile.IsActive && second.Hp >= 100f; i++)
                 projectile.Tick(0.05f, living);
 
             Assert.AreEqual(90f, second.Hp, 1e-3f);
+            Assert.IsFalse(projectile.IsActive);
         }
 
         [Test]
-        public void Pierce_LastRemaining_ExpiresOnHit()
+        public void Pierce_ZeroRemaining_ExpiresOnHit()
         {
             var hit = MakeEnemyAt(Vector3.zero, 100f);
             var living = Living(hit);
@@ -295,7 +323,7 @@ namespace GemTD.Tests.EditMode
                 chainCount: 0,
                 speed: 100f,
                 chainRange: 0f,
-                pierceRemaining: 1);
+                pierceRemaining: 0);
 
             Assert.IsFalse(projectile.Tick(0.05f, living));
             Assert.IsFalse(projectile.IsActive);

@@ -99,6 +99,11 @@ namespace GemTD.Gameplay.Enemies
             WorldPosition = _waypoints[0];
         }
 
+        public void SetWorldPosition(Vector3 position)
+        {
+            WorldPosition = position;
+        }
+
         public bool TickMove(float dt)
         {
             if (!_alive || _waypoints == null || _waypoints.Length < 2 || dt <= 0f)

@@ -10,6 +10,7 @@ namespace GemTD.UI
     {
         [SerializeField] Button playButton;
         [SerializeField] Button settingsButton;
+        [SerializeField] Button skillLabButton;
         [SerializeField] Button quitButton;
         [SerializeField] SettingsController settings;
 
@@ -19,13 +20,16 @@ namespace GemTD.UI
         {
             if (playButton == null) Debug.LogError("MainMenuController: playButton is not assigned.", this);
             if (settingsButton == null) Debug.LogError("MainMenuController: settingsButton is not assigned.", this);
+            if (skillLabButton == null) Debug.LogError("MainMenuController: skillLabButton is not assigned.", this);
             if (quitButton == null) Debug.LogError("MainMenuController: quitButton is not assigned.", this);
             if (settings == null) Debug.LogError("MainMenuController: settings is not assigned.", this);
 
             if (playButton != null) playButton.onClick.AddListener(OnPlay);
             if (settingsButton != null) settingsButton.onClick.AddListener(OnSettings);
+            if (skillLabButton != null) skillLabButton.onClick.AddListener(OnSkillLab);
             if (quitButton != null) quitButton.onClick.AddListener(OnQuit);
 
+            PlayerProfile.Load();
             GameSettings.ApplyAudio();
             if (settings != null) settings.Close();
         }
@@ -50,6 +54,8 @@ namespace GemTD.UI
         }
 
         void OnPlay() => SceneManager.LoadScene(SceneNames.Run);
+
+        void OnSkillLab() => SceneManager.LoadScene(SceneNames.SkillLab);
 
         void OnSettings()
         {

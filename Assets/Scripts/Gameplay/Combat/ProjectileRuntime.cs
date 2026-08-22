@@ -14,8 +14,8 @@ namespace GemTD.Gameplay.Combat
     public sealed class ProjectileRuntime
     {
         public const float ChainHopFalloff = 0.6f;
-        public const float DefaultChainRange = 10f;
-        public const int DefaultPierceRemaining = 8;
+        public const float DefaultChainRange = 3f;
+        public const int DefaultPierceRemaining = 1;
         public const float MaxLifetimeSeconds = 6f;
         public const float MaxFlightDistance = 80f;
         public const float ForkHalfAngleDegrees = 45f;
@@ -181,17 +181,12 @@ namespace GemTD.Gameplay.Combat
             ApplyStatusesOnHit(hit, livingCandidates);
 
             // PoE-style: one behavior per collision — Pierce > Fork > Chain.
+            // PierceRemaining is extra through-hits; 1 = continue past this target once.
             if (PierceRemaining > 0)
             {
                 PierceRemaining--;
-                if (PierceRemaining > 0)
-                {
-                    Target = null;
-                    Seeking = false;
-                    return;
-                }
-
-                IsActive = false;
+                Target = null;
+                Seeking = false;
                 return;
             }
 

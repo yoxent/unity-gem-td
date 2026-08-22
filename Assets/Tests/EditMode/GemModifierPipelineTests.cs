@@ -42,10 +42,10 @@ namespace GemTD.Tests.EditMode
         {
             var pipeline = new GemModifierPipeline();
             var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new ChainModifier(0.7f, 2) });
+            var result = pipeline.Apply(baseline, new IAttackModifier[] { new ChainModifier() });
 
             Assert.AreEqual(7f, result.Damage, 0.001f);
-            Assert.AreEqual(2, result.ChainCount);
+            Assert.AreEqual(1, result.ChainCount);
         }
 
         [Test]
@@ -179,7 +179,7 @@ namespace GemTD.Tests.EditMode
                 var scratch = new System.Collections.Generic.List<IAttackModifier>(2);
                 var spec = new GemModifierPipeline().Resolve(tower, scratch);
                 Assert.AreEqual(10f * 0.7f * 0.85f, spec.Damage, 0.001f);
-                Assert.AreEqual(2, spec.ChainCount);
+                Assert.AreEqual(1, spec.ChainCount);
                 Assert.AreEqual(1, spec.ForkCount);
             }
             finally

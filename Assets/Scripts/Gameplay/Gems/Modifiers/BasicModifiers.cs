@@ -27,7 +27,7 @@ namespace GemTD.Gameplay.Gems
         readonly float _damageMultiplier;
         readonly int _chains;
 
-        public ChainModifier(float damageMultiplier = 0.7f, int chains = 2)
+        public ChainModifier(float damageMultiplier = 0.7f, int chains = 1)
         {
             _damageMultiplier = damageMultiplier;
             _chains = chains;
