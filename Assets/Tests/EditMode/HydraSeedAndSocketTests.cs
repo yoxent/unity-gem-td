@@ -17,7 +17,7 @@ namespace GemTD.Tests.EditMode
             def.AllowsHydraEvolution = true;
 
             var lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            lmp.Id = GemId.Lmp;
+            lmp.Id = GemId.MultipleProjectiles;
             var chain = ScriptableObject.CreateInstance<GemDefinition>();
             chain.Id = GemId.Chain;
             var fork = ScriptableObject.CreateInstance<GemDefinition>();

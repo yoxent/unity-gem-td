@@ -29,6 +29,6 @@ namespace GemTD.Gameplay.Towers
         public int SocketCount = 3;
         public bool AllowsHydraEvolution;
         [Tooltip("PoE-style tags. None = infer from Kind (Ballista Attack+Projectile, Cannon +AoE, Beacon Aura).")]
-        public AttackTag Tags = AttackTag.None;
+        public GemTag Tags = GemTag.None;
     }
 }

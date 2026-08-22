@@ -36,8 +36,9 @@ namespace GemTD.Tests.EditMode
 
             var ids = new[]
             {
-                GemId.Lmp, GemId.Chain, GemId.Fork, GemId.IncreasedArea, GemId.Pierce,
-                GemId.Ignite, GemId.Chill, GemId.Shock, GemId.ElementalProliferation
+                GemId.MultipleProjectiles, GemId.Chain, GemId.Fork, GemId.IncreasedArea,
+                GemId.Pierce, GemId.ElementalProliferation, GemId.Combustion, GemId.AddedFireDamage,
+                GemId.AddedColdDamage, GemId.AddedLightningDamage, GemId.Knockback
             };
             _catalog = new GemDefinition[ids.Length];
             for (var i = 0; i < ids.Length; i++)
@@ -76,9 +77,9 @@ namespace GemTD.Tests.EditMode
             session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
             session.Fire();
             Assert.IsTrue(session.LastTrace.HasTarget);
-            session.SetSocket(0, GemId.Lmp);
+            session.SetSocket(0, GemId.MultipleProjectiles);
             Assert.AreEqual(0, session.LastTrace.Segments.Count);
-            Assert.AreEqual(GemId.Lmp, session.Tower.Sockets[0].Id);
+            Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
         }
 
         [Test]
@@ -110,7 +111,7 @@ namespace GemTD.Tests.EditMode
         public void SetSocket_CanUnsocketHydra()
         {
             var session = MakeSession();
-            session.SetSocket(0, GemId.Lmp);
+            session.SetSocket(0, GemId.MultipleProjectiles);
             session.SetSocket(1, GemId.Chain);
             session.SetSocket(2, GemId.Fork);
             Assert.IsTrue(session.IsHydra);
@@ -123,9 +124,9 @@ namespace GemTD.Tests.EditMode
         public void SetSocket_RejectsDuplicateId()
         {
             var session = MakeSession();
-            session.SetSocket(0, GemId.Lmp);
-            session.SetSocket(1, GemId.Lmp);
-            Assert.AreEqual(GemId.Lmp, session.Tower.Sockets[0].Id);
+            session.SetSocket(0, GemId.MultipleProjectiles);
+            session.SetSocket(1, GemId.MultipleProjectiles);
+            Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
             Assert.IsNull(session.Tower.Sockets[1]);
         }
 

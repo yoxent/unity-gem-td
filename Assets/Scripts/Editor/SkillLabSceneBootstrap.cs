@@ -32,10 +32,12 @@ namespace GemTD.Editor
                 Load<GemDefinition>("Assets/Data/Gems/Gem_Fork.asset"),
                 Load<GemDefinition>("Assets/Data/Gems/Gem_IncreasedArea.asset"),
                 Load<GemDefinition>("Assets/Data/Gems/Gem_Pierce.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Ignite.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Chill.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Shock.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_ElementalProliferation.asset")
+                Load<GemDefinition>("Assets/Data/Gems/Gem_ElementalProliferation.asset"),
+                Load<GemDefinition>("Assets/Data/Gems/Gem_Combustion.asset"),
+                Load<GemDefinition>("Assets/Data/Gems/Gem_AddedFireDamage.asset"),
+                Load<GemDefinition>("Assets/Data/Gems/Gem_AddedColdDamage.asset"),
+                Load<GemDefinition>("Assets/Data/Gems/Gem_AddedLightningDamage.asset"),
+                Load<GemDefinition>("Assets/Data/Gems/Gem_Knockback.asset")
             };
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);

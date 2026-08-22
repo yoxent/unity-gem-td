@@ -1,5 +1,4 @@
 using System;
-using GemTD.Gameplay.Gems;
 
 namespace GemTD.Gameplay.Gems
 {
@@ -12,19 +11,19 @@ namespace GemTD.Gameplay.Gems
         {
             return id switch
             {
-                GemId.Lmp => new LmpModifier(),
+                GemId.MultipleProjectiles => new LmpModifier(),
                 GemId.Chain => new ChainModifier(),
                 GemId.Fork => new ForkModifier(),
                 GemId.IncreasedArea => new IncreasedAreaModifier(),
-                GemId.Ignite => new IgniteModifier(),
-                GemId.Chill => new ChillModifier(),
-                GemId.Shock => new ShockModifier(),
                 GemId.Pierce => new PierceModifier(),
                 GemId.ElementalProliferation => new ElementalProliferationModifier(),
                 GemId.FasterAttacks => new FasterAttacksModifier(),
-                GemId.IncreasedAccuracy => new IncreasedAccuracyModifier(),
                 GemId.SlowerProjectiles => new SlowerProjectilesModifier(),
-                GemId.AttackEcho => new AttackEchoModifier(),
+                GemId.Combustion => new CombustionModifier(),
+                GemId.AddedFireDamage => new AddedFireDamageModifier(),
+                GemId.AddedColdDamage => new AddedColdDamageModifier(),
+                GemId.AddedLightningDamage => new AddedLightningDamageModifier(),
+                GemId.Knockback => new KnockbackModifier(),
                 GemId.None => null,
                 _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Unregistered gem — add a factory case.")
             };

@@ -11,8 +11,8 @@ namespace GemTD.Gameplay.Gems
         [Tooltip("Relative draft weight. Values <= 0 are treated as 1.")]
         public float DraftWeight = 1f;
         [Tooltip("PoE-style tags from poe1_inspired_tower_support_gems.json. Socketing uses RestrictionMask (Attack/Projectile/AoE/…).")]
-        public AttackTag Tags = AttackTag.None;
+        public GemTag Tags = GemTag.None;
         [Tooltip("Optional override. None = gem Tags ∩ RestrictionMask.")]
-        public AttackTag RequiredTags = AttackTag.None;
+        public GemTag RequiredTags = GemTag.None;
     }
 }

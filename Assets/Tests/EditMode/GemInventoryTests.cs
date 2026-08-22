@@ -16,7 +16,7 @@ namespace GemTD.Tests.EditMode
         public void SetUp()
         {
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.Lmp;
+            _lmp.Id = GemId.MultipleProjectiles;
             _lmp.DisplayName = "LMP";
 
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
@@ -72,7 +72,7 @@ namespace GemTD.Tests.EditMode
             var inventory = new GemInventory(6);
             inventory.Seed(new[] { _lmp, _chain });
 
-            Assert.IsTrue(inventory.TryTake(GemId.Lmp, out var taken));
+            Assert.IsTrue(inventory.TryTake(GemId.MultipleProjectiles, out var taken));
             Assert.AreSame(_lmp, taken);
             Assert.IsNull(inventory.Slots[0]);
             Assert.AreSame(_chain, inventory.Slots[1]);
@@ -238,7 +238,7 @@ namespace GemTD.Tests.EditMode
         {
             var tower = new TowerRuntime(Vector2Int.zero, _ballista);
             var lmp2 = ScriptableObject.CreateInstance<GemDefinition>();
-            lmp2.Id = GemId.Lmp;
+            lmp2.Id = GemId.MultipleProjectiles;
             try
             {
                 Assert.IsTrue(tower.TrySocket(_lmp, 0, allowSocket: true));

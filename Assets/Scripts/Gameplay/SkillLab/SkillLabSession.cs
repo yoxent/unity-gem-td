@@ -14,8 +14,9 @@ namespace GemTD.Gameplay.SkillLab
 
         static readonly GemId[] DraftOrder =
         {
-            GemId.Lmp, GemId.Chain, GemId.Fork, GemId.IncreasedArea, GemId.Pierce,
-            GemId.Ignite, GemId.Chill, GemId.Shock, GemId.ElementalProliferation
+            GemId.MultipleProjectiles, GemId.Chain, GemId.Fork, GemId.IncreasedArea,
+            GemId.Pierce, GemId.ElementalProliferation, GemId.Combustion, GemId.AddedFireDamage,
+            GemId.AddedColdDamage, GemId.AddedLightningDamage, GemId.Knockback
         };
 
         readonly AttackTracer _tracer = new AttackTracer();
@@ -76,7 +77,7 @@ namespace GemTD.Gameplay.SkillLab
             var gem = FindCatalog(id);
             if (gem == null)
                 return;
-            if (!AttackTags.CanSocket(Tower.Def, gem))
+            if (!GemTags.CanSocket(Tower.Def, gem))
                 return;
             if (HasOtherSocket(index, id))
                 return;

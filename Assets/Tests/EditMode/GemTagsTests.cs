@@ -5,7 +5,7 @@ using GemTD.Gameplay.Towers;
 
 namespace GemTD.Tests.EditMode
 {
-    public sealed class AttackTagsTests
+    public sealed class GemTagsTests
     {
         TowerDefinition _ballista;
         TowerDefinition _cannon;
@@ -13,7 +13,7 @@ namespace GemTD.Tests.EditMode
         GemDefinition _lmp;
         GemDefinition _chain;
         GemDefinition _area;
-        GemDefinition _ignite;
+        GemDefinition _supportOnly;
         GemDefinition _faster;
 
         [SetUp]
@@ -32,24 +32,24 @@ namespace GemTD.Tests.EditMode
             _beacon.SocketCount = 1;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.Lmp;
-            _lmp.Tags = AttackTag.Support | AttackTag.Projectile;
+            _lmp.Id = GemId.MultipleProjectiles;
+            _lmp.Tags = GemTag.Support | GemTag.Projectile;
 
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
             _chain.Id = GemId.Chain;
-            _chain.Tags = AttackTag.Support | AttackTag.Chaining | AttackTag.Projectile;
+            _chain.Tags = GemTag.Support | GemTag.Chaining | GemTag.Projectile;
 
             _area = ScriptableObject.CreateInstance<GemDefinition>();
             _area.Id = GemId.IncreasedArea;
-            _area.Tags = AttackTag.Support | AttackTag.Aoe;
+            _area.Tags = GemTag.Support | GemTag.Aoe;
 
-            _ignite = ScriptableObject.CreateInstance<GemDefinition>();
-            _ignite.Id = GemId.Ignite;
-            _ignite.Tags = AttackTag.Support;
+            _supportOnly = ScriptableObject.CreateInstance<GemDefinition>();
+            _supportOnly.Id = GemId.Pierce;
+            _supportOnly.Tags = GemTag.Support;
 
             _faster = ScriptableObject.CreateInstance<GemDefinition>();
             _faster.Id = GemId.FasterAttacks;
-            _faster.Tags = AttackTag.Attack | AttackTag.Support;
+            _faster.Tags = GemTag.Attack | GemTag.Support;
         }
 
         [TearDown]
@@ -61,24 +61,24 @@ namespace GemTD.Tests.EditMode
             Object.DestroyImmediate(_lmp);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_area);
-            Object.DestroyImmediate(_ignite);
+            Object.DestroyImmediate(_supportOnly);
             Object.DestroyImmediate(_faster);
         }
 
         [Test]
         public void Infer_BallistaAttackProjectile_CannonAddsAoe_BeaconAura()
         {
-            Assert.AreEqual(AttackTag.Attack | AttackTag.Projectile, AttackTags.EffectiveTowerTags(_ballista));
-            Assert.AreEqual(AttackTag.Attack | AttackTag.Projectile | AttackTag.Aoe, AttackTags.EffectiveTowerTags(_cannon));
-            Assert.AreEqual(AttackTag.Aura, AttackTags.EffectiveTowerTags(_beacon));
+            Assert.AreEqual(GemTag.Attack | GemTag.Projectile, GemTags.EffectiveTowerTags(_ballista));
+            Assert.AreEqual(GemTag.Attack | GemTag.Projectile | GemTag.Aoe, GemTags.EffectiveTowerTags(_cannon));
+            Assert.AreEqual(GemTag.Aura, GemTags.EffectiveTowerTags(_beacon));
         }
 
         [Test]
         public void ProjectileGem_SocketsBallistaAndCannon_NotBeacon()
         {
-            Assert.IsTrue(AttackTags.CanSocket(_ballista, _lmp));
-            Assert.IsTrue(AttackTags.CanSocket(_cannon, _lmp));
-            Assert.IsFalse(AttackTags.CanSocket(_beacon, _lmp));
+            Assert.IsTrue(GemTags.CanSocket(_ballista, _lmp));
+            Assert.IsTrue(GemTags.CanSocket(_cannon, _lmp));
+            Assert.IsFalse(GemTags.CanSocket(_beacon, _lmp));
 
             var ballista = new TowerRuntime(Vector2Int.zero, _ballista);
             var beacon = new TowerRuntime(Vector2Int.zero, _beacon);
@@ -89,37 +89,37 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Chain_RequiresProjectile_NotChaining()
         {
-            Assert.AreEqual(AttackTag.Projectile, AttackTags.EffectiveRequiredTags(_chain));
-            Assert.IsTrue(AttackTags.CanSocket(_ballista, _chain));
+            Assert.AreEqual(GemTag.Projectile, GemTags.EffectiveRequiredTags(_chain));
+            Assert.IsTrue(GemTags.CanSocket(_ballista, _chain));
         }
 
         [Test]
         public void IncreasedArea_SocketsCannon_NotBallista()
         {
-            Assert.IsTrue(AttackTags.CanSocket(_cannon, _area));
-            Assert.IsFalse(AttackTags.CanSocket(_ballista, _area));
+            Assert.IsTrue(GemTags.CanSocket(_cannon, _area));
+            Assert.IsFalse(GemTags.CanSocket(_ballista, _area));
         }
 
         [Test]
         public void SupportOnlyGem_SocketsAnyTower()
         {
-            Assert.IsTrue(AttackTags.CanSocket(_ballista, _ignite));
-            Assert.IsTrue(AttackTags.CanSocket(_cannon, _ignite));
-            Assert.IsTrue(AttackTags.CanSocket(_beacon, _ignite));
+            Assert.IsTrue(GemTags.CanSocket(_ballista, _supportOnly));
+            Assert.IsTrue(GemTags.CanSocket(_cannon, _supportOnly));
+            Assert.IsTrue(GemTags.CanSocket(_beacon, _supportOnly));
         }
 
         [Test]
         public void AttackGem_SocketsBallista_NotBeacon()
         {
-            Assert.IsTrue(AttackTags.CanSocket(_ballista, _faster));
-            Assert.IsFalse(AttackTags.CanSocket(_beacon, _faster));
+            Assert.IsTrue(GemTags.CanSocket(_ballista, _faster));
+            Assert.IsFalse(GemTags.CanSocket(_beacon, _faster));
         }
 
         [Test]
         public void Format_JoinsActiveTags()
         {
-            Assert.AreEqual("—", AttackTags.Format(AttackTag.None));
-            Assert.AreEqual("Attack, Projectile, AoE", AttackTags.Format(AttackTag.Attack | AttackTag.Projectile | AttackTag.Aoe));
+            Assert.AreEqual("—", GemTags.Format(GemTag.None));
+            Assert.AreEqual("Attack, Projectile, AoE", GemTags.Format(GemTag.Attack | GemTag.Projectile | GemTag.Aoe));
         }
     }
 }

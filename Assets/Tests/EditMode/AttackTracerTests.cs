@@ -45,7 +45,7 @@ namespace GemTD.Tests.EditMode
             _cannon.SplashRadius = 1.5f;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.Lmp;
+            _lmp.Id = GemId.MultipleProjectiles;
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
             _chain.Id = GemId.Chain;
             _fork = ScriptableObject.CreateInstance<GemDefinition>();

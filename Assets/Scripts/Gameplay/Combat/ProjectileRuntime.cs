@@ -51,6 +51,8 @@ namespace GemTD.Gameplay.Combat
         bool _chill;
         bool _shock;
         bool _prolif;
+        float _knockbackChance;
+        float _knockbackDistance;
         StatusRuntime _statuses;
         List<ProjectileRuntime> _spawnBuffer;
         EnemyRuntime _lastHit;
@@ -79,7 +81,9 @@ namespace GemTD.Gameplay.Combat
             bool softSeek = false,
             Vector3 seekOffset = default,
             TowerDefinition sourceTower = null,
-            Action<TowerDefinition, float> recordDamage = null)
+            Action<TowerDefinition, float> recordDamage = null,
+            float knockbackChance = 0f,
+            float knockbackDistance = 0f)
         {
             Position = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
@@ -105,6 +109,8 @@ namespace GemTD.Gameplay.Combat
             _lastHit = null;
             _sourceTower = sourceTower;
             _recordDamage = recordDamage;
+            _knockbackChance = knockbackChance > 0f ? knockbackChance : 0f;
+            _knockbackDistance = knockbackDistance > 0f ? knockbackDistance : 0f;
             _age = 0f;
             _traveled = 0f;
             IsActive = true;
@@ -179,6 +185,7 @@ namespace GemTD.Gameplay.Combat
             }
 
             ApplyStatusesOnHit(hit, livingCandidates);
+            ApplyKnockbackOnHit(hit);
 
             // PoE-style: one behavior per collision — Pierce > Fork > Chain.
             // PierceRemaining is extra through-hits; 1 = continue past this target once.
@@ -250,6 +257,18 @@ namespace GemTD.Gameplay.Combat
                 _statuses.ProliferateIgniteChillShock(hit, ProlifRadius, livingCandidates);
         }
 
+        void ApplyKnockbackOnHit(EnemyRuntime hit)
+        {
+            if (hit == null || !hit.IsAlive)
+                return;
+            if (_knockbackChance <= 0f || _knockbackDistance <= 0f)
+                return;
+            if (_knockbackChance < 1f && UnityEngine.Random.value >= _knockbackChance)
+                return;
+
+            hit.KnockbackAlongPath(_knockbackDistance);
+        }
+
         void SpawnForkChildren()
         {
             if (_spawnBuffer == null)
@@ -283,7 +302,9 @@ namespace GemTD.Gameplay.Combat
                 _statuses,
                 _spawnBuffer,
                 sourceTower: _sourceTower,
-                recordDamage: _recordDamage);
+                recordDamage: _recordDamage,
+                knockbackChance: _knockbackChance,
+                knockbackDistance: _knockbackDistance);
             child._lastHit = _lastHit;
             _spawnBuffer.Add(child);
         }

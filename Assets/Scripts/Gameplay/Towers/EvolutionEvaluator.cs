@@ -39,7 +39,7 @@ namespace GemTD.Gameplay.Towers
                 if (gem == null)
                     continue;
 
-                if (gem.Id == GemId.Lmp)
+                if (gem.Id == GemId.MultipleProjectiles)
                     hasLmp = true;
                 else if (gem.Id == GemId.Chain)
                     hasChain = true;

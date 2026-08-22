@@ -26,7 +26,7 @@ namespace GemTD.Gameplay
         [SerializeField] BuildBarCatalog buildBarCatalog;
         [SerializeField] WaveCatalog waveCatalog;
         [SerializeField] EnemyDefinition bossEnemy;
-        [SerializeField] GemDefinition[] draftPool;
+        [SerializeField] DraftPoolCatalog draftPoolCatalog;
         [SerializeField] CodexCatalog codexCatalog;
         [SerializeField] ChunkCatalog chunkCatalog;
 
@@ -154,14 +154,14 @@ namespace GemTD.Gameplay
             var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
             var interval = def.AttackInterval / fireRate;
             var attackRate = interval > 0.01f ? 1f / interval : 0f;
-            var tags = AttackTags.EffectiveTowerTags(def);
+            var tags = GemTags.EffectiveTowerTags(def);
             sb.Append($"Damage {dmg:0.#}");
             if (spec.ProjectileCount > 1)
                 sb.Append($" ×{spec.ProjectileCount}");
             sb.Append('\n');
             sb.Append($"Attack rate {attackRate:0.##}/s\n");
             sb.Append($"Attack range {EffectiveAttackRange(tower):0.#}\n");
-            sb.Append($"Tags {AttackTags.Format(tags)}");
+            sb.Append($"Tags {GemTags.Format(tags)}");
 
             var lockLeft = SelectedSocketLockRemaining;
             if (lockLeft > 0f)
@@ -580,25 +580,25 @@ namespace GemTD.Gameplay
             if (Draft == null)
                 return;
 
+            var pool = draftPoolCatalog != null
+                ? draftPoolCatalog.GetGemsOrEmpty()
+                : System.Array.Empty<GemDefinition>();
             var usable = 0;
-            if (draftPool != null)
+            for (var i = 0; i < pool.Length; i++)
             {
-                for (var i = 0; i < draftPool.Length; i++)
-                {
-                    if (draftPool[i] != null)
-                        usable++;
-                }
+                if (pool[i] != null)
+                    usable++;
             }
 
             if (usable < 3)
             {
                 Debug.LogError(
-                    "[GemTD] draftPool needs at least 3 assigned gems on GameCompositionRoot " +
-                    $"(found {usable}). Assign GemDefinition assets in the inspector (see RunConfig / Data/Gems).");
+                    "[GemTD] DraftPoolCatalog needs at least 3 assigned gems on GameCompositionRoot " +
+                    $"(found {usable}). Assign the catalog at Data/Gems/DraftPoolCatalog.");
                 return;
             }
 
-            Draft.BeginOffer(draftPool, allowSkip);
+            Draft.BeginOffer(pool, allowSkip);
             GameEvents.RaiseDraftOfferChanged();
             Debug.Log(
                 $"[GemTD] Draft offer ({(allowSkip ? "skip OK" : "must pick")}): " +
@@ -1609,7 +1609,7 @@ namespace GemTD.Gameplay
             var filler = ResolveDebugFillGem();
             if (filler == null)
             {
-                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or draftPool.");
+                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or DraftPoolCatalog.");
                 return;
             }
 
@@ -1637,12 +1637,12 @@ namespace GemTD.Gameplay
                 }
             }
 
-            if (draftPool != null)
+            if (draftPoolCatalog != null && draftPoolCatalog.Gems != null)
             {
-                for (var i = 0; i < draftPool.Length; i++)
+                for (var i = 0; i < draftPoolCatalog.Gems.Length; i++)
                 {
-                    if (draftPool[i] != null)
-                        return draftPool[i];
+                    if (draftPoolCatalog.Gems[i] != null)
+                        return draftPoolCatalog.Gems[i];
                 }
             }
 

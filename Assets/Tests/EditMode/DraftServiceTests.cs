@@ -16,12 +16,12 @@ namespace GemTD.Tests.EditMode
         {
             _pool.Clear();
             _destroy.Clear();
-            _pool.Add(MakeGem(GemId.Lmp, "LMP"));
+            _pool.Add(MakeGem(GemId.MultipleProjectiles, "MP"));
             _pool.Add(MakeGem(GemId.Chain, "Chain"));
             _pool.Add(MakeGem(GemId.FasterAttacks, "Faster"));
-            _pool.Add(MakeGem(GemId.IncreasedAccuracy, "Accuracy"));
+            _pool.Add(MakeGem(GemId.Pierce, "Pierce"));
             _pool.Add(MakeGem(GemId.SlowerProjectiles, "Slower"));
-            _pool.Add(MakeGem(GemId.AttackEcho, "Echo"));
+            _pool.Add(MakeGem(GemId.Fork, "Fork"));
         }
 
         [TearDown]
@@ -185,14 +185,11 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void BeginOffer_RespectsWeights_BiasesHydraTrio()
         {
-            var weighted = new List<GemDefinition>(9);
-            weighted.Add(MakeGem(GemId.Lmp, "MP", 100f));
+            var weighted = new List<GemDefinition>(6);
+            weighted.Add(MakeGem(GemId.MultipleProjectiles, "MP", 100f));
             weighted.Add(MakeGem(GemId.Chain, "Chain", 100f));
             weighted.Add(MakeGem(GemId.Fork, "Fork", 100f));
             weighted.Add(MakeGem(GemId.IncreasedArea, "Area", 1f));
-            weighted.Add(MakeGem(GemId.Ignite, "Ignite", 1f));
-            weighted.Add(MakeGem(GemId.Chill, "Chill", 1f));
-            weighted.Add(MakeGem(GemId.Shock, "Shock", 1f));
             weighted.Add(MakeGem(GemId.Pierce, "Pierce", 1f));
             weighted.Add(MakeGem(GemId.ElementalProliferation, "Prolif", 1f));
 
@@ -207,7 +204,7 @@ namespace GemTD.Tests.EditMode
                 for (var i = 0; i < draft.CurrentOffer.Count; i++)
                 {
                     var id = draft.CurrentOffer[i].Id;
-                    if (id == GemId.Lmp) lmpHits++;
+                    if (id == GemId.MultipleProjectiles) lmpHits++;
                     else if (id == GemId.Chain) chainHits++;
                     else if (id == GemId.Fork) forkHits++;
                 }
@@ -224,7 +221,7 @@ namespace GemTD.Tests.EditMode
             var inventory = new GemInventory(capacity);
             for (var i = 0; i < capacity; i++)
             {
-                var filler = MakeGem(GemId.Lmp, "Fill" + i);
+                var filler = MakeGem(GemId.MultipleProjectiles, "Fill" + i);
                 Assert.IsTrue(inventory.TryAdd(filler));
             }
 

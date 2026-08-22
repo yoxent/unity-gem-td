@@ -170,5 +170,38 @@ namespace GemTD.Gameplay.Enemies
                 }
             }
         }
+
+        public void KnockbackAlongPath(float worldDistance)
+        {
+            if (!_alive || _waypoints == null || _waypoints.Length < 2 || worldDistance <= 0f)
+                return;
+
+            var remaining = worldDistance;
+            while (remaining > 0f)
+            {
+                var from = _waypoints[_segmentIndex];
+                var distToFrom = Vector3.Distance(WorldPosition, from);
+                if (distToFrom > 1e-5f)
+                {
+                    if (remaining < distToFrom)
+                    {
+                        WorldPosition += (from - WorldPosition) * (remaining / distToFrom);
+                        return;
+                    }
+
+                    WorldPosition = from;
+                    remaining -= distToFrom;
+                }
+
+                if (_segmentIndex <= 0)
+                {
+                    WorldPosition = _waypoints[0];
+                    _segmentIndex = 0;
+                    return;
+                }
+
+                _segmentIndex--;
+            }
+        }
     }
 }

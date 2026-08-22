@@ -49,7 +49,7 @@ namespace GemTD.Gameplay.Towers
             if (Sockets[index] != null)
                 return false;
 
-            if (!AttackTags.CanSocket(Def, gem))
+            if (!GemTags.CanSocket(Def, gem))
                 return false;
 
             for (var i = 0; i < Sockets.Length; i++)

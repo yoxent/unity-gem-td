@@ -3,19 +3,18 @@ namespace GemTD.Gameplay.Gems
     public enum GemId
     {
         None = 0,
-        Lmp = 1,
+        MultipleProjectiles = 1,
         Chain = 2,
         Fork = 3,
         IncreasedArea = 4,
-        Ignite = 5,
-        Shock = 6,
-        Pierce = 7,
-        ElementalProliferation = 8,
-        Gmp = 9,
-        FasterAttacks = 10,
-        IncreasedAccuracy = 11,
-        SlowerProjectiles = 12,
-        AttackEcho = 13,
-        Chill = 14
+        Pierce = 5,
+        ElementalProliferation = 6,
+        FasterAttacks = 7,
+        SlowerProjectiles = 8,
+        Combustion = 9,
+        AddedFireDamage = 10,
+        AddedColdDamage = 11,
+        AddedLightningDamage = 12,
+        Knockback = 13
     }
 }

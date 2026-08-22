@@ -33,7 +33,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Factory_CreatesLmp()
         {
-            var mod = GemModifierFactory.Create(GemId.Lmp);
+            var mod = GemModifierFactory.Create(GemId.MultipleProjectiles);
             Assert.IsInstanceOf<LmpModifier>(mod);
         }
 
@@ -66,16 +66,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void IncreasedAccuracy_BoostsRange()
-        {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new IncreasedAccuracyModifier() });
-
-            Assert.AreEqual(1.2f, result.RangeMultiplier, 0.001f);
-        }
-
-        [Test]
         public void SlowerProjectiles_BoostsDamageAndSlowsProjectiles()
         {
             var pipeline = new GemModifierPipeline();
@@ -87,23 +77,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void AttackEcho_SetsTwoVolleysAtSixtyPercent()
-        {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new AttackEchoModifier() });
-
-            Assert.AreEqual(2, result.EchoVolleyCount);
-            Assert.AreEqual(0.6f, result.EchoDamageFactor, 0.001f);
-        }
-
-        [Test]
-        public void Factory_CreatesNewDraftGems()
+        public void Factory_CreatesOutOfPoolGems()
         {
             Assert.IsInstanceOf<FasterAttacksModifier>(GemModifierFactory.Create(GemId.FasterAttacks));
-            Assert.IsInstanceOf<IncreasedAccuracyModifier>(GemModifierFactory.Create(GemId.IncreasedAccuracy));
             Assert.IsInstanceOf<SlowerProjectilesModifier>(GemModifierFactory.Create(GemId.SlowerProjectiles));
-            Assert.IsInstanceOf<AttackEchoModifier>(GemModifierFactory.Create(GemId.AttackEcho));
         }
 
         [Test]
@@ -127,18 +104,9 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void StatusGems_SetFlags_AndTradeoffs()
+        public void PierceAndProlif_SetFlags_AndTradeoffs()
         {
             var pipeline = new GemModifierPipeline();
-            var ignite = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new IgniteModifier() });
-            Assert.IsTrue(ignite.Ignite);
-
-            var chill = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new ChillModifier() });
-            Assert.IsTrue(chill.Chill);
-
-            var shock = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new ShockModifier() });
-            Assert.IsTrue(shock.Shock);
-
             var pierce = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new PierceModifier() });
             Assert.IsTrue(pierce.Pierce);
             Assert.AreEqual(8.5f, pierce.Damage, 0.001f);
@@ -149,15 +117,52 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Factory_CreatesPr5Gems()
+        public void Factory_CreatesDraftPoolGems()
         {
             Assert.IsInstanceOf<IncreasedAreaModifier>(GemModifierFactory.Create(GemId.IncreasedArea));
-            Assert.IsInstanceOf<IgniteModifier>(GemModifierFactory.Create(GemId.Ignite));
-            Assert.IsInstanceOf<ChillModifier>(GemModifierFactory.Create(GemId.Chill));
-            Assert.IsInstanceOf<ShockModifier>(GemModifierFactory.Create(GemId.Shock));
             Assert.IsInstanceOf<PierceModifier>(GemModifierFactory.Create(GemId.Pierce));
             Assert.IsInstanceOf<ElementalProliferationModifier>(GemModifierFactory.Create(GemId.ElementalProliferation));
             Assert.IsInstanceOf<ForkModifier>(GemModifierFactory.Create(GemId.Fork));
+            Assert.IsInstanceOf<CombustionModifier>(GemModifierFactory.Create(GemId.Combustion));
+            Assert.IsInstanceOf<AddedFireDamageModifier>(GemModifierFactory.Create(GemId.AddedFireDamage));
+            Assert.IsInstanceOf<AddedColdDamageModifier>(GemModifierFactory.Create(GemId.AddedColdDamage));
+            Assert.IsInstanceOf<AddedLightningDamageModifier>(GemModifierFactory.Create(GemId.AddedLightningDamage));
+            Assert.IsInstanceOf<KnockbackModifier>(GemModifierFactory.Create(GemId.Knockback));
+        }
+
+        [Test]
+        public void Combustion_MoreDamageAndIgnite()
+        {
+            var pipeline = new GemModifierPipeline();
+            var result = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new CombustionModifier() });
+            Assert.AreEqual(11.4f, result.Damage, 0.001f);
+            Assert.IsTrue(result.Ignite);
+        }
+
+        [Test]
+        public void AddedElemental_ExtraDamageAndAilments()
+        {
+            var pipeline = new GemModifierPipeline();
+            var fire = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new AddedFireDamageModifier() });
+            Assert.AreEqual(13.1f, fire.Damage, 0.001f);
+            Assert.IsFalse(fire.Ignite);
+
+            var cold = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new AddedColdDamageModifier() });
+            Assert.AreEqual(14f, cold.Damage, 0.001f);
+            Assert.IsTrue(cold.Chill);
+
+            var lightning = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new AddedLightningDamageModifier() });
+            Assert.AreEqual(14f, lightning.Damage, 0.001f);
+            Assert.IsTrue(lightning.Shock);
+        }
+
+        [Test]
+        public void Knockback_SetsChanceAndDistance()
+        {
+            var pipeline = new GemModifierPipeline();
+            var result = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new KnockbackModifier() });
+            Assert.AreEqual(0.34f, result.KnockbackChance, 0.001f);
+            Assert.AreEqual(1f, result.KnockbackDistance, 0.001f);
         }
 
         [Test]

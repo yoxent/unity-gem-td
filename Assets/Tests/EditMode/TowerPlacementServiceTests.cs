@@ -29,7 +29,7 @@ namespace GemTD.Tests.EditMode
             _ballista.SocketCount = 2;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.Lmp;
+            _lmp.Id = GemId.MultipleProjectiles;
             _lmp.DisplayName = "LMP";
         }
 

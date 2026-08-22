@@ -125,7 +125,7 @@ namespace GemTD.Tests.EditMode
             towerDef.SocketCount = 2;
 
             var lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            lmp.Id = GemId.Lmp;
+            lmp.Id = GemId.MultipleProjectiles;
 
             try
             {
@@ -348,6 +348,32 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(projectile.IsActive);
             Assert.IsFalse(projectile.Tick(0.02f, null));
             Assert.IsFalse(projectile.IsActive);
+        }
+
+        [Test]
+        public void Knockback_ChanceOne_RewindsLivingEnemyAlongPath()
+        {
+            _def.MoveSpeed = 2f;
+            var enemy = MakeEnemyAt(Vector3.zero, 100f);
+            Assert.IsFalse(enemy.TickMove(0.25f));
+            var before = enemy.Progress;
+            Assert.Greater(before, 0.4f);
+
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: enemy.WorldPosition,
+                direction: Vector3.right,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 100f,
+                chainRange: 0f,
+                knockbackChance: 1f,
+                knockbackDistance: 0.25f);
+
+            Assert.IsFalse(projectile.Tick(0.05f, Living(enemy)));
+            Assert.AreEqual(90f, enemy.Hp, 1e-3f);
+            Assert.AreEqual(before - 0.25f, enemy.Progress, 1e-3f);
         }
 
         EnemyRuntime MakeEnemyAt(Vector3 position, float hp)

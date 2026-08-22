@@ -191,7 +191,9 @@ namespace GemTD.Gameplay.Combat
                     softSeek: false,
                     seekOffset: default,
                     sourceTower,
-                    _recordDamage);
+                    _recordDamage,
+                    spec.KnockbackChance,
+                    spec.KnockbackDistance);
                 _projectiles.Add(projectile);
             }
         }

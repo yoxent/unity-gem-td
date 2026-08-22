@@ -46,6 +46,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void KnockbackAlongPath_RewindsTowardStart_ClampsAtSpawn()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            Assert.IsFalse(enemy.TickMove(0.25f));
+            var mid = enemy.Progress;
+            Assert.Greater(mid, 0.4f);
+            Assert.Less(mid, 0.6f);
+
+            enemy.KnockbackAlongPath(0.25f);
+            Assert.AreEqual(mid - 0.25f, enemy.Progress, 1e-3f);
+
+            enemy.KnockbackAlongPath(10f);
+            Assert.AreEqual(0f, enemy.Progress, 1e-4f);
+            Assert.AreEqual(waypoints[0], enemy.WorldPosition);
+        }
+
+        [Test]
         public void ApplyDamage_ReducesHpAndKills()
         {
             var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));

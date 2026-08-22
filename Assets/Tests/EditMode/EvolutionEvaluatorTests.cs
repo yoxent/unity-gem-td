@@ -25,7 +25,7 @@ namespace GemTD.Tests.EditMode
             _ballista.AttackInterval = 1f;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.Lmp;
+            _lmp.Id = GemId.MultipleProjectiles;
 
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
             _chain.Id = GemId.Chain;

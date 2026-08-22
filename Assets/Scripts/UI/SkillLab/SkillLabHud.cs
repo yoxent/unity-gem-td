@@ -143,7 +143,7 @@ namespace GemTD.UI
                     var gem = session.CatalogGem(id);
                     if (gem == null)
                         continue;
-                    if (!AttackTags.CanSocket(session.Tower.Def, gem))
+                    if (!GemTags.CanSocket(session.Tower.Def, gem))
                         continue;
                     var usedElsewhere = false;
                     for (var s = 0; s < sockets.Length; s++)

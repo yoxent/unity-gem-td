@@ -77,33 +77,6 @@ namespace GemTD.Gameplay.Gems
         }
     }
 
-    public sealed class IgniteModifier : IAttackModifier
-    {
-        public AttackSpec Modify(AttackSpec spec)
-        {
-            spec.Ignite = true;
-            return spec;
-        }
-    }
-
-    public sealed class ChillModifier : IAttackModifier
-    {
-        public AttackSpec Modify(AttackSpec spec)
-        {
-            spec.Chill = true;
-            return spec;
-        }
-    }
-
-    public sealed class ShockModifier : IAttackModifier
-    {
-        public AttackSpec Modify(AttackSpec spec)
-        {
-            spec.Shock = true;
-            return spec;
-        }
-    }
-
     public sealed class PierceModifier : IAttackModifier
     {
         readonly float _damageMultiplier;
@@ -154,22 +127,6 @@ namespace GemTD.Gameplay.Gems
         }
     }
 
-    public sealed class IncreasedAccuracyModifier : IAttackModifier
-    {
-        readonly float _rangeMultiplier;
-
-        public IncreasedAccuracyModifier(float rangeMultiplier = 1.2f)
-        {
-            _rangeMultiplier = rangeMultiplier;
-        }
-
-        public AttackSpec Modify(AttackSpec spec)
-        {
-            spec.RangeMultiplier *= _rangeMultiplier;
-            return spec;
-        }
-    }
-
     public sealed class SlowerProjectilesModifier : IAttackModifier
     {
         readonly float _damageMultiplier;
@@ -189,21 +146,90 @@ namespace GemTD.Gameplay.Gems
         }
     }
 
-    public sealed class AttackEchoModifier : IAttackModifier
+    public sealed class CombustionModifier : IAttackModifier
     {
-        readonly int _volleyCount;
-        readonly float _damageFactor;
+        readonly float _moreMultiplier;
 
-        public AttackEchoModifier(int volleyCount = 2, float damageFactor = 0.6f)
+        public CombustionModifier(float moreMultiplier = 1.14f)
         {
-            _volleyCount = volleyCount;
-            _damageFactor = damageFactor;
+            _moreMultiplier = moreMultiplier;
         }
 
         public AttackSpec Modify(AttackSpec spec)
         {
-            spec.EchoVolleyCount = _volleyCount;
-            spec.EchoDamageFactor = _damageFactor;
+            spec.Damage *= _moreMultiplier;
+            spec.Ignite = true;
+            return spec;
+        }
+    }
+
+    public sealed class AddedFireDamageModifier : IAttackModifier
+    {
+        readonly float _extraFraction;
+
+        public AddedFireDamageModifier(float extraFraction = 0.31f)
+        {
+            _extraFraction = extraFraction;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Damage += spec.Damage * _extraFraction;
+            return spec;
+        }
+    }
+
+    public sealed class AddedColdDamageModifier : IAttackModifier
+    {
+        readonly float _added;
+
+        public AddedColdDamageModifier(float added = 4f)
+        {
+            _added = added;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Damage += _added;
+            spec.Chill = true;
+            return spec;
+        }
+    }
+
+    public sealed class AddedLightningDamageModifier : IAttackModifier
+    {
+        readonly float _added;
+
+        public AddedLightningDamageModifier(float added = 4f)
+        {
+            _added = added;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            spec.Damage += _added;
+            spec.Shock = true;
+            return spec;
+        }
+    }
+
+    public sealed class KnockbackModifier : IAttackModifier
+    {
+        readonly float _chance;
+        readonly float _distance;
+
+        public KnockbackModifier(float chance = 0.34f, float distance = 1f)
+        {
+            _chance = chance;
+            _distance = distance;
+        }
+
+        public AttackSpec Modify(AttackSpec spec)
+        {
+            if (_chance > spec.KnockbackChance)
+                spec.KnockbackChance = _chance;
+            if (_distance > spec.KnockbackDistance)
+                spec.KnockbackDistance = _distance;
             return spec;
         }
     }

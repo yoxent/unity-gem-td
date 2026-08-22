@@ -21,6 +21,8 @@ namespace GemTD.Gameplay.Combat
         public bool Chill;
         public bool Shock;
         public bool Proliferate;
+        public float KnockbackChance;
+        public float KnockbackDistance;
 
         public static AttackSpec FromBase(float damage, int projectiles = 1, float aoe = 0f)
         {
@@ -41,7 +43,9 @@ namespace GemTD.Gameplay.Combat
                 Ignite = false,
                 Chill = false,
                 Shock = false,
-                Proliferate = false
+                Proliferate = false,
+                KnockbackChance = 0f,
+                KnockbackDistance = 0f
             };
         }
     }

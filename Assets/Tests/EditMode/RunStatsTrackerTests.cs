@@ -51,9 +51,9 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void RecordGemSocketed_CountsUniqueGemIds()
         {
-            _tracker.RecordGemSocketed(GemId.Lmp);
+            _tracker.RecordGemSocketed(GemId.MultipleProjectiles);
             _tracker.RecordGemSocketed(GemId.Chain);
-            _tracker.RecordGemSocketed(GemId.Lmp);
+            _tracker.RecordGemSocketed(GemId.MultipleProjectiles);
 
             var snapshot = _tracker.Snapshot(1, _catalog);
             Assert.AreEqual(2, snapshot.SkillsCount);
