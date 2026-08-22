@@ -116,6 +116,8 @@ namespace GemTD.Gameplay.Run
 
                 if (endsCampaign)
                     _beforeCampaignVictory?.Invoke();
+                else if (IsEndless)
+                    PlayerProfile.TryUpdateHighestWave(CurrentWaveNumber);
 
                 _states.WaveCleared(offerDraft, endsCampaign);
             }

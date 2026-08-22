@@ -28,6 +28,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text totalGoldText;
         [SerializeField] TMP_Text totalBuiltText;
         [SerializeField] TMP_Text skillsText;
+        [SerializeField] TMP_Text newBestText;
         [SerializeField] Transform towerSectionsParent;
         [SerializeField] RunSummarySection towerSummarySectionPrefab;
         [SerializeField] Button endlessButton;
@@ -98,6 +99,13 @@ namespace GemTD.UI
                 outcomeText.text = victory ? "Victory" : "Defeat";
             if (waveText != null)
                 waveText.text = $"Wave {snapshot.WaveReached}";
+            if (newBestText != null)
+            {
+                var showNewBest = PlayerProfile.LastUpdateWasNewBest;
+                newBestText.gameObject.SetActive(showNewBest);
+                if (showNewBest)
+                    newBestText.text = "New best!";
+            }
             if (totalDamageText != null)
                 totalDamageText.text = $"Total damage: {Mathf.RoundToInt(snapshot.TotalDamage)}";
             if (totalKillsText != null)

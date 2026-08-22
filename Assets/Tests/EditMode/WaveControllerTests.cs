@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using GemTD.Core;
@@ -40,6 +41,7 @@ namespace GemTD.Tests.EditMode
             UnityEngine.Object.DestroyImmediate(_wave2);
             UnityEngine.Object.DestroyImmediate(_wave3);
             UnityEngine.Object.DestroyImmediate(_enemyDef);
+            PlayerProfile.ResetForTests();
             GameEvents.ClearAll();
         }
 
@@ -413,6 +415,35 @@ namespace GemTD.Tests.EditMode
             // Wave 2 endless: ScaleEndWaveGold(100,2)=108, then ×0.5 → 54
             Assert.AreEqual(100 + 54, _economy.Gold);
             Assert.AreEqual(RunStateId.Plan, _states.Current);
+        }
+
+        [Test]
+        public void Endless_Clear_UpdatesHighestWave()
+        {
+            var path = Path.Combine(Path.GetTempPath(), "gemtd-wave-profile-" + Path.GetRandomFileName() + ".json");
+            PlayerProfile.Initialize(new JsonFileGemTdSaveStore(path));
+            try
+            {
+                var controller = new WaveController(
+                    new[] { _wave1 }, _states, _economy, 100, null, endWave: 1);
+                var gate = new TestSpawnerGate();
+
+                EnterPlanReady();
+                ClearWave(controller, gate, expectedSpawns: 2);
+                Assert.AreEqual(0, PlayerProfile.GetHighestWaveCleared());
+
+                controller.BeginEndless();
+                _states.EnterEndless();
+                ClearWave(controller, gate, expectedSpawns: 2);
+                Assert.AreEqual(2, PlayerProfile.GetHighestWaveCleared());
+                Assert.IsTrue(PlayerProfile.LastUpdateWasNewBest);
+            }
+            finally
+            {
+                PlayerProfile.ResetForTests();
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
         }
 
         [Test]

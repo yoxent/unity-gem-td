@@ -249,6 +249,7 @@ namespace GemTD.Gameplay
             }
 
             Instance = this;
+            PlayerProfile.Load();
 
             // NOTE: do NOT GameEvents.ClearAll() here — UI prefabs subscribe in OnEnable during
             // scene load, which runs before this Awake. Wiping here silently kills all UI event
@@ -532,6 +533,9 @@ namespace GemTD.Gameplay
 
         void OnStateChanged(RunStateId prev, RunStateId next)
         {
+            if (next == RunStateId.Defeat || next == RunStateId.VictorySummary)
+                PlayerProfile.TryUpdateHighestWave(CurrentWaveNumber);
+
             GameEvents.RaiseRunStateChanged();
 
             if (IsCombatPhase(prev) && !IsCombatPhase(next))

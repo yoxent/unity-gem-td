@@ -53,12 +53,14 @@ namespace GemTD.Editor
             ClearChildren(sectionsParent);
 
             var totalGoldText = EnsureTotalGoldText(panel);
+            var newBestText = EnsureNewBestText(panel);
             var endlessButton = EnsureEndlessButton(panel);
 
             var so = new SerializedObject(controller);
             so.FindProperty("towerSectionsParent").objectReferenceValue = sectionsParent;
             so.FindProperty("towerSummarySectionPrefab").objectReferenceValue = sectionPrefab;
             so.FindProperty("totalGoldText").objectReferenceValue = totalGoldText;
+            so.FindProperty("newBestText").objectReferenceValue = newBestText;
             so.FindProperty("endlessButton").objectReferenceValue = endlessButton;
             so.ApplyModifiedPropertiesWithoutUndo();
 
@@ -157,6 +159,45 @@ namespace GemTD.Editor
                 panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, 760f);
 
             return text;
+        }
+
+        static TMP_Text EnsureNewBestText(Transform panel)
+        {
+            var existing = panel.Find("NewBestText");
+            if (existing != null)
+            {
+                var tmp = existing.GetComponent<TMP_Text>();
+                if (tmp != null)
+                {
+                    PlaceNewBestAfterWave(existing, panel);
+                    existing.gameObject.SetActive(false);
+                    return tmp;
+                }
+            }
+
+            var go = new GameObject("NewBestText", typeof(RectTransform), typeof(CanvasRenderer));
+            go.transform.SetParent(panel, false);
+            go.SetActive(false);
+
+            var text = go.AddComponent<TextMeshProUGUI>();
+            text.text = "New best!";
+            text.fontSize = 22;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = new Color(0.878f, 0.706f, 0.294f, 1f);
+
+            var layout = go.AddComponent<LayoutElement>();
+            layout.preferredHeight = 28f;
+
+            PlaceNewBestAfterWave(go.transform, panel);
+            return text;
+        }
+
+        static void PlaceNewBestAfterWave(Transform newBest, Transform panel)
+        {
+            var wave = panel.Find("WaveText");
+            if (wave == null)
+                return;
+            newBest.SetSiblingIndex(wave.GetSiblingIndex() + 1);
         }
 
         static Transform EnsureSectionsParent(Transform panel)
