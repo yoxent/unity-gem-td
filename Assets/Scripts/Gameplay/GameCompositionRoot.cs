@@ -40,6 +40,7 @@ namespace GemTD.Gameplay
         [SerializeField] ProjectileView projectilePrefab;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] ExpandMarkerView expandMarkerPrefab;
+        [SerializeField] GameObject towerRangeIndicatorPrefab;
 
         [Header("Tuning")]
         [SerializeField] float projectileSpeed = 20f;
@@ -150,7 +151,6 @@ namespace GemTD.Gameplay
                 ? _pipeline.Resolve(tower, _socketModScratch)
                 : AttackSpec.FromBase(def.Damage, 1, def.SplashRadius);
             var dmg = spec.Damage * tower.OutgoingDamageMultiplier;
-            var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
             var interval = def.AttackInterval / fireRate;
             var attackRate = interval > 0.01f ? 1f / interval : 0f;
@@ -160,7 +160,7 @@ namespace GemTD.Gameplay
                 sb.Append($" ×{spec.ProjectileCount}");
             sb.Append('\n');
             sb.Append($"Attack rate {attackRate:0.##}/s\n");
-            sb.Append($"Attack range {def.Range * rangeMul:0.#}\n");
+            sb.Append($"Attack range {EffectiveAttackRange(tower):0.#}\n");
             sb.Append($"Tags {AttackTags.Format(tags)}");
 
             var lockLeft = SelectedSocketLockRemaining;
@@ -347,14 +347,26 @@ namespace GemTD.Gameplay
             var go = new GameObject("PlacementGhost");
             go.transform.SetParent(transform, false);
             _placementGhost = go.AddComponent<PlacementGhostView>();
-            _placementGhost.EnsureBuilt(towerPrefab);
+            _placementGhost.EnsureBuilt(towerPrefab, towerRangeIndicatorPrefab);
             _placementGhost.Hide();
         }
 
-        /// <summary>Bloons-style ghost: snap to hovered tile while a build type is armed.</summary>
+        float EffectiveAttackRange(TowerRuntime tower)
+        {
+            if (tower == null || tower.Def == null)
+                return 0f;
+
+            var spec = _pipeline != null
+                ? _pipeline.Resolve(tower, _socketModScratch)
+                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.SplashRadius);
+            var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
+            return tower.Def.Range * rangeMul;
+        }
+
+        /// <summary>Bloons-style ghost while placing, plus range indicator when Tower Details is open.</summary>
         public void TickPlacementGhost()
         {
-            if (!HasPlaceTowerSelected || chunkBoardView == null || Placement == null || States == null)
+            if (chunkBoardView == null || States == null)
             {
                 _placementGhost?.Hide();
                 return;
@@ -367,34 +379,48 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            if (Mouse.current == null)
+            if (HasPlaceTowerSelected && Placement != null)
             {
-                _placementGhost?.Hide();
+                if (Mouse.current == null)
+                {
+                    _placementGhost?.Hide();
+                    return;
+                }
+
+                var cam = Camera.main;
+                if (cam == null)
+                {
+                    _placementGhost?.Hide();
+                    return;
+                }
+
+                EnsurePlacementGhost();
+                var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
+                var plane = new Plane(Vector3.up, Vector3.zero);
+                if (!plane.Raycast(ray, out var enter))
+                {
+                    _placementGhost.Hide();
+                    return;
+                }
+
+                var world = ray.GetPoint(enter);
+                var cell = chunkBoardView.WorldToCell(world);
+                var valid = Placement.CanPlace(_placeDef, cell, phase, ComputePlaceCost(_placeDef));
+                var range = _placeDef != null ? _placeDef.Range : 3f;
+                _placementGhost.SetRange(range);
+                _placementGhost.ShowAt(chunkBoardView.CellToWorld(cell), valid);
                 return;
             }
 
-            var cam = Camera.main;
-            if (cam == null)
+            if (HasSelectedTower && Placement.Selected != null)
             {
-                _placementGhost?.Hide();
+                EnsurePlacementGhost();
+                _placementGhost.SetRange(EffectiveAttackRange(Placement.Selected));
+                _placementGhost.ShowRangeOnlyAt(chunkBoardView.CellToWorld(Placement.Selected.Cell));
                 return;
             }
 
-            EnsurePlacementGhost();
-            var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
-            var plane = new Plane(Vector3.up, Vector3.zero);
-            if (!plane.Raycast(ray, out var enter))
-            {
-                _placementGhost.Hide();
-                return;
-            }
-
-            var world = ray.GetPoint(enter);
-            var cell = chunkBoardView.WorldToCell(world);
-            var valid = Placement.CanPlace(_placeDef, cell, phase, ComputePlaceCost(_placeDef));
-            var range = _placeDef != null ? _placeDef.Range : 3f;
-            _placementGhost.SetRange(range);
-            _placementGhost.ShowAt(chunkBoardView.CellToWorld(cell), valid);
+            _placementGhost?.Hide();
         }
 
         void BootstrapServices()
