@@ -3,26 +3,13 @@ using NUnit.Framework;
 using UnityEngine;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.Tests.EditMode
 {
     public sealed class DraftServiceTests
     {
-        readonly List<GemDefinition> _pool = new List<GemDefinition>(6);
-        readonly List<Object> _destroy = new List<Object>(8);
-
-        [SetUp]
-        public void SetUp()
-        {
-            _pool.Clear();
-            _destroy.Clear();
-            _pool.Add(MakeGem(GemId.MultipleProjectiles, "MP"));
-            _pool.Add(MakeGem(GemId.Chain, "Chain"));
-            _pool.Add(MakeGem(GemId.FasterAttacks, "Faster"));
-            _pool.Add(MakeGem(GemId.Pierce, "Pierce"));
-            _pool.Add(MakeGem(GemId.SlowerProjectiles, "Slower"));
-            _pool.Add(MakeGem(GemId.Fork, "Fork"));
-        }
+        readonly List<Object> _destroy = new List<Object>(16);
 
         [TearDown]
         public void TearDown()
@@ -36,26 +23,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void BeginOffer_ProducesThreeUniqueGems()
+        public void BeginOffer_FourTowers_FourUnique()
         {
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(_pool, allowSkip: true);
+            draft.BeginOffer(MakeFourTowerCatalog(6), allowSkip: true);
 
-            Assert.AreEqual(3, draft.CurrentOffer.Count);
+            Assert.AreEqual(4, draft.CurrentOffer.Count);
             Assert.IsTrue(draft.IsActive);
-            Assert.AreNotSame(draft.CurrentOffer[0], draft.CurrentOffer[1]);
-            Assert.AreNotSame(draft.CurrentOffer[1], draft.CurrentOffer[2]);
-            Assert.AreNotSame(draft.CurrentOffer[0], draft.CurrentOffer[2]);
-            Assert.AreNotEqual(draft.CurrentOffer[0].Id, draft.CurrentOffer[1].Id);
-            Assert.AreNotEqual(draft.CurrentOffer[1].Id, draft.CurrentOffer[2].Id);
-            Assert.AreNotEqual(draft.CurrentOffer[0].Id, draft.CurrentOffer[2].Id);
+            for (var i = 0; i < 4; i++)
+            {
+                Assert.IsTrue(draft.CurrentOffer[i].IsTower);
+                for (var j = i + 1; j < 4; j++)
+                    Assert.AreNotSame(draft.CurrentOffer[i].Tower, draft.CurrentOffer[j].Tower);
+            }
         }
 
         [Test]
         public void TrySkip_Starter_Rejected()
         {
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(_pool, allowSkip: false);
+            draft.BeginOffer(MakeFourTowerCatalog(4), allowSkip: false);
             var economy = new RunEconomy(0, 20);
 
             Assert.IsFalse(draft.TrySkip(economy, 75, out _));
@@ -64,10 +51,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TrySkip_MidRun_Grants75AndResolves()
+        public void TrySkip_MidRun_GrantsGoldAndResolves()
         {
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(_pool, allowSkip: true);
+            draft.BeginOffer(MakeFourTowerCatalog(4), allowSkip: true);
             var economy = new RunEconomy(0, 20);
 
             Assert.IsTrue(draft.TrySkip(economy, 75, out var resolved));
@@ -77,34 +64,86 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TryPick_WhenFull_EntersReplaceConfirm_NoMeansStay()
+        public void TryPick_Tower_ResolvesWithoutInventory()
         {
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(_pool, allowSkip: true);
-            var inventory = FillInventory(10);
-            var first = draft.CurrentOffer[0];
+            draft.BeginOffer(MakeFourTowerCatalog(4), allowSkip: false);
+            var inventory = new GemInventory(10);
 
+            var picked = draft.CurrentOffer[0].Tower;
             Assert.IsTrue(draft.TryPick(0, inventory, out var resolved));
+            Assert.IsTrue(resolved);
+            Assert.IsFalse(draft.IsActive);
+            Assert.AreEqual(0, inventory.OccupiedCount);
+            Assert.AreEqual(1, draft.Roster.Count);
+            Assert.IsTrue(draft.Roster.Contains(picked));
+            Assert.AreEqual(0, draft.Roster.GetLevelIndex(picked));
+        }
+
+        [Test]
+        public void TryPick_SameTowerTwice_IncrementsRosterLevel()
+        {
+            var catalog = MakeFourTowerCatalog(1);
+            var only = catalog.TowerPool.Towers[0];
+            var draft = new DraftService(new System.Random(1));
+            var inventory = new GemInventory(10);
+
+            draft.BeginOffer(catalog, allowSkip: true);
+            Assert.IsTrue(draft.TryPick(0, inventory, out _));
+
+            draft.BeginOffer(catalog, allowSkip: true);
+            Assert.IsTrue(draft.TryPick(0, inventory, out var resolved));
+            Assert.IsTrue(resolved);
+            Assert.AreEqual(1, draft.Roster.Count);
+            Assert.AreEqual(1, draft.Roster.GetLevelIndex(only));
+        }
+
+        [Test]
+        public void TryPick_Gem_WhenFull_EntersReplaceConfirm_NoMeansStay()
+        {
+            var draft = new DraftService(new System.Random(1));
+            draft.BeginOffer(MakeCampaignCatalog(5, 3), allowSkip: true);
+            var inventory = FillInventory(10);
+            var gemIndex = FirstGemIndex(draft);
+            var first = draft.CurrentOffer[gemIndex];
+
+            Assert.IsTrue(draft.TryPick(gemIndex, inventory, out var resolved));
             Assert.IsFalse(resolved);
             Assert.AreEqual(DraftReplacePhase.AwaitingConfirm, draft.ReplacePhase);
-            Assert.AreSame(first, draft.PendingReplaceGem);
+            Assert.AreSame(first.Gem, draft.PendingReplaceGem);
 
             draft.ConfirmReplaceNo();
             Assert.AreEqual(DraftReplacePhase.None, draft.ReplacePhase);
             Assert.IsNull(draft.PendingReplaceGem);
             Assert.IsTrue(draft.IsActive);
-            Assert.AreEqual(3, draft.CurrentOffer.Count);
+            Assert.AreEqual(4, draft.CurrentOffer.Count);
         }
 
         [Test]
-        public void TryPick_Full_Yes_ThenDiscardSlot_AddsAndResolves()
+        public void TryPick_Gem_WithFreeSlot_AddsAndResolves()
+        {
+            var draft = new DraftService(new System.Random(3));
+            draft.BeginOffer(MakeCampaignCatalog(5, 3), allowSkip: false);
+            var inventory = new GemInventory(10);
+            var gemIndex = FirstGemIndex(draft);
+            var picked = draft.CurrentOffer[gemIndex];
+
+            Assert.IsTrue(draft.TryPick(gemIndex, inventory, out var resolved));
+            Assert.IsTrue(resolved);
+            Assert.AreSame(picked.Gem, inventory.Slots[0]);
+            Assert.IsFalse(draft.IsActive);
+        }
+
+        [Test]
+        public void TryPick_FullGem_YesThenDiscardSlot_AddsAndResolves()
         {
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(_pool, allowSkip: true);
+            draft.BeginOffer(MakeCampaignCatalog(5, 3), allowSkip: true);
             var inventory = FillInventory(10);
-            var picked = draft.CurrentOffer[1];
+            var gemIndex = FirstGemIndex(draft);
+            var picked = draft.CurrentOffer[gemIndex];
 
-            Assert.IsTrue(draft.TryPick(1, inventory, out _));
+            Assert.IsTrue(draft.TryPick(gemIndex, inventory, out _));
             draft.ConfirmReplaceYes();
             Assert.AreEqual(DraftReplacePhase.AwaitingInventoryPick, draft.ReplacePhase);
 
@@ -115,7 +154,7 @@ namespace GemTD.Tests.EditMode
             var found = false;
             for (var i = 0; i < inventory.Slots.Count; i++)
             {
-                if (ReferenceEquals(inventory.Slots[i], picked))
+                if (ReferenceEquals(inventory.Slots[i], picked.Gem))
                     found = true;
             }
 
@@ -123,97 +162,152 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void CancelReplace_AfterYes_DoesNotTakeCard()
-        {
-            var draft = new DraftService(new System.Random(2));
-            draft.BeginOffer(_pool, allowSkip: true);
-            var inventory = FillInventory(10);
-            var beforeOccupied = inventory.OccupiedCount;
-
-            Assert.IsTrue(draft.TryPick(0, inventory, out _));
-            draft.ConfirmReplaceYes();
-            draft.CancelReplace();
-
-            Assert.AreEqual(DraftReplacePhase.None, draft.ReplacePhase);
-            Assert.IsNull(draft.PendingReplaceGem);
-            Assert.IsTrue(draft.IsActive);
-            Assert.AreEqual(3, draft.CurrentOffer.Count);
-            Assert.AreEqual(beforeOccupied, inventory.OccupiedCount);
-        }
-
-        [Test]
-        public void TryPick_WithFreeSlot_AddsAndResolves()
-        {
-            var draft = new DraftService(new System.Random(3));
-            draft.BeginOffer(_pool, allowSkip: false);
-            var inventory = new GemInventory(10);
-            var picked = draft.CurrentOffer[0];
-
-            Assert.IsTrue(draft.TryPick(0, inventory, out var resolved));
-            Assert.IsTrue(resolved);
-            Assert.AreSame(picked, inventory.Slots[0]);
-            Assert.IsFalse(draft.IsActive);
-        }
-
-        GemDefinition MakeGem(GemId id, string name)
-        {
-            var gem = ScriptableObject.CreateInstance<GemDefinition>();
-            gem.Id = id;
-            gem.DisplayName = name;
-            _destroy.Add(gem);
-            return gem;
-        }
-
-        GemDefinition MakeGem(GemId id, string name, float weight)
-        {
-            var gem = MakeGem(id, name);
-            gem.DraftWeight = weight;
-            return gem;
-        }
-
-        [Test]
-        public void BeginOffer_StillThreeUnique_WithWeights()
+        public void TryReroll_PaysDoublingCost_ExcludesPriorOffer()
         {
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(_pool, allowSkip: true);
-            Assert.AreEqual(3, draft.CurrentOffer.Count);
-            Assert.AreNotEqual(draft.CurrentOffer[0].Id, draft.CurrentOffer[1].Id);
-            Assert.AreNotEqual(draft.CurrentOffer[1].Id, draft.CurrentOffer[2].Id);
-            Assert.AreNotEqual(draft.CurrentOffer[0].Id, draft.CurrentOffer[2].Id);
+            draft.BeginOffer(MakeFourTowerCatalog(8), allowSkip: true);
+            var first = new TowerDefinition[draft.CurrentOffer.Count];
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+                first[i] = draft.CurrentOffer[i].Tower;
+
+            var economy = new RunEconomy(200, 20);
+            Assert.AreEqual(50, draft.NextRerollCost);
+            Assert.IsTrue(draft.TryReroll(economy));
+            Assert.AreEqual(150, economy.Gold);
+            Assert.AreEqual(100, draft.NextRerollCost);
+            Assert.IsTrue(draft.IsActive);
+
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+            {
+                for (var j = 0; j < first.Length; j++)
+                    Assert.AreNotSame(draft.CurrentOffer[i].Tower, first[j]);
+            }
+
+            Assert.IsTrue(draft.TryReroll(economy));
+            Assert.AreEqual(50, economy.Gold);
+            Assert.AreEqual(200, draft.NextRerollCost);
         }
 
         [Test]
-        public void BeginOffer_RespectsWeights_BiasesHydraTrio()
+        public void TryBan_EmptiesSlot_DoesNotResetCostOnNextOffer()
         {
-            var weighted = new List<GemDefinition>(6);
-            weighted.Add(MakeGem(GemId.MultipleProjectiles, "MP", 100f));
-            weighted.Add(MakeGem(GemId.Chain, "Chain", 100f));
-            weighted.Add(MakeGem(GemId.Fork, "Fork", 100f));
-            weighted.Add(MakeGem(GemId.IncreasedArea, "Area", 1f));
-            weighted.Add(MakeGem(GemId.Pierce, "Pierce", 1f));
-            weighted.Add(MakeGem(GemId.ElementalProliferation, "Prolif", 1f));
+            var draft = new DraftService(new System.Random(1));
+            draft.BeginOffer(MakeFourTowerCatalog(6), allowSkip: false);
+            Assert.IsTrue(draft.TrySelect(0));
+            var banned = draft.CurrentOffer[0].Tower;
+            var economy = new RunEconomy(1000, 20);
 
-            var lmpHits = 0;
-            var chainHits = 0;
-            var forkHits = 0;
-            const int trials = 200;
-            for (var t = 0; t < trials; t++)
+            Assert.AreEqual(250, draft.NextBanCost);
+            Assert.IsTrue(draft.TryBan(economy));
+            Assert.AreEqual(750, economy.Gold);
+            Assert.AreEqual(500, draft.NextBanCost);
+            Assert.IsFalse(draft.CurrentOffer[0].IsFilled);
+            Assert.AreEqual(3, draft.FilledCardCount);
+
+            draft.BeginOffer(MakeFourTowerCatalog(6), allowSkip: true);
+            Assert.AreEqual(500, draft.NextBanCost);
+            Assert.AreEqual(50, draft.NextRerollCost);
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+                Assert.AreNotSame(draft.CurrentOffer[i].Tower, banned);
+        }
+
+        [Test]
+        public void TryBan_StarterLastCard_BlockedWhenRerollUnaffordable()
+        {
+            var draft = new DraftService(new System.Random(2));
+            draft.BeginOffer(MakeFourTowerCatalog(4), allowSkip: false);
+            var economy = new RunEconomy(1500, 20);
+
+            for (var n = 0; n < 3; n++)
             {
-                var draft = new DraftService(new System.Random(t + 1));
-                draft.BeginOffer(weighted, allowSkip: true);
-                for (var i = 0; i < draft.CurrentOffer.Count; i++)
-                {
-                    var id = draft.CurrentOffer[i].Id;
-                    if (id == GemId.MultipleProjectiles) lmpHits++;
-                    else if (id == GemId.Chain) chainHits++;
-                    else if (id == GemId.Fork) forkHits++;
-                }
+                var idx = FirstFilledIndex(draft);
+                Assert.IsTrue(draft.TrySelect(idx));
+                Assert.IsTrue(draft.TryBan(economy));
             }
 
-            // With weight 100 vs 1, each trio Id should appear in well over 40% of offers.
-            Assert.Greater(lmpHits, trials * 0.4f);
-            Assert.Greater(chainHits, trials * 0.4f);
-            Assert.Greater(forkHits, trials * 0.4f);
+            Assert.AreEqual(1, draft.FilledCardCount);
+            Assert.AreEqual(0, economy.Gold);
+            var last = FirstFilledIndex(draft);
+            Assert.IsTrue(draft.TrySelect(last));
+            Assert.IsFalse(draft.CanBan(economy));
+            Assert.IsFalse(draft.TryBan(economy));
+        }
+
+        static int FirstFilledIndex(DraftService draft)
+        {
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+            {
+                if (draft.CurrentOffer[i].IsFilled)
+                    return i;
+            }
+
+            Assert.Fail("offer had no filled card");
+            return -1;
+        }
+
+        static int FirstGemIndex(DraftService draft)
+        {
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+            {
+                if (draft.CurrentOffer[i].IsGem)
+                    return i;
+            }
+
+            Assert.Fail("campaign offer had no gem");
+            return -1;
+        }
+
+        DraftCatalog MakeFourTowerCatalog(int towers)
+        {
+            var catalog = ScriptableObject.CreateInstance<DraftCatalog>();
+            _destroy.Add(catalog);
+            catalog.Mix = DraftMixKind.FourTowers;
+            catalog.TowerPool = MakeTowerPool(towers);
+            return catalog;
+        }
+
+        DraftCatalog MakeCampaignCatalog(int gems, int towers)
+        {
+            var catalog = ScriptableObject.CreateInstance<DraftCatalog>();
+            _destroy.Add(catalog);
+            catalog.Mix = DraftMixKind.TwoGemsOneTowerContested;
+            catalog.GemPool = MakeGemPool(gems);
+            catalog.TowerPool = MakeTowerPool(towers);
+            return catalog;
+        }
+
+        DraftPoolCatalog MakeGemPool(int n)
+        {
+            var pool = ScriptableObject.CreateInstance<DraftPoolCatalog>();
+            _destroy.Add(pool);
+            pool.Gems = new GemDefinition[n];
+            for (var i = 0; i < n; i++)
+            {
+                var gem = ScriptableObject.CreateInstance<GemDefinition>();
+                gem.Id = (GemId)(i + 1);
+                gem.DisplayName = "G" + i;
+                gem.DraftWeight = 1f;
+                _destroy.Add(gem);
+                pool.Gems[i] = gem;
+            }
+
+            return pool;
+        }
+
+        TowerCatalog MakeTowerPool(int n)
+        {
+            var pool = ScriptableObject.CreateInstance<TowerCatalog>();
+            _destroy.Add(pool);
+            pool.Towers = new TowerDefinition[n];
+            for (var i = 0; i < n; i++)
+            {
+                var tower = ScriptableObject.CreateInstance<TowerDefinition>();
+                tower.DisplayName = "T" + i;
+                _destroy.Add(tower);
+                pool.Towers[i] = tower;
+            }
+
+            return pool;
         }
 
         GemInventory FillInventory(int capacity)
@@ -221,7 +315,10 @@ namespace GemTD.Tests.EditMode
             var inventory = new GemInventory(capacity);
             for (var i = 0; i < capacity; i++)
             {
-                var filler = MakeGem(GemId.MultipleProjectiles, "Fill" + i);
+                var filler = ScriptableObject.CreateInstance<GemDefinition>();
+                filler.Id = GemId.MultipleProjectiles;
+                filler.DisplayName = "Fill" + i;
+                _destroy.Add(filler);
                 Assert.IsTrue(inventory.TryAdd(filler));
             }
 

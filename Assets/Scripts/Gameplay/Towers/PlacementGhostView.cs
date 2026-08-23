@@ -15,7 +15,7 @@ namespace GemTD.Gameplay.Towers
 
         /// <summary>
         /// Sit above greybox tile tops so a flat fallback disc is not z-fought / buried.
-        /// Authored cylinder is lifted by half-height so its bottom sits on that plane.
+        /// Authored cylinder is centered at Y = prefab height (1) so its bottom sits on the cell plane.
         /// </summary>
         const float RangeDiscY = 0.45f;
 
@@ -139,10 +139,9 @@ namespace GemTD.Gameplay.Towers
 
         Vector3 RangeLocalPosition()
         {
-            var y = RangeDiscY;
             if (_rangeUsesAuthoredMaterial)
-                y += _rangeHeightScale;
-            return new Vector3(0f, y, 0f);
+                return new Vector3(0f, _rangeHeightScale, 0f);
+            return new Vector3(0f, RangeDiscY, 0f);
         }
 
         public void ShowAt(Vector3 cellWorldCenter, bool valid)

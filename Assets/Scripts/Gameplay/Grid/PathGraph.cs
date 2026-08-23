@@ -5,6 +5,7 @@ namespace GemTD.Gameplay.Grid
 {
     /// <summary>
     /// Path tiles with a fixed home base. Enemies spawn at tips and march toward home.
+    /// Search buffers are reused; visit generation avoids clearing the full board each BFS.
     /// </summary>
     public sealed class PathGraph
     {
@@ -13,13 +14,27 @@ namespace GemTD.Gameplay.Grid
         public Vector2Int Home { get; private set; }
 
         readonly bool[] _path;
+        readonly List<int> _pathIndices = new List<int>(256);
+        readonly int[] _seen;
+        readonly int[] _hop;
+        readonly int[] _parent;
+        readonly int[] _qx;
+        readonly int[] _qy;
+        readonly List<Vector2Int> _chainScratch = new List<Vector2Int>(64);
+        int _searchGen;
         GridBoard _board;
 
         public PathGraph(int width, int height)
         {
             Width = width > 0 ? width : 1;
             Height = height > 0 ? height : 1;
-            _path = new bool[Width * Height];
+            var n = Width * Height;
+            _path = new bool[n];
+            _seen = new int[n];
+            _hop = new int[n];
+            _parent = new int[n];
+            _qx = new int[n];
+            _qy = new int[n];
             Home = new Vector2Int(0, 0);
         }
 
@@ -32,24 +47,30 @@ namespace GemTD.Gameplay.Grid
         public void SetPathTile(int x, int y, bool isPath)
         {
             if (!InBounds(x, y)) return;
-            _path[Index(x, y)] = isPath;
+            var i = Index(x, y);
+            if (_path[i] != isPath)
+            {
+                _path[i] = isPath;
+                if (isPath)
+                    _pathIndices.Add(i);
+                else
+                    RemovePathIndex(i);
+            }
             _board?.SetBuildable(x, y, !isPath);
         }
 
         public int CollectSpawnTips(List<Vector2Int> into)
         {
             into.Clear();
-            for (var y = 0; y < Height; y++)
+            for (var n = 0; n < _pathIndices.Count; n++)
             {
-                for (var x = 0; x < Width; x++)
-                {
-                    if (!IsPath(x, y))
-                        continue;
-                    if (x == Home.x && y == Home.y)
-                        continue;
-                    if (PathNeighborCount(x, y) == 1)
-                        into.Add(new Vector2Int(x, y));
-                }
+                var i = _pathIndices[n];
+                var x = i % Width;
+                var y = i / Width;
+                if (x == Home.x && y == Home.y)
+                    continue;
+                if (PathNeighborCount(x, y) == 1)
+                    into.Add(new Vector2Int(x, y));
             }
 
             return into.Count;
@@ -60,17 +81,24 @@ namespace GemTD.Gameplay.Grid
             if (!IsPath(Home.x, Home.y))
                 return false;
 
-            var tips = new List<Vector2Int>(8);
-            if (CollectSpawnTips(tips) == 0)
-                return false;
+            FloodFrom(Home.x, Home.y, writeParent: false, writeHop: false);
 
-            for (var i = 0; i < tips.Count; i++)
+            var tipCount = 0;
+            for (var n = 0; n < _pathIndices.Count; n++)
             {
-                if (!HasPathBetween(tips[i], Home))
+                var i = _pathIndices[n];
+                var x = i % Width;
+                var y = i / Width;
+                if (x == Home.x && y == Home.y)
+                    continue;
+                if (PathNeighborCount(x, y) != 1)
+                    continue;
+                tipCount++;
+                if (_seen[i] != _searchGen)
                     return false;
             }
 
-            return true;
+            return tipCount > 0;
         }
 
         public bool TryGetWaypointPolyline(Vector2Int tip, List<Vector2Int> into)
@@ -78,53 +106,27 @@ namespace GemTD.Gameplay.Grid
             into.Clear();
             if (!IsPath(tip.x, tip.y) || !IsPath(Home.x, Home.y))
                 return false;
-            if (!HasPathBetween(tip, Home))
+
+            FloodFrom(tip.x, tip.y, writeParent: true, writeHop: false);
+            if (_seen[Index(Home.x, Home.y)] != _searchGen)
                 return false;
 
-            var parent = new int[Width * Height];
-            for (var i = 0; i < parent.Length; i++)
-                parent[i] = -1;
-
-            var visited = new bool[Width * Height];
-            var qx = new int[Width * Height];
-            var qy = new int[Width * Height];
-            var head = 0;
-            var tail = 0;
-            qx[tail] = tip.x;
-            qy[tail] = tip.y;
-            tail++;
-            visited[Index(tip.x, tip.y)] = true;
-
-            while (head < tail)
-            {
-                var x = qx[head];
-                var y = qy[head];
-                head++;
-                if (x == Home.x && y == Home.y)
-                    break;
-
-                TryEnqueueParent(x + 1, y, x, y, visited, parent, qx, qy, ref tail);
-                TryEnqueueParent(x - 1, y, x, y, visited, parent, qx, qy, ref tail);
-                TryEnqueueParent(x, y + 1, x, y, visited, parent, qx, qy, ref tail);
-                TryEnqueueParent(x, y - 1, x, y, visited, parent, qx, qy, ref tail);
-            }
-
-            var chain = new List<Vector2Int>(Width);
+            _chainScratch.Clear();
             var cx = Home.x;
             var cy = Home.y;
             while (!(cx == tip.x && cy == tip.y))
             {
-                chain.Add(new Vector2Int(cx, cy));
-                var p = parent[Index(cx, cy)];
+                _chainScratch.Add(new Vector2Int(cx, cy));
+                var p = _parent[Index(cx, cy)];
                 if (p < 0)
                     return false;
                 cx = p % Width;
                 cy = p / Width;
             }
 
-            chain.Add(tip);
-            for (var i = chain.Count - 1; i >= 0; i--)
-                into.Add(chain[i]);
+            _chainScratch.Add(tip);
+            for (var i = _chainScratch.Count - 1; i >= 0; i--)
+                into.Add(_chainScratch[i]);
             return true;
         }
 
@@ -134,8 +136,8 @@ namespace GemTD.Gameplay.Grid
             if (!InBounds(tip.x, tip.y))
                 return -1;
 
-            var dist = ComputeHopDistancesFromHome();
-            return dist[Index(tip.x, tip.y)];
+            ComputeHopDistancesFromHome();
+            return HopAt(Index(tip.x, tip.y));
         }
 
         /// <summary>
@@ -149,63 +151,48 @@ namespace GemTD.Gameplay.Grid
             if (tips == null || tips.Count == 0)
                 return;
 
-            var dist = ComputeHopDistancesFromHome();
+            ComputeHopDistancesFromHome();
             rankedInto.AddRange(tips);
-            rankedInto.Sort((a, b) =>
-            {
-                var ha = dist[Index(a.x, a.y)];
-                var hb = dist[Index(b.x, b.y)];
-                if (ha != hb)
-                    return hb.CompareTo(ha);
-                if (a.x != b.x)
-                    return b.x.CompareTo(a.x);
-                return b.y.CompareTo(a.y);
-            });
+            InsertionSortHopDescending(rankedInto);
         }
 
-        int[] ComputeHopDistancesFromHome()
+        void ComputeHopDistancesFromHome()
         {
-            var dist = new int[Width * Height];
-            for (var i = 0; i < dist.Length; i++)
-                dist[i] = -1;
-
             if (!IsPath(Home.x, Home.y))
-                return dist;
-
-            var qx = new int[Width * Height];
-            var qy = new int[Width * Height];
-            var head = 0;
-            var tail = 0;
-            qx[tail] = Home.x;
-            qy[tail] = Home.y;
-            tail++;
-            dist[Index(Home.x, Home.y)] = 0;
-
-            while (head < tail)
             {
-                var x = qx[head];
-                var y = qy[head];
-                var d = dist[Index(x, y)];
-                head++;
-
-                TryEnqueueHop(x + 1, y, d, dist, qx, qy, ref tail);
-                TryEnqueueHop(x - 1, y, d, dist, qx, qy, ref tail);
-                TryEnqueueHop(x, y + 1, d, dist, qx, qy, ref tail);
-                TryEnqueueHop(x, y - 1, d, dist, qx, qy, ref tail);
+                BeginSearch();
+                return;
             }
 
-            return dist;
+            FloodFrom(Home.x, Home.y, writeParent: false, writeHop: true);
         }
 
-        void TryEnqueueHop(int x, int y, int parentDist, int[] dist, int[] qx, int[] qy, ref int tail)
+        int HopAt(int i) => _seen[i] == _searchGen ? _hop[i] : -1;
+
+        void InsertionSortHopDescending(List<Vector2Int> ranked)
         {
-            if (!InBounds(x, y) || !IsPath(x, y)) return;
-            var i = Index(x, y);
-            if (dist[i] >= 0) return;
-            dist[i] = parentDist + 1;
-            qx[tail] = x;
-            qy[tail] = y;
-            tail++;
+            for (var i = 1; i < ranked.Count; i++)
+            {
+                var key = ranked[i];
+                var j = i - 1;
+                while (j >= 0 && CompareTip(ranked[j], key) > 0)
+                {
+                    ranked[j + 1] = ranked[j];
+                    j--;
+                }
+                ranked[j + 1] = key;
+            }
+        }
+
+        int CompareTip(Vector2Int a, Vector2Int b)
+        {
+            var ha = HopAt(Index(a.x, a.y));
+            var hb = HopAt(Index(b.x, b.y));
+            if (ha != hb)
+                return hb.CompareTo(ha);
+            if (a.x != b.x)
+                return b.x.CompareTo(a.x);
+            return b.y.CompareTo(a.y);
         }
 
         public bool HasPathBetween(Vector2Int from, Vector2Int to)
@@ -213,31 +200,77 @@ namespace GemTD.Gameplay.Grid
             if (!IsPath(from.x, from.y) || !IsPath(to.x, to.y))
                 return false;
 
-            var visited = new bool[Width * Height];
-            var qx = new int[Width * Height];
-            var qy = new int[Width * Height];
+            FloodFrom(from.x, from.y, writeParent: false, writeHop: false);
+            return _seen[Index(to.x, to.y)] == _searchGen;
+        }
+
+        void FloodFrom(int sx, int sy, bool writeParent, bool writeHop)
+        {
+            BeginSearch();
             var head = 0;
             var tail = 0;
-            qx[tail] = from.x;
-            qy[tail] = from.y;
+            var start = Index(sx, sy);
+            _qx[tail] = sx;
+            _qy[tail] = sy;
             tail++;
-            visited[Index(from.x, from.y)] = true;
+            _seen[start] = _searchGen;
+            if (writeParent)
+                _parent[start] = -1;
+            if (writeHop)
+                _hop[start] = 0;
 
             while (head < tail)
             {
-                var x = qx[head];
-                var y = qy[head];
+                var x = _qx[head];
+                var y = _qy[head];
                 head++;
-                if (x == to.x && y == to.y)
-                    return true;
+                var from = Index(x, y);
+                var d = writeHop ? _hop[from] : 0;
 
-                TryEnqueue(x + 1, y, visited, qx, qy, ref tail);
-                TryEnqueue(x - 1, y, visited, qx, qy, ref tail);
-                TryEnqueue(x, y + 1, visited, qx, qy, ref tail);
-                TryEnqueue(x, y - 1, visited, qx, qy, ref tail);
+                TryEnqueueFlood(x + 1, y, from, d, writeParent, writeHop, ref tail);
+                TryEnqueueFlood(x - 1, y, from, d, writeParent, writeHop, ref tail);
+                TryEnqueueFlood(x, y + 1, from, d, writeParent, writeHop, ref tail);
+                TryEnqueueFlood(x, y - 1, from, d, writeParent, writeHop, ref tail);
             }
+        }
 
-            return false;
+        void TryEnqueueFlood(int x, int y, int parentIndex, int parentHop, bool writeParent, bool writeHop, ref int tail)
+        {
+            if (!InBounds(x, y) || !IsPath(x, y)) return;
+            var i = Index(x, y);
+            if (_seen[i] == _searchGen) return;
+            _seen[i] = _searchGen;
+            if (writeParent)
+                _parent[i] = parentIndex;
+            if (writeHop)
+                _hop[i] = parentHop + 1;
+            _qx[tail] = x;
+            _qy[tail] = y;
+            tail++;
+        }
+
+        void BeginSearch()
+        {
+            _searchGen++;
+            if (_searchGen != int.MaxValue)
+                return;
+
+            for (var i = 0; i < _seen.Length; i++)
+                _seen[i] = 0;
+            _searchGen = 1;
+        }
+
+        void RemovePathIndex(int index)
+        {
+            for (var n = 0; n < _pathIndices.Count; n++)
+            {
+                if (_pathIndices[n] != index)
+                    continue;
+                var last = _pathIndices.Count - 1;
+                _pathIndices[n] = _pathIndices[last];
+                _pathIndices.RemoveAt(last);
+                return;
+            }
         }
 
         int PathNeighborCount(int x, int y)
@@ -248,29 +281,6 @@ namespace GemTD.Gameplay.Grid
             if (IsPath(x, y + 1)) n++;
             if (IsPath(x, y - 1)) n++;
             return n;
-        }
-
-        void TryEnqueue(int x, int y, bool[] visited, int[] qx, int[] qy, ref int tail)
-        {
-            if (!InBounds(x, y) || !IsPath(x, y)) return;
-            var i = Index(x, y);
-            if (visited[i]) return;
-            visited[i] = true;
-            qx[tail] = x;
-            qy[tail] = y;
-            tail++;
-        }
-
-        void TryEnqueueParent(int x, int y, int px, int py, bool[] visited, int[] parent, int[] qx, int[] qy, ref int tail)
-        {
-            if (!InBounds(x, y) || !IsPath(x, y)) return;
-            var i = Index(x, y);
-            if (visited[i]) return;
-            visited[i] = true;
-            parent[i] = Index(px, py);
-            qx[tail] = x;
-            qy[tail] = y;
-            tail++;
         }
 
         bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;

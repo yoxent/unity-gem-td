@@ -76,6 +76,7 @@ namespace GemTD.Gameplay.Combat
                 if (enemy == null || !enemy.IsAlive || !_byEnemy.TryGetValue(enemy, out var list))
                     continue;
 
+                enemy.MoveSpeedMultiplier = 1f;
                 var chillMagnitude = -1f;
 
                 for (var i = list.Count - 1; i >= 0; i--)
@@ -92,9 +93,6 @@ namespace GemTD.Gameplay.Combat
                             enemy.ApplyDamage(damage);
                     }
 
-                    if (entry.Id == StatusId.Chill)
-                        chillMagnitude = entry.Magnitude;
-
                     if (dt > 0f)
                     {
                         entry.Duration -= dt;
@@ -106,6 +104,9 @@ namespace GemTD.Gameplay.Combat
 
                         list[i] = entry;
                     }
+
+                    if (entry.Id == StatusId.Chill)
+                        chillMagnitude = entry.Magnitude;
                 }
 
                 if (chillMagnitude >= 0f)

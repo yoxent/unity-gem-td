@@ -7,7 +7,8 @@ namespace GemTD.Tests.EditMode
 {
     public sealed class EvolutionEvaluatorTests
     {
-        TowerDefinition _ballista;
+        TowerDefinition _hydraTower;
+        AttackRoleDefinition _attackRole;
         GemDefinition _lmp;
         GemDefinition _chain;
         GemDefinition _fork;
@@ -15,14 +16,13 @@ namespace GemTD.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
-            _ballista.DisplayName = "Ballista";
-            _ballista.Kind = TowerKind.Projectile;
-            _ballista.AllowsHydraEvolution = true;
-            _ballista.SocketCount = 3;
-            _ballista.Damage = 10f;
-            _ballista.Range = 20f;
-            _ballista.AttackInterval = 1f;
+            _hydraTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _hydraTower.DisplayName = "Hydra Test Tower";
+            _attackRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _hydraTower.Roles = new TowerRoleDefinition[] { _attackRole };
+            _hydraTower.AllowsHydraEvolution = true;
+            _hydraTower.SocketCount = 3;
+            _hydraTower.Damage = 10f;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
             _lmp.Id = GemId.MultipleProjectiles;
@@ -37,7 +37,8 @@ namespace GemTD.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
-            Object.DestroyImmediate(_ballista);
+            Object.DestroyImmediate(_hydraTower);
+            Object.DestroyImmediate(_attackRole);
             Object.DestroyImmediate(_lmp);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_fork);
@@ -54,27 +55,25 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void IsHydra_WhenBallistaHasLmpChainFork()
+        public void IsHydra_AlwaysFalse_ThisPass()
         {
-            var tower = MakeBallistaWith(_lmp, _chain, _fork);
-            Assert.IsTrue(EvolutionEvaluator.IsHydraBallista(tower));
-            Assert.IsFalse(tower.TryUnsocket(2, out _, true));
-            Assert.IsTrue(EvolutionEvaluator.IsHydraBallista(tower));
-            Assert.IsTrue(tower.TryUnsocket(2, out _, true, ignoreHydraLock: true));
-            Assert.IsFalse(EvolutionEvaluator.IsHydraBallista(tower));
+            Assert.IsFalse(EvolutionEvaluator.HydraEnabled);
+            var tower = MakeHydraTowerWith(_lmp, _chain, _fork);
+            Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
+            Assert.IsTrue(tower.TryUnsocket(2, out _, true));
         }
 
         [Test]
         public void IsHydra_False_WhenNotHydraEligible()
         {
-            _ballista.AllowsHydraEvolution = false;
-            var tower = MakeBallistaWith(_lmp, _chain, _fork);
-            Assert.IsFalse(EvolutionEvaluator.IsHydraBallista(tower));
+            _hydraTower.AllowsHydraEvolution = false;
+            var tower = MakeHydraTowerWith(_lmp, _chain, _fork);
+            Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
         }
 
-        TowerRuntime MakeBallistaWith(params GemDefinition[] gems)
+        TowerInstance MakeHydraTowerWith(params GemDefinition[] gems)
         {
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _ballista);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _hydraTower);
             for (var i = 0; i < gems.Length; i++)
                 Assert.IsTrue(tower.TrySocket(gems[i], i, allowSocket: true));
             return tower;

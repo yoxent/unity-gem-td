@@ -40,7 +40,7 @@ namespace GemTD.Gameplay.Combat
 
         public void Tick(
             float dt,
-            List<TowerRuntime> towers,
+            List<TowerInstance> towers,
             EnemyRegistry enemies,
             GemModifierPipeline pipeline,
             StatusRuntime statuses = null)
@@ -70,7 +70,7 @@ namespace GemTD.Gameplay.Combat
                     if (tower == null || tower.Def == null)
                         continue;
 
-                    if (tower.Def.Kind == TowerKind.Aura)
+                    if (!tower.Def.IsFireable)
                         continue;
 
                     tower.Cooldown -= dt;
@@ -83,13 +83,12 @@ namespace GemTD.Gameplay.Combat
 
                     var towerPos = CellToWorld(tower.Cell);
                     var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
-                    var range = tower.Def.Range * rangeMul;
+                    var range = tower.Def.GetFireTowerRadius(tower.Level) * rangeMul;
                     if (!_selector.TrySelect(tower.Targeting, towerPos, range, living, out var primary))
                         continue;
 
-                    var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
-                    tower.Cooldown = tower.Def.AttackInterval / fireRate;
-                    var damage = spec.Damage * tower.OutgoingDamageMultiplier;
+                    tower.Cooldown = tower.Def.FireInterval(spec, tower.Level);
+                    var damage = spec.Damage;
                     var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
                     var speed = _projectileSpeed * speedMul;
                     var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
@@ -97,7 +96,7 @@ namespace GemTD.Gameplay.Combat
                     if (echoFactor <= 0f)
                         echoFactor = 1f;
                     var volleyDamage = damage * echoFactor;
-                    var hydra = EvolutionEvaluator.IsHydraBallista(tower);
+                    var hydra = EvolutionEvaluator.IsHydraTower(tower);
                     for (var v = 0; v < volleys; v++)
                     {
                         if (hydra)

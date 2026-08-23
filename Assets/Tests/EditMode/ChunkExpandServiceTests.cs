@@ -113,6 +113,21 @@ namespace GemTD.Tests.EditMode
             return s;
         }
 
+        // Legal south-opening dead-end plus an isolated path cell that cannot
+        // reach the incoming portal (would create an unreachable spawn tip).
+        static MapChunkStamp MakeDeadEndWithIsland()
+        {
+            var go = new GameObject("deadend-island");
+            var s = go.AddComponent<MapChunkStamp>();
+            var m = new bool[ChunkMask.CellCount];
+            var mid = ChunkMask.Mid;
+            for (var y = 0; y <= mid; y++)
+                m[y * ChunkMask.Size + mid] = true;
+            m[0] = true;
+            s.ApplyMask(new ChunkMask(m));
+            return s;
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -228,6 +243,38 @@ namespace GemTD.Tests.EditMode
             _expand.CollectLegalExpands(into);
 
             Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test] public void CollectLegalExpands_RejectsPrefabWithPathIsland()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEndWithIsland());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test] public void CollectLegalExpands_DoesNotMutatePathTiles()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeCorner());
+            _catalog.Stamps.Add(MakeCross());
+
+            var cells = _path.Width * _path.Height;
+            var before = new bool[cells];
+            for (var y = 0; y < _path.Height; y++)
+                for (var x = 0; x < _path.Width; x++)
+                    before[y * _path.Width + x] = _path.IsPath(x, y);
+
+            _expand.CollectLegalExpands(new List<Vector2Int>());
+
+            for (var y = 0; y < _path.Height; y++)
+                for (var x = 0; x < _path.Width; x++)
+                    Assert.AreEqual(before[y * _path.Width + x], _path.IsPath(x, y), $"path mutated at {x},{y}");
         }
 
         [Test] public void TryExpand_LegalSlot_PicksPassingComboAndCommits()

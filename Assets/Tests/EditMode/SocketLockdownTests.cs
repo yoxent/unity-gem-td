@@ -9,17 +9,17 @@ namespace GemTD.Tests.EditMode
     public sealed class SocketLockdownTests
     {
         TowerDefinition _def;
-        TowerRuntime _towerA;
-        TowerRuntime _towerB;
+        TowerInstance _towerA;
+        TowerInstance _towerB;
 
         [SetUp]
         public void SetUp()
         {
             _def = ScriptableObject.CreateInstance<TowerDefinition>();
-            _def.DisplayName = "Ballista";
+            _def.DisplayName = "Test Tower";
             _def.SocketCount = 3;
-            _towerA = new TowerRuntime(new Vector2Int(0, 0), _def);
-            _towerB = new TowerRuntime(new Vector2Int(1, 0), _def);
+            _towerA = new TowerInstance(new Vector2Int(0, 0), _def);
+            _towerB = new TowerInstance(new Vector2Int(1, 0), _def);
         }
 
         [TearDown]

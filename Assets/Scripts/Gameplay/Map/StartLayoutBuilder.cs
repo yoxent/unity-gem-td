@@ -97,12 +97,11 @@ namespace GemTD.Gameplay.Map
             var required = EdgeFlags.None;
             for (var i = 0; i < openArmCount; i++)
                 required |= ArmOrder[i];
-            var baseMask = prefab.GetMask();
             for (var yaw = 0; yaw < 4; yaw++)
-                if (baseMask.Rotated(yaw).OpenEdges == required)
+                if (prefab.GetRotatedMask(yaw).OpenEdges == required)
                     return yaw;
             for (var yaw = 0; yaw < 4; yaw++)
-                if ((baseMask.Rotated(yaw).OpenEdges & ArmOrder[0]) != 0)
+                if ((prefab.GetRotatedMask(yaw).OpenEdges & ArmOrder[0]) != 0)
                     return yaw;
             return 0;
         }
@@ -131,11 +130,10 @@ namespace GemTD.Gameplay.Map
         static int PickYawForEdge(MapChunkStamp prefab, EdgeFlags requiredEdge, System.Random rng)
         {
             // Collect valid yaws, pick one at random.
-            var baseMask = prefab.GetMask();
             var valid = new int[4];
             var n = 0;
             for (var yaw = 0; yaw < 4; yaw++)
-                if ((baseMask.Rotated(yaw).OpenEdges & requiredEdge) != 0)
+                if ((prefab.GetRotatedMask(yaw).OpenEdges & requiredEdge) != 0)
                     valid[n++] = yaw;
             if (n == 0) return 0; // shouldn't happen for a Straight facing any edge
             return valid[rng.Next(n)];

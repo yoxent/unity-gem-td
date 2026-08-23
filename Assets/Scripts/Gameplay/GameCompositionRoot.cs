@@ -23,10 +23,11 @@ namespace GemTD.Gameplay
 
         [Header("Data")]
         [SerializeField] RunConfig runConfig;
-        [SerializeField] BuildBarCatalog buildBarCatalog;
         [SerializeField] WaveCatalog waveCatalog;
         [SerializeField] EnemyDefinition bossEnemy;
         [SerializeField] DraftPoolCatalog draftPoolCatalog;
+        [SerializeField] DraftCatalog initialDraftCatalog;
+        [SerializeField] DraftCatalog campaignDraftCatalog;
         [SerializeField] CodexCatalog codexCatalog;
         [SerializeField] ChunkCatalog chunkCatalog;
 
@@ -68,25 +69,11 @@ namespace GemTD.Gameplay
             && Inventory != null
             && Placement.CanSell(Placement.Selected, States != null ? States.Current : RunStateId.Boot, Inventory);
 
-        public bool SelectedSocketOccupied(int socketIndex)
-        {
-            var tower = Placement?.Selected;
-            if (tower?.Sockets == null || socketIndex < 0 || socketIndex >= tower.Sockets.Length)
-                return false;
-            var gem = tower.Sockets[socketIndex];
-            return gem != null && gem.Id != GemId.None;
-        }
-        public bool CanStartWave =>
-            States != null
-            && States.Current == RunStateId.Plan
-            && States.ExpandSatisfiedThisCycle
-            && WaveController != null;
-
         public string GetPlaceTowerName(int index)
         {
             if (!TryGetBuildBarTower(index, out var def))
                 return "?";
-            return !string.IsNullOrEmpty(def.DisplayName) ? def.DisplayName : def.name;
+            return TowerRoster.FormatBarLabel(def, Draft != null ? Draft.Roster : null);
         }
 
         public int GetPlaceTowerCost(int index)
@@ -99,11 +86,11 @@ namespace GemTD.Gameplay
         public int ComputePlaceCost(TowerDefinition def) =>
             TowerCostCalculator.ComputePlaceCost(def, _towers);
 
-        public int BuildBarTowerCount => buildBarCatalog != null ? buildBarCatalog.Count : 0;
+        public int BuildBarTowerCount => Draft != null && Draft.Roster != null ? Draft.Roster.Count : 0;
 
         public TowerDefinition[] GetBuildBarTowers() =>
-            buildBarCatalog != null && buildBarCatalog.Towers != null
-                ? buildBarCatalog.Towers
+            Draft != null && Draft.Roster != null
+                ? Draft.Roster.CopyTypes()
                 : System.Array.Empty<TowerDefinition>();
 
         public bool HasPlaceTowerSelected => _placeDef != null;
@@ -117,6 +104,19 @@ namespace GemTD.Gameplay
             }
         }
 
+        public bool SelectedSocketsLocked
+        {
+            get
+            {
+                var tower = Placement?.Selected;
+                if (tower == null)
+                    return false;
+                if (EvolutionEvaluator.IsHydraTower(tower))
+                    return true;
+                return SelectedSocketLockRemaining > 0f;
+            }
+        }
+
         public bool CanUnsocketSelected(int socketIndex)
         {
             var tower = Placement?.Selected;
@@ -126,9 +126,7 @@ namespace GemTD.Gameplay
                 return false;
             if (tower.Sockets[socketIndex] == null)
                 return false;
-            if (EvolutionEvaluator.IsHydraBallista(tower))
-                return false;
-            if (SelectedSocketLockRemaining > 0f)
+            if (SelectedSocketsLocked)
                 return false;
             return true;
         }
@@ -142,24 +140,22 @@ namespace GemTD.Gameplay
             var def = tower.Def;
             var sb = new System.Text.StringBuilder(128);
             sb.Append(def.DisplayName);
-
-            if (EvolutionEvaluator.IsHydraBallista(tower))
-                sb.Append(" [HYDRA]");
+            sb.Append("\nLevel ");
+            sb.Append(tower.LevelIndex + 1);
             sb.Append('\n');
 
             var spec = _pipeline != null
                 ? _pipeline.Resolve(tower, _socketModScratch)
-                : AttackSpec.FromBase(def.Damage, 1, def.SplashRadius);
-            var dmg = spec.Damage * tower.OutgoingDamageMultiplier;
-            var fireRate = spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 0.01f;
-            var interval = def.AttackInterval / fireRate;
+                : AttackSpec.FromBase(def.Damage, 1, def.GetSplashRadius(tower.Level));
+            var dmg = spec.Damage;
+            var interval = def.FireInterval(spec, tower.Level);
             var attackRate = interval > 0.01f ? 1f / interval : 0f;
             var tags = GemTags.EffectiveTowerTags(def);
             sb.Append($"Damage {dmg:0.#}");
             if (spec.ProjectileCount > 1)
                 sb.Append($" ×{spec.ProjectileCount}");
             sb.Append('\n');
-            sb.Append($"Attack rate {attackRate:0.##}/s\n");
+            sb.Append(def.UsesAttackSpeed ? $"Attack rate {attackRate:0.##}/s\n" : $"Cast rate {attackRate:0.##}/s\n");
             sb.Append($"Attack range {EffectiveAttackRange(tower):0.#}\n");
             sb.Append($"Tags {GemTags.Format(tags)}");
 
@@ -185,8 +181,6 @@ namespace GemTD.Gameplay
             GameEvents.RaisePlaceModeChanged();
         }
 
-        public TargetingRecipe SelectedTargeting =>
-            HasSelectedTower ? Placement.Selected.Targeting : TargetingRecipe.Default;
         public TargetingApplyScope CurrentApplyScope => _applyScope;
 
         TowerDefinition _placeDef;
@@ -201,13 +195,12 @@ namespace GemTD.Gameplay
         System.Random _rng;
         EnemyRegistry _registry;
         CombatDirector _combat;
-        BeaconAuraSystem _beaconAura;
         GemModifierPipeline _pipeline;
         StatusRuntime _statuses;
         readonly RunStatsTracker _runStats = new RunStatsTracker();
         EnemySpawnerGate _spawnerGate;
 
-        readonly List<TowerRuntime> _towers = new List<TowerRuntime>(16);
+        readonly List<TowerInstance> _towers = new List<TowerInstance>(16);
         readonly List<TowerView> _towerViews = new List<TowerView>(16);
         PlacementGhostView _placementGhost;
         readonly List<EnemyView> _enemyViews = new List<EnemyView>(32);
@@ -236,6 +229,7 @@ namespace GemTD.Gameplay
         InputAction _debugFillBag;
         InputActionMap _debugMap;
         bool _loggedExpandSkip;
+        bool _usedStarterDraft;
         int _nextTipIndex;
         int _bossSpawnCursor;
         HomeBaseView _homeMarker;
@@ -318,8 +312,6 @@ namespace GemTD.Gameplay
 
                 if (States.Current == RunStateId.Combat)
                 {
-                    var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
-                    _beaconAura?.Tick(_towers, _registry, cellSize);
                     if (_statuses != null && _registry != null)
                     {
                         _livingScratch.Clear();
@@ -352,16 +344,19 @@ namespace GemTD.Gameplay
             _placementGhost.Hide();
         }
 
-        float EffectiveAttackRange(TowerRuntime tower)
+        float EffectiveAttackRange(TowerInstance tower)
         {
             if (tower == null || tower.Def == null)
                 return 0f;
 
             var spec = _pipeline != null
                 ? _pipeline.Resolve(tower, _socketModScratch)
-                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.SplashRadius);
+                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.GetSplashRadius(tower.Level));
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
-            return tower.Def.Range * rangeMul;
+            var range = tower.Def.IsFireable
+                ? tower.Def.GetFireTowerRadius(tower.Level)
+                : tower.Def.GetAuraTowerRadius(tower.Level);
+            return range * rangeMul;
         }
 
         /// <summary>Bloons-style ghost while placing, plus range disc when Tower Details is open.</summary>
@@ -407,7 +402,9 @@ namespace GemTD.Gameplay
                 var world = ray.GetPoint(enter);
                 var cell = chunkBoardView.WorldToCell(world);
                 var valid = Placement.CanPlace(_placeDef, cell, phase, ComputePlaceCost(_placeDef));
-                var range = _placeDef != null ? _placeDef.Range : 3f;
+                var range = _placeDef != null
+                    ? _placeDef.GetPlacementTowerRadius(TowerInstance.DefaultLevel)
+                    : 3f;
                 _placementGhost.SetRange(range);
                 _placementGhost.ShowAt(chunkBoardView.CellToWorld(cell), valid);
                 return;
@@ -463,7 +460,6 @@ namespace GemTD.Gameplay
                 ? runConfig.InventoryCapacity
                 : 10;
             Inventory = new GemInventory(capacity);
-            SeedHydraRecipeInventory();
             GameEvents.RaiseInventoryChanged();
 
             Draft = new DraftService(new System.Random());
@@ -479,7 +475,6 @@ namespace GemTD.Gameplay
             _registry = new EnemyRegistry();
             var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
             _combat = new CombatDirector(cellSize, projectileSpeed, _runStats.RecordDamage);
-            _beaconAura = new BeaconAuraSystem();
             _pipeline = new GemModifierPipeline();
 
             _spawnerGate = new EnemySpawnerGate(SpawnEnemy, () => CountLivingEnemies());
@@ -580,29 +575,37 @@ namespace GemTD.Gameplay
             if (Draft == null)
                 return;
 
-            var pool = draftPoolCatalog != null
-                ? draftPoolCatalog.GetGemsOrEmpty()
-                : System.Array.Empty<GemDefinition>();
-            var usable = 0;
-            for (var i = 0; i < pool.Length; i++)
-            {
-                if (pool[i] != null)
-                    usable++;
-            }
-
-            if (usable < 3)
+            var catalog = !_usedStarterDraft ? initialDraftCatalog : campaignDraftCatalog;
+            var label = !_usedStarterDraft ? "initial" : "campaign";
+            if (catalog == null)
             {
                 Debug.LogError(
-                    "[GemTD] DraftPoolCatalog needs at least 3 assigned gems on GameCompositionRoot " +
-                    $"(found {usable}). Assign the catalog at Data/Gems/DraftPoolCatalog.");
+                    $"[GemTD] Assign {( !_usedStarterDraft ? "initialDraftCatalog" : "campaignDraftCatalog" )} on GameCompositionRoot.");
                 return;
             }
 
-            Draft.BeginOffer(pool, allowSkip);
+            try
+            {
+                Draft.BeginOffer(catalog, allowSkip);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[GemTD] Draft BeginOffer failed: " + ex.Message);
+                return;
+            }
+
+            _usedStarterDraft = true;
             GameEvents.RaiseDraftOfferChanged();
+            var names = "";
+            for (var i = 0; i < Draft.CurrentOffer.Count; i++)
+            {
+                if (i > 0)
+                    names += " / ";
+                names += Draft.CurrentOffer[i].DisplayName;
+            }
+
             Debug.Log(
-                $"[GemTD] Draft offer ({(allowSkip ? "skip OK" : "must pick")}): " +
-                $"{Draft.CurrentOffer[0].DisplayName} / {Draft.CurrentOffer[1].DisplayName} / {Draft.CurrentOffer[2].DisplayName}");
+                $"[GemTD] Draft {label} ({(allowSkip ? "skip OK" : "must pick")}): {names}");
         }
 
         void RefreshExpandMarkers()
@@ -791,6 +794,9 @@ namespace GemTD.Gameplay
                 return;
             }
 
+            if (Draft != null && Draft.Roster != null && Draft.Roster.Contains(_placeDef))
+                tower.LevelIndex = Draft.Roster.GetLevelIndex(_placeDef);
+
             _towers.Add(tower);
             _runStats.RecordTowerPlaced(tower.Def);
             if (towerPrefab != null)
@@ -840,7 +846,7 @@ namespace GemTD.Gameplay
         bool TryGetBuildBarTower(int index, out TowerDefinition def)
         {
             def = null;
-            return buildBarCatalog != null && buildBarCatalog.TryGet(index, out def);
+            return Draft != null && Draft.Roster != null && Draft.Roster.TryGetAt(index, out def);
         }
 
         public void CyclePriority(int slot, int delta = 1)
@@ -852,23 +858,6 @@ namespace GemTD.Gameplay
             var next = selected.Targeting.WithCycled(slot, delta);
             TargetingService.Apply(next, TargetingApplyScope.ThisTower, selected, _towers);
             GameEvents.RaiseTargetingChanged();
-        }
-
-        public bool TryCycleApplyScope(out bool needsAllConfirm)
-        {
-            needsAllConfirm = false;
-            if (!HasSelectedTower)
-                return false;
-
-            var next = TargetingScopeRequests.Next(_applyScope);
-            if (TargetingScopeRequests.NeedsAllConfirm(_applyScope, next))
-            {
-                needsAllConfirm = true;
-                return true;
-            }
-
-            SetApplyScope(next);
-            return true;
         }
 
         public void SetApplyScope(TargetingApplyScope scope)
@@ -913,15 +902,6 @@ namespace GemTD.Gameplay
             }
 
             GameEvents.RaiseTowerSelectionChanged();
-        }
-
-        public void RequestStartWave()
-        {
-            if (!CanStartWave)
-                return;
-
-            BeginWaveWithBossCadence();
-            GameEvents.RaiseWaveChanged(WaveController.CurrentWaveNumber);
         }
 
         public void RequestSellSelected()
@@ -1015,7 +995,7 @@ namespace GemTD.Gameplay
             GameEvents.RaiseInventoryChanged();
         }
 
-        void NotifySocketChanged(TowerRuntime tower, GemDefinition socketedGem)
+        void NotifySocketChanged(TowerInstance tower, GemDefinition socketedGem)
         {
             if (socketedGem != null)
                 _runStats.RecordGemSocketed(socketedGem.Id);
@@ -1202,37 +1182,19 @@ namespace GemTD.Gameplay
             GameEvents.RaiseInventoryChanged();
         }
 
-        void OnSocketChanged(TowerRuntime tower)
+        void OnSocketChanged(TowerInstance tower)
         {
             SocketLockdown?.NotifyChanged(tower, States.Current);
             GameEvents.RaiseTowerSelectionChanged();
-            if (EvolutionEvaluator.IsHydraBallista(tower) && Codex != null && codexCatalog != null)
+            if (EvolutionEvaluator.IsHydraTower(tower) && Codex != null && codexCatalog != null)
             {
                 var entry = codexCatalog.GetById("hydra-ballista");
                 if (entry != null)
                 {
                     Codex.Unlock(entry);
                     GameEvents.RaiseEvolutionUnlocked();
-                    Debug.Log("[EvolutionUnlocked] Hydra Ballista formed.");
+                    Debug.Log("[EvolutionUnlocked] Hydra formed.");
                 }
-            }
-        }
-
-        void SeedHydraRecipeInventory()
-        {
-            if (Inventory == null || runConfig == null || !runConfig.SeedHydraRecipeGems)
-                return;
-
-            var seeds = runConfig.SeedGems;
-            if (seeds == null || seeds.Length == 0)
-                return;
-
-            for (var i = 0; i < seeds.Length; i++)
-            {
-                if (seeds[i] == null)
-                    continue;
-                if (!Inventory.TryAdd(seeds[i]))
-                    Debug.LogWarning($"[GemTD] Could not seed gem {seeds[i].DisplayName} (inventory full).");
             }
         }
 
@@ -1294,6 +1256,17 @@ namespace GemTD.Gameplay
             RequestSocketFromInventory(inventoryIndex);
         }
 
+        public void RequestDraftSelect(int offerIndex)
+        {
+            if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
+                return;
+
+            if (!Draft.TrySelect(offerIndex))
+                return;
+
+            GameEvents.RaiseDraftOfferChanged();
+        }
+
         public void RequestDraftPick(int offerIndex)
         {
             if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
@@ -1304,9 +1277,13 @@ namespace GemTD.Gameplay
 
             if (resolved)
             {
+                if (Draft.Roster != null)
+                    Draft.Roster.ApplyLevels(_towers);
                 States.DraftResolved();
                 GameEvents.RaiseDraftOfferChanged();
                 GameEvents.RaiseInventoryChanged();
+                GameEvents.RaiseTowerRosterChanged();
+                GameEvents.RaiseTowerSelectionChanged();
                 return;
             }
 
@@ -1320,22 +1297,38 @@ namespace GemTD.Gameplay
             if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
                 return;
 
-            if (!Draft.TrySkip(Economy, runConfig != null ? runConfig.DraftSkipGold : 75, out var resolved) || !resolved)
+            if (!Draft.TrySkip(Economy, Economy != null ? Economy.LastEndWaveGold : 0, out var resolved) || !resolved)
                 return;
 
             States.DraftResolved();
             GameEvents.RaiseDraftOfferChanged();
         }
 
-        public void RequestDraftReplaceYes()
+        public void RequestDraftReroll()
         {
-            Draft?.ConfirmReplaceYes();
+            if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
+                return;
+
+            if (!Draft.TryReroll(Economy))
+                return;
+
             GameEvents.RaiseDraftOfferChanged();
         }
 
-        public void RequestDraftReplaceNo()
+        public void RequestDraftBan()
         {
-            Draft?.ConfirmReplaceNo();
+            if (States.Current != RunStateId.Draft || Draft == null || !Draft.IsActive)
+                return;
+
+            if (!Draft.TryBan(Economy))
+                return;
+
+            GameEvents.RaiseDraftOfferChanged();
+        }
+
+        public void RequestDraftReplaceYes()
+        {
+            Draft?.ConfirmReplaceYes();
             GameEvents.RaiseDraftOfferChanged();
         }
 
@@ -1591,7 +1584,10 @@ namespace GemTD.Gameplay
                     break;
                 case RunStateId.Draft:
                     if (Draft != null && Draft.IsActive && Draft.CurrentOffer.Count > 0)
+                    {
+                        RequestDraftSelect(0);
                         RequestDraftPick(0);
+                    }
                     break;
                 case RunStateId.Combat:
                     States.WaveCleared(offerDraft: false);

@@ -47,6 +47,20 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Chill_ExpiryRestoresNormalMoveSpeed()
+        {
+            var enemy = MakeEnemy(hp: 50f);
+            var statuses = new StatusRuntime();
+            statuses.Apply(enemy, StatusId.Chill, 0.5f, magnitude: 0.6f);
+
+            statuses.Tick(0.25f, Living(enemy));
+            Assert.AreEqual(0.6f, enemy.MoveSpeedMultiplier, 0.001f);
+
+            statuses.Tick(0.25f, Living(enemy));
+            Assert.AreEqual(1f, enemy.MoveSpeedMultiplier, 0.001f);
+        }
+
+        [Test]
         public void Shock_AmplifiesDamageTaken()
         {
             var enemy = MakeEnemy(hp: 100f);

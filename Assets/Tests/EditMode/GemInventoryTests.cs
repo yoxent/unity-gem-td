@@ -10,7 +10,7 @@ namespace GemTD.Tests.EditMode
     {
         GemDefinition _lmp;
         GemDefinition _chain;
-        TowerDefinition _ballista;
+        TowerDefinition _tower;
 
         [SetUp]
         public void SetUp()
@@ -23,9 +23,10 @@ namespace GemTD.Tests.EditMode
             _chain.Id = GemId.Chain;
             _chain.DisplayName = "Chain";
 
-            _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
-            _ballista.DisplayName = "Ballista";
-            _ballista.SocketCount = 2;
+            _tower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _tower.DisplayName = "Test Tower";
+            _tower.SocketCount = 2;
+            _tower.Tags = GemTag.Attack | GemTag.Projectile;
         }
 
         [TearDown]
@@ -33,7 +34,7 @@ namespace GemTD.Tests.EditMode
         {
             Object.DestroyImmediate(_lmp);
             Object.DestroyImmediate(_chain);
-            Object.DestroyImmediate(_ballista);
+            Object.DestroyImmediate(_tower);
         }
 
         [Test]
@@ -155,21 +156,21 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TowerRuntime_SocketsLengthMatchesDefSocketCount()
+        public void TowerInstance_SocketsLengthMatchesDefSocketCount()
         {
-            var tower = new TowerRuntime(new Vector2Int(2, 3), _ballista);
+            var tower = new TowerInstance(new Vector2Int(2, 3), _tower);
 
             Assert.AreEqual(2, tower.Sockets.Length);
             Assert.IsNull(tower.Sockets[0]);
             Assert.IsNull(tower.Sockets[1]);
             Assert.AreEqual(new Vector2Int(2, 3), tower.Cell);
-            Assert.AreSame(_ballista, tower.Def);
+            Assert.AreSame(_tower, tower.Def);
         }
 
         [Test]
         public void TrySocket_SucceedsWhenAllowSocketTrue()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
 
             Assert.IsTrue(tower.TrySocket(_lmp, 0, allowSocket: true));
             Assert.AreSame(_lmp, tower.Sockets[0]);
@@ -178,7 +179,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TrySocket_FailsWhenAllowSocketFalse()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
 
             Assert.IsFalse(tower.TrySocket(_lmp, 0, allowSocket: false));
             Assert.IsNull(tower.Sockets[0]);
@@ -187,7 +188,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TryUnsocket_SucceedsWhenAllowSocketTrue()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
             tower.TrySocket(_lmp, 0, allowSocket: true);
 
             Assert.IsTrue(tower.TryUnsocket(0, out var gem, allowSocket: true));
@@ -198,7 +199,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TryUnsocket_FailsWhenAllowSocketFalse()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
             tower.TrySocket(_lmp, 0, allowSocket: true);
 
             Assert.IsFalse(tower.TryUnsocket(0, out _, allowSocket: false));
@@ -208,7 +209,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void HasSocketedGems_TrueWhenAnySocketFilled()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
             Assert.IsFalse(tower.HasSocketedGems);
 
             tower.TrySocket(_lmp, 0, allowSocket: true);
@@ -218,7 +219,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TrySocket_FailsWhenIndexOccupied()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
             tower.TrySocket(_lmp, 0, allowSocket: true);
 
             Assert.IsFalse(tower.TrySocket(_chain, 0, allowSocket: true));
@@ -227,7 +228,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TrySocket_FailsWhenIndexOutOfRange()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
 
             Assert.IsFalse(tower.TrySocket(_lmp, 2, allowSocket: true));
             Assert.IsFalse(tower.TrySocket(_lmp, -1, allowSocket: true));
@@ -236,7 +237,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TrySocket_RejectsDuplicateGemIdOnSameTower()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _tower);
             var lmp2 = ScriptableObject.CreateInstance<GemDefinition>();
             lmp2.Id = GemId.MultipleProjectiles;
             try

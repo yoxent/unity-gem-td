@@ -3,7 +3,7 @@ using GemTD.Gameplay.Gems;
 namespace GemTD.Gameplay.Towers
 {
     /// <summary>
-    /// Live evolution checks (Hydra Ballista recipe + fire overlay yaw offsets).
+    /// Live evolution checks (Hydra recipe + fire overlay yaw offsets).
     /// </summary>
     public static class EvolutionEvaluator
     {
@@ -15,12 +15,20 @@ namespace GemTD.Gameplay.Towers
         /// <summary>World-space lateral spawn offsets (perp to aim) so multi-head stays readable while seeking.</summary>
         public static float[] HydraHeadLateralOffsets => HydraLaterals;
 
-        public static bool IsHydraBallista(TowerRuntime tower)
+        /// <summary>
+        /// Hydra is off for this pass (run and Skill Lab). Recipe math remains below for a later re-enable.
+        /// </summary>
+        public static readonly bool HydraEnabled = false;
+
+        public static bool IsHydraTower(TowerInstance tower)
         {
+            if (!HydraEnabled)
+                return false;
+
             if (tower == null || tower.Def == null)
                 return false;
 
-            if (tower.Def.Kind != TowerKind.Projectile)
+            if (!tower.Def.HasRole<AttackRoleDefinition>())
                 return false;
 
             if (!tower.Def.AllowsHydraEvolution)

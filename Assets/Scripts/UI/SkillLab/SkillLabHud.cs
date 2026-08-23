@@ -12,8 +12,7 @@ namespace GemTD.UI
         const string EmptyLabel = "Empty";
 
         [SerializeField] SkillLabController lab;
-        [SerializeField] Button ballistaButton;
-        [SerializeField] Button cannonButton;
+        [SerializeField] Button fireballButton;
         [SerializeField] TMP_Dropdown[] gemSlotDropdowns;
         [SerializeField] Button fireButton;
         [SerializeField] Button clearButton;
@@ -31,8 +30,7 @@ namespace GemTD.UI
         void Awake()
         {
             if (lab == null) Debug.LogError("SkillLabHud: lab is not assigned.", this);
-            if (ballistaButton == null) Debug.LogError("SkillLabHud: ballistaButton is not assigned.", this);
-            if (cannonButton == null) Debug.LogError("SkillLabHud: cannonButton is not assigned.", this);
+            if (fireballButton == null) Debug.LogError("SkillLabHud: fireballButton is not assigned.", this);
             if (gemSlotDropdowns == null || gemSlotDropdowns.Length == 0)
                 Debug.LogError("SkillLabHud: gemSlotDropdowns is not assigned.", this);
             if (fireButton == null) Debug.LogError("SkillLabHud: fireButton is not assigned.", this);
@@ -45,8 +43,7 @@ namespace GemTD.UI
 
             if (lab == null)
                 return;
-            if (ballistaButton != null) ballistaButton.onClick.AddListener(() => lab.SelectBallista());
-            if (cannonButton != null) cannonButton.onClick.AddListener(() => lab.SelectCannon());
+            if (fireballButton != null) fireballButton.onClick.AddListener(() => lab.SelectFireball());
             if (fireButton != null) fireButton.onClick.AddListener(() => lab.Fire());
             if (clearButton != null) clearButton.onClick.AddListener(() => lab.ClearOverlay());
             if (resetPinsButton != null) resetPinsButton.onClick.AddListener(() => lab.ResetPins());
@@ -65,7 +62,7 @@ namespace GemTD.UI
             }
 
             if (legendLabel != null)
-                legendLabel.text = "White primary  Cyan hydra  Yellow pierce  Magenta fork  Orange chain  Red AoE";
+                legendLabel.text = "White primary  Yellow pierce  Magenta fork  Orange chain  Red AoE";
         }
 
         void LateUpdate()
@@ -81,10 +78,7 @@ namespace GemTD.UI
             if (statusLabel != null)
                 statusLabel.text = session.Status ?? "";
             if (hydraLabel != null)
-            {
-                hydraLabel.gameObject.SetActive(session.IsHydra);
-                hydraLabel.text = "Hydra";
-            }
+                hydraLabel.gameObject.SetActive(false);
 
             if (AnyDropdownExpanded())
                 return;

@@ -34,7 +34,9 @@ namespace GemTD.Gameplay.Run
             Current = next;
             ApplyClockForState(next);
             StateChanged?.Invoke(prev, next);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[RunState] {prev} → {next}");
+#endif
         }
 
         public void StartRun()

@@ -24,6 +24,7 @@ namespace GemTD.UI
         GameCompositionRoot _root;
         PopupManager _popup;
         bool _visible;
+        bool _lockOverlayShown;
 
         void OnEnable()
         {
@@ -73,8 +74,12 @@ namespace GemTD.UI
         {
             if (!_visible || _root == null)
                 return;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            var lockLeft = _root.SelectedSocketLockRemaining;
+            if (lockLeft > 0f)
                 RefreshDetailsText();
+            if (lockLeft > 0f || _lockOverlayShown)
+                RefreshSocketLockOverlays();
+            _lockOverlayShown = lockLeft > 0f;
         }
 
         void OnHudDirty() => Refresh();
@@ -112,6 +117,7 @@ namespace GemTD.UI
                 var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : null;
                 socketSlots[i].Configure(_root, i, gem);
             }
+            _lockOverlayShown = _root.SelectedSocketLockRemaining > 0f;
 
             if (tower != null && priorityButtons != null)
             {
@@ -129,6 +135,16 @@ namespace GemTD.UI
         {
             if (detailsText != null && _root != null)
                 detailsText.text = _root.BuildSelectedTowerDetailsText();
+        }
+
+        void RefreshSocketLockOverlays()
+        {
+            for (var i = 0; i < socketSlots.Length; i++)
+            {
+                if (socketSlots[i] == null || !socketSlots[i].gameObject.activeSelf)
+                    continue;
+                socketSlots[i].RefreshLockOverlay();
+            }
         }
 
         void HighlightScope(TargetingApplyScope scope)

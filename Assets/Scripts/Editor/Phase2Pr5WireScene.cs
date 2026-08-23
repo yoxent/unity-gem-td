@@ -4,12 +4,11 @@ using UnityEngine;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
-using GemTD.Gameplay.Towers;
 using GemTD.Gameplay.Meta;
 
 namespace GemTD.Editor
 {
-    /// <summary>Creates PR5 gem SOs, Ballista sockets=3, Hydra seed, 11-gem draft pool.</summary>
+    /// <summary>Creates the MVP gem SOs, Hydra Codex entry, and 11-gem draft pool.</summary>
     public static class Phase2Pr5WireScene
     {
         const string RunScenePath = "Assets/Scenes/Run.unity";
@@ -74,9 +73,9 @@ namespace GemTD.Editor
                 AssetDatabase.CreateAsset(hydra, $"{CodexFolder}/Codex_Hydra.asset");
             }
             hydra.Id = "hydra-ballista";
-            hydra.DisplayName = "Hydra Ballista";
+            hydra.DisplayName = "Hydra";
             hydra.LockedHint = "Three jaws share one quarrelsome appetite.";
-            hydra.UnlockedText = "Hydra Ballista — Chain + Fork + Multiple Projectiles";
+            hydra.UnlockedText = "Hydra — Chain + Fork + Multiple Projectiles";
             hydra.Recipe = new[] { chain, fork, lmp };
 
             var snakeIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Temp/Icons/snake.png");
@@ -95,30 +94,6 @@ namespace GemTD.Editor
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
 
-            var ballista = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Ballista.asset");
-            if (ballista == null)
-            {
-                Debug.LogError("[PR5 Wire] Missing Tower_Ballista.asset");
-                return;
-            }
-
-            ballista.SocketCount = 3;
-            EditorUtility.SetDirty(ballista);
-
-            var cannon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Cannon.asset");
-            if (cannon != null)
-            {
-                cannon.SocketCount = 3;
-                EditorUtility.SetDirty(cannon);
-            }
-
-            var beacon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Beacon.asset");
-            if (beacon != null)
-            {
-                beacon.SocketCount = 1;
-                EditorUtility.SetDirty(beacon);
-            }
-
             var cfg = AssetDatabase.LoadAssetAtPath<RunConfig>("Assets/Data/RunConfig_Default.asset");
             if (cfg == null)
             {
@@ -127,7 +102,6 @@ namespace GemTD.Editor
             }
 
             cfg.InventoryCapacity = 10;
-            cfg.SeedHydraRecipeGems = true;
             cfg.SeedGems = new[] { lmp, chain, fork };
             EditorUtility.SetDirty(cfg);
 
@@ -171,7 +145,7 @@ namespace GemTD.Editor
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[PR5 Wire] draftPoolCatalog={pool.Length}, Ballista sockets=3, SeedHydraRecipeGems=true.");
+            Debug.Log($"[PR5 Wire] draftPoolCatalog={pool.Length}, Hydra off.");
         }
 
         static GemDefinition EnsureGem(string fileName, GemId id, string displayName, string description, float weight)

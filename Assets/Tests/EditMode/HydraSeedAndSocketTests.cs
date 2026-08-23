@@ -8,11 +8,12 @@ namespace GemTD.Tests.EditMode
     public sealed class HydraSeedAndSocketTests
     {
         [Test]
-        public void BallistaDefinition_SocketCountThree_FitsHydraRecipe()
+        public void HydraTower_SocketCountThree_FitsHydraRecipe()
         {
             var def = ScriptableObject.CreateInstance<TowerDefinition>();
-            def.DisplayName = "Ballista";
-            def.Kind = TowerKind.Projectile;
+            def.DisplayName = "Hydra Test Tower";
+            var attack = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            def.Roles = new TowerRoleDefinition[] { attack };
             def.SocketCount = 3;
             def.AllowsHydraEvolution = true;
 
@@ -25,16 +26,17 @@ namespace GemTD.Tests.EditMode
 
             try
             {
-                var tower = new TowerRuntime(Vector2Int.zero, def);
+                var tower = new TowerInstance(Vector2Int.zero, def);
                 Assert.AreEqual(3, tower.Sockets.Length);
                 Assert.IsTrue(tower.TrySocket(lmp, 0, true));
                 Assert.IsTrue(tower.TrySocket(chain, 1, true));
                 Assert.IsTrue(tower.TrySocket(fork, 2, true));
-                Assert.IsTrue(EvolutionEvaluator.IsHydraBallista(tower));
+                Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
             }
             finally
             {
                 Object.DestroyImmediate(def);
+                Object.DestroyImmediate(attack);
                 Object.DestroyImmediate(lmp);
                 Object.DestroyImmediate(chain);
                 Object.DestroyImmediate(fork);

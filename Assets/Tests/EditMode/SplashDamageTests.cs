@@ -13,7 +13,8 @@ namespace GemTD.Tests.EditMode
         const float CellSize = 1f;
 
         EnemyDefinition _enemyDef;
-        TowerDefinition _cannonDef;
+        TowerDefinition _splashTower;
+        AttackRoleDefinition _splashRole;
         GemModifierPipeline _pipeline;
 
         [SetUp]
@@ -23,12 +24,23 @@ namespace GemTD.Tests.EditMode
             _enemyDef.MaxHealth = 100f;
             _enemyDef.MoveSpeed = 0.01f;
 
-            _cannonDef = ScriptableObject.CreateInstance<TowerDefinition>();
-            _cannonDef.Range = 20f;
-            _cannonDef.Damage = 8f;
-            _cannonDef.AttackInterval = 1.2f;
-            _cannonDef.SplashRadius = 1.5f;
-            _cannonDef.SocketCount = 2;
+            _splashTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _splashRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _splashRole.TowerRadius = 20f;
+            _splashRole.Modifiers = new[]
+            {
+                new RoleStatModifier
+                {
+                    Stat = RoleStat.SplashRadius,
+                    Operation = RoleModifierOperation.Set,
+                    Value = 1.5f
+                }
+            };
+            _splashTower.Roles = new TowerRoleDefinition[] { _splashRole };
+            _splashTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
+            _splashTower.Damage = 8f;
+            _splashRole.AttackTime = 1.2f;
+            _splashTower.SocketCount = 2;
 
             _pipeline = new GemModifierPipeline();
         }
@@ -37,14 +49,15 @@ namespace GemTD.Tests.EditMode
         public void TearDown()
         {
             Object.DestroyImmediate(_enemyDef);
-            Object.DestroyImmediate(_cannonDef);
+            Object.DestroyImmediate(_splashRole);
+            Object.DestroyImmediate(_splashTower);
         }
 
         [Test]
-        public void CannonSplash_DamagesPrimaryAndNearbyEnemy()
+        public void SplashTower_DamagesPrimaryAndNearbyEnemy()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _cannonDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _splashTower);
 
             // Same progress; nearby is off the flight line so ballistic hits primary first.
             // Lateral 1.0 is inside SplashRadius 1.5.
@@ -57,11 +70,11 @@ namespace GemTD.Tests.EditMode
             var primaryHpBefore = primary.Hp;
             var nearbyHpBefore = nearby.Hp;
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
             Assert.AreEqual(1, director.Projectiles.Count);
 
             for (var i = 0; i < 60; i++)
-                director.Tick(0.05f, new List<TowerRuntime>(), registry, _pipeline);
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(primary.Hp, primaryHpBefore);
             Assert.Less(nearby.Hp, nearbyHpBefore);
@@ -72,10 +85,11 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void NoSplash_WhenSplashRadiusZero_OnlyPrimaryDamaged()
         {
-            _cannonDef.SplashRadius = 0f;
+            _splashTower.Tags = GemTag.Attack | GemTag.Projectile;
+            _splashRole.Modifiers = null;
 
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _cannonDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _splashTower);
 
             var primary = CreateEnemyAtProgress(0.2f);
             var nearby = CreateEnemyAtProgress(0.2f, laneOffsetZ: 1f);
@@ -85,10 +99,10 @@ namespace GemTD.Tests.EditMode
 
             var nearbyHpBefore = nearby.Hp;
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             for (var i = 0; i < 60; i++)
-                director.Tick(0.05f, new List<TowerRuntime>(), registry, _pipeline);
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(primary.Hp, 100f);
             Assert.AreEqual(nearbyHpBefore, nearby.Hp, 1e-4f);

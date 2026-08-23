@@ -7,9 +7,12 @@ namespace GemTD.Tests.EditMode
 {
     public sealed class GemTagsTests
     {
-        TowerDefinition _ballista;
-        TowerDefinition _cannon;
-        TowerDefinition _beacon;
+        TowerDefinition _projectileTower;
+        TowerDefinition _splashTower;
+        TowerDefinition _auraTower;
+        AttackRoleDefinition _projectileRole;
+        AttackRoleDefinition _splashRole;
+        AuraRoleDefinition _auraRole;
         GemDefinition _lmp;
         GemDefinition _chain;
         GemDefinition _area;
@@ -19,17 +22,21 @@ namespace GemTD.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
-            _ballista.Kind = TowerKind.Projectile;
-            _ballista.SocketCount = 3;
+            _projectileTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _projectileRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _projectileTower.Roles = new TowerRoleDefinition[] { _projectileRole };
+            _projectileTower.SocketCount = 3;
 
-            _cannon = ScriptableObject.CreateInstance<TowerDefinition>();
-            _cannon.Kind = TowerKind.Splash;
-            _cannon.SocketCount = 3;
+            _splashTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _splashRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _splashTower.Roles = new TowerRoleDefinition[] { _splashRole };
+            _splashTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
+            _splashTower.SocketCount = 3;
 
-            _beacon = ScriptableObject.CreateInstance<TowerDefinition>();
-            _beacon.Kind = TowerKind.Aura;
-            _beacon.SocketCount = 1;
+            _auraTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _auraRole = ScriptableObject.CreateInstance<AuraRoleDefinition>();
+            _auraTower.Roles = new TowerRoleDefinition[] { _auraRole };
+            _auraTower.SocketCount = 1;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
             _lmp.Id = GemId.MultipleProjectiles;
@@ -55,9 +62,12 @@ namespace GemTD.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
-            Object.DestroyImmediate(_ballista);
-            Object.DestroyImmediate(_cannon);
-            Object.DestroyImmediate(_beacon);
+            Object.DestroyImmediate(_projectileTower);
+            Object.DestroyImmediate(_splashTower);
+            Object.DestroyImmediate(_auraTower);
+            Object.DestroyImmediate(_projectileRole);
+            Object.DestroyImmediate(_splashRole);
+            Object.DestroyImmediate(_auraRole);
             Object.DestroyImmediate(_lmp);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_area);
@@ -66,53 +76,53 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Infer_BallistaAttackProjectile_CannonAddsAoe_BeaconAura()
+        public void Infer_ProjectileTower_SplashTower_AuraRole()
         {
-            Assert.AreEqual(GemTag.Attack | GemTag.Projectile, GemTags.EffectiveTowerTags(_ballista));
-            Assert.AreEqual(GemTag.Attack | GemTag.Projectile | GemTag.Aoe, GemTags.EffectiveTowerTags(_cannon));
-            Assert.AreEqual(GemTag.Aura, GemTags.EffectiveTowerTags(_beacon));
+            Assert.AreEqual(GemTag.Attack | GemTag.Projectile, GemTags.EffectiveTowerTags(_projectileTower));
+            Assert.AreEqual(GemTag.Attack | GemTag.Projectile | GemTag.Aoe, GemTags.EffectiveTowerTags(_splashTower));
+            Assert.AreEqual(GemTag.Aura, GemTags.EffectiveTowerTags(_auraTower));
         }
 
         [Test]
-        public void ProjectileGem_SocketsBallistaAndCannon_NotBeacon()
+        public void ProjectileGem_SocketsProjectileAndSplashTowers_NotAuraTower()
         {
-            Assert.IsTrue(GemTags.CanSocket(_ballista, _lmp));
-            Assert.IsTrue(GemTags.CanSocket(_cannon, _lmp));
-            Assert.IsFalse(GemTags.CanSocket(_beacon, _lmp));
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, _lmp));
+            Assert.IsTrue(GemTags.CanSocket(_splashTower, _lmp));
+            Assert.IsFalse(GemTags.CanSocket(_auraTower, _lmp));
 
-            var ballista = new TowerRuntime(Vector2Int.zero, _ballista);
-            var beacon = new TowerRuntime(Vector2Int.zero, _beacon);
-            Assert.IsTrue(ballista.TrySocket(_lmp, 0, allowSocket: true));
-            Assert.IsFalse(beacon.TrySocket(_lmp, 0, allowSocket: true));
+            var projectileTower = new TowerInstance(Vector2Int.zero, _projectileTower);
+            var auraTower = new TowerInstance(Vector2Int.zero, _auraTower);
+            Assert.IsTrue(projectileTower.TrySocket(_lmp, 0, allowSocket: true));
+            Assert.IsFalse(auraTower.TrySocket(_lmp, 0, allowSocket: true));
         }
 
         [Test]
         public void Chain_RequiresProjectile_NotChaining()
         {
             Assert.AreEqual(GemTag.Projectile, GemTags.EffectiveRequiredTags(_chain));
-            Assert.IsTrue(GemTags.CanSocket(_ballista, _chain));
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, _chain));
         }
 
         [Test]
-        public void IncreasedArea_SocketsCannon_NotBallista()
+        public void IncreasedArea_SocketsSplashTower_NotProjectileTower()
         {
-            Assert.IsTrue(GemTags.CanSocket(_cannon, _area));
-            Assert.IsFalse(GemTags.CanSocket(_ballista, _area));
+            Assert.IsTrue(GemTags.CanSocket(_splashTower, _area));
+            Assert.IsFalse(GemTags.CanSocket(_projectileTower, _area));
         }
 
         [Test]
         public void SupportOnlyGem_SocketsAnyTower()
         {
-            Assert.IsTrue(GemTags.CanSocket(_ballista, _supportOnly));
-            Assert.IsTrue(GemTags.CanSocket(_cannon, _supportOnly));
-            Assert.IsTrue(GemTags.CanSocket(_beacon, _supportOnly));
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, _supportOnly));
+            Assert.IsTrue(GemTags.CanSocket(_splashTower, _supportOnly));
+            Assert.IsTrue(GemTags.CanSocket(_auraTower, _supportOnly));
         }
 
         [Test]
-        public void AttackGem_SocketsBallista_NotBeacon()
+        public void AttackGem_SocketsProjectileTower_NotAuraTower()
         {
-            Assert.IsTrue(GemTags.CanSocket(_ballista, _faster));
-            Assert.IsFalse(GemTags.CanSocket(_beacon, _faster));
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, _faster));
+            Assert.IsFalse(GemTags.CanSocket(_auraTower, _faster));
         }
 
         [Test]

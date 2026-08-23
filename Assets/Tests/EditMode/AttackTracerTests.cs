@@ -12,8 +12,10 @@ namespace GemTD.Tests.EditMode
     public sealed class AttackTracerTests
     {
         EnemyDefinition _enemyDef;
-        TowerDefinition _ballista;
-        TowerDefinition _cannon;
+        TowerDefinition _projectileTower;
+        TowerDefinition _splashTower;
+        AttackRoleDefinition _projectileRole;
+        AttackRoleDefinition _splashRole;
         GemDefinition _lmp;
         GemDefinition _chain;
         GemDefinition _fork;
@@ -27,22 +29,32 @@ namespace GemTD.Tests.EditMode
             _enemyDef.MaxHealth = 1000f;
             _enemyDef.MoveSpeed = 0.01f;
 
-            _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
-            _ballista.DisplayName = "Ballista";
-            _ballista.Kind = TowerKind.Projectile;
-            _ballista.AllowsHydraEvolution = true;
-            _ballista.SocketCount = 3;
-            _ballista.Damage = 10f;
-            _ballista.Range = 20f;
-            _ballista.AttackInterval = 1f;
+            _projectileTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _projectileTower.DisplayName = "Projectile Tower";
+            _projectileRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _projectileRole.TowerRadius = 20f;
+            _projectileTower.Roles = new TowerRoleDefinition[] { _projectileRole };
+            _projectileTower.AllowsHydraEvolution = true;
+            _projectileTower.SocketCount = 3;
+            _projectileTower.Damage = 10f;
 
-            _cannon = ScriptableObject.CreateInstance<TowerDefinition>();
-            _cannon.DisplayName = "Cannon";
-            _cannon.Kind = TowerKind.Splash;
-            _cannon.SocketCount = 3;
-            _cannon.Damage = 8f;
-            _cannon.Range = 20f;
-            _cannon.SplashRadius = 1.5f;
+            _splashTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _splashTower.DisplayName = "Splash Tower";
+            _splashRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _splashRole.TowerRadius = 20f;
+            _splashRole.Modifiers = new[]
+            {
+                new RoleStatModifier
+                {
+                    Stat = RoleStat.SplashRadius,
+                    Operation = RoleModifierOperation.Set,
+                    Value = 1.5f
+                }
+            };
+            _splashTower.Roles = new TowerRoleDefinition[] { _splashRole };
+            _splashTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
+            _splashTower.SocketCount = 3;
+            _splashTower.Damage = 8f;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
             _lmp.Id = GemId.MultipleProjectiles;
@@ -60,8 +72,10 @@ namespace GemTD.Tests.EditMode
         public void TearDown()
         {
             Object.DestroyImmediate(_enemyDef);
-            Object.DestroyImmediate(_ballista);
-            Object.DestroyImmediate(_cannon);
+            Object.DestroyImmediate(_projectileRole);
+            Object.DestroyImmediate(_splashRole);
+            Object.DestroyImmediate(_projectileTower);
+            Object.DestroyImmediate(_splashTower);
             Object.DestroyImmediate(_lmp);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_fork);
@@ -72,26 +86,25 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Hydra_FirstSegments_ThreeHeadsTimesLmpPellets()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
             Assert.IsTrue(tower.TrySocket(_lmp, 0, true));
             Assert.IsTrue(tower.TrySocket(_chain, 1, true));
             Assert.IsTrue(tower.TrySocket(_fork, 2, true));
-            Assert.IsTrue(EvolutionEvaluator.IsHydraBallista(tower));
+            Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
 
             var dummy = MakeEnemy(new Vector3(4f, 0f, 0f));
             var tracer = new AttackTracer();
             var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));
 
             Assert.IsTrue(trace.HasTarget);
-            Assert.AreEqual(3, CountKind(trace, AttackTraceKind.Primary));
-            Assert.AreEqual(6, CountKind(trace, AttackTraceKind.HydraHead));
+            Assert.AreEqual(0, CountKind(trace, AttackTraceKind.HydraHead));
             Assert.AreEqual(1000f, dummy.Hp, 1e-3f);
         }
 
         [Test]
         public void Chain_HopsNearest_AndFalloffOnHopSegment()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
             Assert.IsTrue(tower.TrySocket(_chain, 0, true));
 
             var e1 = MakeEnemy(new Vector3(3f, 0f, 0f));
@@ -111,7 +124,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Fork_TwoChildren_SameCollisionDoesNotChain()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
             Assert.IsTrue(tower.TrySocket(_fork, 0, true));
             Assert.IsTrue(tower.TrySocket(_chain, 1, true));
 
@@ -127,7 +140,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Pierce_ContinuesWithoutForkOnSameHit()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
             Assert.IsTrue(tower.TrySocket(_pierce, 0, true));
             Assert.IsTrue(tower.TrySocket(_fork, 1, true));
 
@@ -142,9 +155,9 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void CannonIncreasedArea_RecordsAoeDisc()
+        public void SplashTowerIncreasedArea_RecordsAoeDisc()
         {
-            var tower = new TowerRuntime(Vector2Int.zero, _cannon);
+            var tower = new TowerInstance(Vector2Int.zero, _splashTower);
             Assert.IsTrue(tower.TrySocket(_area, 0, true));
             var dummy = MakeEnemy(new Vector3(3f, 0f, 0f));
             var tracer = new AttackTracer();
@@ -157,10 +170,31 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void RoleSplash_UsesRoleValueInTrace()
+        {
+            _splashRole.Modifiers = new[]
+            {
+                new RoleStatModifier
+                {
+                    Stat = RoleStat.SplashRadius,
+                    Operation = RoleModifierOperation.Set,
+                    Value = 0.5f
+                }
+            };
+            var tower = new TowerInstance(Vector2Int.zero, _splashTower);
+            var dummy = MakeEnemy(new Vector3(3f, 0f, 0f));
+            var tracer = new AttackTracer();
+            var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(2f, trace.Discs[0].Radius, 0.001f);
+        }
+
+        [Test]
         public void OutOfRange_HasNoTarget()
         {
-            _ballista.Range = 2f;
-            var tower = new TowerRuntime(Vector2Int.zero, _ballista);
+            _projectileRole.TowerRadius = 2f;
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
             var dummy = MakeEnemy(new Vector3(20f, 0f, 0f));
             var tracer = new AttackTracer();
             var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));

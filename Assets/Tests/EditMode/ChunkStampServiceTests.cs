@@ -49,6 +49,18 @@ namespace GemTD.Tests.EditMode
             Object.DestroyImmediate(prefab.gameObject);
         }
 
+        [Test] public void GetRotatedMask_MatchesChunkMaskRotated()
+        {
+            var prefab = MakeStamp(StraightNS());
+            var expected = prefab.GetMask().Rotated(1);
+            var cached = prefab.GetRotatedMask(1);
+            for (var y = 0; y < ChunkMask.Size; y++)
+                for (var x = 0; x < ChunkMask.Size; x++)
+                    Assert.AreEqual(expected.IsPath(x, y), cached.IsPath(x, y), $"mismatch at {x},{y}");
+            Assert.AreEqual(expected.OpenEdges, cached.OpenEdges);
+            Object.DestroyImmediate(prefab.gameObject);
+        }
+
         [Test] public void Rollback_RestoresPriorPathCells()
         {
             var board = new GridBoard(9 * ChunkMask.Size, 9 * ChunkMask.Size);

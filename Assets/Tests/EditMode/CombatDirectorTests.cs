@@ -14,6 +14,7 @@ namespace GemTD.Tests.EditMode
 
         EnemyDefinition _enemyDef;
         TowerDefinition _towerDef;
+        AttackRoleDefinition _towerRole;
         GemDefinition _lmp;
         GemDefinition _chain;
         GemModifierPipeline _pipeline;
@@ -26,9 +27,10 @@ namespace GemTD.Tests.EditMode
             _enemyDef.MoveSpeed = 0.01f;
 
             _towerDef = ScriptableObject.CreateInstance<TowerDefinition>();
-            _towerDef.Range = 20f;
+            _towerRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _towerRole.TowerRadius = 20f;
+            _towerDef.Roles = new TowerRoleDefinition[] { _towerRole };
             _towerDef.Damage = 10f;
-            _towerDef.AttackInterval = 1f;
             _towerDef.SocketCount = 2;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
@@ -44,6 +46,7 @@ namespace GemTD.Tests.EditMode
         public void TearDown()
         {
             Object.DestroyImmediate(_enemyDef);
+            Object.DestroyImmediate(_towerRole);
             Object.DestroyImmediate(_towerDef);
             Object.DestroyImmediate(_lmp);
             Object.DestroyImmediate(_chain);
@@ -53,12 +56,12 @@ namespace GemTD.Tests.EditMode
         public void Tick_NoGems_SpawnsOneProjectileAtPrimary()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 100f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             var enemy = CreateEnemyNearTower();
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.AreSame(enemy, director.Projectiles[0].Target);
@@ -70,14 +73,14 @@ namespace GemTD.Tests.EditMode
         public void Tick_WithLmp_SpawnsProjectileCountSamePrimary()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 100f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             Assert.IsTrue(tower.TrySocket(_lmp, 0, allowSocket: true));
 
             var enemy = CreateEnemyNearTower();
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             Assert.AreEqual(3, director.Projectiles.Count);
             for (var i = 0; i < director.Projectiles.Count; i++)
@@ -88,7 +91,7 @@ namespace GemTD.Tests.EditMode
         public void Projectile_OnHit_AppliesDamage_AndChainsToNearestOther()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             Assert.IsTrue(tower.TrySocket(_chain, 0, allowSocket: true));
 
             var primary = CreateEnemyAtProgress(0.2f);
@@ -97,13 +100,13 @@ namespace GemTD.Tests.EditMode
             registry.Register(primary);
             registry.Register(secondary);
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.Greater(director.Projectiles[0].ChainRemaining, 0);
 
             // Drive projectile until first hit + bounce
             for (var i = 0; i < 60; i++)
-                director.Tick(0.05f, new List<TowerRuntime>(), registry, _pipeline);
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(primary.Hp, 100f);
             Assert.Less(secondary.Hp, 100f);
@@ -113,17 +116,17 @@ namespace GemTD.Tests.EditMode
         public void Projectile_ChainNoOp_WhenNoOtherLiving()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             Assert.IsTrue(tower.TrySocket(_chain, 0, allowSocket: true));
 
             var only = CreateEnemyNearTower();
             var registry = new EnemyRegistry();
             registry.Register(only);
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             for (var i = 0; i < 60; i++)
-                director.Tick(0.05f, new List<TowerRuntime>(), registry, _pipeline);
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(only.Hp, 100f);
             Assert.AreEqual(0, director.Projectiles.Count);
@@ -133,12 +136,12 @@ namespace GemTD.Tests.EditMode
         public void ClearProjectiles_RemovesInFlightBolts()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 100f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             var enemy = CreateEnemyNearTower();
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
             Assert.Greater(director.Projectiles.Count, 0);
 
             director.ClearProjectiles();
@@ -155,14 +158,14 @@ namespace GemTD.Tests.EditMode
             {
                 const float baseSpeed = 100f;
                 var director = new CombatDirector(CellSize, projectileSpeed: baseSpeed);
-                var tower = new TowerRuntime(new Vector2Int(0, 0), _towerDef);
+                var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
                 Assert.IsTrue(tower.TrySocket(slow, 0, allowSocket: true));
 
                 var enemy = CreateEnemyNearTower();
                 var registry = new EnemyRegistry();
                 registry.Register(enemy);
 
-                director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+                director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
 
                 Assert.AreEqual(1, director.Projectiles.Count);
                 Assert.AreEqual(baseSpeed * 0.6f, director.Projectiles[0].Speed, 1e-4f);
@@ -177,14 +180,14 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Hydra_SpawnsThreeTimesPelletCountOfBareLmp()
         {
-            var ballista = ScriptableObject.CreateInstance<TowerDefinition>();
-            ballista.DisplayName = "Ballista";
-            ballista.Kind = TowerKind.Projectile;
-            ballista.SocketCount = 3;
-            ballista.AllowsHydraEvolution = true;
-            ballista.Range = 20f;
-            ballista.Damage = 10f;
-            ballista.AttackInterval = 1f;
+            var hydraTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            hydraTower.DisplayName = "Hydra Test Tower";
+            var hydraRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            hydraTower.Roles = new TowerRoleDefinition[] { hydraRole };
+            hydraTower.SocketCount = 3;
+            hydraTower.AllowsHydraEvolution = true;
+            hydraTower.Damage = 10f;
+            hydraRole.TowerRadius = 20f;
 
             var fork = ScriptableObject.CreateInstance<GemDefinition>();
             fork.Id = GemId.Fork;
@@ -195,25 +198,26 @@ namespace GemTD.Tests.EditMode
                 var registry = new EnemyRegistry();
                 registry.Register(enemy);
 
-                var lmpOnly = new TowerRuntime(new Vector2Int(0, 0), ballista);
+                var lmpOnly = new TowerInstance(new Vector2Int(0, 0), hydraTower);
                 Assert.IsTrue(lmpOnly.TrySocket(_lmp, 0, allowSocket: true));
-                director.Tick(0.016f, new List<TowerRuntime> { lmpOnly }, registry, _pipeline);
+                director.Tick(0.016f, new List<TowerInstance> { lmpOnly }, registry, _pipeline);
                 Assert.AreEqual(3, director.Projectiles.Count);
 
                 director.ClearProjectiles();
 
-                var hydra = new TowerRuntime(new Vector2Int(0, 0), ballista);
+                var hydra = new TowerInstance(new Vector2Int(0, 0), hydraTower);
                 Assert.IsTrue(hydra.TrySocket(_lmp, 0, allowSocket: true));
                 Assert.IsTrue(hydra.TrySocket(_chain, 1, allowSocket: true));
                 Assert.IsTrue(hydra.TrySocket(fork, 2, allowSocket: true));
-                director.Tick(0.016f, new List<TowerRuntime> { hydra }, registry, _pipeline);
+                director.Tick(0.016f, new List<TowerInstance> { hydra }, registry, _pipeline);
 
-                // 3 heads × 3 LMP pellets; fork/chain children spawn on hit, not at fire time
-                Assert.AreEqual(9, director.Projectiles.Count);
+                // Hydra off: same fire as LMP-only (3 pellets). Fork/chain children spawn on hit.
+                Assert.AreEqual(3, director.Projectiles.Count);
             }
             finally
             {
-                Object.DestroyImmediate(ballista);
+                Object.DestroyImmediate(hydraTower);
+                Object.DestroyImmediate(hydraRole);
                 Object.DestroyImmediate(fork);
             }
         }

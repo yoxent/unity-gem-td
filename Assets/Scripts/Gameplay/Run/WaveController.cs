@@ -110,9 +110,7 @@ namespace GemTD.Gameplay.Run
                 var endsCampaign = !IsEndless
                     && (CurrentWaveNumber >= _endWave
                         || (_activeWave != null && _activeWave.EndsCampaign));
-                var authoredOffer = _activeWave != null && _activeWave.OfferDraftAfterClear;
-                var offerDraft = !endsCampaign
-                    && ShouldOfferDraft(CurrentWaveNumber, _waves.Length, authoredOffer);
+                var offerDraft = ShouldOfferDraft(CurrentWaveNumber, _endWave, IsEndless);
 
                 if (endsCampaign)
                     _beforeCampaignVictory?.Invoke();
@@ -124,14 +122,15 @@ namespace GemTD.Gameplay.Run
         }
 
         /// <summary>
-        /// Authored <paramref name="authoredOffer"/> for waves inside the catalog.
-        /// Past the last authored wave, offer on wave numbers divisible by 4 (16, 20, …).
+        /// Campaign: draft after every clear except the EndWave clear (victory).
+        /// Authored <see cref="WaveDefinition.OfferDraftAfterClear"/> is ignored.
+        /// Endless: never draft.
         /// </summary>
-        public static bool ShouldOfferDraft(int clearedWave, int catalogLength, bool authoredOffer)
+        public static bool ShouldOfferDraft(int clearedWave, int endWave, bool isEndless)
         {
-            if (clearedWave <= catalogLength)
-                return authoredOffer;
-            return (clearedWave % 4) == 0;
+            if (isEndless)
+                return false;
+            return clearedWave > 0 && clearedWave < endWave;
         }
 
         WaveDefinition ResolveWaveTemplate(int waveIndex)

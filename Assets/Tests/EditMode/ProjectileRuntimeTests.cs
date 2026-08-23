@@ -119,9 +119,10 @@ namespace GemTD.Tests.EditMode
         public void Shotgun_EachPellet_FullDamage_Regression()
         {
             var towerDef = ScriptableObject.CreateInstance<TowerDefinition>();
-            towerDef.Range = 20f;
+            var attackRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            attackRole.TowerRadius = 20f;
+            towerDef.Roles = new TowerRoleDefinition[] { attackRole };
             towerDef.Damage = 10f;
-            towerDef.AttackInterval = 1f;
             towerDef.SocketCount = 2;
 
             var lmp = ScriptableObject.CreateInstance<GemDefinition>();
@@ -130,7 +131,7 @@ namespace GemTD.Tests.EditMode
             try
             {
                 var director = new CombatDirector(CellSize, projectileSpeed: 100f);
-                var tower = new TowerRuntime(new Vector2Int(0, 0), towerDef);
+                var tower = new TowerInstance(new Vector2Int(0, 0), towerDef);
                 Assert.IsTrue(tower.TrySocket(lmp, 0, allowSocket: true));
 
                 var enemy = MakeEnemyAt(new Vector3(1.5f, 0f, 0.5f), 100f);
@@ -138,7 +139,7 @@ namespace GemTD.Tests.EditMode
                 registry.Register(enemy);
                 var pipeline = new GemModifierPipeline();
 
-                director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, pipeline);
+                director.Tick(0.016f, new List<TowerInstance> { tower }, registry, pipeline);
 
                 Assert.AreEqual(3, director.Projectiles.Count);
                 // LMP post-mod damage is base*0.8; each pellet deals that full amount (not split).
@@ -158,6 +159,7 @@ namespace GemTD.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(towerDef);
+                Object.DestroyImmediate(attackRole);
                 Object.DestroyImmediate(lmp);
             }
         }

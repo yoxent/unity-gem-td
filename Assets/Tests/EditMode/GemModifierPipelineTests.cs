@@ -62,7 +62,7 @@ namespace GemTD.Tests.EditMode
             var baseline = AttackSpec.FromBase(damage: 10f);
             var result = pipeline.Apply(baseline, new IAttackModifier[] { new FasterAttacksModifier() });
 
-            Assert.AreEqual(1.25f, result.FireRateMultiplier, 0.001f);
+            Assert.AreEqual(1.25f, result.AttackSpeedMultiplier, 0.001f);
         }
 
         [Test]
@@ -88,6 +88,8 @@ namespace GemTD.Tests.EditMode
         {
             var baseline = AttackSpec.FromBase(damage: 10f);
             Assert.AreEqual(1f, baseline.RangeMultiplier, 0.001f);
+            Assert.AreEqual(1f, baseline.AttackSpeedMultiplier, 0.001f);
+            Assert.AreEqual(1f, baseline.CastSpeedMultiplier, 0.001f);
             Assert.AreEqual(1f, baseline.ProjectileSpeedMultiplier, 0.001f);
             Assert.AreEqual(1, baseline.EchoVolleyCount);
             Assert.AreEqual(1f, baseline.EchoDamageFactor, 0.001f);
@@ -171,7 +173,8 @@ namespace GemTD.Tests.EditMode
             var def = ScriptableObject.CreateInstance<TowerDefinition>();
             def.Damage = 10f;
             def.SocketCount = 2;
-            var tower = new TowerRuntime(Vector2Int.zero, def);
+            def.Tags = GemTag.Attack | GemTag.Projectile;
+            var tower = new TowerInstance(Vector2Int.zero, def);
             var chain = ScriptableObject.CreateInstance<GemDefinition>();
             chain.Id = GemId.Chain;
             var fork = ScriptableObject.CreateInstance<GemDefinition>();

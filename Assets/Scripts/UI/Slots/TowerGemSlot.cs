@@ -16,6 +16,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] Button xButton;
         [SerializeField] Button slotButton;
+        [SerializeField] GameObject lockedIcon;
         [SerializeField] HoverPointerRelay slotHover;
         [SerializeField] HoverPointerRelay xHover;
 
@@ -31,6 +32,9 @@ namespace GemTD.UI
 
         void Awake()
         {
+            if (lockedIcon == null)
+                Debug.LogError("TowerGemSlot: assign Locked Icon on the prefab.", this);
+
             if (xButton != null)
                 xButton.onClick.AddListener(OnXClicked);
 
@@ -56,6 +60,16 @@ namespace GemTD.UI
             if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
             if (xButton != null && (_root == null || !_root.CanUnsocketSelected(_socketIndex)))
                 xButton.gameObject.SetActive(false);
+            RefreshLockOverlay();
+        }
+
+        public void RefreshLockOverlay()
+        {
+            var locked = _root != null && _root.SelectedSocketsLocked;
+            if (lockedIcon != null && lockedIcon.activeSelf != locked)
+                lockedIcon.SetActive(locked);
+            if (slotButton != null)
+                slotButton.interactable = !locked;
         }
 
         public void OnBeginDrag(PointerEventData eventData)

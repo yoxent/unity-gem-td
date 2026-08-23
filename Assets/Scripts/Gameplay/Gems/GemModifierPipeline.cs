@@ -27,7 +27,7 @@ namespace GemTD.Gameplay.Gems
         /// Live attack spec for a tower (same path Combat uses). <paramref name="scratch"/>
         /// is cleared and filled with socket modifiers — caller owns pooling.
         /// </summary>
-        public AttackSpec Resolve(TowerRuntime tower, List<IAttackModifier> scratch)
+        public AttackSpec Resolve(TowerInstance tower, List<IAttackModifier> scratch)
         {
             if (scratch == null)
                 throw new ArgumentNullException(nameof(scratch));
@@ -35,11 +35,11 @@ namespace GemTD.Gameplay.Gems
             CollectSocketModifiers(tower, scratch);
             var baseline = tower?.Def == null
                 ? AttackSpec.FromBase(0f)
-                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.SplashRadius);
+                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.GetSplashRadius(tower.Level));
             return Apply(baseline, scratch);
         }
 
-        public static void CollectSocketModifiers(TowerRuntime tower, List<IAttackModifier> into)
+        public static void CollectSocketModifiers(TowerInstance tower, List<IAttackModifier> into)
         {
             into.Clear();
             if (tower?.Sockets == null)

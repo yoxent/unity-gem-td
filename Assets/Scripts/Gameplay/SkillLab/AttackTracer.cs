@@ -36,17 +36,17 @@ namespace GemTD.Gameplay.SkillLab
             public EnemyRuntime LastHit;
         }
 
-        public AttackTrace Trace(TowerRuntime tower, Vector3 origin, List<EnemyRuntime> dummies)
+        public AttackTrace Trace(TowerInstance tower, Vector3 origin, List<EnemyRuntime> dummies)
         {
             var trace = new AttackTrace();
-            if (tower == null || tower.Def == null || tower.Def.Kind == TowerKind.Aura)
+            if (tower == null || tower.Def == null || !tower.Def.IsFireable)
                 return trace;
             if (dummies == null || dummies.Count == 0)
                 return trace;
 
             var spec = _pipeline.Resolve(tower, _scratch);
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
-            var range = tower.Def.Range * rangeMul;
+            var range = tower.Def.GetFireTowerRadius(tower.Level) * rangeMul;
             if (!_selector.TrySelect(tower.Targeting, origin, range, dummies, out var primary) || primary == null)
                 return trace;
 
@@ -54,8 +54,8 @@ namespace GemTD.Gameplay.SkillLab
             _queue.Clear();
 
             var pierceRemaining = spec.Pierce ? ProjectileRuntime.DefaultPierceRemaining : 0;
-            var damage = spec.Damage * tower.OutgoingDamageMultiplier;
-            var hydra = EvolutionEvaluator.IsHydraBallista(tower);
+            var damage = spec.Damage;
+            var hydra = EvolutionEvaluator.IsHydraTower(tower);
             if (hydra)
             {
                 var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;

@@ -13,7 +13,7 @@ namespace GemTD.Tests.EditMode
         PathGraph _graph;
         RunEconomy _economy;
         TowerPlacementService _placement;
-        TowerDefinition _ballista;
+        TowerDefinition _tower;
         GemDefinition _lmp;
 
         [SetUp]
@@ -23,10 +23,11 @@ namespace GemTD.Tests.EditMode
             _economy = new RunEconomy(100, 20);
             _placement = new TowerPlacementService(_board, _graph, _economy);
 
-            _ballista = ScriptableObject.CreateInstance<TowerDefinition>();
-            _ballista.DisplayName = "Ballista";
-            _ballista.Cost = 50;
-            _ballista.SocketCount = 2;
+            _tower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _tower.DisplayName = "Test Tower";
+            _tower.Cost = 50;
+            _tower.SocketCount = 2;
+            _tower.Tags = GemTag.Attack | GemTag.Projectile;
 
             _lmp = ScriptableObject.CreateInstance<GemDefinition>();
             _lmp.Id = GemId.MultipleProjectiles;
@@ -36,7 +37,7 @@ namespace GemTD.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
-            Object.DestroyImmediate(_ballista);
+            Object.DestroyImmediate(_tower);
             Object.DestroyImmediate(_lmp);
         }
 
@@ -44,7 +45,7 @@ namespace GemTD.Tests.EditMode
         public void CanPlace_True_WhenBuildableAndAffordable()
         {
             var cell = new Vector2Int(3, 4);
-            Assert.IsTrue(_placement.CanPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost));
+            Assert.IsTrue(_placement.CanPlace(_tower, cell, RunStateId.Plan, _tower.Cost));
             Assert.AreEqual(100, _economy.Gold);
         }
 
@@ -52,11 +53,11 @@ namespace GemTD.Tests.EditMode
         public void CanPlace_False_WhenOccupiedOrUnaffordable()
         {
             var cell = new Vector2Int(3, 4);
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out _));
-            Assert.IsFalse(_placement.CanPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out _));
+            Assert.IsFalse(_placement.CanPlace(_tower, cell, RunStateId.Plan, _tower.Cost));
 
             var other = new Vector2Int(4, 4);
-            Assert.IsFalse(_placement.CanPlace(_ballista, other, RunStateId.Plan, 999));
+            Assert.IsFalse(_placement.CanPlace(_tower, other, RunStateId.Plan, 999));
         }
 
         [Test]
@@ -64,11 +65,11 @@ namespace GemTD.Tests.EditMode
         {
             var cell = new Vector2Int(3, 4);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Combat, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Combat, _tower.Cost, out var tower));
 
             Assert.IsNotNull(tower);
             Assert.AreEqual(cell, tower.Cell);
-            Assert.AreSame(_ballista, tower.Def);
+            Assert.AreSame(_tower, tower.Def);
             Assert.AreEqual(50, _economy.Gold);
             Assert.IsTrue(_placement.IsOccupied(cell));
             Assert.AreEqual(50, tower.PurchaseCost);
@@ -80,7 +81,7 @@ namespace GemTD.Tests.EditMode
         {
             var cell = new Vector2Int(3, 4);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
 
             Assert.IsNotNull(tower);
             Assert.AreEqual(50, _economy.Gold);
@@ -91,7 +92,7 @@ namespace GemTD.Tests.EditMode
         public void TrySell_AllowedInCombat()
         {
             var cell = new Vector2Int(3, 4);
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
             Assert.AreEqual(50, _economy.Gold);
 
             Assert.IsTrue(_placement.TrySell(tower, RunStateId.Combat, new GemInventory(6)));
@@ -105,7 +106,7 @@ namespace GemTD.Tests.EditMode
             var cell = new Vector2Int(3, 4);
             var inventory = new GemInventory(6);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
             Assert.AreEqual(50, _economy.Gold);
 
             tower.TrySocket(_lmp, 0, allowSocket: true);
@@ -126,7 +127,7 @@ namespace GemTD.Tests.EditMode
             var inventory = new GemInventory(1);
             inventory.TryAdd(_lmp);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
             Assert.AreEqual(50, _economy.Gold);
 
             var socketGem = ScriptableObject.CreateInstance<GemDefinition>();
@@ -151,11 +152,11 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TrySell_AllSocketsFilled_ReturnsEveryGemWhenBagFits()
         {
-            _ballista.SocketCount = 3;
+            _tower.SocketCount = 3;
             var cell = new Vector2Int(3, 4);
             var inventory = new GemInventory(3);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
 
             var chain = ScriptableObject.CreateInstance<GemDefinition>();
             chain.Id = GemId.Chain;
@@ -187,13 +188,13 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TrySell_AllSocketsFilled_BlockedWhenBagHasTooFewFreeSlots()
         {
-            _ballista.SocketCount = 3;
+            _tower.SocketCount = 3;
             var cell = new Vector2Int(3, 4);
             var inventory = new GemInventory(4);
             inventory.TryAdd(_lmp);
             inventory.TryAdd(_lmp);
 
-            Assert.IsTrue(_placement.TryPlace(_ballista, cell, RunStateId.Plan, _ballista.Cost, out var tower));
+            Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
 
             var chain = ScriptableObject.CreateInstance<GemDefinition>();
             chain.Id = GemId.Chain;

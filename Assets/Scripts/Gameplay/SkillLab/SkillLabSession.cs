@@ -26,12 +26,12 @@ namespace GemTD.Gameplay.SkillLab
         GemDefinition[] _catalog;
 
         public DummyField Dummies { get; } = new DummyField();
-        public TowerRuntime Tower { get; private set; }
+        public TowerInstance Tower { get; private set; }
         public Vector3 TowerPosition { get; set; } = DummyField.DefaultTowerPosition;
         public AttackTrace LastTrace { get; private set; } = new AttackTrace();
         public string Status { get; private set; } = StatusIdle;
 
-        public bool IsHydra => EvolutionEvaluator.IsHydraBallista(Tower);
+        public bool IsHydra => EvolutionEvaluator.IsHydraTower(Tower);
 
         public float Range
         {
@@ -41,7 +41,7 @@ namespace GemTD.Gameplay.SkillLab
                     return 0f;
                 var spec = _pipeline.Resolve(Tower, _scratch);
                 var mul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
-                return Tower.Def.Range * mul;
+                return Tower.Def.GetFireTowerRadius(Tower.Level) * mul;
             }
         }
 
@@ -52,7 +52,7 @@ namespace GemTD.Gameplay.SkillLab
 
         public void SetTowerDef(TowerDefinition def)
         {
-            Tower = new TowerRuntime(Vector2Int.zero, def);
+            Tower = new TowerInstance(Vector2Int.zero, def);
             ClearOverlay();
         }
 

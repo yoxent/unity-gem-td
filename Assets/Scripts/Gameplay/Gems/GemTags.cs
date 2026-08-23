@@ -41,17 +41,14 @@ namespace GemTD.Gameplay.Gems
             if (def.Tags != GemTag.None)
                 return def.Tags;
 
-            switch (def.Kind)
-            {
-                case TowerKind.Projectile:
-                    return GemTag.Attack | GemTag.Projectile;
-                case TowerKind.Splash:
-                    return GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
-                case TowerKind.Aura:
-                    return GemTag.Aura;
-                default:
-                    return GemTag.None;
-            }
+            var tags = GemTag.None;
+            if (def.HasRole<AttackRoleDefinition>())
+                tags |= GemTag.Attack | GemTag.Projectile;
+            if (def.HasRole<SpellRoleDefinition>())
+                tags |= GemTag.Spell;
+            if (def.HasRole<AuraRoleDefinition>())
+                tags |= GemTag.Aura;
+            return tags;
         }
 
         public static GemTag EffectiveGemTags(GemDefinition gem)

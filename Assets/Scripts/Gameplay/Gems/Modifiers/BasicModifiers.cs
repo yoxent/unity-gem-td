@@ -122,7 +122,7 @@ namespace GemTD.Gameplay.Gems
 
         public AttackSpec Modify(AttackSpec spec)
         {
-            spec.FireRateMultiplier *= _fireRateMultiplier;
+            spec.AttackSpeedMultiplier *= _fireRateMultiplier;
             return spec;
         }
     }

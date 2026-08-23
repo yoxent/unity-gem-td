@@ -51,14 +51,24 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TryGetWaypointPolyline_TipToHome_StartsAtTipEndsAtHome()
+        public void TryGetWaypointPolyline_RepeatedCalls_SameResult()
         {
             var graph = BuildCorridor();
             var tip = new Vector2Int(7, 3);
-            var path = new List<Vector2Int>();
-            Assert.IsTrue(graph.TryGetWaypointPolyline(tip, path));
-            Assert.AreEqual(tip, path[0]);
-            Assert.AreEqual(graph.Home, path[path.Count - 1]);
+            var first = new List<Vector2Int>();
+            var second = new List<Vector2Int>();
+            Assert.IsTrue(graph.TryGetWaypointPolyline(tip, first));
+            Assert.IsTrue(graph.TryGetWaypointPolyline(tip, second));
+            Assert.AreEqual(first, second);
+        }
+
+        [Test]
+        public void AllTipsReachHome_UnreachableTip_False()
+        {
+            var graph = BuildCorridor();
+            graph.SetPathTile(0, 0, true);
+            graph.SetPathTile(0, 1, true);
+            Assert.IsFalse(graph.AllTipsReachHome());
         }
 
         [Test]

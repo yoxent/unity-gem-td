@@ -6,6 +6,7 @@ using TMPro;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.UI
 {
@@ -21,6 +22,7 @@ namespace GemTD.UI
         [SerializeField] SlotEventHandler slotEvents;
         [SerializeField] CanvasGroup canvasGroup;
         [SerializeField] HoverPointerRelay xHover;
+        [SerializeField] GameObject disabledOverlay;
 
         static InventoryGemSlot s_dragSource;
         static RectTransform s_ghost;
@@ -45,7 +47,26 @@ namespace GemTD.UI
             if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
             if (slotEvents != null)
                 slotEvents.SetBaseColor(gem != null ? FilledColor : EmptyColor);
+            RefreshDisabledOverlay();
             RefreshXVisible();
+        }
+
+        public static bool ShouldShowDisabledOverlay(GemDefinition gem, TowerDefinition selectedTower)
+        {
+            if (gem == null || selectedTower == null)
+                return false;
+            return !GemTags.CanSocket(selectedTower, gem);
+        }
+
+        public void RefreshDisabledOverlay()
+        {
+            if (disabledOverlay == null)
+                return;
+            var selected = _root != null && _root.HasSelectedTower
+                ? _root.Placement.Selected
+                : null;
+            var towerDef = selected != null ? selected.Def : null;
+            disabledOverlay.SetActive(ShouldShowDisabledOverlay(_gem, towerDef));
         }
 
         public void SetPointerInteractable(bool interactable)

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
 {
-    /// <summary>Greybox tower mesh bound to a <see cref="TowerRuntime"/>.</summary>
+    /// <summary>Greybox tower mesh bound to a <see cref="TowerInstance"/>.</summary>
     public sealed class TowerView : MonoBehaviour
     {
         static readonly Color IdleColor = new Color(0.45f, 0.5f, 0.55f);
@@ -11,9 +11,9 @@ namespace GemTD.Gameplay.Towers
         MeshRenderer _renderer;
         MaterialPropertyBlock _block;
 
-        public TowerRuntime Runtime { get; private set; }
+        public TowerInstance Runtime { get; private set; }
 
-        public void Bind(TowerRuntime runtime, Vector3 worldPosition)
+        public void Bind(TowerInstance runtime, Vector3 worldPosition)
         {
             Runtime = runtime;
             transform.position = worldPosition + Vector3.up * 0.55f;

@@ -38,6 +38,20 @@ namespace GemTD.Gameplay.Map
             _catalog = catalog;
             _rng = rng;
             Config = config;
+            WarmMaskCache();
+        }
+
+        void WarmMaskCache()
+        {
+            if (_catalog == null)
+                return;
+            _catalog.CopyAll(_all);
+            for (var i = 0; i < _all.Count; i++)
+            {
+                var stamp = _all[i];
+                if (stamp != null)
+                    stamp.GetRotatedMask(0);
+            }
         }
 
         public int CollectLegalExpands(List<Vector2Int> into)
@@ -149,14 +163,14 @@ namespace GemTD.Gameplay.Map
             {
                 var prefab = all[i];
                 if (prefab == null) continue;
-                var baseMask = prefab.GetMask();
                 for (var yaw = 0; yaw < 4; yaw++)
                 {
-                    var mask = baseMask.Rotated(yaw);
+                    var mask = prefab.GetRotatedMask(yaw);
                     if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
                     if (!KeepsTreeSeparation(coord, mask)) continue;
-                    if (TentativeReachesHome(coord, prefab, yaw))
-                        into.Add((prefab, yaw));
+                    if (!TryUniqueIncoming(coord, out var incoming)) continue;
+                    if (!mask.AllPathTilesReachEdge(incoming)) continue;
+                    into.Add((prefab, yaw));
                 }
             }
         }
@@ -304,14 +318,6 @@ namespace GemTD.Gameplay.Map
             return count == 1;
         }
 
-        bool TentativeReachesHome(Vector2Int coord, MapChunkStamp prefab, int yaw)
-        {
-            var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
-            var ok = _path.AllTipsReachHome();
-            _stamp.Rollback(coord, res, _path, _board);
-            return ok;
-        }
-
         void ApplyPickFilters(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
         {
             if (ExpandPickPolicy.IsClosingWindow(
@@ -442,7 +448,7 @@ namespace GemTD.Gameplay.Map
 
         bool OpensIntoForcedPocket(Vector2Int coord, (MapChunkStamp prefab, int yaw) pick)
         {
-            var mask = pick.prefab.GetMask().Rotated(pick.yaw);
+            var mask = pick.prefab.GetRotatedMask(pick.yaw);
             if (!TryUniqueIncoming(coord, out var incoming))
                 return false;
             for (var d = 0; d < _dirs.Length; d++)

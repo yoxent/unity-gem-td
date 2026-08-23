@@ -95,7 +95,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Tick_WhenQueueEmptyAndNoLiveEnemies_GrantsGoldAndClearsToPlan()
+        public void Tick_WhenQueueEmptyAndNoLiveEnemies_GrantsGoldAndClearsToDraft()
         {
             var controller = CreateController(new[] { _wave1 }, endWaveGold: 25);
             var gate = new TestSpawnerGate();
@@ -110,7 +110,7 @@ namespace GemTD.Tests.EditMode
             controller.Tick(0f, gate.Gate);
 
             Assert.AreEqual(25, _economy.Gold);
-            Assert.AreEqual(RunStateId.Plan, _states.Current);
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
         }
 
         [Test]
@@ -321,7 +321,7 @@ namespace GemTD.Tests.EditMode
             var gate = new TestSpawnerGate();
             EnterPlanReady();
             ClearWave(controller, gate, expectedSpawns: 2);
-            Assert.AreEqual(RunStateId.Plan, _states.Current);
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
         }
 
         [Test]
@@ -333,16 +333,16 @@ namespace GemTD.Tests.EditMode
 
             EnterPlanReady();
             ClearWave(controller, gate, expectedSpawns: 2); // wave 1
-            Assert.AreEqual(RunStateId.Plan, _states.Current);
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
 
             EnterPlanReady();
             ClearWave(controller, gate, expectedSpawns: 3); // wave 2
-            Assert.AreEqual(RunStateId.Plan, _states.Current);
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
 
             EnterPlanReady();
             ClearWave(controller, gate, expectedSpawns: 3); // wave 3 (reuse wave2)
             Assert.AreEqual(3, controller.CurrentWaveNumber);
-            Assert.AreEqual(RunStateId.Plan, _states.Current);
+            Assert.AreEqual(RunStateId.Draft, _states.Current);
 
             EnterPlanReady();
             ClearWave(controller, gate, expectedSpawns: 3); // wave 4 → Victory
@@ -447,13 +447,13 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void ShouldOfferDraft_AuthoredFlagInsideCatalog_CadenceBeyond()
+        public void ShouldOfferDraft_EveryCampaignWaveExceptLast_NeverEndless()
         {
-            Assert.IsTrue(WaveController.ShouldOfferDraft(12, 15, authoredOffer: true));
-            Assert.IsFalse(WaveController.ShouldOfferDraft(15, 15, authoredOffer: false));
-            Assert.IsTrue(WaveController.ShouldOfferDraft(16, 15, authoredOffer: false));
-            Assert.IsTrue(WaveController.ShouldOfferDraft(20, 15, authoredOffer: false));
-            Assert.IsFalse(WaveController.ShouldOfferDraft(17, 15, authoredOffer: false));
+            Assert.IsTrue(WaveController.ShouldOfferDraft(1, endWave: 50, isEndless: false));
+            Assert.IsTrue(WaveController.ShouldOfferDraft(49, endWave: 50, isEndless: false));
+            Assert.IsFalse(WaveController.ShouldOfferDraft(50, endWave: 50, isEndless: false));
+            Assert.IsFalse(WaveController.ShouldOfferDraft(1, endWave: 50, isEndless: true));
+            Assert.IsFalse(WaveController.ShouldOfferDraft(16, endWave: 50, isEndless: true));
         }
 
         [Test]
@@ -474,13 +474,13 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void SixWaveFixture_DraftOn2And4_VictoryOn6()
+        public void SixWaveFixture_DraftAfterEveryClear_VictoryOnLast()
         {
             var waves = new WaveDefinition[6];
             for (var i = 0; i < 6; i++)
             {
                 waves[i] = CreateWave(i + 1, _enemyDef, count: 1, interval: 0f);
-                waves[i].OfferDraftAfterClear = i == 1 || i == 3;
+                waves[i].OfferDraftAfterClear = false;
                 waves[i].EndsCampaign = i == 5;
             }
 
@@ -500,12 +500,10 @@ namespace GemTD.Tests.EditMode
 
                     ClearWave(controller, gate, expectedSpawns: 1);
 
-                    if (w == 1 || w == 3)
-                        Assert.AreEqual(RunStateId.Draft, _states.Current);
-                    else if (w == 5)
+                    if (w == 5)
                         Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
                     else
-                        Assert.AreEqual(RunStateId.Plan, _states.Current);
+                        Assert.AreEqual(RunStateId.Draft, _states.Current);
                 }
             }
             finally
@@ -574,6 +572,8 @@ namespace GemTD.Tests.EditMode
         {
             for (var w = 0; w < waveCount; w++)
             {
+                if (_states.Current == RunStateId.Draft)
+                    _states.DraftResolved();
                 EnterPlanReady();
                 ClearWave(controller, gate, expectedSpawns: 1);
             }
