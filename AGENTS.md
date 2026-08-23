@@ -18,7 +18,7 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 
 ## Agent rules
 
-1. **Docs repo first** for product/design/plan/SDD context (absolute path above), then **SCE** → Context7 → web. Report SCE gaps; if docs existed only under docs-repo and were missed, say so.
+1. **Docs repo first** for product/design/plan/SDD context (absolute path above), then **SCE** → Context7 → web. Report SCE gaps; if docs existed only under docs-repo and were missed, say so. **SCE query:** search `unity-gem-td` (repo / docs-tree name). Do not search “Gem TD” — that string does not retrieve this project.
 2. **Pushback** when a suggestion is suboptimal: goal → why not → better option → why → when to revisit.
 3. **No gameplay reflection** — explicit factories / SO methods.
 4. **Data in ScriptableObjects**; thin MonoBehaviours; plain C# domain.
