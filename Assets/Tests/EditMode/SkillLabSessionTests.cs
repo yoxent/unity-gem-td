@@ -24,28 +24,32 @@ namespace GemTD.Tests.EditMode
 
             _fireball = ScriptableObject.CreateInstance<TowerDefinition>();
             _fireballRole = ScriptableObject.CreateInstance<SpellRoleDefinition>();
-            _fireballRole.TowerRadius = 20f;
             _fireballRole.Modifiers = new[]
             {
-                new RoleStatModifier
-                {
-                    Stat = RoleStat.SplashRadius,
-                    Operation = RoleModifierOperation.Set,
-                    Value = 1.5f
-                }
+                Modifier(RoleStat.CastTime, 0.75f),
+                Modifier(RoleStat.CastSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.SplashRadius, 1.5f)
             };
             _fireball.Roles = new TowerRoleDefinition[] { _fireballRole };
             _fireball.Tags = GemTag.Spell | GemTag.Projectile | GemTag.Aoe;
             _fireball.SocketCount = 3;
             _fireball.Damage = 8f;
+            _fireball.DisplayName = "Fireball";
 
             _alternateTower = ScriptableObject.CreateInstance<TowerDefinition>();
             _alternateRole = ScriptableObject.CreateInstance<SpellRoleDefinition>();
-            _alternateRole.TowerRadius = 20f;
+            _alternateRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.CastTime, 0.75f),
+                Modifier(RoleStat.CastSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f)
+            };
             _alternateTower.Roles = new TowerRoleDefinition[] { _alternateRole };
             _alternateTower.Tags = GemTag.Spell | GemTag.Projectile | GemTag.Aoe;
             _alternateTower.SocketCount = 3;
             _alternateTower.Damage = 8f;
+            _alternateTower.DisplayName = "Cleave";
 
             var ids = new[]
             {
@@ -76,7 +80,13 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Fire_OutOfRange_SetsStatus_ClearsSegments()
         {
-            _fireballRole.TowerRadius = 1f;
+            _fireballRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.CastTime, 0.75f),
+                Modifier(RoleStat.CastSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 1f),
+                Modifier(RoleStat.SplashRadius, 1.5f)
+            };
             var session = MakeSession();
             session.TowerPosition = DummyField.DefaultTowerPosition;
             session.Fire();
@@ -85,30 +95,13 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Range_UsesTowerInstanceLevelAndSpellRoleRadius()
+        public void Range_UsesSpellRoleModifier()
         {
-            _fireballRole.Levels = new[]
-            {
-                new RoleLevelDefinition
-                {
-                    SourceLevel = 20,
-                    Modifiers = new[]
-                    {
-                        new RoleStatModifier
-                        {
-                            Stat = RoleStat.TowerRadius,
-                            Operation = RoleModifierOperation.Set,
-                            Value = 12f
-                        }
-                    }
-                }
-            };
-
             var session = MakeSession();
-            Assert.AreEqual(12f, session.Range, 0.001f);
+            Assert.AreEqual(20f, session.Range, 0.001f);
 
-            session.Tower.SetLevel(24);
-            Assert.AreEqual(12f, session.Range, 0.001f);
+            session.Tower.SetLevel(10);
+            Assert.AreEqual(20f, session.Range, 0.001f);
         }
 
         [Test]
@@ -134,6 +127,64 @@ namespace GemTD.Tests.EditMode
             session.SetTowerDef(_alternateTower);
             Assert.AreEqual(0, session.LastTrace.Segments.Count);
             Assert.AreEqual(_alternateTower, session.Tower.Def);
+        }
+
+        [Test]
+        public void BindTowers_SortsByDisplayName_SkipsNulls()
+        {
+            var session = new SkillLabSession();
+            session.BindTowers(new[] { _fireball, null, _alternateTower });
+            Assert.AreEqual(2, session.Towers.Length);
+            Assert.AreSame(_alternateTower, session.Towers[0]);
+            Assert.AreSame(_fireball, session.Towers[1]);
+        }
+
+        [Test]
+        public void SelectTower_LoadsBoundDefinition_ClearsOverlay()
+        {
+            var session = MakeSession();
+            session.BindTowers(new[] { _fireball, _alternateTower });
+            session.SelectTower(session.IndexOfDisplayName("Fireball"));
+            session.TowerPosition = Vector3.zero;
+            session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
+            session.Fire();
+            Assert.IsTrue(session.LastTrace.HasTarget);
+
+            session.SelectTower(session.IndexOfDisplayName("Cleave"));
+            Assert.AreSame(_alternateTower, session.Tower.Def);
+            Assert.AreEqual(session.IndexOfDisplayName("Cleave"), session.SelectedTowerIndex);
+            Assert.AreEqual(0, session.LastTrace.Segments.Count);
+        }
+
+        [Test]
+        public void SelectTower_SameTower_KeepsSockets()
+        {
+            var session = MakeSession();
+            session.BindTowers(new[] { _fireball });
+            session.SelectTower(0);
+            session.SetSocket(0, GemId.MultipleProjectiles);
+            session.SelectTower(0);
+            Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
+        }
+
+        [Test]
+        public void SelectTower_OutOfRange_NoOp()
+        {
+            var session = MakeSession();
+            session.BindTowers(new[] { _fireball, _alternateTower });
+            session.SelectTower(0);
+            session.SelectTower(-1);
+            session.SelectTower(99);
+            Assert.AreSame(session.Towers[0], session.Tower.Def);
+        }
+
+        [Test]
+        public void IndexOfDisplayName_FindsFireball()
+        {
+            var session = new SkillLabSession();
+            session.BindTowers(new[] { _alternateTower, _fireball });
+            Assert.AreEqual(1, session.IndexOfDisplayName("Fireball"));
+            Assert.AreEqual(-1, session.IndexOfDisplayName("Missing"));
         }
 
         [Test]
@@ -170,6 +221,11 @@ namespace GemTD.Tests.EditMode
             session.SetSocket(1, GemId.MultipleProjectiles);
             Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
             Assert.IsNull(session.Tower.Sockets[1]);
+        }
+
+        static RoleStatModifier Modifier(RoleStat stat, float value)
+        {
+            return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);
         }
 
         SkillLabSession MakeSession()

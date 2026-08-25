@@ -19,14 +19,19 @@ namespace GemTD.Gameplay.SkillLab
             GemId.AddedColdDamage, GemId.AddedLightningDamage, GemId.Knockback
         };
 
+        static readonly TowerDefinition[] EmptyTowers = System.Array.Empty<TowerDefinition>();
+
         readonly AttackTracer _tracer = new AttackTracer();
         readonly GemModifierPipeline _pipeline = new GemModifierPipeline();
         readonly List<IAttackModifier> _scratch = new List<IAttackModifier>(8);
         readonly List<EnemyRuntime> _living = new List<EnemyRuntime>(DummyField.PinCount);
         GemDefinition[] _catalog;
+        TowerDefinition[] _towers = EmptyTowers;
 
         public DummyField Dummies { get; } = new DummyField();
         public TowerInstance Tower { get; private set; }
+        public TowerDefinition[] Towers => _towers;
+        public int SelectedTowerIndex { get; private set; } = -1;
         public Vector3 TowerPosition { get; set; } = DummyField.DefaultTowerPosition;
         public AttackTrace LastTrace { get; private set; } = new AttackTrace();
         public string Status { get; private set; } = StatusIdle;
@@ -50,10 +55,76 @@ namespace GemTD.Gameplay.SkillLab
             _catalog = catalog;
         }
 
+        public void BindTowers(TowerDefinition[] towers)
+        {
+            if (towers == null || towers.Length == 0)
+            {
+                _towers = EmptyTowers;
+                return;
+            }
+
+            var count = 0;
+            for (var i = 0; i < towers.Length; i++)
+            {
+                if (towers[i] != null)
+                    count++;
+            }
+
+            if (count == 0)
+            {
+                _towers = EmptyTowers;
+                return;
+            }
+
+            var compact = new TowerDefinition[count];
+            var n = 0;
+            for (var i = 0; i < towers.Length; i++)
+            {
+                if (towers[i] != null)
+                    compact[n++] = towers[i];
+            }
+
+            System.Array.Sort(compact, CompareTowerNames);
+            _towers = compact;
+        }
+
+        public void SelectTower(int index)
+        {
+            if (index < 0 || index >= _towers.Length)
+                return;
+            var def = _towers[index];
+            if (def == null)
+                return;
+            if (Tower != null && Tower.Def == def && SelectedTowerIndex == index)
+                return;
+            SetTowerDef(def);
+        }
+
+        public int IndexOfDisplayName(string displayName)
+        {
+            if (string.IsNullOrEmpty(displayName))
+                return -1;
+            for (var i = 0; i < _towers.Length; i++)
+            {
+                if (_towers[i] != null && _towers[i].DisplayName == displayName)
+                    return i;
+            }
+
+            return -1;
+        }
+
         public void SetTowerDef(TowerDefinition def)
         {
             Tower = new TowerInstance(Vector2Int.zero, def);
+            SelectedTowerIndex = IndexOfDef(def);
             ClearOverlay();
+        }
+
+        public static string TowerLabel(TowerDefinition def)
+        {
+            if (def == null)
+                return "";
+            return string.IsNullOrEmpty(def.DisplayName) ? def.name : def.DisplayName;
         }
 
         public void SetSocket(int index, GemId id)
@@ -129,6 +200,27 @@ namespace GemTD.Gameplay.SkillLab
             }
 
             return null;
+        }
+
+        int IndexOfDef(TowerDefinition def)
+        {
+            if (def == null)
+                return -1;
+            for (var i = 0; i < _towers.Length; i++)
+            {
+                if (_towers[i] == def)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        static int CompareTowerNames(TowerDefinition a, TowerDefinition b)
+        {
+            var cmp = string.Compare(TowerLabel(a), TowerLabel(b), System.StringComparison.OrdinalIgnoreCase);
+            if (cmp != 0)
+                return cmp;
+            return string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase);
         }
 
         bool HasOtherSocket(int exceptIndex, GemId id)

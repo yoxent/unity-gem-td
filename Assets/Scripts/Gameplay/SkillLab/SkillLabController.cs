@@ -10,7 +10,9 @@ namespace GemTD.Gameplay.SkillLab
 {
     public sealed class SkillLabController : MonoBehaviour
     {
-        [SerializeField] TowerDefinition fireball;
+        const string DefaultTowerName = "Fireball";
+
+        [SerializeField] TowerCatalog towerCatalog;
         [SerializeField] GemDefinition[] draftGems;
         [SerializeField] EnemyDefinition dummyDefinition;
         [SerializeField] AttackOverlayView overlay;
@@ -27,7 +29,7 @@ namespace GemTD.Gameplay.SkillLab
 
         void Awake()
         {
-            if (fireball == null) Debug.LogError("SkillLabController: fireball is not assigned.", this);
+            if (towerCatalog == null) Debug.LogError("SkillLabController: towerCatalog is not assigned.", this);
             if (draftGems == null || draftGems.Length == 0) Debug.LogError("SkillLabController: draftGems is not assigned.", this);
             if (dummyDefinition == null) Debug.LogError("SkillLabController: dummyDefinition is not assigned.", this);
             if (overlay == null) Debug.LogError("SkillLabController: overlay is not assigned.", this);
@@ -37,8 +39,15 @@ namespace GemTD.Gameplay.SkillLab
                 Debug.LogError("SkillLabController: dummyViews must have 10 entries.", this);
 
             _session.BindCatalog(draftGems);
-            if (fireball != null)
-                _session.SetTowerDef(fireball);
+            if (towerCatalog != null)
+            {
+                _session.BindTowers(towerCatalog.GetTowersOrEmpty());
+                var index = _session.IndexOfDisplayName(DefaultTowerName);
+                if (index < 0 && _session.Towers.Length > 0)
+                    index = 0;
+                if (index >= 0)
+                    _session.SelectTower(index);
+            }
             if (dummyDefinition != null)
                 _session.Dummies.Init(dummyDefinition);
             _session.TowerPosition = DummyField.DefaultTowerPosition;
@@ -92,10 +101,9 @@ namespace GemTD.Gameplay.SkillLab
             }
         }
 
-        public void SelectFireball()
+        public void SelectTower(int index)
         {
-            if (fireball != null)
-                _session.SetTowerDef(fireball);
+            _session.SelectTower(index);
         }
 
         public void SetSocket(int index, GemId id)

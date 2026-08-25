@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.SkillLab;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.UI
 {
@@ -12,7 +13,7 @@ namespace GemTD.UI
         const string EmptyLabel = "Empty";
 
         [SerializeField] SkillLabController lab;
-        [SerializeField] Button fireballButton;
+        [SerializeField] TMP_Dropdown towerDropdown;
         [SerializeField] TMP_Dropdown[] gemSlotDropdowns;
         [SerializeField] Button fireButton;
         [SerializeField] Button clearButton;
@@ -23,14 +24,15 @@ namespace GemTD.UI
         [SerializeField] TMP_Text legendLabel;
 
         readonly List<GemId>[] _optionIds = new List<GemId>[8];
-        readonly List<TMP_Dropdown.OptionData> _optionScratch = new List<TMP_Dropdown.OptionData>(12);
+        readonly List<TMP_Dropdown.OptionData> _optionScratch = new List<TMP_Dropdown.OptionData>(256);
         bool _suppressDropdown;
         int _boundFingerprint;
+        int _towerListFingerprint;
 
         void Awake()
         {
             if (lab == null) Debug.LogError("SkillLabHud: lab is not assigned.", this);
-            if (fireballButton == null) Debug.LogError("SkillLabHud: fireballButton is not assigned.", this);
+            if (towerDropdown == null) Debug.LogError("SkillLabHud: towerDropdown is not assigned.", this);
             if (gemSlotDropdowns == null || gemSlotDropdowns.Length == 0)
                 Debug.LogError("SkillLabHud: gemSlotDropdowns is not assigned.", this);
             if (fireButton == null) Debug.LogError("SkillLabHud: fireButton is not assigned.", this);
@@ -43,7 +45,7 @@ namespace GemTD.UI
 
             if (lab == null)
                 return;
-            if (fireballButton != null) fireballButton.onClick.AddListener(() => lab.SelectFireball());
+            if (towerDropdown != null) towerDropdown.onValueChanged.AddListener(OnTowerDropdownChanged);
             if (fireButton != null) fireButton.onClick.AddListener(() => lab.Fire());
             if (clearButton != null) clearButton.onClick.AddListener(() => lab.ClearOverlay());
             if (resetPinsButton != null) resetPinsButton.onClick.AddListener(() => lab.ResetPins());
@@ -91,6 +93,14 @@ namespace GemTD.UI
             _boundFingerprint = fingerprint;
         }
 
+        void OnTowerDropdownChanged(int value)
+        {
+            if (_suppressDropdown || lab == null)
+                return;
+            lab.SelectTower(value);
+            _boundFingerprint = 0;
+        }
+
         void OnGemDropdownChanged(int slot, int value)
         {
             if (_suppressDropdown || lab == null)
@@ -105,12 +115,17 @@ namespace GemTD.UI
 
         void BindDropdowns(SkillLabSession session)
         {
+            _suppressDropdown = true;
+            BindTowerDropdown(session);
+
             var sockets = session.Tower != null ? session.Tower.Sockets : null;
             var count = sockets != null ? sockets.Length : 0;
             if (gemSlotDropdowns == null)
+            {
+                _suppressDropdown = false;
                 return;
+            }
 
-            _suppressDropdown = true;
             for (var i = 0; i < gemSlotDropdowns.Length; i++)
             {
                 var dropdown = gemSlotDropdowns[i];
@@ -180,8 +195,38 @@ namespace GemTD.UI
             _suppressDropdown = false;
         }
 
+        void BindTowerDropdown(SkillLabSession session)
+        {
+            if (towerDropdown == null)
+                return;
+
+            var towers = session.Towers;
+            var listFp = TowerListFingerprint(towers);
+            if (listFp != _towerListFingerprint)
+            {
+                _optionScratch.Clear();
+                for (var i = 0; i < towers.Length; i++)
+                    _optionScratch.Add(new TMP_Dropdown.OptionData(SkillLabSession.TowerLabel(towers[i])));
+
+                towerDropdown.ClearOptions();
+                towerDropdown.AddOptions(_optionScratch);
+                _towerListFingerprint = listFp;
+            }
+
+            var selected = session.SelectedTowerIndex;
+            if (selected < 0 || selected >= towerDropdown.options.Count)
+                selected = 0;
+            if (towerDropdown.options.Count > 0)
+            {
+                towerDropdown.SetValueWithoutNotify(selected);
+                towerDropdown.RefreshShownValue();
+            }
+        }
+
         bool AnyDropdownExpanded()
         {
+            if (towerDropdown != null && towerDropdown.IsExpanded)
+                return true;
             if (gemSlotDropdowns == null)
                 return false;
             for (var i = 0; i < gemSlotDropdowns.Length; i++)
@@ -191,6 +236,17 @@ namespace GemTD.UI
             }
 
             return false;
+        }
+
+        static int TowerListFingerprint(TowerDefinition[] towers)
+        {
+            var h = 17;
+            if (towers == null)
+                return h;
+            h = h * 31 + towers.Length;
+            for (var i = 0; i < towers.Length; i++)
+                h = h * 31 + (towers[i] != null ? towers[i].GetInstanceID() : 0);
+            return h;
         }
 
         static int Fingerprint(SkillLabSession session)

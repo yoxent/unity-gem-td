@@ -22,7 +22,7 @@ namespace GemTD.Editor
         [MenuItem("Gem TD/Bootstrap Skill Lab Scene")]
         public static void Bootstrap()
         {
-            var fireball = Load<TowerDefinition>("Assets/Data/Towers/Catalog/Spell/Tower_Fireball.asset");
+            var catalog = Load<TowerCatalog>("Assets/Data/Towers/TowerCatalog.asset");
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
             var gems = new[]
             {
@@ -97,7 +97,7 @@ namespace GemTD.Editor
             var overlay = root.AddComponent<AttackOverlayView>();
             var controller = root.AddComponent<SkillLabController>();
             var ctrlSo = new SerializedObject(controller);
-            ctrlSo.FindProperty("fireball").objectReferenceValue = fireball;
+            ctrlSo.FindProperty("towerCatalog").objectReferenceValue = catalog;
             ctrlSo.FindProperty("dummyDefinition").objectReferenceValue = dummyDef;
             ctrlSo.FindProperty("overlay").objectReferenceValue = overlay;
             ctrlSo.FindProperty("worldCamera").objectReferenceValue = cam;
@@ -112,7 +112,7 @@ namespace GemTD.Editor
                 viewsProp.GetArrayElementAtIndex(i).objectReferenceValue = dummyViews[i];
             ctrlSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(controller);
-            if (fireball == null || dummyDef == null || gems[0] == null)
+            if (catalog == null || dummyDef == null || gems[0] == null)
                 Debug.LogError("[Gem TD] Skill Lab bootstrap: one or more data assets failed to load — Fire/gems will not work.");
 
             BuildHud(controller);
@@ -152,7 +152,12 @@ namespace GemTD.Editor
             vlg.childForceExpandWidth = true;
             panel.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var fireball = CreateButton(panel.transform, "FireballButton", "Fireball");
+            var tower = CreateDropdown(panel.transform, "Tower");
+            if (tower.template != null)
+            {
+                var size = tower.template.sizeDelta;
+                tower.template.sizeDelta = new Vector2(size.x, 400f);
+            }
             var slot0 = CreateDropdown(panel.transform, "Dropdown_GemSlot0");
             var slot1 = CreateDropdown(panel.transform, "Dropdown_GemSlot1");
             var slot2 = CreateDropdown(panel.transform, "Dropdown_GemSlot2");
@@ -169,7 +174,7 @@ namespace GemTD.Editor
             var hud = canvasGo.AddComponent<SkillLabHud>();
             var so = new SerializedObject(hud);
             so.FindProperty("lab").objectReferenceValue = lab;
-            so.FindProperty("fireballButton").objectReferenceValue = fireball;
+            so.FindProperty("towerDropdown").objectReferenceValue = tower;
             so.FindProperty("fireButton").objectReferenceValue = fire;
             so.FindProperty("clearButton").objectReferenceValue = clear;
             so.FindProperty("resetPinsButton").objectReferenceValue = reset;
