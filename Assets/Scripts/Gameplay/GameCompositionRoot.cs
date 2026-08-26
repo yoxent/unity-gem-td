@@ -144,14 +144,27 @@ namespace GemTD.Gameplay
             sb.Append(tower.LevelIndex + 1);
             sb.Append('\n');
 
-            var spec = _pipeline != null
-                ? _pipeline.Resolve(tower, _socketModScratch)
-                : AttackSpec.FromBase(def.Damage, 1, def.GetSplashRadius(tower.Level));
-            var dmg = spec.Damage;
+            SkillSpec spec;
+            if (_pipeline != null)
+            {
+                spec = _pipeline.Resolve(tower, _socketModScratch);
+            }
+            else
+            {
+                var damage = def.GetDamageRange(tower.Level);
+                spec = SkillSpec.FromBase(
+                    damage.Min,
+                    damage.Max,
+                    def.GetProjectileCount(tower.Level),
+                    def.GetSplashRadius(tower.Level));
+            }
             var interval = def.FireInterval(spec, tower.Level);
             var attackRate = interval > 0.01f ? 1f / interval : 0f;
             var tags = GemTags.EffectiveTowerTags(def);
-            sb.Append($"Damage {dmg:0.#}");
+            if (spec.DamageMax > spec.DamageMin + 0.01f)
+                sb.Append($"Damage {spec.DamageMin:0.#}–{spec.DamageMax:0.#}");
+            else
+                sb.Append($"Damage {spec.Damage:0.#}");
             if (spec.ProjectileCount > 1)
                 sb.Append($" ×{spec.ProjectileCount}");
             sb.Append('\n');
@@ -217,7 +230,7 @@ namespace GemTD.Gameplay
         readonly List<Vector2Int> _spawnTips = new List<Vector2Int>(8);
         readonly List<Vector2Int> _rankedTipsScratch = new List<Vector2Int>(8);
         readonly List<Vector2Int> _bossSpawnTips = new List<Vector2Int>(8);
-        readonly List<IAttackModifier> _socketModScratch = new List<IAttackModifier>(4);
+        readonly List<ISkillModifier> _socketModScratch = new List<ISkillModifier>(4);
         readonly List<EnemyRuntime> _livingScratch = new List<EnemyRuntime>(32);
 
         ViewObjectPool<EnemyView> _enemyPool;
@@ -349,9 +362,20 @@ namespace GemTD.Gameplay
             if (tower == null || tower.Def == null)
                 return 0f;
 
-            var spec = _pipeline != null
-                ? _pipeline.Resolve(tower, _socketModScratch)
-                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.GetSplashRadius(tower.Level));
+            SkillSpec spec;
+            if (_pipeline != null)
+            {
+                spec = _pipeline.Resolve(tower, _socketModScratch);
+            }
+            else
+            {
+                var damage = tower.Def.GetDamageRange(tower.Level);
+                spec = SkillSpec.FromBase(
+                    damage.Min,
+                    damage.Max,
+                    tower.Def.GetProjectileCount(tower.Level),
+                    tower.Def.GetSplashRadius(tower.Level));
+            }
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.IsFireable
                 ? tower.Def.GetFireTowerRadius(tower.Level)

@@ -16,22 +16,32 @@ namespace GemTD.Gameplay.SkillLab
         const float HitRadius = 0.15f;
         const float PierceLookAheadPad = 0.05f;
 
+        readonly float _baseProjectileSpeed;
         readonly TargetSelector _selector = new TargetSelector();
         readonly GemModifierPipeline _pipeline = new GemModifierPipeline();
-        readonly List<IAttackModifier> _scratch = new List<IAttackModifier>(8);
+        readonly List<ISkillModifier> _scratch = new List<ISkillModifier>(8);
         readonly List<SimShot> _queue = new List<SimShot>(32);
+
+        public AttackTracer(float baseProjectileSpeed = ProjectileRuntime.DefaultProjectileSpeed)
+        {
+            _baseProjectileSpeed = baseProjectileSpeed > 0f
+                ? baseProjectileSpeed
+                : ProjectileRuntime.DefaultProjectileSpeed;
+        }
 
         struct SimShot
         {
             public Vector3 Position;
             public Vector3 Direction;
             public float Damage;
+            public float ProjectileSpeed;
             public float RemainingFlight;
             public int ChainRemaining;
             public int PierceRemaining;
             public int ForkRemaining;
             public float AoeRadius;
             public float ChainRange;
+            public float ChainHopFalloff;
             public AttackTraceKind Kind;
             public EnemyRuntime LastHit;
         }
@@ -53,7 +63,7 @@ namespace GemTD.Gameplay.SkillLab
             trace.HasTarget = true;
             _queue.Clear();
 
-            var pierceRemaining = spec.Pierce ? ProjectileRuntime.DefaultPierceRemaining : 0;
+            var pierceRemaining = spec.GetPierceRemaining();
             var damage = spec.Damage;
             var hydra = EvolutionEvaluator.IsHydraTower(tower);
             if (hydra)
@@ -86,7 +96,7 @@ namespace GemTD.Gameplay.SkillLab
         void EnqueueVolley(
             Vector3 origin,
             EnemyRuntime primary,
-            AttackSpec spec,
+            SkillSpec spec,
             float damage,
             int pierceRemaining,
             float headYawDegrees,
@@ -111,7 +121,7 @@ namespace GemTD.Gameplay.SkillLab
             if (Mathf.Abs(headYawDegrees) > 1e-4f)
                 aim = Quaternion.Euler(0f, headYawDegrees, 0f) * aim;
 
-            var count = spec.ProjectileCount > 0 ? spec.ProjectileCount : 1;
+            var count = spec.ProjectileCount;
             for (var i = 0; i < count; i++)
             {
                 var yaw = 0f;
@@ -127,12 +137,21 @@ namespace GemTD.Gameplay.SkillLab
                     Position = origin,
                     Direction = dir.sqrMagnitude > 1e-8f ? dir.normalized : Vector3.forward,
                     Damage = damage,
-                    RemainingFlight = ProjectileRuntime.MaxFlightDistance,
+                    ProjectileSpeed = _baseProjectileSpeed
+                        * (spec.ProjectileSpeedMultiplier > 0.01f
+                            ? spec.ProjectileSpeedMultiplier
+                            : 1f),
+                    RemainingFlight = _baseProjectileSpeed
+                        * (spec.ProjectileSpeedMultiplier > 0.01f
+                            ? spec.ProjectileSpeedMultiplier
+                            : 1f)
+                        * ProjectileRuntime.MaxLifetimeSeconds,
                     ChainRemaining = spec.ChainCount,
                     PierceRemaining = pierceRemaining,
                     ForkRemaining = spec.ForkCount,
                     AoeRadius = spec.AoeRadius,
                     ChainRange = ProjectileRuntime.DefaultChainRange,
+                    ChainHopFalloff = spec.ChainHopFalloff == 0f ? 1f : spec.ChainHopFalloff,
                     Kind = firstKind,
                     LastHit = null
                 });
@@ -191,9 +210,11 @@ namespace GemTD.Gameplay.SkillLab
                     });
                 }
 
-                if (shot.PierceRemaining > 0)
+                if (shot.PierceRemaining == ProjectileRuntime.InfinitePierceRemaining
+                    || shot.PierceRemaining > 0)
                 {
-                    shot.PierceRemaining--;
+                    if (shot.PierceRemaining > 0)
+                        shot.PierceRemaining--;
                     shot.Kind = AttackTraceKind.Pierce;
                     continue;
                 }
@@ -209,7 +230,7 @@ namespace GemTD.Gameplay.SkillLab
                     var next = FindNearestOther(shot.Position, hit, shot.ChainRange, dummies);
                     if (next == null)
                         return;
-                    shot.Damage *= ProjectileRuntime.ChainHopFalloff;
+                    shot.Damage *= shot.ChainHopFalloff;
                     shot.ChainRemaining--;
                     var toNext = next.WorldPosition - shot.Position;
                     if (toNext.sqrMagnitude < 1e-8f)
@@ -238,12 +259,14 @@ namespace GemTD.Gameplay.SkillLab
                 Position = origin,
                 Direction = dir.sqrMagnitude > 1e-8f ? dir.normalized : Vector3.forward,
                 Damage = parent.Damage,
-                RemainingFlight = ProjectileRuntime.MaxFlightDistance,
+                ProjectileSpeed = parent.ProjectileSpeed,
+                RemainingFlight = parent.ProjectileSpeed * ProjectileRuntime.MaxLifetimeSeconds,
                 ChainRemaining = parent.ChainRemaining,
                 PierceRemaining = parent.PierceRemaining,
                 ForkRemaining = parent.ForkRemaining - 1,
                 AoeRadius = parent.AoeRadius,
                 ChainRange = parent.ChainRange,
+                ChainHopFalloff = parent.ChainHopFalloff,
                 Kind = AttackTraceKind.Fork,
                 LastHit = parent.LastHit
             });

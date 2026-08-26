@@ -23,7 +23,7 @@ namespace GemTD.Editor
             if (!AssetDatabase.IsValidFolder(GemsFolder))
                 AssetDatabase.CreateFolder("Assets/Data", "Gems");
 
-            var lmp = EnsureGem("Gem_LMP.asset", GemId.MultipleProjectiles, "Multiple Projectiles",
+            var multipleProjectiles = EnsureGem("Gem_MultipleProjectiles.asset", GemId.MultipleProjectiles, "Multiple Projectiles",
                 "−20% damage / +2 projectiles. Spread shotgun.", 2f);
             var chain = EnsureGem("Gem_Chain.asset", GemId.Chain, "Chain",
                 "−30% damage / +1 chain (3 units). Hop damage ×0.6 after first hit.", 2f);
@@ -49,7 +49,7 @@ namespace GemTD.Editor
 
             var pool = new[]
             {
-                lmp, chain, fork, area, pierce, prolif,
+                multipleProjectiles, chain, fork, area, pierce, prolif,
                 combustion, addedFire, addedCold, addedLightning, knockback
             };
             for (var i = 0; i < pool.Length; i++)
@@ -76,7 +76,7 @@ namespace GemTD.Editor
             hydra.DisplayName = "Hydra";
             hydra.LockedHint = "Three jaws share one quarrelsome appetite.";
             hydra.UnlockedText = "Hydra — Chain + Fork + Multiple Projectiles";
-            hydra.Recipe = new[] { chain, fork, lmp };
+            hydra.Recipe = new[] { chain, fork, multipleProjectiles };
 
             var snakeIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Temp/Icons/snake.png");
             hydra.Icon = snakeIcon;
@@ -102,7 +102,7 @@ namespace GemTD.Editor
             }
 
             cfg.InventoryCapacity = 10;
-            cfg.SeedGems = new[] { lmp, chain, fork };
+            cfg.SeedGems = new[] { multipleProjectiles, chain, fork };
             EditorUtility.SetDirty(cfg);
 
             var scene = EditorSceneManager.OpenScene(RunScenePath);

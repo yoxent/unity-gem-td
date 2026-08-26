@@ -8,5 +8,7 @@ namespace GemTD.Gameplay.Combat
         Poison,
         Stun,
         Freeze,
+        Bleed,
+        HallowingFlame,
     }
 }

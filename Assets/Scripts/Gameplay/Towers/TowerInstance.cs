@@ -6,7 +6,8 @@ namespace GemTD.Gameplay.Towers
 {
     public sealed class TowerInstance
     {
-        public const int DefaultLevel = 20;
+        public const int DefaultLevel = 1;
+        public const int MaxLevel = 10;
 
         public Vector2Int Cell { get; }
         public TowerDefinition Def { get; }
@@ -15,8 +16,18 @@ namespace GemTD.Gameplay.Towers
         public TargetingRecipe Targeting { get; set; }
         public int PurchaseCost { get; }
         public int UpgradeSpend { get; set; }
-        /// <summary>0-based draft level. Combat stats do not read this.</summary>
-        public int LevelIndex { get; set; }
+        int _levelIndex;
+
+        /// <summary>0-based draft progression. Combat uses Level, which is this index + 1 clamped to 1–10 (role Levels[] snapshot).</summary>
+        public int LevelIndex
+        {
+            get => _levelIndex;
+            set
+            {
+                _levelIndex = Mathf.Max(0, value);
+                SetLevel(_levelIndex + 1);
+            }
+        }
         public int Level { get; private set; }
 
         public TowerInstance(Vector2Int cell, TowerDefinition def, int purchaseCost = -1)
@@ -25,7 +36,7 @@ namespace GemTD.Gameplay.Towers
             Def = def;
             PurchaseCost = purchaseCost >= 0 ? purchaseCost : (def != null ? def.Cost : 0);
             UpgradeSpend = 0;
-            LevelIndex = 0;
+            _levelIndex = 0;
             Level = DefaultLevel;
             var socketCount = def != null && def.SocketCount > 0 ? def.SocketCount : 1;
             Sockets = new GemDefinition[socketCount];
@@ -34,7 +45,7 @@ namespace GemTD.Gameplay.Towers
 
         public void SetLevel(int sourceLevel)
         {
-            Level = Mathf.Max(1, sourceLevel);
+            Level = Mathf.Clamp(sourceLevel, DefaultLevel, MaxLevel);
         }
 
         public bool HasSocketedGems
@@ -65,7 +76,11 @@ namespace GemTD.Gameplay.Towers
             for (var i = 0; i < Sockets.Length; i++)
             {
                 var existing = Sockets[i];
-                if (existing != null && existing.Id == gem.Id)
+                if (existing == null)
+                    continue;
+                if (existing == gem)
+                    return false;
+                if (gem.Id != GemId.None && existing.Id == gem.Id)
                     return false;
             }
 

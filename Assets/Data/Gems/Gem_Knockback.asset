@@ -17,4 +17,16 @@ MonoBehaviour:
   Description: 34% chance to knock back 1 unit along the path.
   DraftWeight: 1
   Tags: 256
-  RequiredTags: 0
+  Modifiers:
+  - Stat: 18
+    Operation: 0
+    ValueKind: 0
+    Value: 0.34
+    Min: 0
+    Max: 0
+  - Stat: 19
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0

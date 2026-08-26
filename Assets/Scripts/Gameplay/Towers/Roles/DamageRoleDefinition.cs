@@ -1,3 +1,4 @@
+using GemTD.Gameplay.Combat;
 using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
@@ -7,5 +8,13 @@ namespace GemTD.Gameplay.Towers
     /// </summary>
     public abstract class DamageRoleDefinition : TowerRoleDefinition
     {
+        [Tooltip("Finite uses SkillSpec.PierceCount (0 = no pierce). Infinite ignores count.")]
+        public PierceMode PierceBehavior;
+
+        [Tooltip("Direct aims at the selected enemy. Ground aims at a path intercept of that enemy.")]
+        public AimMode AimMode;
+
+        [Tooltip("Straight fires the skill volley. PayloadNova fires one payload, then a radial burst on land.")]
+        public DeliveryPattern DeliveryPattern;
     }
 }

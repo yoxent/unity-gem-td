@@ -17,4 +17,10 @@ MonoBehaviour:
   Description: +31% of hit as extra fire damage.
   DraftWeight: 1
   Tags: 256
-  RequiredTags: 0
+  Modifiers:
+  - Stat: 0
+    Operation: 2
+    ValueKind: 0
+    Value: 1.31
+    Min: 0
+    Max: 0

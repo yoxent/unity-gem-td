@@ -104,6 +104,39 @@ namespace GemTD.Gameplay.Enemies
             WorldPosition = position;
         }
 
+        public bool TryGetPositionAfter(float seconds, out Vector3 point)
+        {
+            point = WorldPosition;
+            if (!_alive || _waypoints == null || _waypoints.Length < 2)
+                return false;
+            if (seconds <= 0f)
+                return true;
+
+            var remaining = CurrentMoveSpeed * seconds;
+            var pos = WorldPosition;
+            var seg = _segmentIndex;
+            while (remaining > 0f && seg < _waypoints.Length - 1)
+            {
+                var target = _waypoints[seg + 1];
+                var delta = target - pos;
+                var dist = delta.magnitude;
+                if (dist <= remaining)
+                {
+                    pos = target;
+                    seg++;
+                    remaining -= dist;
+                }
+                else
+                {
+                    pos += delta / dist * remaining;
+                    remaining = 0f;
+                }
+            }
+
+            point = pos;
+            return true;
+        }
+
         public bool TickMove(float dt)
         {
             if (!_alive || _waypoints == null || _waypoints.Length < 2 || dt <= 0f)

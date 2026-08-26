@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using GemTD.Gameplay.Gems;
 using Newtonsoft.Json.Linq;
-using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
 {
@@ -25,7 +24,6 @@ namespace GemTD.Gameplay.Towers
         public const float DamageAttack = 10f;
         public const float DamageSpellTrapMine = 8f;
         public const float DamageAuraCurse = 0f;
-
         public const float DefaultAttackTime = 1f;
         public const float DefaultAttackSpeed = 100f;
         public const float DefaultCastSpeed = 100f;
@@ -33,13 +31,13 @@ namespace GemTD.Gameplay.Towers
         public const float DefaultCastTimeCurse = 0.5f;
         public const float DefaultCastTimeTrap = 1f;
         public const float DefaultCastTimeMine = 0.75f;
-
         public const float DefaultRadiusAura = 1.5f;
         public const float DefaultRadiusCurse = 4.5f;
         public const float DefaultRadiusTrapMine = 3.5f;
+        public const float DefaultRadiusAttackMelee = 3.5f;
+        public const float DefaultRadiusAttackSpell = 5f;
         public const float DefaultReservationPercent = 50f;
-        public const float MinPlaceRange = 3.5f;
-        public const float DefaultRangeAttackSpell = 5f;
+        public const float DefaultProjectileSpeed = 1f;
 
         public sealed class Result
         {
@@ -47,22 +45,31 @@ namespace GemTD.Gameplay.Towers
             public string Slug;
             public string Category;
             public GemTag Tags;
-            public float TowerRadius;
-            public float AuraTowerRadius;
             public float Damage;
             public int Cost;
             public int BuildIncrement;
             public int SocketCount;
             public bool AllowsHydraEvolution;
-            public float AttackTime;
-            public float AttackSpeed;
-            public float CastTime;
-            public float CastSpeed;
-            public float ReservationPercent;
             public RoleKind[] RoleKinds;
+            public RolePayload[] RolePayloads;
             public int[] SourceLevels;
             public bool IsActiveCatalogCompatible;
             public string[] UnsupportedEffectKeys;
+
+            public RolePayload GetRolePayload(RoleKind kind)
+            {
+                if (RolePayloads == null)
+                    return null;
+
+                for (var i = 0; i < RolePayloads.Length; i++)
+                {
+                    var payload = RolePayloads[i];
+                    if (payload != null && payload.Kind == kind)
+                        return payload;
+                }
+
+                return null;
+            }
         }
 
         public enum RoleKind
@@ -73,6 +80,14 @@ namespace GemTD.Gameplay.Towers
             Aura,
             Trap,
             Mine,
+        }
+
+        public sealed class RolePayload
+        {
+            public RoleKind Kind;
+            public RoleStatModifier[] Modifiers;
+            public RoleEffectModifier[] Effects;
+            public RoleLevelDefinition[] Levels;
         }
 
         public static Result FromJson(string gemJson)
@@ -123,24 +138,24 @@ namespace GemTD.Gameplay.Towers
                 Tags = tags,
                 AllowsHydraEvolution = false,
                 BuildIncrement = BuildIncrement,
-                AttackSpeed = DefaultAttackSpeed,
-                CastSpeed = DefaultCastSpeed,
-                ReservationPercent = DefaultReservationPercent,
                 SourceLevels = ReadSourceLevels(levels),
                 IsActiveCatalogCompatible = category != "aura",
                 UnsupportedEffectKeys = unsupportedEffectKeys,
             };
 
-            ApplyCategoryDefaults(result, category, radiusValue, extraAura);
-            ApplyHeader(result, header);
-
-            if (radiusValue.HasValue && (category == "attack" || category == "spell"))
-                result.TowerRadius = Mathf.Max(radiusValue.Value, MinPlaceRange);
+            ApplyCategoryDefaults(result, category, extraAura);
+            result.RolePayloads = MapRolePayloads(
+                levels,
+                gem["radius"]?["by_level"] as JObject,
+                tags,
+                header,
+                radiusValue,
+                result);
 
             return result;
         }
 
-        static void ApplyCategoryDefaults(Result result, string category, float? radiusValue, bool extraAura)
+        static void ApplyCategoryDefaults(Result result, string category, bool extraAura)
         {
             switch (category)
             {
@@ -148,83 +163,634 @@ namespace GemTD.Gameplay.Towers
                     result.Cost = CostAttack;
                     result.Damage = DamageAttack;
                     result.SocketCount = 3;
-                    result.TowerRadius = DefaultRangeAttackSpell;
-                    result.AttackTime = DefaultAttackTime;
-                    result.AttackSpeed = DefaultAttackSpeed;
                     result.RoleKinds = extraAura
                         ? new[] { RoleKind.Attack, RoleKind.Aura }
                         : new[] { RoleKind.Attack };
-                    if (extraAura)
-                    {
-                        result.AuraTowerRadius = radiusValue ?? DefaultRadiusAura;
-                        result.ReservationPercent = DefaultReservationPercent;
-                    }
                     break;
                 case "spell":
                     result.Cost = CostSpell;
                     result.Damage = DamageSpellTrapMine;
                     result.SocketCount = 3;
-                    result.TowerRadius = DefaultRangeAttackSpell;
-                    result.CastTime = DefaultCastTimeSpell;
                     result.RoleKinds = new[] { RoleKind.Spell };
                     break;
                 case "curse":
                     result.Cost = CostCurse;
                     result.Damage = DamageAuraCurse;
                     result.SocketCount = 3;
-                    result.CastTime = DefaultCastTimeCurse;
-                    result.TowerRadius = radiusValue ?? DefaultRadiusCurse;
                     result.RoleKinds = new[] { RoleKind.Curse };
                     break;
                 case "aura":
                     result.Cost = CostAura;
                     result.Damage = DamageAuraCurse;
                     result.SocketCount = 1;
-                    result.TowerRadius = radiusValue ?? DefaultRadiusAura;
-                    result.ReservationPercent = DefaultReservationPercent;
                     result.RoleKinds = new[] { RoleKind.Aura };
                     break;
                 case "trap":
                     result.Cost = CostTrap;
                     result.Damage = DamageSpellTrapMine;
                     result.SocketCount = 3;
-                    result.CastTime = DefaultCastTimeTrap;
-                    result.TowerRadius = radiusValue ?? DefaultRadiusTrapMine;
                     result.RoleKinds = new[] { RoleKind.Trap };
                     break;
                 case "mine":
                     result.Cost = CostMine;
                     result.Damage = DamageSpellTrapMine;
                     result.SocketCount = 3;
-                    result.CastTime = DefaultCastTimeMine;
-                    result.TowerRadius = radiusValue ?? DefaultRadiusTrapMine;
                     result.RoleKinds = new[] { RoleKind.Mine };
                     break;
                 default:
                     throw new ArgumentException($"Unknown skill-gem category '{category}'.", nameof(category));
             }
+
         }
 
-        static void ApplyHeader(Result result, JObject header)
+        static RolePayload[] MapRolePayloads(
+            JObject levels,
+            JObject radiusByLevel,
+            GemTag tags,
+            JObject header,
+            float? radiusValue,
+            Result result)
         {
-            if (header == null)
+            var payloads = new RolePayload[result.RoleKinds.Length];
+            for (var i = 0; i < result.RoleKinds.Length; i++)
+            {
+                var kind = result.RoleKinds[i];
+                payloads[i] = new RolePayload
+                {
+                    Kind = kind,
+                    Modifiers = MapBaseModifiers(
+                        kind,
+                        tags,
+                        header,
+                        radiusValue,
+                        result.Damage),
+                    Effects = Array.Empty<RoleEffectModifier>(),
+                    Levels = MapLevelDefinitions(
+                        levels,
+                        radiusByLevel,
+                        radiusValue,
+                        kind,
+                        result)
+                };
+            }
+
+            return payloads;
+        }
+
+        static RoleStatModifier[] MapBaseModifiers(
+            RoleKind kind,
+            GemTag tags,
+            JObject header,
+            float? radiusValue,
+            float baseDamage)
+        {
+            var modifiers = new List<RoleStatModifier>(6);
+            switch (kind)
+            {
+                case RoleKind.Attack:
+                    AddSet(
+                        modifiers,
+                        RoleStat.AttackTime,
+                        HeaderNumber(header, "attack_time") ?? DefaultAttackTime);
+                    AddSet(
+                        modifiers,
+                        RoleStat.AttackSpeed,
+                        HeaderNumber(header, "attack_speed") ?? DefaultAttackSpeed);
+                    AddSet(
+                        modifiers,
+                        RoleStat.TowerRadius,
+                        (tags & GemTag.Melee) != 0
+                            ? DefaultRadiusAttackMelee
+                            : DefaultRadiusAttackSpell);
+                    AddSet(modifiers, RoleStat.Damage, baseDamage);
+                    break;
+
+                case RoleKind.Spell:
+                    AddSet(
+                        modifiers,
+                        RoleStat.CastTime,
+                        HeaderNumber(header, "cast_time") ?? DefaultCastTimeSpell);
+                    AddSet(modifiers, RoleStat.CastSpeed, DefaultCastSpeed);
+                    AddSet(modifiers, RoleStat.TowerRadius, DefaultRadiusAttackSpell);
+                    AddSet(modifiers, RoleStat.Damage, baseDamage);
+                    break;
+
+                case RoleKind.Curse:
+                    AddSet(
+                        modifiers,
+                        RoleStat.CastTime,
+                        HeaderNumber(header, "cast_time") ?? DefaultCastTimeCurse);
+                    AddSet(modifiers, RoleStat.CastSpeed, DefaultCastSpeed);
+                    AddSet(
+                        modifiers,
+                        RoleStat.TowerRadius,
+                        radiusValue ?? DefaultRadiusCurse);
+                    break;
+
+                case RoleKind.Aura:
+                    AddSet(
+                        modifiers,
+                        RoleStat.TowerRadius,
+                        radiusValue ?? DefaultRadiusAura);
+                    AddSet(
+                        modifiers,
+                        RoleStat.ReservationPercent,
+                        ReadReservationPercent(header) ?? DefaultReservationPercent);
+                    break;
+
+                case RoleKind.Trap:
+                    AddSet(
+                        modifiers,
+                        RoleStat.CastTime,
+                        HeaderNumber(header, "cast_time") ?? DefaultCastTimeTrap);
+                    AddSet(modifiers, RoleStat.CastSpeed, DefaultCastSpeed);
+                    AddSet(
+                        modifiers,
+                        RoleStat.TowerRadius,
+                        radiusValue ?? DefaultRadiusTrapMine);
+                    AddSet(modifiers, RoleStat.Damage, baseDamage);
+                    break;
+
+                case RoleKind.Mine:
+                    AddSet(
+                        modifiers,
+                        RoleStat.CastTime,
+                        HeaderNumber(header, "cast_time") ?? DefaultCastTimeMine);
+                    AddSet(modifiers, RoleStat.CastSpeed, DefaultCastSpeed);
+                    AddSet(
+                        modifiers,
+                        RoleStat.TowerRadius,
+                        radiusValue ?? DefaultRadiusTrapMine);
+                    AddSet(modifiers, RoleStat.Damage, baseDamage);
+                    break;
+            }
+
+            if ((tags & GemTag.Projectile) != 0)
+                AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
+
+            return modifiers.ToArray();
+        }
+
+        static RoleLevelDefinition[] MapLevelDefinitions(
+            JObject levels,
+            JObject radiusByLevel,
+            float? defaultRadius,
+            RoleKind kind,
+            Result result)
+        {
+            var sourceLevels = ReadSourceLevels(levels);
+            if (sourceLevels.Length == 0)
+                return Array.Empty<RoleLevelDefinition>();
+
+            var mapped = new RoleLevelDefinition[sourceLevels.Length];
+            for (var i = 0; i < sourceLevels.Length; i++)
+            {
+                var sourceLevel = sourceLevels[i];
+                var values = levels[sourceLevel.ToString()] as JObject;
+                var modifiers = new List<RoleStatModifier>(3);
+                var effects = new List<RoleEffectModifier>(3);
+
+                AddLevelSplash(
+                    modifiers,
+                    values,
+                    radiusByLevel,
+                    defaultRadius,
+                    kind,
+                    result.Slug,
+                    sourceLevel);
+                AddLevelDamage(modifiers, values, kind);
+                AddLevelRadiusBonus(modifiers, values, result.Slug);
+                AddLevelEffects(effects, values);
+
+                mapped[i] = new RoleLevelDefinition
+                {
+                    SourceLevel = sourceLevel,
+                    Modifiers = modifiers.ToArray(),
+                    Effects = effects.ToArray()
+                };
+            }
+
+            return mapped;
+        }
+
+        static void AddLevelSplash(
+            List<RoleStatModifier> modifiers,
+            JObject values,
+            JObject radiusByLevel,
+            float? defaultRadius,
+            RoleKind kind,
+            string slug,
+            int sourceLevel)
+        {
+            if (!IsClassifiedSplashSource(kind, slug))
                 return;
 
-            var attackTime = HeaderNumber(header, "attack_time");
-            if (attackTime.HasValue)
-                result.AttackTime = attackTime.Value;
+            var absolute = FindRadiusValue(values, IsAbsoluteSplashRadiusHeader);
+            var bonus = FindRadiusValue(values, IsRadiusBonusHeader);
+            float? byLevel = null;
+            if (radiusByLevel != null)
+                byLevel = ReadRadiusValue(radiusByLevel[sourceLevel.ToString()]);
 
-            var attackSpeed = HeaderNumber(header, "attack_speed");
-            if (attackSpeed.HasValue)
-                result.AttackSpeed = attackSpeed.Value;
+            float? splash = absolute;
+            if (!splash.HasValue
+                && byLevel.HasValue
+                && !(bonus.HasValue && ApproxEqual(byLevel.Value, bonus.Value)))
+            {
+                splash = byLevel;
+            }
 
-            var castTime = HeaderNumber(header, "cast_time");
-            if (castTime.HasValue)
-                result.CastTime = castTime.Value;
+            if (!splash.HasValue)
+                splash = defaultRadius;
 
-            var reservation = ReadNumber(header["reservation"]?["value"]?["amount"]);
-            if (reservation.HasValue)
-                result.ReservationPercent = reservation.Value;
+            if (splash.HasValue)
+                AddSet(modifiers, RoleStat.SplashRadius, splash.Value);
+
+            if (bonus.HasValue)
+                AddSet(modifiers, RoleStat.SplashRadius, RoleModifierOperation.Add, bonus.Value);
+        }
+
+        static bool IsClassifiedSplashSource(RoleKind kind, string slug)
+        {
+            if (kind != RoleKind.Attack
+                && kind != RoleKind.Spell
+                && kind != RoleKind.Trap)
+                return false;
+
+            return string.Equals(slug, "Cleave", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Fireball", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    slug,
+                    "Explosive_Trap",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        static void AddLevelDamage(
+            List<RoleStatModifier> modifiers,
+            JObject values,
+            RoleKind kind)
+        {
+            if (kind == RoleKind.Attack)
+            {
+                var effectiveness = ReadNumber(
+                    values?["damage_percent"] ?? values?["base_damage_effectiveness"]);
+                if (effectiveness.HasValue)
+                {
+                    AddSet(
+                        modifiers,
+                        RoleStat.Damage,
+                        RoleModifierOperation.Multiply,
+                        effectiveness.Value / 100f);
+                    return;
+                }
+
+                if (TryReadFlatDamage(values, out var attackMin, out var attackMax))
+                {
+                    AddRange(modifiers, RoleStat.Damage, attackMin, attackMax);
+                    return;
+                }
+
+                return;
+            }
+
+            if (kind != RoleKind.Spell
+                && kind != RoleKind.Trap
+                && kind != RoleKind.Mine)
+                return;
+
+            if (TryReadFlatDamage(values, out var min, out var max))
+            {
+                AddRange(modifiers, RoleStat.Damage, min, max);
+                return;
+            }
+
+            var fallbackEffectiveness = ReadNumber(
+                values?["damage_percent"] ?? values?["base_damage_effectiveness"]);
+            if (fallbackEffectiveness.HasValue)
+            {
+                AddSet(
+                    modifiers,
+                    RoleStat.Damage,
+                    RoleModifierOperation.Multiply,
+                    fallbackEffectiveness.Value / 100f);
+            }
+        }
+
+        static void AddLevelRadiusBonus(List<RoleStatModifier> modifiers, JObject values, string slug)
+        {
+            if (!IsClassifiedRadiusBonusSource(slug) || values == null)
+                return;
+
+            foreach (var effect in values.Properties())
+            {
+                if (!IsRadiusBonusHeader(effect.Name))
+                    continue;
+
+                var radius = ReadRadiusValue(effect.Value);
+                if (radius.HasValue)
+                {
+                    AddSet(
+                        modifiers,
+                        RoleStat.TowerRadius,
+                        RoleModifierOperation.Add,
+                        radius.Value);
+                    return;
+                }
+            }
+        }
+
+        static bool IsClassifiedRadiusBonusSource(string slug)
+        {
+            return string.Equals(slug, "Anger", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Frostbite", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static void AddLevelEffects(List<RoleEffectModifier> effects, JObject values)
+        {
+            if (values == null)
+                return;
+
+            foreach (var effect in values.Properties())
+            {
+                if (IsAddedAttackFireHeader(effect.Name)
+                    && TryReadRange(effect.Value, out var attackMin, out var attackMax))
+                {
+                    AddEffectRange(
+                        effects,
+                        RoleEffectKind.AllyAddedAttackFireDamage,
+                        attackMin,
+                        attackMax);
+                    continue;
+                }
+
+                if (IsAddedSpellFireHeader(effect.Name)
+                    && TryReadRange(effect.Value, out var spellMin, out var spellMax))
+                {
+                    AddEffectRange(
+                        effects,
+                        RoleEffectKind.AllyAddedSpellFireDamage,
+                        spellMin,
+                        spellMax);
+                    continue;
+                }
+
+                if (IsDurationHeader(effect.Name))
+                {
+                    var duration = ReadNumber(effect.Value)
+                        ?? ReadNumber(effect.Value?["value"]);
+                    if (duration.HasValue)
+                    {
+                        AddEffectSet(effects, RoleEffectKind.SkillDuration, duration.Value);
+                    }
+
+                    continue;
+                }
+
+                if (IsColdResistanceHeader(effect.Name))
+                {
+                    var resistance = ReadNumber(effect.Value)
+                        ?? ReadNumber(effect.Value?["value"]);
+                    if (resistance.HasValue)
+                    {
+                        AddEffectSet(
+                            effects,
+                            RoleEffectKind.EnemyColdResistance,
+                            resistance.Value);
+                    }
+                }
+            }
+        }
+
+        static bool IsMappedEffectHeader(string header)
+        {
+            return IsAddedAttackFireHeader(header)
+                || IsAddedSpellFireHeader(header)
+                || IsDurationHeader(header)
+                || IsColdResistanceHeader(header);
+        }
+
+        static bool IsAddedAttackFireHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "additional Fire Damage with Attacks");
+        }
+
+        static bool IsAddedSpellFireHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "additional Fire Damage with Spells");
+        }
+
+        static bool IsDurationHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Base duration is");
+        }
+
+        static bool IsColdResistanceHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Cold Resistance");
+        }
+
+        static bool ContainsIgnoreCase(string header, string needle)
+        {
+            return !string.IsNullOrEmpty(header)
+                && header.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        static void AddEffectSet(
+            List<RoleEffectModifier> effects,
+            RoleEffectKind kind,
+            float value)
+        {
+            effects.Add(RoleEffectModifier.Single(kind, RoleModifierOperation.Set, value));
+        }
+
+        static void AddEffectRange(
+            List<RoleEffectModifier> effects,
+            RoleEffectKind kind,
+            float min,
+            float max)
+        {
+            effects.Add(RoleEffectModifier.Range(kind, RoleModifierOperation.Set, min, max));
+        }
+
+        static bool TryReadFlatDamage(JObject values, out float min, out float max)
+        {
+            min = 0f;
+            max = 0f;
+            if (values == null)
+                return false;
+
+            foreach (var effect in values.Properties())
+            {
+                if (!IsFlatDamageHeader(effect.Name))
+                    continue;
+                var kind = effect.Value?["kind"]?.Value<string>();
+                if (!string.Equals(kind, "flat", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (!TryReadRange(effect.Value, out min, out max))
+                    continue;
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool IsFlatDamageHeader(string header)
+        {
+            if (string.IsNullOrEmpty(header))
+                return false;
+
+            return header.StartsWith("Deals ", StringComparison.OrdinalIgnoreCase)
+                && header.IndexOf("Damage", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        static float? FindRadiusValue(JObject values)
+        {
+            return FindRadiusValue(values, IsRadiusHeader);
+        }
+
+        static float? FindRadiusValue(JObject values, Func<string, bool> headerMatch)
+        {
+            if (values == null || headerMatch == null)
+                return null;
+
+            foreach (var effect in values.Properties())
+            {
+                if (!headerMatch(effect.Name))
+                    continue;
+                var value = ReadRadiusValue(effect.Value);
+                if (value.HasValue)
+                    return value;
+            }
+
+            return null;
+        }
+
+        static float? ReadRadiusValue(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+
+            var value = token;
+            if (token.Type == JTokenType.Object)
+            {
+                var wrapped = token["value"];
+                if (wrapped != null)
+                    value = wrapped;
+            }
+
+            if (value.Type == JTokenType.Array)
+            {
+                var array = (JArray)value;
+                if (array.Count == 0)
+                    return null;
+
+                return ReadNumber(array[array.Count - 1]);
+            }
+
+            return ReadNumber(value);
+        }
+
+        static bool IsRadiusHeader(string header)
+        {
+            if (string.IsNullOrEmpty(header))
+                return false;
+            return header.IndexOf("radius", StringComparison.OrdinalIgnoreCase) >= 0
+                || header.IndexOf("metre", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        static bool IsAbsoluteSplashRadiusHeader(string header)
+        {
+            if (string.IsNullOrEmpty(header))
+                return false;
+            return ContainsIgnoreCase(header, "Base radius")
+                || ContainsIgnoreCase(header, "Base explosion radius");
+        }
+
+        static bool IsRadiusBonusHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "metres to radius")
+                || ContainsIgnoreCase(header, "metre to radius");
+        }
+
+        static bool ApproxEqual(float a, float b)
+        {
+            return Math.Abs(a - b) <= 0.0001f;
+        }
+
+        static bool TryReadRange(JToken token, out float min, out float max)
+        {
+            min = 0f;
+            max = 0f;
+            if (token == null || token.Type == JTokenType.Null)
+                return false;
+
+            var value = token;
+            if (token.Type == JTokenType.Object)
+            {
+                var wrapped = token["value"];
+                if (wrapped != null)
+                    value = wrapped;
+            }
+
+            if (value.Type == JTokenType.Array)
+            {
+                var array = (JArray)value;
+                if (array.Count == 0)
+                    return false;
+                var first = ReadNumber(array[0]);
+                var last = ReadNumber(array[array.Count - 1]);
+                if (!first.HasValue || !last.HasValue)
+                    return false;
+                min = first.Value;
+                max = last.Value;
+            }
+            else
+            {
+                var number = ReadNumber(value);
+                if (!number.HasValue)
+                    return false;
+                min = number.Value;
+                max = number.Value;
+            }
+
+            if (max < min)
+            {
+                var swap = min;
+                min = max;
+                max = swap;
+            }
+
+            return true;
+        }
+
+        static void AddSet(List<RoleStatModifier> modifiers, RoleStat stat, float value)
+        {
+            AddSet(modifiers, stat, RoleModifierOperation.Set, value);
+        }
+
+        static void AddSet(
+            List<RoleStatModifier> modifiers,
+            RoleStat stat,
+            RoleModifierOperation operation,
+            float value)
+        {
+            modifiers.Add(RoleStatModifier.Single(stat, operation, value));
+        }
+
+        static void AddRange(
+            List<RoleStatModifier> modifiers,
+            RoleStat stat,
+            float min,
+            float max)
+        {
+            modifiers.Add(RoleStatModifier.Range(stat, RoleModifierOperation.Set, min, max));
+        }
+
+        static float? ReadReservationPercent(JObject header)
+        {
+            if (header == null)
+                return null;
+
+            return ReadNumber(header["reservation"]?["value"]?["amount"]);
         }
 
         static GemTag MapTags(JArray tagsToken, string category)
@@ -272,6 +838,9 @@ namespace GemTD.Gameplay.Towers
 
         static float? HeaderNumber(JObject header, string key)
         {
+            if (header == null)
+                return null;
+
             var node = header[key];
             if (node == null || node.Type == JTokenType.Null)
                 return null;
@@ -290,6 +859,7 @@ namespace GemTD.Gameplay.Towers
                     sourceLevels.Add(sourceLevel);
             }
 
+            sourceLevels.Sort();
             return sourceLevels.ToArray();
         }
 
@@ -307,7 +877,10 @@ namespace GemTD.Gameplay.Towers
 
                 foreach (var effect in values.Properties())
                 {
-                    if (effect.Name == "base_damage_effectiveness")
+                    if (effect.Name == "base_damage_effectiveness"
+                        || effect.Name == "damage_percent"
+                        || IsRadiusHeader(effect.Name)
+                        || IsMappedEffectHeader(effect.Name))
                         continue;
 
                     var alreadyAdded = false;

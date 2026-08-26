@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d58eaa9bb5eec44c9718c97df04697c, type: 3}
+  m_Name: Gem_Intensify
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
+  Id: 178
+  DisplayName: Intensify
+  Description: Repeated attacks increase damage while narrowing the effect. Area coverage decreases as intensity builds. Supported Spells lose 1 Intensity every 0.5 seconds while moving, or immediately if you teleport
+  DraftWeight: 1
+  Tags: 274
+  Modifiers: []

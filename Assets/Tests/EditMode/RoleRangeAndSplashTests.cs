@@ -15,10 +15,15 @@ namespace GemTD.Tests.EditMode
             var def = CreateDefinition(role);
             try
             {
-                role.TowerRadius = 12f;
+                role.Modifiers = new[]
+                {
+                    Modifier(RoleStat.AttackTime, RoleModifierOperation.Set, 1f),
+                    Modifier(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f),
+                    Modifier(RoleStat.TowerRadius, RoleModifierOperation.Set, 12f)
+                };
 
-                Assert.AreEqual(12f, def.GetFireTowerRadius(20), 0.001f);
-                Assert.AreEqual(12f, def.GetPlacementTowerRadius(20), 0.001f);
+                Assert.AreEqual(12f, def.GetFireTowerRadius(10), 0.001f);
+                Assert.AreEqual(12f, def.GetPlacementTowerRadius(10), 0.001f);
             }
             finally
             {
@@ -33,10 +38,15 @@ namespace GemTD.Tests.EditMode
             var def = CreateDefinition(role);
             try
             {
-                role.TowerRadius = 18f;
+                role.Modifiers = new[]
+                {
+                    Modifier(RoleStat.CastTime, RoleModifierOperation.Set, 0.75f),
+                    Modifier(RoleStat.CastSpeed, RoleModifierOperation.Set, 100f),
+                    Modifier(RoleStat.TowerRadius, RoleModifierOperation.Set, 18f)
+                };
 
-                Assert.AreEqual(18f, def.GetFireTowerRadius(20), 0.001f);
-                Assert.AreEqual(18f, def.GetPlacementTowerRadius(20), 0.001f);
+                Assert.AreEqual(18f, def.GetFireTowerRadius(10), 0.001f);
+                Assert.AreEqual(18f, def.GetPlacementTowerRadius(10), 0.001f);
             }
             finally
             {
@@ -51,11 +61,14 @@ namespace GemTD.Tests.EditMode
             var def = CreateDefinition(role);
             try
             {
-                role.TowerRadius = 3f;
+                role.Modifiers = new[]
+                {
+                    Modifier(RoleStat.TowerRadius, RoleModifierOperation.Set, 3f)
+                };
 
-                Assert.AreEqual(3f, def.GetAuraTowerRadius(20), 0.001f);
-                Assert.AreEqual(3f, def.GetPlacementTowerRadius(20), 0.001f);
-                Assert.AreEqual(0f, def.GetFireTowerRadius(20), 0.001f);
+                Assert.AreEqual(3f, def.GetAuraTowerRadius(10), 0.001f);
+                Assert.AreEqual(3f, def.GetPlacementTowerRadius(10), 0.001f);
+                Assert.AreEqual(0f, def.GetFireTowerRadius(10), 0.001f);
             }
             finally
             {
@@ -72,12 +85,20 @@ namespace GemTD.Tests.EditMode
             def.Roles = new TowerRoleDefinition[] { aura, attack };
             try
             {
-                attack.TowerRadius = 11f;
-                aura.TowerRadius = 3f;
+                attack.Modifiers = new[]
+                {
+                    Modifier(RoleStat.AttackTime, RoleModifierOperation.Set, 1f),
+                    Modifier(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f),
+                    Modifier(RoleStat.TowerRadius, RoleModifierOperation.Set, 11f)
+                };
+                aura.Modifiers = new[]
+                {
+                    Modifier(RoleStat.TowerRadius, RoleModifierOperation.Set, 3f)
+                };
 
-                Assert.AreEqual(11f, def.GetFireTowerRadius(20), 0.001f);
-                Assert.AreEqual(3f, def.GetAuraTowerRadius(20), 0.001f);
-                Assert.AreEqual(11f, def.GetPlacementTowerRadius(20), 0.001f);
+                Assert.AreEqual(11f, def.GetFireTowerRadius(10), 0.001f);
+                Assert.AreEqual(3f, def.GetAuraTowerRadius(10), 0.001f);
+                Assert.AreEqual(11f, def.GetPlacementTowerRadius(10), 0.001f);
             }
             finally
             {
@@ -92,14 +113,14 @@ namespace GemTD.Tests.EditMode
             var def = CreateDefinition(role);
             try
             {
-                role.TowerRadius = 20f;
                 role.Modifiers = new[]
                 {
+                    Modifier(RoleStat.TowerRadius, RoleModifierOperation.Set, 20f),
                     Modifier(RoleStat.SplashRadius, RoleModifierOperation.Set, 0.5f)
                 };
 
-                Assert.AreEqual(20f, def.GetFireTowerRadius(20), 0.001f);
-                Assert.AreEqual(0.5f, def.GetSplashRadius(20), 0.001f);
+                Assert.AreEqual(20f, def.GetFireTowerRadius(10), 0.001f);
+                Assert.AreEqual(0.5f, def.GetSplashRadius(10), 0.001f);
             }
             finally
             {
@@ -116,7 +137,7 @@ namespace GemTD.Tests.EditMode
             {
                 def.Tags = GemTag.Attack | GemTag.Projectile;
 
-                Assert.AreEqual(0f, def.GetSplashRadius(20), 0.001f);
+                Assert.AreEqual(0f, def.GetSplashRadius(10), 0.001f);
             }
             finally
             {
@@ -133,7 +154,7 @@ namespace GemTD.Tests.EditMode
             {
                 def.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
 
-                Assert.AreEqual(0f, def.GetSplashRadius(20), 0.001f);
+                Assert.AreEqual(0f, def.GetSplashRadius(10), 0.001f);
             }
             finally
             {
@@ -153,7 +174,7 @@ namespace GemTD.Tests.EditMode
                 {
                     new RoleLevelDefinition
                     {
-                        SourceLevel = 20,
+                        SourceLevel = 10,
                         Modifiers = new[]
                         {
                             new RoleStatModifier
@@ -167,7 +188,7 @@ namespace GemTD.Tests.EditMode
                 };
 
                 var tower = new TowerInstance(Vector2Int.zero, def);
-                tower.SetLevel(20);
+                tower.SetLevel(10);
 
                 Assert.AreEqual(2f, def.GetSplashRadius(tower.Level), 0.001f);
             }
@@ -184,13 +205,16 @@ namespace GemTD.Tests.EditMode
             var def = CreateDefinition(role);
             try
             {
-                role.AttackTime = 2f;
-                role.AttackSpeed = 100f;
+                role.Modifiers = new[]
+                {
+                    Modifier(RoleStat.AttackTime, RoleModifierOperation.Set, 2f),
+                    Modifier(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f)
+                };
                 role.Levels = new[]
                 {
                     new RoleLevelDefinition
                     {
-                        SourceLevel = 20,
+                        SourceLevel = 10,
                         Modifiers = new[]
                         {
                             new RoleStatModifier
@@ -203,8 +227,8 @@ namespace GemTD.Tests.EditMode
                     }
                 };
 
-                Assert.AreEqual(1f, def.GetBaseFireInterval(20), 0.001f);
-                Assert.AreEqual(1f, def.GetBaseActionsPerSecond(20), 0.001f);
+                Assert.AreEqual(1f, def.GetBaseFireInterval(10), 0.001f);
+                Assert.AreEqual(1f, def.GetBaseActionsPerSecond(10), 0.001f);
             }
             finally
             {
@@ -219,8 +243,8 @@ namespace GemTD.Tests.EditMode
             var def = CreateDefinition(role);
             try
             {
-                Assert.AreEqual(0f, def.GetBaseFireInterval(20), 0.001f);
-                Assert.AreEqual(0f, def.GetBaseActionsPerSecond(20), 0.001f);
+                Assert.AreEqual(0f, def.GetBaseFireInterval(10), 0.001f);
+                Assert.AreEqual(0f, def.GetBaseActionsPerSecond(10), 0.001f);
                 Assert.IsFalse(def.IsFireable);
             }
             finally

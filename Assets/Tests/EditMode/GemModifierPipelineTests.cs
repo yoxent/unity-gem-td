@@ -12,55 +12,36 @@ namespace GemTD.Tests.EditMode
         public void EmptyPipeline_ReturnsBaseline()
         {
             var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, System.Array.Empty<IAttackModifier>());
+            var baseline = SkillSpec.FromBase(damage: 10f);
+            var result = pipeline.Apply(baseline, System.Array.Empty<ISkillModifier>());
 
             Assert.AreEqual(10f, result.Damage);
             Assert.AreEqual(1, result.ProjectileCount);
         }
 
         [Test]
-        public void Lmp_AddsProjectilesAndReducesDamage()
+        public void MultipleProjectiles_AddsProjectilesAndReducesDamage()
         {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new LmpModifier(0.8f, 2) });
+            var result = ApplyCatalog(GemId.MultipleProjectiles, SkillSpec.FromBase(damage: 10f));
 
             Assert.AreEqual(8f, result.Damage, 0.001f);
             Assert.AreEqual(3, result.ProjectileCount);
         }
 
         [Test]
-        public void Factory_CreatesLmp()
-        {
-            var mod = GemModifierFactory.Create(GemId.MultipleProjectiles);
-            Assert.IsInstanceOf<LmpModifier>(mod);
-        }
-
-        [Test]
         public void Chain_AddsChainsAndReducesDamage()
         {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new ChainModifier() });
+            var result = ApplyCatalog(GemId.Chain, SkillSpec.FromBase(damage: 10f));
 
             Assert.AreEqual(7f, result.Damage, 0.001f);
             Assert.AreEqual(1, result.ChainCount);
-        }
-
-        [Test]
-        public void Factory_CreatesChain()
-        {
-            var mod = GemModifierFactory.Create(GemId.Chain);
-            Assert.IsInstanceOf<ChainModifier>(mod);
+            Assert.AreEqual(0.6f, result.ChainHopFalloff, 0.001f);
         }
 
         [Test]
         public void FasterAttacks_BoostsFireRate()
         {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new FasterAttacksModifier() });
+            var result = ApplyCatalog(GemId.FasterAttacks, SkillSpec.FromBase(damage: 10f));
 
             Assert.AreEqual(1.25f, result.AttackSpeedMultiplier, 0.001f);
         }
@@ -68,39 +49,33 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void SlowerProjectiles_BoostsDamageAndSlowsProjectiles()
         {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(damage: 10f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new SlowerProjectilesModifier() });
+            var result = ApplyCatalog(GemId.SlowerProjectiles, SkillSpec.FromBase(damage: 10f));
 
             Assert.AreEqual(13f, result.Damage, 0.001f);
             Assert.AreEqual(0.6f, result.ProjectileSpeedMultiplier, 0.001f);
         }
 
         [Test]
-        public void Factory_CreatesOutOfPoolGems()
-        {
-            Assert.IsInstanceOf<FasterAttacksModifier>(GemModifierFactory.Create(GemId.FasterAttacks));
-            Assert.IsInstanceOf<SlowerProjectilesModifier>(GemModifierFactory.Create(GemId.SlowerProjectiles));
-        }
-
-        [Test]
         public void FromBase_DefaultsNewMultiplierFields()
         {
-            var baseline = AttackSpec.FromBase(damage: 10f);
+            var baseline = SkillSpec.FromBase(damage: 10f);
             Assert.AreEqual(1f, baseline.RangeMultiplier, 0.001f);
             Assert.AreEqual(1f, baseline.AttackSpeedMultiplier, 0.001f);
             Assert.AreEqual(1f, baseline.CastSpeedMultiplier, 0.001f);
             Assert.AreEqual(1f, baseline.ProjectileSpeedMultiplier, 0.001f);
             Assert.AreEqual(1, baseline.EchoVolleyCount);
             Assert.AreEqual(1f, baseline.EchoDamageFactor, 0.001f);
+            Assert.AreEqual(PierceMode.Finite, baseline.PierceBehavior);
+            Assert.AreEqual(0, baseline.PierceCount);
+            Assert.IsFalse(baseline.Pierce);
+            Assert.AreEqual(AimMode.Direct, baseline.AimMode);
+            Assert.AreEqual(DeliveryPattern.Straight, baseline.DeliveryPattern);
         }
 
         [Test]
         public void IncreasedArea_BoostsAoeAndCutsFireRate()
         {
-            var pipeline = new GemModifierPipeline();
-            var baseline = AttackSpec.FromBase(10f, 1, aoe: 1f);
-            var result = pipeline.Apply(baseline, new IAttackModifier[] { new IncreasedAreaModifier() });
+            var result = ApplyCatalog(GemId.IncreasedArea, SkillSpec.FromBase(10f, 1, aoe: 1f));
             Assert.AreEqual(1.35f, result.AoeRadius, 0.001f);
             Assert.AreEqual(0.9f, result.FireRateMultiplier, 0.001f);
         }
@@ -108,35 +83,21 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void PierceAndProlif_SetFlags_AndTradeoffs()
         {
-            var pipeline = new GemModifierPipeline();
-            var pierce = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new PierceModifier() });
+            var pierce = ApplyCatalog(GemId.Pierce, SkillSpec.FromBase(10f));
             Assert.IsTrue(pierce.Pierce);
+            Assert.AreEqual(PierceMode.Finite, pierce.PierceBehavior);
+            Assert.AreEqual(1, pierce.PierceCount);
             Assert.AreEqual(8.5f, pierce.Damage, 0.001f);
 
-            var prolif = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new ElementalProliferationModifier() });
+            var prolif = ApplyCatalog(GemId.ElementalProliferation, SkillSpec.FromBase(10f));
             Assert.IsTrue(prolif.Proliferate);
             Assert.AreEqual(7.5f, prolif.Damage, 0.001f);
         }
 
         [Test]
-        public void Factory_CreatesDraftPoolGems()
-        {
-            Assert.IsInstanceOf<IncreasedAreaModifier>(GemModifierFactory.Create(GemId.IncreasedArea));
-            Assert.IsInstanceOf<PierceModifier>(GemModifierFactory.Create(GemId.Pierce));
-            Assert.IsInstanceOf<ElementalProliferationModifier>(GemModifierFactory.Create(GemId.ElementalProliferation));
-            Assert.IsInstanceOf<ForkModifier>(GemModifierFactory.Create(GemId.Fork));
-            Assert.IsInstanceOf<CombustionModifier>(GemModifierFactory.Create(GemId.Combustion));
-            Assert.IsInstanceOf<AddedFireDamageModifier>(GemModifierFactory.Create(GemId.AddedFireDamage));
-            Assert.IsInstanceOf<AddedColdDamageModifier>(GemModifierFactory.Create(GemId.AddedColdDamage));
-            Assert.IsInstanceOf<AddedLightningDamageModifier>(GemModifierFactory.Create(GemId.AddedLightningDamage));
-            Assert.IsInstanceOf<KnockbackModifier>(GemModifierFactory.Create(GemId.Knockback));
-        }
-
-        [Test]
         public void Combustion_MoreDamageAndIgnite()
         {
-            var pipeline = new GemModifierPipeline();
-            var result = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new CombustionModifier() });
+            var result = ApplyCatalog(GemId.Combustion, SkillSpec.FromBase(10f));
             Assert.AreEqual(11.4f, result.Damage, 0.001f);
             Assert.IsTrue(result.Ignite);
         }
@@ -144,16 +105,15 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void AddedElemental_ExtraDamageAndAilments()
         {
-            var pipeline = new GemModifierPipeline();
-            var fire = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new AddedFireDamageModifier() });
+            var fire = ApplyCatalog(GemId.AddedFireDamage, SkillSpec.FromBase(10f));
             Assert.AreEqual(13.1f, fire.Damage, 0.001f);
             Assert.IsFalse(fire.Ignite);
 
-            var cold = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new AddedColdDamageModifier() });
+            var cold = ApplyCatalog(GemId.AddedColdDamage, SkillSpec.FromBase(10f));
             Assert.AreEqual(14f, cold.Damage, 0.001f);
             Assert.IsTrue(cold.Chill);
 
-            var lightning = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new AddedLightningDamageModifier() });
+            var lightning = ApplyCatalog(GemId.AddedLightningDamage, SkillSpec.FromBase(10f));
             Assert.AreEqual(14f, lightning.Damage, 0.001f);
             Assert.IsTrue(lightning.Shock);
         }
@@ -161,8 +121,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Knockback_SetsChanceAndDistance()
         {
-            var pipeline = new GemModifierPipeline();
-            var result = pipeline.Apply(AttackSpec.FromBase(10f), new IAttackModifier[] { new KnockbackModifier() });
+            var result = ApplyCatalog(GemId.Knockback, SkillSpec.FromBase(10f));
             Assert.AreEqual(0.34f, result.KnockbackChance, 0.001f);
             Assert.AreEqual(1f, result.KnockbackDistance, 0.001f);
         }
@@ -177,14 +136,16 @@ namespace GemTD.Tests.EditMode
             var tower = new TowerInstance(Vector2Int.zero, def);
             var chain = ScriptableObject.CreateInstance<GemDefinition>();
             chain.Id = GemId.Chain;
+            CatalogGemModifiers.Bind(chain);
             var fork = ScriptableObject.CreateInstance<GemDefinition>();
             fork.Id = GemId.Fork;
+            CatalogGemModifiers.Bind(fork);
             Assert.IsTrue(tower.TrySocket(chain, 0, allowSocket: true));
             Assert.IsTrue(tower.TrySocket(fork, 1, allowSocket: true));
 
             try
             {
-                var scratch = new System.Collections.Generic.List<IAttackModifier>(2);
+                var scratch = new System.Collections.Generic.List<ISkillModifier>(2);
                 var spec = new GemModifierPipeline().Resolve(tower, scratch);
                 Assert.AreEqual(10f * 0.7f * 0.85f, spec.Damage, 0.001f);
                 Assert.AreEqual(1, spec.ChainCount);
@@ -195,6 +156,51 @@ namespace GemTD.Tests.EditMode
                 Object.DestroyImmediate(def);
                 Object.DestroyImmediate(chain);
                 Object.DestroyImmediate(fork);
+            }
+        }
+
+        [Test]
+        public void Resolve_NoneIdGem_StillAppliesModifiers()
+        {
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.Damage = 10f;
+            def.SocketCount = 1;
+            var tower = new TowerInstance(Vector2Int.zero, def);
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.Id = GemId.None;
+            gem.Modifiers = new[]
+            {
+                GemStatModifier.Single(GemStat.ChainCount, RoleModifierOperation.Add, 10f)
+            };
+            Assert.IsTrue(tower.TrySocket(gem, 0, allowSocket: true));
+
+            try
+            {
+                var scratch = new System.Collections.Generic.List<ISkillModifier>(1);
+                var spec = new GemModifierPipeline().Resolve(tower, scratch);
+                Assert.AreEqual(10, spec.ChainCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+                Object.DestroyImmediate(gem);
+            }
+        }
+
+        static SkillSpec ApplyCatalog(GemId id, SkillSpec baseline)
+        {
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.Id = id;
+            CatalogGemModifiers.Bind(gem);
+            try
+            {
+                return new GemModifierPipeline().Apply(
+                    baseline,
+                    new ISkillModifier[] { new GemDefinitionModifier(gem) });
+            }
+            finally
+            {
+                Object.DestroyImmediate(gem);
             }
         }
     }

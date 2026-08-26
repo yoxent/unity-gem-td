@@ -11,15 +11,18 @@ namespace GemTD.Tests.EditMode
         public void AttackRole_UsesAttackTimeAndSpeed()
         {
             var role = ScriptableObject.CreateInstance<AttackRoleDefinition>();
-            role.AttackTime = 1f;
-            role.AttackSpeed = 80f;
+            role.Modifiers = new[]
+            {
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 80f)
+            };
             var def = ScriptableObject.CreateInstance<TowerDefinition>();
             def.Roles = new TowerRoleDefinition[] { role };
 
             Assert.AreEqual(1.25f, def.BaseFireInterval, 0.001f);
             Assert.IsTrue(def.UsesAttackSpeed);
 
-            var spec = AttackSpec.FromBase(10f);
+            var spec = SkillSpec.FromBase(10f);
             spec.AttackSpeedMultiplier = 2f;
             Assert.AreEqual(0.625f, def.FireInterval(spec), 0.001f);
         }
@@ -28,12 +31,15 @@ namespace GemTD.Tests.EditMode
         public void SpellRole_IgnoresFasterAttacks()
         {
             var role = ScriptableObject.CreateInstance<SpellRoleDefinition>();
-            role.CastTime = 0.75f;
-            role.CastSpeed = 100f;
+            role.Modifiers = new[]
+            {
+                Modifier(RoleStat.CastTime, 0.75f),
+                Modifier(RoleStat.CastSpeed, 100f)
+            };
             var def = ScriptableObject.CreateInstance<TowerDefinition>();
             def.Roles = new TowerRoleDefinition[] { role };
 
-            var spec = AttackSpec.FromBase(10f);
+            var spec = SkillSpec.FromBase(10f);
             spec.AttackSpeedMultiplier = 2f;
             Assert.AreEqual(0.75f, def.FireInterval(spec), 0.001f);
 
@@ -53,10 +59,16 @@ namespace GemTD.Tests.EditMode
         public void AttackPlusAura_FiresAsAttack()
         {
             var attack = ScriptableObject.CreateInstance<AttackRoleDefinition>();
-            attack.AttackTime = 0.5f;
-            attack.AttackSpeed = 100f;
+            attack.Modifiers = new[]
+            {
+                Modifier(RoleStat.AttackTime, 0.5f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
             var aura = ScriptableObject.CreateInstance<AuraRoleDefinition>();
-            aura.TowerRadius = 1.5f;
+            aura.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 1.5f)
+            };
             var def = ScriptableObject.CreateInstance<TowerDefinition>();
             def.Roles = new TowerRoleDefinition[] { aura, attack };
 
@@ -65,6 +77,11 @@ namespace GemTD.Tests.EditMode
             Assert.IsInstanceOf<AttackRoleDefinition>(def.FireRole);
             Assert.AreEqual(0.5f, def.BaseFireInterval, 0.001f);
             Assert.IsTrue(def.UsesAttackSpeed);
+        }
+
+        static RoleStatModifier Modifier(RoleStat stat, float value)
+        {
+            return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);
         }
     }
 }

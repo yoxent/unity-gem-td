@@ -9,7 +9,7 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain combat tick: cooldown → gem pipeline → targeting mode → projectiles (LMP/Chain/Hydra).
+    /// Domain combat tick: cooldown → gem pipeline → targeting mode → projectiles (Multiple Projectiles/Chain/Hydra).
     /// </summary>
     public sealed class CombatDirector
     {
@@ -22,10 +22,15 @@ namespace GemTD.Gameplay.Combat
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
 
-        public CombatDirector(float cellSize = 1f, float projectileSpeed = 20f, Action<TowerDefinition, float> recordDamage = null)
+        public CombatDirector(
+            float cellSize = 1f,
+            float projectileSpeed = ProjectileRuntime.DefaultProjectileSpeed,
+            Action<TowerDefinition, float> recordDamage = null)
         {
             _cellSize = cellSize > 0f ? cellSize : 1f;
-            _projectileSpeed = projectileSpeed > 0f ? projectileSpeed : 20f;
+            _projectileSpeed = projectileSpeed > 0f
+                ? projectileSpeed
+                : ProjectileRuntime.DefaultProjectileSpeed;
             _recordDamage = recordDamage;
         }
 
@@ -77,9 +82,9 @@ namespace GemTD.Gameplay.Combat
                     if (tower.Cooldown > 0f)
                         continue;
 
-                    var modifiers = ListPool<IAttackModifier>.Get();
+                    var modifiers = ListPool<ISkillModifier>.Get();
                     var spec = pipeline.Resolve(tower, modifiers);
-                    ListPool<IAttackModifier>.Release(modifiers);
+                    ListPool<ISkillModifier>.Release(modifiers);
 
                     var towerPos = CellToWorld(tower.Cell);
                     var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
@@ -88,27 +93,45 @@ namespace GemTD.Gameplay.Combat
                         continue;
 
                     tower.Cooldown = tower.Def.FireInterval(spec, tower.Level);
-                    var damage = spec.Damage;
                     var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
                     var speed = _projectileSpeed * speedMul;
                     var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
                     var echoFactor = volleys > 1 ? spec.EchoDamageFactor : 1f;
                     if (echoFactor <= 0f)
                         echoFactor = 1f;
-                    var volleyDamage = damage * echoFactor;
+                    var volleyMin = spec.DamageMin * echoFactor;
+                    var volleyMax = spec.DamageMax * echoFactor;
                     var hydra = EvolutionEvaluator.IsHydraTower(tower);
+                    var aimPoint = spec.AimMode == AimMode.Ground
+                        ? PathIntercept.Predict(towerPos, speed, primary)
+                        : primary.WorldPosition;
                     for (var v = 0; v < volleys; v++)
                     {
+                        if (spec.DeliveryPattern == DeliveryPattern.PayloadNova)
+                        {
+                            SpawnPayloadNova(
+                                towerPos,
+                                aimPoint,
+                                spec,
+                                ProjectileRuntime.DefaultChainRange,
+                                volleyMin,
+                                volleyMax,
+                                speed,
+                                statuses,
+                                tower.Def);
+                            continue;
+                        }
+
                         if (hydra)
                         {
                             var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                             var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
                             for (var h = 0; h < laterals.Length; h++)
-                                SpawnVolley(towerPos, primary, spec, ProjectileRuntime.DefaultChainRange, volleyDamage, speed, statuses, tower.Def, yaws[h], laterals[h]);
+                                SpawnVolley(towerPos, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h]);
                         }
                         else
                         {
-                            SpawnVolley(towerPos, primary, spec, ProjectileRuntime.DefaultChainRange, volleyDamage, speed, statuses, tower.Def, 0f, 0f);
+                            SpawnVolley(towerPos, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f);
                         }
                     }
                 }
@@ -124,19 +147,60 @@ namespace GemTD.Gameplay.Combat
             _spawnBuffer.Clear();
         }
 
+        void SpawnPayloadNova(
+            Vector3 origin,
+            Vector3 aimPoint,
+            SkillSpec spec,
+            float chainRange,
+            float damageMin,
+            float damageMax,
+            float speed,
+            StatusRuntime statuses,
+            TowerDefinition sourceTower)
+        {
+            if (spec.ProjectileCount <= 0)
+                return;
+
+            var payload = new ProjectileRuntime();
+            payload.InitPayload(
+                origin,
+                aimPoint,
+                spec,
+                damageMin,
+                damageMax,
+                speed,
+                chainRange,
+                statuses,
+                _spawnBuffer,
+                sourceTower,
+                _recordDamage);
+
+            if ((aimPoint - origin).sqrMagnitude
+                <= ProjectileRuntime.HitRadius * ProjectileRuntime.HitRadius)
+            {
+                payload.ExplodePayload();
+                MergeSpawnBuffer();
+                return;
+            }
+
+            _projectiles.Add(payload);
+        }
+
         void SpawnVolley(
             Vector3 origin,
+            Vector3 aimPoint,
             EnemyRuntime primary,
-            AttackSpec spec,
+            SkillSpec spec,
             float chainRange,
-            float damage,
+            float damageMin,
+            float damageMax,
             float speed,
             StatusRuntime statuses,
             TowerDefinition sourceTower,
             float headYawDegrees,
             float headLateral)
         {
-            var aim = primary.WorldPosition - origin;
+            var aim = aimPoint - origin;
             if (aim.sqrMagnitude < 1e-8f)
                 aim = Vector3.forward;
             else
@@ -146,7 +210,7 @@ namespace GemTD.Gameplay.Combat
             {
                 var headSide = Quaternion.Euler(0f, 90f, 0f) * aim;
                 origin += headSide * headLateral;
-                aim = primary.WorldPosition - origin;
+                aim = aimPoint - origin;
                 if (aim.sqrMagnitude > 1e-8f)
                     aim.Normalize();
             }
@@ -154,9 +218,9 @@ namespace GemTD.Gameplay.Combat
             if (Mathf.Abs(headYawDegrees) > 1e-4f)
                 aim = Quaternion.Euler(0f, headYawDegrees, 0f) * aim;
 
-            var pierceRemaining = spec.Pierce ? ProjectileRuntime.DefaultPierceRemaining : 0;
+            var pierceRemaining = spec.GetPierceRemaining();
             var forkRemaining = spec.ForkCount;
-            var count = spec.ProjectileCount > 0 ? spec.ProjectileCount : 1;
+            var count = spec.ProjectileCount;
 
             for (var i = 0; i < count; i++)
             {
@@ -174,7 +238,7 @@ namespace GemTD.Gameplay.Combat
                     origin,
                     dir,
                     primary,
-                    damage,
+                    RoleStatValue.SampleHitDamage(damageMin, damageMax),
                     spec.ChainCount,
                     speed,
                     chainRange,
@@ -192,7 +256,11 @@ namespace GemTD.Gameplay.Combat
                     sourceTower,
                     _recordDamage,
                     spec.KnockbackChance,
-                    spec.KnockbackDistance);
+                    spec.KnockbackDistance,
+                    spec.ChainHopFalloff,
+                    spec.BleedChance,
+                    spec.BleedDamageMultiplier,
+                    AilmentTune.FromSkillSpec(spec));
                 _projectiles.Add(projectile);
             }
         }

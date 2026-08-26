@@ -13,7 +13,7 @@ namespace GemTD.Tests.EditMode
         AttackRoleDefinition _projectileRole;
         AttackRoleDefinition _splashRole;
         AuraRoleDefinition _auraRole;
-        GemDefinition _lmp;
+        GemDefinition _multipleProjectiles;
         GemDefinition _chain;
         GemDefinition _area;
         GemDefinition _supportOnly;
@@ -38,9 +38,9 @@ namespace GemTD.Tests.EditMode
             _auraTower.Roles = new TowerRoleDefinition[] { _auraRole };
             _auraTower.SocketCount = 1;
 
-            _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.MultipleProjectiles;
-            _lmp.Tags = GemTag.Support | GemTag.Projectile;
+            _multipleProjectiles = ScriptableObject.CreateInstance<GemDefinition>();
+            _multipleProjectiles.Id = GemId.MultipleProjectiles;
+            _multipleProjectiles.Tags = GemTag.Support | GemTag.Projectile;
 
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
             _chain.Id = GemId.Chain;
@@ -68,7 +68,7 @@ namespace GemTD.Tests.EditMode
             Object.DestroyImmediate(_projectileRole);
             Object.DestroyImmediate(_splashRole);
             Object.DestroyImmediate(_auraRole);
-            Object.DestroyImmediate(_lmp);
+            Object.DestroyImmediate(_multipleProjectiles);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_area);
             Object.DestroyImmediate(_supportOnly);
@@ -86,14 +86,14 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void ProjectileGem_SocketsProjectileAndSplashTowers_NotAuraTower()
         {
-            Assert.IsTrue(GemTags.CanSocket(_projectileTower, _lmp));
-            Assert.IsTrue(GemTags.CanSocket(_splashTower, _lmp));
-            Assert.IsFalse(GemTags.CanSocket(_auraTower, _lmp));
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, _multipleProjectiles));
+            Assert.IsTrue(GemTags.CanSocket(_splashTower, _multipleProjectiles));
+            Assert.IsFalse(GemTags.CanSocket(_auraTower, _multipleProjectiles));
 
             var projectileTower = new TowerInstance(Vector2Int.zero, _projectileTower);
             var auraTower = new TowerInstance(Vector2Int.zero, _auraTower);
-            Assert.IsTrue(projectileTower.TrySocket(_lmp, 0, allowSocket: true));
-            Assert.IsFalse(auraTower.TrySocket(_lmp, 0, allowSocket: true));
+            Assert.IsTrue(projectileTower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
+            Assert.IsFalse(auraTower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
         }
 
         [Test]

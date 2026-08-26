@@ -26,20 +26,17 @@ namespace GemTD.Tests.EditMode
 
             _splashTower = ScriptableObject.CreateInstance<TowerDefinition>();
             _splashRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
-            _splashRole.TowerRadius = 20f;
             _splashRole.Modifiers = new[]
             {
-                new RoleStatModifier
-                {
-                    Stat = RoleStat.SplashRadius,
-                    Operation = RoleModifierOperation.Set,
-                    Value = 1.5f
-                }
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1.2f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 1.5f),
+                Modifier(RoleStat.ProjectileCount, 1f)
             };
             _splashTower.Roles = new TowerRoleDefinition[] { _splashRole };
             _splashTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
             _splashTower.Damage = 8f;
-            _splashRole.AttackTime = 1.2f;
             _splashTower.SocketCount = 2;
 
             _pipeline = new GemModifierPipeline();
@@ -86,7 +83,14 @@ namespace GemTD.Tests.EditMode
         public void NoSplash_WhenSplashRadiusZero_OnlyPrimaryDamaged()
         {
             _splashTower.Tags = GemTag.Attack | GemTag.Projectile;
-            _splashRole.Modifiers = null;
+            _splashRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1.2f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 0f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
 
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
             var tower = new TowerInstance(new Vector2Int(0, 0), _splashTower);
@@ -106,6 +110,11 @@ namespace GemTD.Tests.EditMode
 
             Assert.Less(primary.Hp, 100f);
             Assert.AreEqual(nearbyHpBefore, nearby.Hp, 1e-4f);
+        }
+
+        static RoleStatModifier Modifier(RoleStat stat, float value)
+        {
+            return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);
         }
 
         EnemyRuntime CreateEnemyAtProgress(float approximateProgress, float laneOffsetZ = 0f)

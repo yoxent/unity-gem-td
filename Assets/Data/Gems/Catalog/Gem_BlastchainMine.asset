@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d58eaa9bb5eec44c9718c97df04697c, type: 3}
+  m_Name: Gem_BlastchainMine
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
+  Id: 141
+  DisplayName: Blastchain Mine
+  Description: Projectile chains to additional targets. Each subsequent chain deals reduced damage; chain count is limited. Supported Attack Skills cannot be used with Melee Weapons Mine lasts # seconds Supported Skills have a Base Mine Detonation Time of # seconds Supported Skills gain a Base Reservation equal to Base Mana and Life Cost Supported Skills deal #% more Damage for each prior Mine in Detonation Sequence
+  DraftWeight: 1
+  Tags: 256
+  Modifiers: []

@@ -13,22 +13,30 @@ namespace GemTD.Gameplay.Combat
     /// </summary>
     public sealed class ProjectileRuntime
     {
-        public const float ChainHopFalloff = 0.6f;
+        public const float DefaultChainHopFalloff = 0.6f;
         public const float DefaultChainRange = 3f;
         public const int DefaultPierceRemaining = 1;
-        public const float MaxLifetimeSeconds = 6f;
-        public const float MaxFlightDistance = 80f;
+        public const int InfinitePierceRemaining = -1;
+        public const float DefaultProjectileSpeed = 20f;
+        public const float MaxLifetimeSeconds = 2f;
         public const float ForkHalfAngleDegrees = 45f;
         public const float ForkSpawnForwardPad = 0.08f;
+        public const float BleedDuration = 2f;
+        public const float BleedHitFraction = 0.2f;
+        public const float IgniteDuration = 2f;
+        public const float IgniteHitFraction = 0.2f;
+        public const float ChillDuration = 2f;
+        public const float ChillMagnitude = 0.6f;
+        public const float ShockDuration = 3f;
+        public const float ShockMagnitude = 1.25f;
+        public const float FreezeDuration = 2f;
+        public const float PoisonDuration = 2f;
+        public const float PoisonHitFraction = 0.2f;
+        public const float StunDuration = 2f;
+        public const float HallowingFlameDuration = 6f;
 
-        const float HitRadius = 0.15f;
+        public const float HitRadius = 0.15f;
         const float PierceLookAheadPad = 0.05f;
-        const float IgniteDuration = 2f;
-        const float IgniteHitFraction = 0.2f;
-        const float ChillDuration = 2f;
-        const float ChillMagnitude = 0.6f;
-        const float ShockDuration = 3f;
-        const float ShockMagnitude = 1.25f;
         const float ProlifRadius = 1.5f;
 
         public Vector3 Position { get; private set; }
@@ -36,6 +44,7 @@ namespace GemTD.Gameplay.Combat
         public EnemyRuntime Target { get; private set; }
         public float Damage { get; private set; }
         public int ChainRemaining { get; private set; }
+        public float ChainHopFalloff { get; private set; }
         public int PierceRemaining { get; private set; }
         public int ForkRemaining { get; private set; }
         public float Speed { get; private set; }
@@ -43,23 +52,26 @@ namespace GemTD.Gameplay.Combat
         public float AoeRadius { get; private set; }
         public bool Seeking { get; private set; }
         public bool IsActive { get; private set; }
+        public bool IsPayload { get; private set; }
 
         /// <summary>Unused — kept for call-site / test compat.</summary>
         public bool SoftSeek { get; private set; }
 
-        bool _ignite;
-        bool _chill;
-        bool _shock;
         bool _prolif;
         float _knockbackChance;
         float _knockbackDistance;
+        AilmentTune _ailments;
         StatusRuntime _statuses;
         List<ProjectileRuntime> _spawnBuffer;
         EnemyRuntime _lastHit;
         TowerDefinition _sourceTower;
         Action<TowerDefinition, float> _recordDamage;
         float _age;
-        float _traveled;
+        Vector3 _landPoint;
+        SkillSpec _payloadSpec;
+        float _payloadDamageMin;
+        float _payloadDamageMax;
+        float _payloadChainRange;
 
         public void Init(
             Vector3 origin,
@@ -83,7 +95,11 @@ namespace GemTD.Gameplay.Combat
             TowerDefinition sourceTower = null,
             Action<TowerDefinition, float> recordDamage = null,
             float knockbackChance = 0f,
-            float knockbackDistance = 0f)
+            float knockbackDistance = 0f,
+            float chainHopFalloff = 0f,
+            float bleedChance = 0f,
+            float bleedDamageMultiplier = 0f,
+            AilmentTune ailments = default)
         {
             Position = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
@@ -94,16 +110,28 @@ namespace GemTD.Gameplay.Combat
             ForkRemaining = forkRemaining;
             Speed = speed;
             ChainRange = chainRange;
+            ChainHopFalloff = chainHopFalloff == 0f ? 1f : chainHopFalloff;
             AoeRadius = aoeRadius > 0f ? aoeRadius : 0f;
             // Ballistic only. Chain hop snap-aims Direction once in OnHit (no continuous homing).
             Seeking = false;
             SoftSeek = false;
             _ = softSeek;
             _ = seekOffset;
-            _ignite = ignite;
-            _chill = chill;
-            _shock = shock;
             _prolif = prolif;
+            _ailments = ailments;
+            _ailments.Ignite = ignite || ailments.Ignite;
+            _ailments.Chill = chill || ailments.Chill;
+            _ailments.Shock = shock || ailments.Shock;
+            if (bleedChance > 0f)
+                _ailments.BleedChance = bleedChance;
+            if (bleedDamageMultiplier != 0f)
+                _ailments.BleedDamageMultiplier = bleedDamageMultiplier;
+            else if (_ailments.BleedDamageMultiplier == 0f)
+                _ailments.BleedDamageMultiplier = 1f;
+            if (_ailments.AilmentDamageMultiplier == 0f)
+                _ailments.AilmentDamageMultiplier = 1f;
+            if (_ailments.AilmentDurationMultiplier == 0f)
+                _ailments.AilmentDurationMultiplier = 1f;
             _statuses = statuses;
             _spawnBuffer = spawnBuffer;
             _lastHit = null;
@@ -112,8 +140,114 @@ namespace GemTD.Gameplay.Combat
             _knockbackChance = knockbackChance > 0f ? knockbackChance : 0f;
             _knockbackDistance = knockbackDistance > 0f ? knockbackDistance : 0f;
             _age = 0f;
-            _traveled = 0f;
             IsActive = true;
+            IsPayload = false;
+        }
+
+        public void InitPayload(
+            Vector3 origin,
+            Vector3 landPoint,
+            SkillSpec spec,
+            float damageMin,
+            float damageMax,
+            float speed,
+            float chainRange,
+            StatusRuntime statuses,
+            List<ProjectileRuntime> spawnBuffer,
+            TowerDefinition sourceTower,
+            Action<TowerDefinition, float> recordDamage)
+        {
+            Init(
+                origin,
+                landPoint - origin,
+                null,
+                0f,
+                0,
+                speed,
+                chainRange,
+                0f,
+                0,
+                0,
+                false,
+                false,
+                false,
+                false,
+                statuses,
+                spawnBuffer,
+                false,
+                default,
+                sourceTower,
+                recordDamage,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                default);
+            IsPayload = true;
+            _landPoint = landPoint;
+            _payloadSpec = spec;
+            _payloadDamageMin = damageMin;
+            _payloadDamageMax = damageMax;
+            _payloadChainRange = chainRange;
+        }
+
+        public void ExplodePayload()
+        {
+            if (_spawnBuffer == null)
+            {
+                IsActive = false;
+                return;
+            }
+
+            var count = _payloadSpec.ProjectileCount;
+            if (count <= 0)
+            {
+                IsActive = false;
+                return;
+            }
+
+            var pierceRemaining = _payloadSpec.GetPierceRemaining();
+            var forkRemaining = _payloadSpec.ForkCount;
+            var ailments = AilmentTune.FromSkillSpec(_payloadSpec);
+            var origin = Position;
+            var step = 360f / count;
+            for (var i = 0; i < count; i++)
+            {
+                var yaw = i * step;
+                var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                var child = new ProjectileRuntime();
+                child.Init(
+                    origin,
+                    dir,
+                    null,
+                    RoleStatValue.SampleHitDamage(_payloadDamageMin, _payloadDamageMax),
+                    _payloadSpec.ChainCount,
+                    Speed,
+                    _payloadChainRange,
+                    _payloadSpec.AoeRadius,
+                    pierceRemaining,
+                    forkRemaining,
+                    _payloadSpec.Ignite,
+                    _payloadSpec.Chill,
+                    _payloadSpec.Shock,
+                    _payloadSpec.Proliferate,
+                    _statuses,
+                    _spawnBuffer,
+                    false,
+                    default,
+                    _sourceTower,
+                    _recordDamage,
+                    _payloadSpec.KnockbackChance,
+                    _payloadSpec.KnockbackDistance,
+                    _payloadSpec.ChainHopFalloff,
+                    _payloadSpec.BleedChance,
+                    _payloadSpec.BleedDamageMultiplier,
+                    ailments);
+                _spawnBuffer.Add(child);
+            }
+
+            IsActive = false;
         }
 
         public void Deactivate() => IsActive = false;
@@ -126,11 +260,13 @@ namespace GemTD.Gameplay.Combat
             if (!IsActive)
                 return false;
 
+            if (IsPayload)
+                return TickPayload(dt);
+
             if (dt > 0f)
             {
                 _age += dt;
-                _traveled += Speed * dt;
-                if (_age >= MaxLifetimeSeconds || _traveled >= MaxFlightDistance)
+                if (_age >= MaxLifetimeSeconds)
                 {
                     IsActive = false;
                     return false;
@@ -154,6 +290,35 @@ namespace GemTD.Gameplay.Combat
             }
 
             Position = to;
+            return true;
+        }
+
+        bool TickPayload(float dt)
+        {
+            if (dt > 0f)
+            {
+                _age += dt;
+                if (_age >= MaxLifetimeSeconds)
+                {
+                    ExplodePayload();
+                    return false;
+                }
+            }
+
+            if (dt <= 0f)
+                return true;
+
+            var toLand = _landPoint - Position;
+            var remaining = toLand.magnitude;
+            var stepDist = Speed * dt;
+            if (remaining <= HitRadius || stepDist >= remaining)
+            {
+                Position = _landPoint;
+                ExplodePayload();
+                return false;
+            }
+
+            Position += toLand / remaining * stepDist;
             return true;
         }
 
@@ -189,9 +354,10 @@ namespace GemTD.Gameplay.Combat
 
             // PoE-style: one behavior per collision — Pierce > Fork > Chain.
             // PierceRemaining is extra through-hits; 1 = continue past this target once.
-            if (PierceRemaining > 0)
+            if (PierceRemaining == InfinitePierceRemaining || PierceRemaining > 0)
             {
-                PierceRemaining--;
+                if (PierceRemaining > 0)
+                    PierceRemaining--;
                 Target = null;
                 Seeking = false;
                 return;
@@ -231,12 +397,33 @@ namespace GemTD.Gameplay.Combat
             if (_sourceTower != null)
                 enemy.LastDamageSource = _sourceTower;
 
+            var dealt = Damage + ExtraHitDamage(enemy);
             if (_statuses != null)
-                _statuses.ApplyDamage(enemy, Damage);
+                _statuses.ApplyDamage(enemy, dealt);
             else
-                enemy.ApplyDamage(Damage);
+                enemy.ApplyDamage(dealt);
 
-            _recordDamage?.Invoke(_sourceTower, Damage);
+            _recordDamage?.Invoke(_sourceTower, dealt);
+        }
+
+        float ExtraHitDamage(EnemyRuntime enemy)
+        {
+            var extra = 0f;
+            if (!_ailments.HallowingFlame)
+            {
+                extra += Damage * _ailments.PhysAsExtraFire;
+                extra += Damage * _ailments.PhysAsExtraCold;
+                extra += Damage * _ailments.PhysAsExtraLightning;
+                extra += Damage * _ailments.PhysAsExtraChaos;
+            }
+
+            if (_statuses != null
+                && _statuses.TryConsumeHallowingFlame(enemy, _sourceTower, out var hallowExtra))
+            {
+                extra += Damage * hallowExtra;
+            }
+
+            return extra;
         }
 
         void ApplyStatusesOnHit(EnemyRuntime hit, List<EnemyRuntime> livingCandidates)
@@ -244,17 +431,132 @@ namespace GemTD.Gameplay.Combat
             if (_statuses == null || hit == null)
                 return;
 
-            if (_ignite)
-                _statuses.Apply(hit, StatusId.Ignite, IgniteDuration, Damage * IgniteHitFraction);
+            if (RollAilment(_ailments.Ignite, _ailments.IgniteChance))
+            {
+                _statuses.Apply(
+                    hit,
+                    StatusId.Ignite,
+                    ScaledDuration(_ailments.IgniteDuration, IgniteDuration),
+                    Damage
+                    * IgniteHitFraction
+                    * BurningOrDefault(_ailments.BurningDamageMultiplier)
+                    * AilmentDamageOrDefault());
+            }
 
-            if (_chill)
-                _statuses.Apply(hit, StatusId.Chill, ChillDuration, ChillMagnitude);
+            if (RollAilment(false, _ailments.BleedChance))
+            {
+                _statuses.Apply(
+                    hit,
+                    StatusId.Bleed,
+                    ScaledDuration(_ailments.BleedDuration, BleedDuration),
+                    Damage
+                    * BleedHitFraction
+                    * _ailments.BleedDamageMultiplier
+                    * AilmentDamageOrDefault());
+            }
 
-            if (_shock)
-                _statuses.Apply(hit, StatusId.Shock, ShockDuration, ShockMagnitude);
+            if (RollAilment(_ailments.Chill, 0f))
+            {
+                var effect = _ailments.ChillEffect == 0f ? 1f : _ailments.ChillEffect;
+                var magnitude = 1f - (1f - ChillMagnitude) * effect;
+                if (magnitude < 0f)
+                    magnitude = 0f;
+                _statuses.Apply(
+                    hit,
+                    StatusId.Chill,
+                    ScaledDuration(_ailments.ChillDuration, ChillDuration),
+                    magnitude);
+            }
+
+            if (RollAilment(_ailments.Shock, _ailments.ShockChance))
+            {
+                var effect = _ailments.ShockEffect == 0f ? 1f : _ailments.ShockEffect;
+                var magnitude = 1f + (ShockMagnitude - 1f) * effect;
+                _statuses.Apply(
+                    hit,
+                    StatusId.Shock,
+                    ScaledDuration(_ailments.ShockDuration, ShockDuration),
+                    magnitude);
+            }
+
+            if (RollAilment(false, _ailments.FreezeChance))
+            {
+                _statuses.Apply(
+                    hit,
+                    StatusId.Freeze,
+                    ScaledDuration(_ailments.FreezeDuration, FreezeDuration),
+                    0f);
+            }
+
+            if (RollAilment(false, _ailments.PoisonChance))
+            {
+                _statuses.Apply(
+                    hit,
+                    StatusId.Poison,
+                    ScaledDuration(_ailments.PoisonDuration, PoisonDuration),
+                    Damage * PoisonHitFraction * AilmentDamageOrDefault());
+            }
+
+            if (RollAilment(false, _ailments.StunChance))
+            {
+                _statuses.Apply(
+                    hit,
+                    StatusId.Stun,
+                    ScaledDuration(_ailments.StunDuration, StunDuration),
+                    0f);
+            }
+
+            if (_ailments.HallowingFlame)
+            {
+                _statuses.Apply(
+                    hit,
+                    StatusId.HallowingFlame,
+                    HallowingFlameDuration,
+                    _ailments.PhysAsExtraFire,
+                    _sourceTower);
+            }
 
             if (_prolif)
                 _statuses.ProliferateIgniteChillShock(hit, ProlifRadius, livingCandidates);
+        }
+
+        static bool RollAilment(bool flag, float chance)
+        {
+            var p = flag ? 1f : chance;
+            if (p <= 0f)
+                return false;
+            if (p >= 1f)
+                return true;
+            return UnityEngine.Random.value < p;
+        }
+
+        static float DurationOrDefault(float authored, float fallback)
+        {
+            return authored > 0f ? authored : fallback;
+        }
+
+        float ScaledDuration(float authored, float fallback)
+        {
+            return DurationOrDefault(authored, fallback) * DurationMulOrDefault();
+        }
+
+        float DurationMulOrDefault()
+        {
+            return _ailments.AilmentDurationMultiplier == 0f
+                ? 1f
+                : _ailments.AilmentDurationMultiplier;
+        }
+
+        float AilmentDamageOrDefault()
+        {
+            return _ailments.AilmentDamageMultiplier == 0f
+                ? 1f
+                : _ailments.AilmentDamageMultiplier;
+        }
+
+        static float BurningOrDefault(float authored)
+        {
+            return authored == 0f ? 1f : authored;
         }
 
         void ApplyKnockbackOnHit(EnemyRuntime hit)
@@ -295,16 +597,18 @@ namespace GemTD.Gameplay.Combat
                 AoeRadius,
                 PierceRemaining,
                 ForkRemaining - 1,
-                _ignite,
-                _chill,
-                _shock,
+                _ailments.Ignite,
+                _ailments.Chill,
+                _ailments.Shock,
                 _prolif,
                 _statuses,
                 _spawnBuffer,
                 sourceTower: _sourceTower,
                 recordDamage: _recordDamage,
                 knockbackChance: _knockbackChance,
-                knockbackDistance: _knockbackDistance);
+                knockbackDistance: _knockbackDistance,
+                chainHopFalloff: ChainHopFalloff,
+                ailments: _ailments);
             child._lastHit = _lastHit;
             _spawnBuffer.Add(child);
         }

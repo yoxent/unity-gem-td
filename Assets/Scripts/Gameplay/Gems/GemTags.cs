@@ -62,10 +62,6 @@ namespace GemTD.Gameplay.Gems
 
         public static GemTag EffectiveRequiredTags(GemDefinition gem)
         {
-            if (gem == null)
-                return GemTag.None;
-            if (gem.RequiredTags != GemTag.None)
-                return gem.RequiredTags;
             return EffectiveGemTags(gem) & RestrictionMask;
         }
 

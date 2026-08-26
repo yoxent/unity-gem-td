@@ -34,7 +34,7 @@ namespace GemTD.Gameplay.Towers
             if (!tower.Def.AllowsHydraEvolution)
                 return false;
 
-            var hasLmp = false;
+            var hasMultipleProjectiles = false;
             var hasChain = false;
             var hasFork = false;
             var sockets = tower.Sockets;
@@ -48,14 +48,14 @@ namespace GemTD.Gameplay.Towers
                     continue;
 
                 if (gem.Id == GemId.MultipleProjectiles)
-                    hasLmp = true;
+                    hasMultipleProjectiles = true;
                 else if (gem.Id == GemId.Chain)
                     hasChain = true;
                 else if (gem.Id == GemId.Fork)
                     hasFork = true;
             }
 
-            return hasLmp && hasChain && hasFork;
+            return hasMultipleProjectiles && hasChain && hasFork;
         }
     }
 }

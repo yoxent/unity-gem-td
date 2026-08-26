@@ -150,6 +150,31 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1, registry.Count);
         }
 
+        [Test]
+        public void TryGetPositionAfter_DoesNotMutateProgress()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+            Assert.IsFalse(enemy.TickMove(0.25f));
+            var progress = enemy.Progress;
+            var pos = enemy.WorldPosition;
+
+            Assert.IsTrue(enemy.TryGetPositionAfter(0.25f, out var future));
+            Assert.AreEqual(waypoints[1], future);
+            Assert.AreEqual(progress, enemy.Progress, 1e-4f);
+            Assert.AreEqual(pos, enemy.WorldPosition);
+        }
+
+        [Test]
+        public void TryGetPositionAfter_NoPath_ReturnsFalseAndCurrentPosition()
+        {
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, System.Array.Empty<Vector3>());
+            Assert.IsFalse(enemy.TryGetPositionAfter(1f, out var point));
+            Assert.AreEqual(enemy.WorldPosition, point);
+        }
+
         EnemyRuntime CreateEnemy()
         {
             var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));

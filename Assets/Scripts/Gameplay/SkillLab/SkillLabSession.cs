@@ -23,7 +23,7 @@ namespace GemTD.Gameplay.SkillLab
 
         readonly AttackTracer _tracer = new AttackTracer();
         readonly GemModifierPipeline _pipeline = new GemModifierPipeline();
-        readonly List<IAttackModifier> _scratch = new List<IAttackModifier>(8);
+        readonly List<ISkillModifier> _scratch = new List<ISkillModifier>(8);
         readonly List<EnemyRuntime> _living = new List<EnemyRuntime>(DummyField.PinCount);
         GemDefinition[] _catalog;
         TowerDefinition[] _towers = EmptyTowers;

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d58eaa9bb5eec44c9718c97df04697c, type: 3}
+  m_Name: Gem_UnholyTrinity
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
+  Id: 134
+  DisplayName: Unholy Trinity
+  Description: Rewards alternating elemental damage with a large bonus. Requires multiple damage types and gives less benefit to mono-element builds. Hits with Supported Skills for which the highest Damage Type is Lightning, Physical or Chaos cause you to gain 25 Unholy Resonance of the other types per second for 2 secondsLose 5 Unholy Resonance per second of each type you are not gaining
+  DraftWeight: 1
+  Tags: 256
+  Modifiers: []

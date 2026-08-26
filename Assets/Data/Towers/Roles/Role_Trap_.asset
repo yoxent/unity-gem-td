@@ -12,8 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 561ec6fb02e4cdc47b6a40b2a1cc951d, type: 3}
   m_Name: Role_Trap_
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TrapRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3.5
+    Min: 0
+    Max: 0
+  Effects: []
   Levels: []
-  CastTime: 1
-  CastSpeed: 100
-  TowerRadius: 3.5

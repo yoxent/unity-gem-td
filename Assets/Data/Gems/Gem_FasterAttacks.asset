@@ -16,4 +16,10 @@ MonoBehaviour:
   DisplayName: Faster Attacks
   Description: +25% fire rate
   Tags: 264
-  RequiredTags: 0
+  Modifiers:
+  - Stat: 7
+    Operation: 2
+    ValueKind: 0
+    Value: 1.25
+    Min: 0
+    Max: 0

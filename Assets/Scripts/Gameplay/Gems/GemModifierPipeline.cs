@@ -7,7 +7,7 @@ namespace GemTD.Gameplay.Gems
 {
     public sealed class GemModifierPipeline
     {
-        public AttackSpec Apply(AttackSpec baseline, IReadOnlyList<IAttackModifier> modifiers)
+        public SkillSpec Apply(SkillSpec baseline, IReadOnlyList<ISkillModifier> modifiers)
         {
             var spec = baseline;
             if (modifiers == null || modifiers.Count == 0)
@@ -24,22 +24,35 @@ namespace GemTD.Gameplay.Gems
         }
 
         /// <summary>
-        /// Live attack spec for a tower (same path Combat uses). <paramref name="scratch"/>
+        /// Live skill spec for a tower (same path Combat uses). <paramref name="scratch"/>
         /// is cleared and filled with socket modifiers — caller owns pooling.
         /// </summary>
-        public AttackSpec Resolve(TowerInstance tower, List<IAttackModifier> scratch)
+        public SkillSpec Resolve(TowerInstance tower, List<ISkillModifier> scratch)
         {
             if (scratch == null)
                 throw new ArgumentNullException(nameof(scratch));
 
             CollectSocketModifiers(tower, scratch);
-            var baseline = tower?.Def == null
-                ? AttackSpec.FromBase(0f)
-                : AttackSpec.FromBase(tower.Def.Damage, 1, tower.Def.GetSplashRadius(tower.Level));
+            var baseline = SkillSpec.FromBase(0f, projectiles: 0);
+            if (tower?.Def != null)
+            {
+                var damage = tower.Def.GetDamageRange(tower.Level);
+                baseline = SkillSpec.FromBase(
+                    damage.Min,
+                    damage.Max,
+                    tower.Def.GetProjectileCount(tower.Level),
+                    tower.Def.GetSplashRadius(tower.Level));
+                baseline.ProjectileSpeedMultiplier =
+                    tower.Def.GetProjectileSpeedMultiplier(tower.Level);
+                baseline.PierceBehavior = tower.Def.GetProjectilePierceMode();
+                baseline.AimMode = tower.Def.GetAimMode();
+                baseline.DeliveryPattern = tower.Def.GetDeliveryPattern();
+            }
+
             return Apply(baseline, scratch);
         }
 
-        public static void CollectSocketModifiers(TowerInstance tower, List<IAttackModifier> into)
+        public static void CollectSocketModifiers(TowerInstance tower, List<ISkillModifier> into)
         {
             into.Clear();
             if (tower?.Sockets == null)
@@ -49,12 +62,10 @@ namespace GemTD.Gameplay.Gems
             for (var i = 0; i < sockets.Length; i++)
             {
                 var gem = sockets[i];
-                if (gem == null || gem.Id == GemId.None)
+                if (gem == null)
                     continue;
 
-                var mod = GemModifierFactory.Create(gem.Id);
-                if (mod != null)
-                    into.Add(mod);
+                into.Add(new GemDefinitionModifier(gem));
             }
         }
     }

@@ -29,7 +29,8 @@ namespace GemTD.Tests.EditMode
                 Modifier(RoleStat.CastTime, 0.75f),
                 Modifier(RoleStat.CastSpeed, 100f),
                 Modifier(RoleStat.TowerRadius, 20f),
-                Modifier(RoleStat.SplashRadius, 1.5f)
+                Modifier(RoleStat.SplashRadius, 1.5f),
+                Modifier(RoleStat.ProjectileCount, 1f)
             };
             _fireball.Roles = new TowerRoleDefinition[] { _fireballRole };
             _fireball.Tags = GemTag.Spell | GemTag.Projectile | GemTag.Aoe;
@@ -43,7 +44,8 @@ namespace GemTD.Tests.EditMode
             {
                 Modifier(RoleStat.CastTime, 0.75f),
                 Modifier(RoleStat.CastSpeed, 100f),
-                Modifier(RoleStat.TowerRadius, 20f)
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.ProjectileCount, 1f)
             };
             _alternateTower.Roles = new TowerRoleDefinition[] { _alternateRole };
             _alternateTower.Tags = GemTag.Spell | GemTag.Projectile | GemTag.Aoe;
@@ -62,6 +64,7 @@ namespace GemTD.Tests.EditMode
             {
                 _catalog[i] = ScriptableObject.CreateInstance<GemDefinition>();
                 _catalog[i].Id = ids[i];
+                CatalogGemModifiers.Bind(_catalog[i]);
             }
         }
 
@@ -85,7 +88,8 @@ namespace GemTD.Tests.EditMode
                 Modifier(RoleStat.CastTime, 0.75f),
                 Modifier(RoleStat.CastSpeed, 100f),
                 Modifier(RoleStat.TowerRadius, 1f),
-                Modifier(RoleStat.SplashRadius, 1.5f)
+                Modifier(RoleStat.SplashRadius, 1.5f),
+                Modifier(RoleStat.ProjectileCount, 1f)
             };
             var session = MakeSession();
             session.TowerPosition = DummyField.DefaultTowerPosition;

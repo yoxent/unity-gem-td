@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Towers;
 using UnityEditor;
 using UnityEngine;
@@ -102,6 +103,51 @@ namespace GemTD.Editor
             }
         }
 
+        [MenuItem("Gem TD/Import Fireball Proof")]
+        public static void ImportFireballProof()
+        {
+            var jsonDir = EditorPrefs.GetString(PrefsJsonDir, DefaultJsonDir);
+            var path = Path.Combine(jsonDir, "poe_skill_gems_spell.json");
+            if (!File.Exists(path))
+            {
+                EditorUtility.DisplayDialog(
+                    "Fireball Import",
+                    "Missing file:\n" + path,
+                    "OK");
+                return;
+            }
+
+            var results = SkillGemTowerMap.FromCatalogJson(File.ReadAllText(path));
+            SkillGemTowerMap.Result fireball = null;
+            for (var i = 0; i < results.Length; i++)
+            {
+                if (string.Equals(results[i].Slug, "Fireball", StringComparison.OrdinalIgnoreCase))
+                {
+                    fireball = results[i];
+                    break;
+                }
+            }
+
+            if (fireball == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Fireball Import",
+                    "Fireball was not found in:\n" + path,
+                    "OK");
+                return;
+            }
+
+            EnsureFolder(TowerRoot);
+            EnsureFolder(RoleRoot);
+            EnsureFolder(TowerRoot + "/Spell");
+            EnsureFolder(RoleRoot + "/Spell");
+            var roles = WriteRoles(fireball);
+            WriteTower(fireball, roles);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("[Gem TD] Fireball proof imported from " + path);
+        }
+
         static int CompareCatalogOrder(SkillGemTowerMap.Result a, SkillGemTowerMap.Result b)
         {
             var ca = CategoryIndex(a.Category);
@@ -137,7 +183,7 @@ namespace GemTD.Editor
                 var kind = result.RoleKinds[i];
                 var folder = ToFolderName(RoleFolder(kind));
                 var path = RoleRoot + "/" + folder + "/Role_" + folder + "_" + result.Slug + ".asset";
-                roles[i] = WriteRole(path, kind, result);
+                roles[i] = WriteRole(path, kind, result, result.GetRolePayload(kind));
             }
 
             return roles;
@@ -157,71 +203,57 @@ namespace GemTD.Editor
             }
         }
 
-        static TowerRoleDefinition WriteRole(string path, SkillGemTowerMap.RoleKind kind, SkillGemTowerMap.Result result)
+        static TowerRoleDefinition WriteRole(
+            string path,
+            SkillGemTowerMap.RoleKind kind,
+            SkillGemTowerMap.Result result,
+            SkillGemTowerMap.RolePayload payload)
         {
+            TowerRoleDefinition role;
             switch (kind)
             {
                 case SkillGemTowerMap.RoleKind.Attack:
-                {
-                    var role = LoadOrCreate<AttackRoleDefinition>(path);
-                    role.AttackTime = result.AttackTime;
-                    role.AttackSpeed = result.AttackSpeed;
-                    role.TowerRadius = result.TowerRadius;
-                    role.Levels = CreateLevels(result);
-                    EditorUtility.SetDirty(role);
-                    return role;
-                }
+                    role = LoadOrCreate<AttackRoleDefinition>(path);
+                    break;
                 case SkillGemTowerMap.RoleKind.Spell:
-                {
-                    var role = LoadOrCreate<SpellRoleDefinition>(path);
-                    role.CastTime = result.CastTime;
-                    role.CastSpeed = result.CastSpeed;
-                    role.TowerRadius = result.TowerRadius;
-                    role.Levels = CreateLevels(result);
-                    EditorUtility.SetDirty(role);
-                    return role;
-                }
+                    role = LoadOrCreate<SpellRoleDefinition>(path);
+                    break;
                 case SkillGemTowerMap.RoleKind.Curse:
-                {
-                    var role = LoadOrCreate<CurseRoleDefinition>(path);
-                    role.CastTime = result.CastTime;
-                    role.CastSpeed = result.CastSpeed;
-                    role.TowerRadius = result.TowerRadius;
-                    role.Levels = CreateLevels(result);
-                    EditorUtility.SetDirty(role);
-                    return role;
-                }
+                    role = LoadOrCreate<CurseRoleDefinition>(path);
+                    break;
                 case SkillGemTowerMap.RoleKind.Aura:
-                {
-                    var role = LoadOrCreate<AuraRoleDefinition>(path);
-                    role.TowerRadius = result.AuraTowerRadius > 0f
-                        ? result.AuraTowerRadius
-                        : result.TowerRadius;
-                    role.ReservationPercent = result.ReservationPercent;
-                    role.Levels = CreateLevels(result);
-                    EditorUtility.SetDirty(role);
-                    return role;
-                }
+                    role = LoadOrCreate<AuraRoleDefinition>(path);
+                    break;
                 case SkillGemTowerMap.RoleKind.Trap:
-                {
-                    var role = LoadOrCreate<TrapRoleDefinition>(path);
-                    role.CastTime = result.CastTime;
-                    role.CastSpeed = result.CastSpeed;
-                    role.TowerRadius = result.TowerRadius;
-                    role.Levels = CreateLevels(result);
-                    EditorUtility.SetDirty(role);
-                    return role;
-                }
+                    role = LoadOrCreate<TrapRoleDefinition>(path);
+                    break;
                 default:
-                {
-                    var role = LoadOrCreate<MineRoleDefinition>(path);
-                    role.CastTime = result.CastTime;
-                    role.CastSpeed = result.CastSpeed;
-                    role.TowerRadius = result.TowerRadius;
-                    role.Levels = CreateLevels(result);
-                    EditorUtility.SetDirty(role);
-                    return role;
-                }
+                    role = LoadOrCreate<MineRoleDefinition>(path);
+                    break;
+            }
+
+            ClearRoleBehaviorDefaults(role);
+            role.Modifiers = payload != null
+                ? CopyModifiers(payload.Modifiers)
+                : Array.Empty<RoleStatModifier>();
+            role.Effects = payload != null
+                ? CopyEffects(payload.Effects)
+                : Array.Empty<RoleEffectModifier>();
+            role.Levels = payload != null
+                ? CreateLevels(payload.Levels)
+                : Array.Empty<RoleLevelDefinition>();
+            EditorUtility.SetDirty(role);
+            return role;
+        }
+
+        static void ClearRoleBehaviorDefaults(TowerRoleDefinition role)
+        {
+            var damage = role as DamageRoleDefinition;
+            if (damage != null)
+            {
+                damage.PierceBehavior = PierceMode.Finite;
+                damage.AimMode = AimMode.Direct;
+                damage.DeliveryPattern = DeliveryPattern.Straight;
             }
         }
 
@@ -242,23 +274,46 @@ namespace GemTD.Editor
             return tower;
         }
 
-        static RoleLevelDefinition[] CreateLevels(SkillGemTowerMap.Result result)
+        static RoleLevelDefinition[] CreateLevels(RoleLevelDefinition[] sourceDefinitions)
         {
-            var sourceLevels = result.SourceLevels;
-            if (sourceLevels == null || sourceLevels.Length == 0)
-                return null;
-
-            var levels = new RoleLevelDefinition[sourceLevels.Length];
-            for (var i = 0; i < sourceLevels.Length; i++)
+            if (sourceDefinitions != null && sourceDefinitions.Length > 0)
             {
-                levels[i] = new RoleLevelDefinition
+                var mapped = new RoleLevelDefinition[sourceDefinitions.Length];
+                for (var i = 0; i < sourceDefinitions.Length; i++)
                 {
-                    SourceLevel = sourceLevels[i],
-                    Modifiers = Array.Empty<RoleStatModifier>()
-                };
+                    var source = sourceDefinitions[i];
+                    mapped[i] = new RoleLevelDefinition
+                    {
+                        SourceLevel = source.SourceLevel,
+                        Modifiers = CopyModifiers(source.Modifiers),
+                        Effects = CopyEffects(source.Effects)
+                    };
+                }
+
+                return mapped;
             }
 
-            return levels;
+            return Array.Empty<RoleLevelDefinition>();
+        }
+
+        static RoleStatModifier[] CopyModifiers(RoleStatModifier[] modifiers)
+        {
+            if (modifiers == null || modifiers.Length == 0)
+                return Array.Empty<RoleStatModifier>();
+
+            var copy = new RoleStatModifier[modifiers.Length];
+            Array.Copy(modifiers, copy, modifiers.Length);
+            return copy;
+        }
+
+        static RoleEffectModifier[] CopyEffects(RoleEffectModifier[] effects)
+        {
+            if (effects == null || effects.Length == 0)
+                return Array.Empty<RoleEffectModifier>();
+
+            var copy = new RoleEffectModifier[effects.Length];
+            Array.Copy(effects, copy, effects.Length);
+            return copy;
         }
 
         static T LoadOrCreate<T>(string path) where T : ScriptableObject

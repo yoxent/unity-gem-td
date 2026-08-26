@@ -14,7 +14,7 @@ namespace GemTD.Tests.EditMode
         RunEconomy _economy;
         TowerPlacementService _placement;
         TowerDefinition _tower;
-        GemDefinition _lmp;
+        GemDefinition _multipleProjectiles;
 
         [SetUp]
         public void SetUp()
@@ -29,16 +29,16 @@ namespace GemTD.Tests.EditMode
             _tower.SocketCount = 2;
             _tower.Tags = GemTag.Attack | GemTag.Projectile;
 
-            _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.MultipleProjectiles;
-            _lmp.DisplayName = "LMP";
+            _multipleProjectiles = ScriptableObject.CreateInstance<GemDefinition>();
+            _multipleProjectiles.Id = GemId.MultipleProjectiles;
+            _multipleProjectiles.DisplayName = "Multiple Projectiles";
         }
 
         [TearDown]
         public void TearDown()
         {
             Object.DestroyImmediate(_tower);
-            Object.DestroyImmediate(_lmp);
+            Object.DestroyImmediate(_multipleProjectiles);
         }
 
         [Test]
@@ -109,7 +109,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
             Assert.AreEqual(50, _economy.Gold);
 
-            tower.TrySocket(_lmp, 0, allowSocket: true);
+            tower.TrySocket(_multipleProjectiles, 0, allowSocket: true);
             _placement.Selected = tower;
 
             Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, inventory));
@@ -117,7 +117,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(100, _economy.Gold);
             Assert.IsFalse(_placement.IsOccupied(cell));
             Assert.IsNull(_placement.Selected);
-            Assert.IsTrue(ContainsGem(inventory, _lmp));
+            Assert.IsTrue(ContainsGem(inventory, _multipleProjectiles));
         }
 
         [Test]
@@ -125,7 +125,7 @@ namespace GemTD.Tests.EditMode
         {
             var cell = new Vector2Int(3, 4);
             var inventory = new GemInventory(1);
-            inventory.TryAdd(_lmp);
+            inventory.TryAdd(_multipleProjectiles);
 
             Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
             Assert.AreEqual(50, _economy.Gold);
@@ -164,7 +164,7 @@ namespace GemTD.Tests.EditMode
             fork.Id = GemId.Fork;
             try
             {
-                Assert.IsTrue(tower.TrySocket(_lmp, 0, allowSocket: true));
+                Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
                 Assert.IsTrue(tower.TrySocket(chain, 1, allowSocket: true));
                 Assert.IsTrue(tower.TrySocket(fork, 2, allowSocket: true));
                 Assert.AreEqual(3, tower.Sockets.Length);
@@ -173,7 +173,7 @@ namespace GemTD.Tests.EditMode
                 Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, inventory));
                 Assert.AreEqual(100, _economy.Gold);
                 Assert.IsFalse(_placement.IsOccupied(cell));
-                Assert.IsTrue(ContainsGem(inventory, _lmp));
+                Assert.IsTrue(ContainsGem(inventory, _multipleProjectiles));
                 Assert.IsTrue(ContainsGem(inventory, chain));
                 Assert.IsTrue(ContainsGem(inventory, fork));
                 Assert.AreEqual(3, inventory.OccupiedCount);
@@ -191,8 +191,8 @@ namespace GemTD.Tests.EditMode
             _tower.SocketCount = 3;
             var cell = new Vector2Int(3, 4);
             var inventory = new GemInventory(4);
-            inventory.TryAdd(_lmp);
-            inventory.TryAdd(_lmp);
+            inventory.TryAdd(_multipleProjectiles);
+            inventory.TryAdd(_multipleProjectiles);
 
             Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
 

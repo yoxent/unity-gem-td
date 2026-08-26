@@ -17,8 +17,8 @@ namespace GemTD.Tests.EditMode
             def.SocketCount = 3;
             def.AllowsHydraEvolution = true;
 
-            var lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            lmp.Id = GemId.MultipleProjectiles;
+            var multipleProjectiles = ScriptableObject.CreateInstance<GemDefinition>();
+            multipleProjectiles.Id = GemId.MultipleProjectiles;
             var chain = ScriptableObject.CreateInstance<GemDefinition>();
             chain.Id = GemId.Chain;
             var fork = ScriptableObject.CreateInstance<GemDefinition>();
@@ -28,7 +28,7 @@ namespace GemTD.Tests.EditMode
             {
                 var tower = new TowerInstance(Vector2Int.zero, def);
                 Assert.AreEqual(3, tower.Sockets.Length);
-                Assert.IsTrue(tower.TrySocket(lmp, 0, true));
+                Assert.IsTrue(tower.TrySocket(multipleProjectiles, 0, true));
                 Assert.IsTrue(tower.TrySocket(chain, 1, true));
                 Assert.IsTrue(tower.TrySocket(fork, 2, true));
                 Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
@@ -37,7 +37,7 @@ namespace GemTD.Tests.EditMode
             {
                 Object.DestroyImmediate(def);
                 Object.DestroyImmediate(attack);
-                Object.DestroyImmediate(lmp);
+                Object.DestroyImmediate(multipleProjectiles);
                 Object.DestroyImmediate(chain);
                 Object.DestroyImmediate(fork);
             }

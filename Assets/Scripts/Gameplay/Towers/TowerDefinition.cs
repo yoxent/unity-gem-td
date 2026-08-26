@@ -92,11 +92,58 @@ namespace GemTD.Gameplay.Towers
             return aura != null ? aura.GetTowerRadius(sourceLevel) : 0f;
         }
 
+        public float GetProjectileSpeedMultiplier(int sourceLevel)
+        {
+            if ((Tags & GemTag.Projectile) == 0)
+                return 1f;
+
+            var fire = FireRole;
+            if (fire == null)
+                return 1f;
+
+            var speed = fire.ResolveStat(RoleStat.ProjectileSpeed, sourceLevel);
+            return speed > 0.01f ? speed : 1f;
+        }
+
+        public PierceMode GetProjectilePierceMode()
+        {
+            if ((Tags & GemTag.Projectile) == 0)
+                return PierceMode.Finite;
+
+            var damageRole = FireRole as DamageRoleDefinition;
+            return damageRole != null ? damageRole.PierceBehavior : PierceMode.Finite;
+        }
+
+        public AimMode GetAimMode()
+        {
+            var damageRole = FireRole as DamageRoleDefinition;
+            return damageRole != null ? damageRole.AimMode : AimMode.Direct;
+        }
+
+        public DeliveryPattern GetDeliveryPattern()
+        {
+            var damageRole = FireRole as DamageRoleDefinition;
+            return damageRole != null ? damageRole.DeliveryPattern : DeliveryPattern.Straight;
+        }
+
         public float GetPlacementTowerRadius(int sourceLevel)
         {
             if (FireRole != null)
                 return GetFireTowerRadius(sourceLevel);
             return GetAuraTowerRadius(sourceLevel);
+        }
+
+        public RoleStatValue GetDamageRange(int sourceLevel)
+        {
+            var damageRole = FireRole as DamageRoleDefinition;
+            if (damageRole != null)
+            {
+                var resolved = damageRole.ResolveStatValue(RoleStat.Damage, sourceLevel);
+                if (resolved.Min > 0f || resolved.Max > 0f)
+                    return resolved;
+            }
+
+            return RoleStatValue.FromSingle(Damage);
         }
 
         public float GetSplashRadius(int sourceLevel)
@@ -108,15 +155,21 @@ namespace GemTD.Gameplay.Towers
             return damageRole.ResolveStat(RoleStat.SplashRadius, sourceLevel);
         }
 
+        public int GetProjectileCount(int sourceLevel)
+        {
+            var fire = FireRole;
+            return fire != null ? fire.GetProjectileCount(sourceLevel) : 0;
+        }
+
         public bool UsesAttackSpeed =>
             FireRole == null || FireRole.UsesAttackSpeed;
 
-        public float FireInterval(in AttackSpec spec)
+        public float FireInterval(in SkillSpec spec)
         {
             return FireInterval(spec, TowerInstance.DefaultLevel);
         }
 
-        public float FireInterval(in AttackSpec spec, int sourceLevel)
+        public float FireInterval(in SkillSpec spec, int sourceLevel)
         {
             var gemMul = UsesAttackSpeed ? spec.AttackSpeedMultiplier : spec.CastSpeedMultiplier;
             gemMul *= spec.FireRateMultiplier > 0.01f ? spec.FireRateMultiplier : 1f;

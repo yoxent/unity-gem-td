@@ -12,28 +12,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90380bed116b50b4cbbe7a067d12fab8, type: 3}
   m_Name: Role_Attack_Tornado_Shot
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AttackRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3.5
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
   - SourceLevel: 4
     Modifiers: []
+    Effects: []
   - SourceLevel: 8
     Modifiers: []
+    Effects: []
   - SourceLevel: 12
     Modifiers: []
+    Effects: []
   - SourceLevel: 16
     Modifiers: []
+    Effects: []
   - SourceLevel: 20
     Modifiers: []
+    Effects: []
   - SourceLevel: 24
     Modifiers: []
+    Effects: []
   - SourceLevel: 28
     Modifiers: []
+    Effects: []
   - SourceLevel: 32
     Modifiers: []
+    Effects: []
   - SourceLevel: 36
     Modifiers: []
+    Effects: []
   - SourceLevel: 40
     Modifiers: []
-  AttackTime: 1
-  AttackSpeed: 80
-  TowerRadius: 5
+    Effects: []
+  PierceBehavior: 0

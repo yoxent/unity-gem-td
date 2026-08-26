@@ -16,7 +16,7 @@ namespace GemTD.Tests.EditMode
         TowerDefinition _splashTower;
         AttackRoleDefinition _projectileRole;
         AttackRoleDefinition _splashRole;
-        GemDefinition _lmp;
+        GemDefinition _multipleProjectiles;
         GemDefinition _chain;
         GemDefinition _fork;
         GemDefinition _pierce;
@@ -32,8 +32,15 @@ namespace GemTD.Tests.EditMode
             _projectileTower = ScriptableObject.CreateInstance<TowerDefinition>();
             _projectileTower.DisplayName = "Projectile Tower";
             _projectileRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
-            _projectileRole.TowerRadius = 20f;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
             _projectileTower.Roles = new TowerRoleDefinition[] { _projectileRole };
+            _projectileTower.Tags = GemTag.Attack | GemTag.Projectile;
             _projectileTower.AllowsHydraEvolution = true;
             _projectileTower.SocketCount = 3;
             _projectileTower.Damage = 10f;
@@ -41,31 +48,34 @@ namespace GemTD.Tests.EditMode
             _splashTower = ScriptableObject.CreateInstance<TowerDefinition>();
             _splashTower.DisplayName = "Splash Tower";
             _splashRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
-            _splashRole.TowerRadius = 20f;
             _splashRole.Modifiers = new[]
             {
-                new RoleStatModifier
-                {
-                    Stat = RoleStat.SplashRadius,
-                    Operation = RoleModifierOperation.Set,
-                    Value = 1.5f
-                }
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.SplashRadius, 1.5f),
+                Modifier(RoleStat.ProjectileCount, 1f)
             };
             _splashTower.Roles = new TowerRoleDefinition[] { _splashRole };
             _splashTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
             _splashTower.SocketCount = 3;
             _splashTower.Damage = 8f;
 
-            _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.MultipleProjectiles;
+            _multipleProjectiles = ScriptableObject.CreateInstance<GemDefinition>();
+            _multipleProjectiles.Id = GemId.MultipleProjectiles;
+            CatalogGemModifiers.Bind(_multipleProjectiles);
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
             _chain.Id = GemId.Chain;
+            CatalogGemModifiers.Bind(_chain);
             _fork = ScriptableObject.CreateInstance<GemDefinition>();
             _fork.Id = GemId.Fork;
+            CatalogGemModifiers.Bind(_fork);
             _pierce = ScriptableObject.CreateInstance<GemDefinition>();
             _pierce.Id = GemId.Pierce;
+            CatalogGemModifiers.Bind(_pierce);
             _area = ScriptableObject.CreateInstance<GemDefinition>();
             _area.Id = GemId.IncreasedArea;
+            CatalogGemModifiers.Bind(_area);
         }
 
         [TearDown]
@@ -76,7 +86,7 @@ namespace GemTD.Tests.EditMode
             Object.DestroyImmediate(_splashRole);
             Object.DestroyImmediate(_projectileTower);
             Object.DestroyImmediate(_splashTower);
-            Object.DestroyImmediate(_lmp);
+            Object.DestroyImmediate(_multipleProjectiles);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_fork);
             Object.DestroyImmediate(_pierce);
@@ -84,10 +94,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Hydra_FirstSegments_ThreeHeadsTimesLmpPellets()
+        public void Hydra_FirstSegments_ThreeHeadsTimesMultipleProjectilesPellets()
         {
             var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
-            Assert.IsTrue(tower.TrySocket(_lmp, 0, true));
+            Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, true));
             Assert.IsTrue(tower.TrySocket(_chain, 1, true));
             Assert.IsTrue(tower.TrySocket(_fork, 2, true));
             Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
@@ -116,7 +126,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(trace.HasTarget);
             Assert.AreEqual(1, CountKind(trace, AttackTraceKind.Chain));
             var hop = FirstKind(trace, AttackTraceKind.Chain);
-            Assert.AreEqual(10f * 0.7f * ProjectileRuntime.ChainHopFalloff, hop.Damage, 1e-3f);
+            Assert.AreEqual(10f * 0.7f * ProjectileRuntime.DefaultChainHopFalloff, hop.Damage, 1e-3f);
             Assert.AreEqual(1000f, e1.Hp, 1e-3f);
             Assert.AreEqual(1000f, e2.Hp, 1e-3f);
         }
@@ -174,12 +184,11 @@ namespace GemTD.Tests.EditMode
         {
             _splashRole.Modifiers = new[]
             {
-                new RoleStatModifier
-                {
-                    Stat = RoleStat.SplashRadius,
-                    Operation = RoleModifierOperation.Set,
-                    Value = 0.5f
-                }
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.SplashRadius, 2f),
+                Modifier(RoleStat.ProjectileCount, 1f)
             };
             var tower = new TowerInstance(Vector2Int.zero, _splashTower);
             var dummy = MakeEnemy(new Vector3(3f, 0f, 0f));
@@ -193,13 +202,50 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void OutOfRange_HasNoTarget()
         {
-            _projectileRole.TowerRadius = 2f;
+            _projectileRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Modifiers = new[]
+                    {
+                        Modifier(RoleStat.TowerRadius, 2f)
+                    }
+                }
+            };
             var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
             var dummy = MakeEnemy(new Vector3(20f, 0f, 0f));
             var tracer = new AttackTracer();
             var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));
             Assert.IsFalse(trace.HasTarget);
             Assert.AreEqual(0, trace.Segments.Count);
+        }
+
+        [Test]
+        public void RoleProjectileSpeed_ControlsTraceReachThroughLifetime()
+        {
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 50f),
+                Modifier(RoleStat.ProjectileCount, 1f),
+                RoleStatModifier.Single(RoleStat.ProjectileSpeed, RoleModifierOperation.Set, 0.5f)
+            };
+
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
+            var dummy = MakeEnemy(new Vector3(30f, 0f, 0f));
+            var tracer = new AttackTracer(baseProjectileSpeed: 20f);
+            var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.Segments.Count);
+            Assert.AreEqual(20f, trace.Segments[0].To.x, 0.001f);
+        }
+
+        static RoleStatModifier Modifier(RoleStat stat, float value)
+        {
+            return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);
         }
 
         EnemyRuntime MakeEnemy(Vector3 pos)

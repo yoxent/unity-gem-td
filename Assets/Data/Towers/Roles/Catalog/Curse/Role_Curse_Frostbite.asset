@@ -12,28 +12,235 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 024b306d332beef4883c87fa3148e60f, type: 3}
   m_Name: Role_Curse_Frostbite
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.CurseRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.5
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 4.5
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 0.2
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 8.6
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -20
+      Min: 0
+      Max: 0
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 0.4
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 9.4
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -24
+      Min: 0
+      Max: 0
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 0.6
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 10.2
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -28
+      Min: 0
+      Max: 0
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 0.8
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 11
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -32
+      Min: 0
+      Max: 0
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 11.8
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -36
+      Min: 0
+      Max: 0
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.2
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 12.6
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -40
+      Min: 0
+      Max: 0
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.4
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 13.4
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -44
+      Min: 0
+      Max: 0
   - SourceLevel: 8
-    Modifiers: []
-  - SourceLevel: 12
-    Modifiers: []
-  - SourceLevel: 16
-    Modifiers: []
-  - SourceLevel: 20
-    Modifiers: []
-  - SourceLevel: 24
-    Modifiers: []
-  - SourceLevel: 28
-    Modifiers: []
-  - SourceLevel: 32
-    Modifiers: []
-  - SourceLevel: 36
-    Modifiers: []
-  - SourceLevel: 40
-    Modifiers: []
-  CastTime: 0.5
-  CastSpeed: 100
-  TowerRadius: 4.5
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.5
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 14
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -47
+      Min: 0
+      Max: 0
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.6
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 14.4
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -49
+      Min: 0
+      Max: 0
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.7
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 14.8
+      Min: 0
+      Max: 0
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -51
+      Min: 0
+      Max: 0
+  PierceBehavior: 0

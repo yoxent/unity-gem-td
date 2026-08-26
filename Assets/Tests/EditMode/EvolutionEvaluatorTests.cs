@@ -9,7 +9,7 @@ namespace GemTD.Tests.EditMode
     {
         TowerDefinition _hydraTower;
         AttackRoleDefinition _attackRole;
-        GemDefinition _lmp;
+        GemDefinition _multipleProjectiles;
         GemDefinition _chain;
         GemDefinition _fork;
 
@@ -24,8 +24,8 @@ namespace GemTD.Tests.EditMode
             _hydraTower.SocketCount = 3;
             _hydraTower.Damage = 10f;
 
-            _lmp = ScriptableObject.CreateInstance<GemDefinition>();
-            _lmp.Id = GemId.MultipleProjectiles;
+            _multipleProjectiles = ScriptableObject.CreateInstance<GemDefinition>();
+            _multipleProjectiles.Id = GemId.MultipleProjectiles;
 
             _chain = ScriptableObject.CreateInstance<GemDefinition>();
             _chain.Id = GemId.Chain;
@@ -39,7 +39,7 @@ namespace GemTD.Tests.EditMode
         {
             Object.DestroyImmediate(_hydraTower);
             Object.DestroyImmediate(_attackRole);
-            Object.DestroyImmediate(_lmp);
+            Object.DestroyImmediate(_multipleProjectiles);
             Object.DestroyImmediate(_chain);
             Object.DestroyImmediate(_fork);
         }
@@ -58,7 +58,7 @@ namespace GemTD.Tests.EditMode
         public void IsHydra_AlwaysFalse_ThisPass()
         {
             Assert.IsFalse(EvolutionEvaluator.HydraEnabled);
-            var tower = MakeHydraTowerWith(_lmp, _chain, _fork);
+            var tower = MakeHydraTowerWith(_multipleProjectiles, _chain, _fork);
             Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
             Assert.IsTrue(tower.TryUnsocket(2, out _, true));
         }
@@ -67,7 +67,7 @@ namespace GemTD.Tests.EditMode
         public void IsHydra_False_WhenNotHydraEligible()
         {
             _hydraTower.AllowsHydraEvolution = false;
-            var tower = MakeHydraTowerWith(_lmp, _chain, _fork);
+            var tower = MakeHydraTowerWith(_multipleProjectiles, _chain, _fork);
             Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
         }
 

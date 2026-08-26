@@ -26,7 +26,7 @@ namespace GemTD.Editor
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
             var gems = new[]
             {
-                Load<GemDefinition>("Assets/Data/Gems/Gem_LMP.asset"),
+                Load<GemDefinition>("Assets/Data/Gems/Gem_MultipleProjectiles.asset"),
                 Load<GemDefinition>("Assets/Data/Gems/Gem_Chain.asset"),
                 Load<GemDefinition>("Assets/Data/Gems/Gem_Fork.asset"),
                 Load<GemDefinition>("Assets/Data/Gems/Gem_IncreasedArea.asset"),

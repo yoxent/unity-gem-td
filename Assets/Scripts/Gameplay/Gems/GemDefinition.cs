@@ -10,9 +10,9 @@ namespace GemTD.Gameplay.Gems
         [TextArea] public string Description;
         [Tooltip("Relative draft weight. Values <= 0 are treated as 1.")]
         public float DraftWeight = 1f;
-        [Tooltip("PoE-style tags from poe1_inspired_tower_support_gems.json. Socketing uses RestrictionMask (Attack/Projectile/AoE/…).")]
+        [Tooltip("PoE-style tags. Socketing: tower must have every restriction tag (Attack/Projectile/AoE/…). Support and Chaining do not gate.")]
         public GemTag Tags = GemTag.None;
-        [Tooltip("Optional override. None = gem Tags ∩ RestrictionMask.")]
-        public GemTag RequiredTags = GemTag.None;
+        [Tooltip("Combat rows applied onto SkillSpec when this gem is socketed. Same Set / Add / Multiply order as tower roles.")]
+        public GemStatModifier[] Modifiers;
     }
 }

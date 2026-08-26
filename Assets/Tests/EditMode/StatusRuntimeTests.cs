@@ -36,6 +36,43 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Bleed_TicksDamageOverDuration()
+        {
+            var enemy = MakeEnemy(hp: 100f);
+            var statuses = new StatusRuntime();
+            statuses.Apply(enemy, StatusId.Bleed, duration: 1f, magnitude: 20f);
+            statuses.Tick(0.5f, Living(enemy));
+            Assert.Less(enemy.Hp, 100f);
+            statuses.Tick(0.5f, Living(enemy));
+            Assert.AreEqual(80f, enemy.Hp, 0.5f);
+        }
+
+        [Test]
+        public void Poison_TicksDamageOverDuration()
+        {
+            var enemy = MakeEnemy(hp: 100f);
+            var statuses = new StatusRuntime();
+            statuses.Apply(enemy, StatusId.Poison, duration: 1f, magnitude: 20f);
+            statuses.Tick(0.5f, Living(enemy));
+            Assert.Less(enemy.Hp, 100f);
+            statuses.Tick(0.5f, Living(enemy));
+            Assert.AreEqual(80f, enemy.Hp, 0.5f);
+        }
+
+        [Test]
+        public void Freeze_StopsMovementWhileActive()
+        {
+            var enemy = MakeEnemy(hp: 50f);
+            enemy.MoveSpeedMultiplier = 1f;
+            var statuses = new StatusRuntime();
+            statuses.Apply(enemy, StatusId.Freeze, 0.5f, magnitude: 0f);
+            statuses.Tick(0f, Living(enemy));
+            Assert.AreEqual(0f, enemy.MoveSpeedMultiplier, 0.001f);
+            statuses.Tick(0.5f, Living(enemy));
+            Assert.AreEqual(1f, enemy.MoveSpeedMultiplier, 0.001f);
+        }
+
+        [Test]
         public void Chill_SlowsMoveSpeed()
         {
             var enemy = MakeEnemy(hp: 50f);

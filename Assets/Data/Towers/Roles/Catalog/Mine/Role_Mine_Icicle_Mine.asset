@@ -12,28 +12,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 836fc7f4a3e9fb74a94f981691bb3d89, type: 3}
   m_Name: Role_Mine_Icicle_Mine
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.MineRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3.5
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
   - SourceLevel: 4
     Modifiers: []
+    Effects: []
   - SourceLevel: 8
     Modifiers: []
+    Effects: []
   - SourceLevel: 12
     Modifiers: []
+    Effects: []
   - SourceLevel: 16
     Modifiers: []
+    Effects: []
   - SourceLevel: 20
     Modifiers: []
+    Effects: []
   - SourceLevel: 24
     Modifiers: []
+    Effects: []
   - SourceLevel: 28
     Modifiers: []
+    Effects: []
   - SourceLevel: 32
     Modifiers: []
+    Effects: []
   - SourceLevel: 36
     Modifiers: []
+    Effects: []
   - SourceLevel: 40
     Modifiers: []
-  CastTime: 0.75
-  CastSpeed: 100
-  TowerRadius: 3.5
+    Effects: []
+  PierceBehavior: 0

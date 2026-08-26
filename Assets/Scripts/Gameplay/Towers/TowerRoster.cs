@@ -5,7 +5,7 @@ namespace GemTD.Gameplay.Towers
 {
     /// <summary>
     /// Run-owned unlocked tower types and their draft level index (0 = in-game level 1).
-    /// Does not change combat numbers.
+    /// Writing that index onto a <see cref="TowerInstance"/> selects role <c>Levels[]</c> modifiers and effects (combat Level 1–10).
     /// </summary>
     public sealed class TowerRoster
     {

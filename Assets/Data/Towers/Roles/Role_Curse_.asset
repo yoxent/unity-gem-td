@@ -12,8 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 024b306d332beef4883c87fa3148e60f, type: 3}
   m_Name: Role_Curse_
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.CurseRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.5
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 4.5
+    Min: 0
+    Max: 0
+  Effects: []
   Levels: []
-  CastTime: 0.5
-  CastSpeed: 100
-  TowerRadius: 4.5

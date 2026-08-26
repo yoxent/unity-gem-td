@@ -93,6 +93,68 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1, placed[0].LevelIndex);
             Assert.AreEqual(0, placed[1].LevelIndex);
             Assert.AreEqual(1, placed[2].LevelIndex);
+            Assert.AreEqual(2, placed[0].Level);
+            Assert.AreEqual(1, placed[1].Level);
+            Assert.AreEqual(2, placed[2].Level);
+        }
+
+        [Test]
+        public void ApplyLevels_SelectsRoleLevelModifiersAndEffects()
+        {
+            var role = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            role.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Modifiers = new[]
+                    {
+                        RoleStatModifier.Single(RoleStat.Damage, RoleModifierOperation.Set, 10f)
+                    },
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.AllyOutgoingDamageMultiplier,
+                            RoleModifierOperation.Set,
+                            1f)
+                    }
+                },
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 2,
+                    Modifiers = new[]
+                    {
+                        RoleStatModifier.Single(RoleStat.Damage, RoleModifierOperation.Set, 20f)
+                    },
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.AllyOutgoingDamageMultiplier,
+                            RoleModifierOperation.Set,
+                            1.5f)
+                    }
+                }
+            };
+            _a.Roles = new TowerRoleDefinition[] { role };
+
+            try
+            {
+                var roster = new TowerRoster();
+                roster.ApplyPick(_a);
+                roster.ApplyPick(_a);
+
+                var placed = new TowerInstance(Vector2Int.zero, _a);
+                roster.ApplyLevels(new List<TowerInstance> { placed });
+
+                Assert.AreEqual(1, placed.LevelIndex);
+                Assert.AreEqual(2, placed.Level);
+                Assert.AreEqual(20f, _a.GetDamageRange(placed.Level).Min, 0.001f);
+                Assert.AreEqual(1.5f, role.ResolveEffect(RoleEffectKind.AllyOutgoingDamageMultiplier, placed.Level), 0.001f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(role);
+            }
         }
 
         [Test]
