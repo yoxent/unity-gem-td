@@ -36,6 +36,9 @@ namespace GemTD.Gameplay.Combat
         public const float HallowingFlameDuration = 6f;
 
         public const float HitRadius = 0.15f;
+        public const float WarpRiseHeight = 1.5f;
+        public const float WarpDropHeight = 1.5f;
+        public const float MoltenMagmaDamageFactor = 0.4f;
         const float PierceLookAheadPad = 0.05f;
         const float ProlifRadius = 1.5f;
 
@@ -53,6 +56,7 @@ namespace GemTD.Gameplay.Combat
         public bool Seeking { get; private set; }
         public bool IsActive { get; private set; }
         public bool IsPayload { get; private set; }
+        public bool IsWarpStrike { get; private set; }
 
         /// <summary>Unused — kept for call-site / test compat.</summary>
         public bool SoftSeek { get; private set; }
@@ -72,6 +76,12 @@ namespace GemTD.Gameplay.Combat
         float _payloadDamageMin;
         float _payloadDamageMax;
         float _payloadChainRange;
+        bool _warpDropping;
+        Vector3 _warpOrigin;
+        SkillSpec _warpSpec;
+        float _warpMagmaMin;
+        float _warpMagmaMax;
+        float _warpChainRange;
 
         public void Init(
             Vector3 origin,
@@ -142,6 +152,7 @@ namespace GemTD.Gameplay.Combat
             _age = 0f;
             IsActive = true;
             IsPayload = false;
+            IsWarpStrike = false;
         }
 
         public void InitPayload(
@@ -190,6 +201,59 @@ namespace GemTD.Gameplay.Combat
             _payloadDamageMin = damageMin;
             _payloadDamageMax = damageMax;
             _payloadChainRange = chainRange;
+        }
+
+        public void InitWarpStrike(
+            Vector3 origin,
+            EnemyRuntime target,
+            SkillSpec spec,
+            float meleeDamage,
+            float magmaDamageMin,
+            float magmaDamageMax,
+            float speed,
+            float chainRange,
+            StatusRuntime statuses,
+            List<ProjectileRuntime> spawnBuffer,
+            TowerDefinition sourceTower,
+            Action<TowerDefinition, float> recordDamage)
+        {
+            Init(
+                origin,
+                Vector3.up,
+                target,
+                meleeDamage,
+                0,
+                speed,
+                chainRange,
+                spec.AoeRadius,
+                0,
+                0,
+                spec.Ignite,
+                spec.Chill,
+                spec.Shock,
+                spec.Proliferate,
+                statuses,
+                spawnBuffer,
+                false,
+                default,
+                sourceTower,
+                recordDamage,
+                spec.KnockbackChance,
+                spec.KnockbackDistance,
+                spec.ChainHopFalloff,
+                spec.BleedChance,
+                spec.BleedDamageMultiplier,
+                AilmentTune.FromSkillSpec(spec));
+            IsWarpStrike = true;
+            _warpDropping = false;
+            _warpOrigin = origin;
+            _warpSpec = spec;
+            _warpMagmaMin = magmaDamageMin;
+            _warpMagmaMax = magmaDamageMax;
+            _warpChainRange = chainRange;
+            PierceRemaining = 0;
+            ForkRemaining = 0;
+            ChainRemaining = 0;
         }
 
         public void ExplodePayload()
@@ -263,6 +327,9 @@ namespace GemTD.Gameplay.Combat
             if (IsPayload)
                 return TickPayload(dt);
 
+            if (IsWarpStrike)
+                return TickWarpStrike(dt, livingCandidates);
+
             if (dt > 0f)
             {
                 _age += dt;
@@ -320,6 +387,114 @@ namespace GemTD.Gameplay.Combat
 
             Position += toLand / remaining * stepDist;
             return true;
+        }
+
+        bool TickWarpStrike(float dt, List<EnemyRuntime> livingCandidates)
+        {
+            if (dt > 0f)
+            {
+                _age += dt;
+                if (_age >= MaxLifetimeSeconds)
+                {
+                    IsActive = false;
+                    return false;
+                }
+            }
+
+            if (dt <= 0f)
+                return true;
+
+            if (!_warpDropping)
+            {
+                Position += Vector3.up * (Speed * dt);
+                if (Position.y < _warpOrigin.y + WarpRiseHeight)
+                    return true;
+
+                var target = Target;
+                if (target == null || !target.IsAlive)
+                {
+                    IsActive = false;
+                    return false;
+                }
+
+                _landPoint = target.WorldPosition;
+                Position = _landPoint + Vector3.up * WarpDropHeight;
+                _warpDropping = true;
+                _age = 0f;
+            }
+
+            var toLand = _landPoint - Position;
+            var remaining = toLand.magnitude;
+            var stepDist = Speed * dt;
+            if (remaining <= HitRadius || stepDist >= remaining)
+            {
+                Position = _landPoint;
+                LandWarpStrike(livingCandidates);
+                return false;
+            }
+
+            Position += toLand / remaining * stepDist;
+            return true;
+        }
+
+        void LandWarpStrike(List<EnemyRuntime> livingCandidates)
+        {
+            var hit = Target;
+            if (hit != null && hit.IsAlive)
+            {
+                Target = hit;
+                OnHit(livingCandidates);
+            }
+
+            SpawnWarpMagma();
+            IsActive = false;
+        }
+
+        void SpawnWarpMagma()
+        {
+            if (_spawnBuffer == null)
+                return;
+
+            var count = _warpSpec.ProjectileCount;
+            if (count <= 0)
+                return;
+
+            var origin = Position;
+            var step = 360f / count;
+            for (var i = 0; i < count; i++)
+            {
+                var yaw = i * step;
+                var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                var child = new ProjectileRuntime();
+                child.Init(
+                    origin,
+                    dir,
+                    null,
+                    RoleStatValue.SampleHitDamage(_warpMagmaMin, _warpMagmaMax),
+                    0,
+                    Speed,
+                    _warpChainRange,
+                    _warpSpec.AoeRadius,
+                    0,
+                    0,
+                    _warpSpec.Ignite,
+                    _warpSpec.Chill,
+                    _warpSpec.Shock,
+                    _warpSpec.Proliferate,
+                    _statuses,
+                    _spawnBuffer,
+                    false,
+                    default,
+                    _sourceTower,
+                    _recordDamage,
+                    _warpSpec.KnockbackChance,
+                    _warpSpec.KnockbackDistance,
+                    _warpSpec.ChainHopFalloff,
+                    _warpSpec.BleedChance,
+                    _warpSpec.BleedDamageMultiplier,
+                    AilmentTune.FromSkillSpec(_warpSpec));
+                _spawnBuffer.Add(child);
+            }
         }
 
         void OnHit(List<EnemyRuntime> livingCandidates)

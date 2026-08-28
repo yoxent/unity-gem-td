@@ -14,7 +14,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 88
   DisplayName: Arrow Nova
-  Description: Changes projectile behavior or improves target coverage. Reduces damage, consistency, or targeting flexibility. Supported Skills fire a Payload Arrow into the airProjectiles from the Supported Skill Fire from where the Payload Arrow lands Supported Skills Fire Projectiles in a circle Supported Skills fire # additional Projectiles Supported Skills can only be used with Bows
+  Description: Changes projectile behavior or improves target coverage. Reduces damage,
+    consistency, or targeting flexibility. Supported Skills fire a Payload Arrow
+    into the airProjectiles from the Supported Skill Fire from where the Payload
+    Arrow lands Supported Skills Fire Projectiles in a circle Supported Skills fire
+    # additional Projectiles Supported Skills can only be used with Bows
   DraftWeight: 1
   Tags: 257
-  Modifiers: []
+  Modifiers:
+  - Stat: 0
+    Operation: 2
+    ValueKind: 0
+    Value: 0.77
+    Min: 0
+    Max: 0
+    Falloff: 0
+  - Stat: 50
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    Falloff: 0
+  - Stat: 51
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    Falloff: 0

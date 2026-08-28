@@ -528,6 +528,11 @@ MonoBehaviour:
   expandMarkerPrefab: {fileID: 6145271686858662982, guid: 653b1367dd70ecb4ea08b08af6fec6f7, type: 3}
   towerRangeIndicatorPrefab: {fileID: 5749789124423333015, guid: 42381f4ee15e5a1438efcf8cbd38a054, type: 3}
   projectileSpeed: 20
+  heightWeights:
+    Same: 0.38
+    StepUp: 0.31
+    StepDown: 0.31
+  tileSpacing: 0
 --- !u!4 &484406976
 Transform:
   m_ObjectHideFlags: 0
@@ -780,6 +785,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Map.ChunkBoardView
   cellSize: 1
   chunkParent: {fileID: 0}
+  towerHeight0: {fileID: 2100000, guid: c8e4a71b9d2f4c6a8b3e5f1a7c9d0e2b, type: 2}
+  towerHeight1: {fileID: 2100000, guid: d9f5b82c0e3a5d7b9c4f6a2b8d0e1f3c, type: 2}
+  towerHeight2: {fileID: 2100000, guid: e0a6c93d1f4b6e8c0d5a7b3c9e1f2a4d, type: 2}
 --- !u!114 &1652612424 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4451765461785811524, guid: 70d13028198bc9848b96f6962898926e, type: 3}

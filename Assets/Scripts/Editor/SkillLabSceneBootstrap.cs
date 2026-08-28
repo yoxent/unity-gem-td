@@ -24,20 +24,7 @@ namespace GemTD.Editor
         {
             var catalog = Load<TowerCatalog>("Assets/Data/Towers/TowerCatalog.asset");
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
-            var gems = new[]
-            {
-                Load<GemDefinition>("Assets/Data/Gems/Gem_MultipleProjectiles.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Chain.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Fork.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_IncreasedArea.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Pierce.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_ElementalProliferation.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Combustion.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_AddedFireDamage.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_AddedColdDamage.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_AddedLightningDamage.asset"),
-                Load<GemDefinition>("Assets/Data/Gems/Gem_Knockback.asset")
-            };
+            var gems = LoadDraftGems();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -320,6 +307,30 @@ namespace GemTD.Editor
             else
                 mat.color = color;
             rend.sharedMaterial = mat;
+        }
+
+        static GemDefinition[] LoadDraftGems()
+        {
+            var guids = AssetDatabase.FindAssets("t:GemDefinition", new[] { "Assets/Data/Gems" });
+            var list = new System.Collections.Generic.List<GemDefinition>(guids.Length);
+            for (var i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var gem = AssetDatabase.LoadAssetAtPath<GemDefinition>(path);
+                if (gem == null || gem.Id == GemId.None)
+                    continue;
+                if (gem.Modifiers == null || gem.Modifiers.Length == 0)
+                    continue;
+                list.Add(gem);
+            }
+
+            list.Sort((a, b) =>
+            {
+                var an = a != null && !string.IsNullOrEmpty(a.DisplayName) ? a.DisplayName : "";
+                var bn = b != null && !string.IsNullOrEmpty(b.DisplayName) ? b.DisplayName : "";
+                return string.CompareOrdinal(an, bn);
+            });
+            return list.ToArray();
         }
 
         static T Load<T>(string path) where T : Object

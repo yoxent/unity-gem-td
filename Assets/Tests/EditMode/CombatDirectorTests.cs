@@ -414,6 +414,64 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(director.Projectiles[1].IsPayload);
         }
 
+        [Test]
+        public void Tick_WarpStrike_RiseDoesNotHit_LandDealsMelee()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.WarpStrike;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.ProjectileCount, 4f)
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike | GemTag.Projectile;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            director.Tick(0.01f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.IsTrue(director.Projectiles[0].IsWarpStrike);
+            Assert.AreEqual(100f, enemy.Hp, 1e-4f);
+
+            for (var i = 0; i < 40; i++)
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
+
+            Assert.Less(enemy.Hp, 100f);
+        }
+
+        [Test]
+        public void Tick_GroundPulse_HitsPrimaryWithNoProjectile()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var hpBefore = enemy.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.Less(enemy.Hp, hpBefore);
+        }
+
         static RoleStatModifier Modifier(RoleStat stat, float value)
         {
             return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);

@@ -163,6 +163,39 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ArrowNova_MapsDamageAndAimDelivery()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Arrow Nova Support\",\"tags\":[\"Bow\",\"Support\",\"Projectile\"],\"category\":\"projectile_targeting\",\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% less Projectile Damage\",\"values\":{\"normal\":23}},{\"text\":\"Supported Skills fire a Payload Arrow into the airProjectiles from the Supported Skill Fire from where the Payload Arrow lands\",\"values\":null},{\"text\":\"Supported Skills Fire Projectiles in a circle\",\"values\":null}]}");
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(3, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.Damage, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[0].Operation);
+            Assert.AreEqual(0.77f, result.Modifiers[0].Value, 0.001f);
+            Assert.AreEqual(GemStat.AimMode, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[1].Operation);
+            Assert.AreEqual(1f, result.Modifiers[1].Value, 0.001f);
+            Assert.AreEqual(GemStat.DeliveryPattern, result.Modifiers[2].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[2].Operation);
+            Assert.AreEqual(1f, result.Modifiers[2].Value, 0.001f);
+        }
+
+        [Test]
+        public void MeleeSplash_SetsBaseRadiusThenMoreAoe()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Melee Splash Support\",\"tags\":[\"Support\",\"Melee\",\"Attack\",\"Strike\",\"AoE\"],\"category\":\"projectile_targeting\",\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have #% more Melee Splash Area of Effect\",\"values\":{\"normal\":27}},{\"text\":\"Supported Skills deal Splash Damage to surrounding targets\",\"values\":null},{\"text\":\"Supported Skills deal #% less Splash Damage to surrounding targets\",\"values\":null}]}");
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.AoeRadius, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[0].Operation);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Value, 0.001f);
+            Assert.AreEqual(GemStat.AoeRadius, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[1].Operation);
+            Assert.AreEqual(1.27f, result.Modifiers[1].Value, 0.001f);
+        }
+
+        [Test]
         public void BallistaTotem_SkippedAsTransformation()
         {
             var result = SupportGemMap.FromGemJson(

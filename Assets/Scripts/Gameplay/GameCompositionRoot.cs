@@ -45,6 +45,8 @@ namespace GemTD.Gameplay
 
         [Header("Tuning")]
         [SerializeField] float projectileSpeed = 20f;
+        [SerializeField] HeightInfluenceWeights heightWeights = new HeightInfluenceWeights(0.56f, 0.22f, 0.22f);
+        [SerializeField] [Min(0f)] float tileSpacing = 0.05f;
 
         public RunClock Clock { get; private set; }
         public SpeedControl Speed { get; private set; }
@@ -205,6 +207,7 @@ namespace GemTD.Gameplay
         ChunkExpandService _expand;
         ChunkGrid _chunkGrid;
         ChunkStampService _stamp;
+        TileHeightMap _tileHeights;
         System.Random _rng;
         EnemyRegistry _registry;
         CombatDirector _combat;
@@ -263,6 +266,9 @@ namespace GemTD.Gameplay
             // subscriptions (speed labels, gold/lives/wave text). OnDestroy handles cleanup.
             _placeDef = null;
 
+            if (heightWeights.IsUnset)
+                heightWeights = HeightInfluenceWeights.Default;
+
             Clock = new RunClock();
             _enemyHopDispatcher = new ManualMotionDispatcher();
             Speed = new SpeedControl(Clock);
@@ -308,6 +314,13 @@ namespace GemTD.Gameplay
 
         void Update()
         {
+            if (_stamp != null)
+                _stamp.Weights = heightWeights.IsUnset
+                    ? HeightInfluenceWeights.Default
+                    : heightWeights;
+            if (chunkBoardView != null)
+                chunkBoardView.SetTileSpacing(tileSpacing);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             TryDebugAdvance();
             TryDebugFillBag();
@@ -380,7 +393,14 @@ namespace GemTD.Gameplay
             var range = tower.Def.IsFireable
                 ? tower.Def.GetFireTowerRadius(tower.Level)
                 : tower.Def.GetAuraTowerRadius(tower.Level);
-            return range * rangeMul;
+            return range * rangeMul * HeightRangeMul(tower.Cell);
+        }
+
+        float HeightRangeMul(Vector2Int cell)
+        {
+            if (_tileHeights == null)
+                return 1f;
+            return TileHeightRules.RangeMultiplier(_tileHeights.Get(cell.x, cell.y));
         }
 
         /// <summary>Bloons-style ghost while placing, plus range disc when Tower Details is open.</summary>
@@ -427,10 +447,10 @@ namespace GemTD.Gameplay
                 var cell = chunkBoardView.WorldToCell(world);
                 var valid = Placement.CanPlace(_placeDef, cell, phase, ComputePlaceCost(_placeDef));
                 var range = _placeDef != null
-                    ? _placeDef.GetPlacementTowerRadius(TowerInstance.DefaultLevel)
+                    ? _placeDef.GetPlacementTowerRadius(TowerInstance.DefaultLevel) * HeightRangeMul(cell)
                     : 3f;
                 _placementGhost.SetRange(range);
-                _placementGhost.ShowAt(chunkBoardView.CellToWorld(cell), valid);
+                _placementGhost.ShowAt(chunkBoardView.TowerCellWorld(cell), valid);
                 return;
             }
 
@@ -438,7 +458,7 @@ namespace GemTD.Gameplay
             {
                 EnsurePlacementGhost();
                 _placementGhost.SetRange(EffectiveAttackRange(Placement.Selected));
-                _placementGhost.ShowRangeOnlyAt(chunkBoardView.CellToWorld(Placement.Selected.Cell));
+                _placementGhost.ShowRangeOnlyAt(chunkBoardView.TowerCellWorld(Placement.Selected.Cell));
                 return;
             }
 
@@ -462,11 +482,12 @@ namespace GemTD.Gameplay
             _path = new PathGraph(cellW, cellH);
             _path.BindBoard(_board);
             _chunkGrid = new ChunkGrid(chunksW, chunksH);
-            _stamp = new ChunkStampService();
             _rng = new System.Random();
+            _tileHeights = new TileHeightMap(cellW, cellH);
+            _stamp = new ChunkStampService(_tileHeights, _rng, heightWeights);
 
             if (chunkBoardView != null)
-                chunkBoardView.Bind(_chunkGrid);
+                chunkBoardView.Bind(_chunkGrid, _tileHeights, tileSpacing);
 
             var laneCount = runConfig != null ? runConfig.LaneCount : 1;
             if (chunkCatalog == null)
@@ -498,7 +519,7 @@ namespace GemTD.Gameplay
             Placement = new TowerPlacementService(_board, _path, Economy);
             _registry = new EnemyRegistry();
             var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
-            _combat = new CombatDirector(cellSize, projectileSpeed, _runStats.RecordDamage);
+            _combat = new CombatDirector(cellSize, projectileSpeed, _runStats.RecordDamage, _tileHeights);
             _pipeline = new GemModifierPipeline();
 
             _spawnerGate = new EnemySpawnerGate(SpawnEnemy, () => CountLivingEnemies());
@@ -826,7 +847,7 @@ namespace GemTD.Gameplay
             if (towerPrefab != null)
             {
                 var view = Instantiate(towerPrefab, transform);
-                view.Bind(tower, chunkBoardView.CellToWorld(cell));
+                view.Bind(tower, chunkBoardView.TowerCellWorld(cell));
                 _towerViews.Add(view);
             }
 
@@ -1667,6 +1688,18 @@ namespace GemTD.Gameplay
             }
 
             return null;
+        }
+#endif
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (heightWeights.IsUnset)
+                heightWeights = HeightInfluenceWeights.Default;
+            if (heightWeights.Same < 0f) heightWeights.Same = 0f;
+            if (heightWeights.StepUp < 0f) heightWeights.StepUp = 0f;
+            if (heightWeights.StepDown < 0f) heightWeights.StepDown = 0f;
+            if (tileSpacing < 0f) tileSpacing = 0f;
         }
 #endif
     }

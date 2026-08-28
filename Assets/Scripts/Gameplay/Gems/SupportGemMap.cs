@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Towers;
 using Newtonsoft.Json.Linq;
 
@@ -577,12 +578,8 @@ namespace GemTD.Gameplay.Gems
                 return "PoEDB: every-third-hit Ruthless Blow; skipped for later";
             if (name == "Ancestral Call Support")
                 return "PoEDB: strike 2 extra nearby enemies; no extra-target melee";
-            if (name == "Melee Splash Support")
-                return "PoEDB: melee splash around the struck target; no splash hits";
             if (name == "Multistrike Support")
                 return "PoEDB: repeats melee attacks; no repeat-attack combat";
-            if (name == "Arrow Nova Support")
-                return "PoEDB: payload arrow nova; no nova fire pattern";
             if (name == "Barrage Support")
                 return "PoEDB: fire projectiles sequentially; no barrage sequence";
             if (name == "Point Blank Support")
@@ -666,6 +663,30 @@ namespace GemTD.Gameplay.Gems
             {
                 modifiers.Add(LessDamage(80f));
                 RemoveFlavorContaining(flavor, "less Damage with Hits");
+            }
+
+            if (name == "Arrow Nova Support")
+            {
+                modifiers.Add(GemStatModifier.Single(
+                    GemStat.AimMode,
+                    RoleModifierOperation.Set,
+                    (float)AimMode.Ground));
+                modifiers.Add(GemStatModifier.Single(
+                    GemStat.DeliveryPattern,
+                    RoleModifierOperation.Set,
+                    (float)DeliveryPattern.PayloadNova));
+                RemoveFlavorContaining(flavor, "Payload Arrow");
+                RemoveFlavorContaining(flavor, "in a circle");
+            }
+
+            if (name == "Melee Splash Support")
+            {
+                // PoE base radius 1.4m; numbered "more Melee Splash AoE" multiplies after Set.
+                modifiers.Insert(0, GemStatModifier.Single(
+                    GemStat.AoeRadius,
+                    RoleModifierOperation.Set,
+                    1.4f));
+                RemoveFlavorContaining(flavor, "Splash Damage to surrounding");
             }
         }
 

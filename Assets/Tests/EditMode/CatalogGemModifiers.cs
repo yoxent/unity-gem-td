@@ -5,8 +5,9 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Tests.EditMode
 {
     /// <summary>
-    /// Rows matching the 13 authored gem SOs. Runtime combat uses the assets; EditMode
-    /// CreateInstance gems need the same rows bound explicitly.
+    /// Rows matching authored gem SOs used by EditMode combat tests (original MVP gems
+    /// plus Arrow Nova / Melee Splash). Runtime combat uses the assets; CreateInstance
+    /// gems need the same rows bound explicitly.
     /// </summary>
     static class CatalogGemModifiers
     {
@@ -97,6 +98,19 @@ namespace GemTD.Tests.EditMode
                     {
                         Set(GemStat.KnockbackChance, 0.34f),
                         Set(GemStat.KnockbackDistance, 1f)
+                    };
+                case GemId.MeleeSplash:
+                    return new[]
+                    {
+                        Set(GemStat.AoeRadius, 1.4f),
+                        Mul(GemStat.AoeRadius, 1.27f)
+                    };
+                case GemId.ArrowNova:
+                    return new[]
+                    {
+                        Mul(GemStat.Damage, 0.77f),
+                        Set(GemStat.AimMode, (float)AimMode.Ground),
+                        Set(GemStat.DeliveryPattern, (float)DeliveryPattern.PayloadNova)
                     };
                 default:
                     return null;

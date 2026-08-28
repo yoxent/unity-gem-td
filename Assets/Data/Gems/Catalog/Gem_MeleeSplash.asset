@@ -14,7 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 27
   DisplayName: Melee Splash
-  Description: Attacks damage nearby enemies around the primary target. Primary-hit damage is reduced. Supported Skills deal Splash Damage to surrounding targets Supported Skills deal #% less Splash Damage to surrounding targets
+  Description: Attacks damage nearby enemies around the primary target. Primary-hit
+    damage is reduced. Supported Skills deal Splash Damage to surrounding targets
+    Supported Skills deal #% less Splash Damage to surrounding targets
   DraftWeight: 1
   Tags: 330
-  Modifiers: []
+  Modifiers:
+  - Stat: 5
+    Operation: 0
+    ValueKind: 0
+    Value: 1.4
+    Min: 0
+    Max: 0
+    Falloff: 0
+  - Stat: 5
+    Operation: 2
+    ValueKind: 0
+    Value: 1.27
+    Min: 0
+    Max: 0
+    Falloff: 0

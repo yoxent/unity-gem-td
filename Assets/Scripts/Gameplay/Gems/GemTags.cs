@@ -21,6 +21,7 @@ namespace GemTD.Gameplay.Gems
         Melee = 1 << 6,
         Chaining = 1 << 7,
         Support = 1 << 8,
+        Strike = 1 << 9,
     }
 
     public static class GemTags
@@ -32,7 +33,8 @@ namespace GemTD.Gameplay.Gems
             | GemTag.Attack
             | GemTag.Spell
             | GemTag.Aura
-            | GemTag.Melee;
+            | GemTag.Melee
+            | GemTag.Strike;
 
         public static GemTag EffectiveTowerTags(TowerDefinition def)
         {
@@ -90,6 +92,7 @@ namespace GemTD.Gameplay.Gems
             Append(sb, tags, GemTag.Spell, "Spell");
             Append(sb, tags, GemTag.Aura, "Aura");
             Append(sb, tags, GemTag.Melee, "Melee");
+            Append(sb, tags, GemTag.Strike, "Strike");
             Append(sb, tags, GemTag.Chaining, "Chaining");
             Append(sb, tags, GemTag.Support, "Support");
             return sb.Length > 0 ? sb.ToString() : "—";

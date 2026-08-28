@@ -12,28 +12,135 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90380bed116b50b4cbbe7a067d12fab8, type: 3}
   m_Name: Role_Attack_Burning_Arrow
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AttackRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 0
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 1
+    Operation: 0
+    ValueKind: 0
+    Value: 70
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 10
+    Min: 0
+    Max: 0
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 9
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 3.0210001
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 3.316
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 3.611
+      Min: 0
+      Max: 0
+    Effects: []
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 3.905
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 4.2
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 4.495
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 4.789
+      Min: 0
+      Max: 0
+    Effects: []
   - SourceLevel: 8
-    Modifiers: []
-  - SourceLevel: 12
-    Modifiers: []
-  - SourceLevel: 16
-    Modifiers: []
-  - SourceLevel: 20
-    Modifiers: []
-  - SourceLevel: 24
-    Modifiers: []
-  - SourceLevel: 28
-    Modifiers: []
-  - SourceLevel: 32
-    Modifiers: []
-  - SourceLevel: 36
-    Modifiers: []
-  - SourceLevel: 40
-    Modifiers: []
-  AttackTime: 1
-  AttackSpeed: 70
-  TowerRadius: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 5.011
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 5.158
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 5.305
+      Min: 0
+      Max: 0
+    Effects: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0

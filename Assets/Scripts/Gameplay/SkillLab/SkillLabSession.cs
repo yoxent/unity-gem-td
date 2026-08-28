@@ -12,20 +12,15 @@ namespace GemTD.Gameplay.SkillLab
         public const string StatusNoTarget = "No target in range.";
         public const string StatusTruncated = "Trace truncated.";
 
-        static readonly GemId[] DraftOrder =
-        {
-            GemId.MultipleProjectiles, GemId.Chain, GemId.Fork, GemId.IncreasedArea,
-            GemId.Pierce, GemId.ElementalProliferation, GemId.Combustion, GemId.AddedFireDamage,
-            GemId.AddedColdDamage, GemId.AddedLightningDamage, GemId.Knockback
-        };
-
         static readonly TowerDefinition[] EmptyTowers = System.Array.Empty<TowerDefinition>();
+        static readonly GemId[] EmptyDraftIds = System.Array.Empty<GemId>();
 
         readonly AttackTracer _tracer = new AttackTracer();
         readonly GemModifierPipeline _pipeline = new GemModifierPipeline();
         readonly List<ISkillModifier> _scratch = new List<ISkillModifier>(8);
         readonly List<EnemyRuntime> _living = new List<EnemyRuntime>(DummyField.PinCount);
         GemDefinition[] _catalog;
+        GemId[] _draftGemIds = EmptyDraftIds;
         TowerDefinition[] _towers = EmptyTowers;
 
         public DummyField Dummies { get; } = new DummyField();
@@ -53,6 +48,7 @@ namespace GemTD.Gameplay.SkillLab
         public void BindCatalog(GemDefinition[] catalog)
         {
             _catalog = catalog;
+            RebuildDraftGemIds();
         }
 
         public void BindTowers(TowerDefinition[] towers)
@@ -163,7 +159,7 @@ namespace GemTD.Gameplay.SkillLab
             return FindCatalog(id);
         }
 
-        public static GemId[] DraftGemIds => DraftOrder;
+        public GemId[] DraftGemIds => _draftGemIds;
 
         public void Fire()
         {
@@ -189,6 +185,44 @@ namespace GemTD.Gameplay.SkillLab
             Dummies.ResetPins();
         }
 
+        void RebuildDraftGemIds()
+        {
+            if (_catalog == null || _catalog.Length == 0)
+            {
+                _draftGemIds = EmptyDraftIds;
+                return;
+            }
+
+            var count = 0;
+            for (var i = 0; i < _catalog.Length; i++)
+            {
+                var gem = _catalog[i];
+                if (gem != null && gem.Id != GemId.None)
+                    count++;
+            }
+
+            if (count == 0)
+            {
+                _draftGemIds = EmptyDraftIds;
+                return;
+            }
+
+            var gems = new GemDefinition[count];
+            var n = 0;
+            for (var i = 0; i < _catalog.Length; i++)
+            {
+                var gem = _catalog[i];
+                if (gem != null && gem.Id != GemId.None)
+                    gems[n++] = gem;
+            }
+
+            System.Array.Sort(gems, CompareGemNames);
+            var ids = new GemId[gems.Length];
+            for (var i = 0; i < gems.Length; i++)
+                ids[i] = gems[i].Id;
+            _draftGemIds = ids;
+        }
+
         GemDefinition FindCatalog(GemId id)
         {
             if (_catalog == null)
@@ -200,6 +234,13 @@ namespace GemTD.Gameplay.SkillLab
             }
 
             return null;
+        }
+
+        static int CompareGemNames(GemDefinition a, GemDefinition b)
+        {
+            var an = a != null && !string.IsNullOrEmpty(a.DisplayName) ? a.DisplayName : "";
+            var bn = b != null && !string.IsNullOrEmpty(b.DisplayName) ? b.DisplayName : "";
+            return string.CompareOrdinal(an, bn);
         }
 
         int IndexOfDef(TowerDefinition def)

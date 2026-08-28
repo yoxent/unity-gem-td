@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using GemTD.Gameplay.Combat;
+using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
 using UnityEditor;
 using UnityEngine;
@@ -106,46 +107,91 @@ namespace GemTD.Editor
         [MenuItem("Gem TD/Import Fireball Proof")]
         public static void ImportFireballProof()
         {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_spell.json",
+                folder: "Spell",
+                dialogTitle: "Fireball Import",
+                "Fireball");
+        }
+
+        [MenuItem("Gem TD/Import Molten Strike Proof")]
+        public static void ImportMoltenStrikeProof()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_attack.json",
+                folder: "Attack",
+                dialogTitle: "Molten Strike Import",
+                "Molten_Strike");
+        }
+
+        [MenuItem("Gem TD/Import Simplest Attack Five")]
+        public static void ImportSimplestAttackFive()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_attack.json",
+                folder: "Attack",
+                dialogTitle: "Simplest Attack Five",
+                "Molten_Strike",
+                "Earthquake",
+                "Lightning_Arrow",
+                "Burning_Arrow",
+                "Heavy_Strike");
+        }
+
+        static void ImportProofs(
+            string categoryFile,
+            string folder,
+            string dialogTitle,
+            params string[] slugs)
+        {
             var jsonDir = EditorPrefs.GetString(PrefsJsonDir, DefaultJsonDir);
-            var path = Path.Combine(jsonDir, "poe_skill_gems_spell.json");
+            var path = Path.Combine(jsonDir, categoryFile);
             if (!File.Exists(path))
             {
                 EditorUtility.DisplayDialog(
-                    "Fireball Import",
+                    dialogTitle,
                     "Missing file:\n" + path,
                     "OK");
                 return;
             }
 
             var results = SkillGemTowerMap.FromCatalogJson(File.ReadAllText(path));
-            SkillGemTowerMap.Result fireball = null;
-            for (var i = 0; i < results.Length; i++)
-            {
-                if (string.Equals(results[i].Slug, "Fireball", StringComparison.OrdinalIgnoreCase))
-                {
-                    fireball = results[i];
-                    break;
-                }
-            }
-
-            if (fireball == null)
-            {
-                EditorUtility.DisplayDialog(
-                    "Fireball Import",
-                    "Fireball was not found in:\n" + path,
-                    "OK");
-                return;
-            }
-
             EnsureFolder(TowerRoot);
             EnsureFolder(RoleRoot);
-            EnsureFolder(TowerRoot + "/Spell");
-            EnsureFolder(RoleRoot + "/Spell");
-            var roles = WriteRoles(fireball);
-            WriteTower(fireball, roles);
+            EnsureFolder(TowerRoot + "/" + folder);
+            EnsureFolder(RoleRoot + "/" + folder);
+
+            var imported = new List<string>(slugs.Length);
+            for (var s = 0; s < slugs.Length; s++)
+            {
+                var slug = slugs[s];
+                SkillGemTowerMap.Result match = null;
+                for (var i = 0; i < results.Length; i++)
+                {
+                    if (string.Equals(results[i].Slug, slug, StringComparison.OrdinalIgnoreCase))
+                    {
+                        match = results[i];
+                        break;
+                    }
+                }
+
+                if (match == null)
+                {
+                    EditorUtility.DisplayDialog(
+                        dialogTitle,
+                        slug.Replace('_', ' ') + " was not found in:\n" + path,
+                        "OK");
+                    return;
+                }
+
+                var roles = WriteRoles(match);
+                WriteTower(match, roles);
+                imported.Add(match.DisplayName);
+            }
+
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Gem TD] Fireball proof imported from " + path);
+            Debug.Log("[Gem TD] " + string.Join(", ", imported) + " imported from " + path);
         }
 
         static int CompareCatalogOrder(SkillGemTowerMap.Result a, SkillGemTowerMap.Result b)
@@ -232,7 +278,7 @@ namespace GemTD.Editor
                     break;
             }
 
-            ClearRoleBehaviorDefaults(role);
+            ClearRoleBehaviorDefaults(role, result.Tags);
             role.Modifiers = payload != null
                 ? CopyModifiers(payload.Modifiers)
                 : Array.Empty<RoleStatModifier>();
@@ -246,14 +292,15 @@ namespace GemTD.Editor
             return role;
         }
 
-        static void ClearRoleBehaviorDefaults(TowerRoleDefinition role)
+        static void ClearRoleBehaviorDefaults(TowerRoleDefinition role, GemTag towerTags)
         {
             var damage = role as DamageRoleDefinition;
             if (damage != null)
             {
                 damage.PierceBehavior = PierceMode.Finite;
-                damage.AimMode = AimMode.Direct;
-                damage.DeliveryPattern = DeliveryPattern.Straight;
+                SkillGemTowerMap.ResolveFireBehavior(towerTags, out var aim, out var delivery);
+                damage.AimMode = aim;
+                damage.DeliveryPattern = delivery;
             }
         }
 

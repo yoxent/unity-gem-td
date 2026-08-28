@@ -145,7 +145,7 @@ namespace GemTD.UI
                 _optionScratch.Add(new TMP_Dropdown.OptionData(EmptyLabel));
 
                 var current = sockets[i];
-                var ids = SkillLabSession.DraftGemIds;
+                var ids = session.DraftGemIds;
                 for (var g = 0; g < ids.Length; g++)
                 {
                     var id = ids[g];

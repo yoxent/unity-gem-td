@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
 
@@ -45,6 +46,21 @@ namespace GemTD.Tests.EditMode
         const string MinMaxHeaderJson =
             "{\"name\":\"Ranged Hit\",\"slug\":\"Ranged_Hit\",\"tags\":[\"Attack\",\"Projectile\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":{\"min\":70,\"max\":90}}}}";
 
+        const string MoltenStrikeJson =
+            "{\"name\":\"Molten Strike\",\"slug\":\"Molten_Strike\",\"tags\":[\"Attack\",\"Projectile\",\"AoE\",\"Melee\",\"Strike\",\"Fire\"],\"category\":\"attack\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":146,\"poedb_column\":\"Base Damage\"}},\"5\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":329.2,\"poedb_column\":\"Base Damage\"}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":700.3,\"poedb_column\":\"Base Damage\"}}}}";
+
+        const string HeavyStrikeJson =
+            "{\"name\":\"Heavy Strike\",\"slug\":\"Heavy_Strike\",\"tags\":[\"Attack\",\"Melee\",\"Strike\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":85}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":256.5},\"#% chance to deal Double Damage\":{\"kind\":\"percent\",\"value\":23}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":553}}}}";
+
+        const string EarthquakeJson =
+            "{\"name\":\"Earthquake\",\"slug\":\"Earthquake\",\"tags\":[\"Attack\",\"AoE\",\"Melee\",\"Duration\",\"Slam\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":75}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":155.5}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":335.5}}}}";
+
+        const string LightningArrowJson =
+            "{\"name\":\"Lightning Arrow\",\"slug\":\"Lightning_Arrow\",\"tags\":[\"Attack\",\"AoE\",\"Projectile\",\"Lightning\",\"Bow\"],\"category\":\"attack\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":153.9},\"Shocks Enemies as though dealing #% more Damage\":{\"kind\":\"percent\",\"value\":130}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":177}}}}";
+
+        const string BurningArrowJson =
+            "{\"name\":\"Burning Arrow\",\"slug\":\"Burning_Arrow\",\"tags\":[\"Attack\",\"Projectile\",\"Fire\",\"Bow\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":70}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":302.1}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":420}}}}";
+
         [Test]
         public void Cleave_MapsAttackSpeedEightyAndMeleeAoeTags()
         {
@@ -67,6 +83,9 @@ namespace GemTD.Tests.EditMode
                 FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
             Assert.AreEqual(1, r.RoleKinds.Length);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, r.RoleKinds[0]);
+            SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.Straight, delivery);
         }
 
         [Test]
@@ -275,6 +294,191 @@ namespace GemTD.Tests.EditMode
             var r = SkillGemTowerMap.FromJson(MinMaxHeaderJson);
             var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
             Assert.AreEqual(70f, FindModifier(attack.Modifiers, RoleStat.AttackSpeed).Value, 0.001f);
+        }
+
+        [Test]
+        public void MoltenStrike_MapsAttackDamageMultiplyAndProjectileNoSplash()
+        {
+            var r = SkillGemTowerMap.FromJson(MoltenStrikeJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.AreEqual("Molten Strike", r.DisplayName);
+            Assert.AreEqual("Molten_Strike", r.Slug);
+            Assert.AreEqual(20, r.Cost);
+            Assert.AreEqual(10f, r.Damage, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, r.RoleKinds[0]);
+            Assert.AreEqual(1f, FindModifier(attack.Modifiers, RoleStat.AttackTime).Value, 0.001f);
+            Assert.AreEqual(100f, FindModifier(attack.Modifiers, RoleStat.AttackSpeed).Value, 0.001f);
+            Assert.AreEqual(3.5f, FindModifier(attack.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(10f, FindModifier(attack.Modifiers, RoleStat.Damage).Value, 0.001f);
+            Assert.AreEqual(1f, FindModifier(attack.Modifiers, RoleStat.ProjectileSpeed).Value, 0.001f);
+            Assert.IsTrue((r.Tags & GemTag.Attack) != 0);
+            Assert.IsTrue((r.Tags & GemTag.Projectile) != 0);
+            Assert.IsTrue((r.Tags & GemTag.Aoe) != 0);
+            Assert.IsTrue((r.Tags & GemTag.Melee) != 0);
+            Assert.AreEqual(GemTag.Attack | GemTag.Projectile | GemTag.Aoe | GemTag.Melee | GemTag.Strike, r.Tags);
+            Assert.AreEqual(3, attack.Levels.Length);
+            Assert.AreEqual(1, attack.Levels[0].SourceLevel);
+            Assert.AreEqual(5, attack.Levels[1].SourceLevel);
+            Assert.AreEqual(10, attack.Levels[2].SourceLevel);
+            Assert.AreEqual(
+                RoleModifierOperation.Multiply,
+                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
+            Assert.AreEqual(1.46f, FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value, 0.001f);
+            Assert.AreEqual(3.292f, FindModifier(attack.Levels[1].Modifiers, RoleStat.Damage).Value, 0.001f);
+            Assert.AreEqual(7.003f, FindModifier(attack.Levels[2].Modifiers, RoleStat.Damage).Value, 0.001f);
+            Assert.AreEqual(4f, FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value, 0.001f);
+            SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
+            Assert.IsFalse(HasModifier(attack.Levels[0], RoleStat.SplashRadius));
+            Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.SplashRadius));
+            Assert.IsTrue(r.IsActiveCatalogCompatible);
+        }
+
+        [Test]
+        public void ResolveFireBehavior_Slam_IsGroundPulse()
+        {
+            SkillGemTowerMap.ResolveFireBehavior(
+                GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe,
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Ground, aim);
+            Assert.AreEqual(DeliveryPattern.GroundPulse, delivery);
+        }
+
+        [Test]
+        public void ResolveFireBehavior_MeleeStrike_IsWarpStrike()
+        {
+            SkillGemTowerMap.ResolveFireBehavior(
+                GemTag.Attack | GemTag.Melee | GemTag.Strike,
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
+        }
+
+        [Test]
+        public void SimplestAttackFive_MapDeliveryAndDamageMultiply()
+        {
+            AssertCheckAttack(
+                MoltenStrikeJson,
+                "Molten_Strike",
+                GemTag.Attack | GemTag.Projectile | GemTag.Aoe | GemTag.Melee | GemTag.Strike,
+                AimMode.Direct,
+                DeliveryPattern.WarpStrike,
+                melee: true,
+                projectile: true,
+                attackSpeed: 100f,
+                level1Multiply: 1.46f,
+                projectileCount: 4f,
+                levelCount: 3);
+
+            AssertCheckAttack(
+                EarthquakeJson,
+                "Earthquake",
+                GemTag.Attack | GemTag.Aoe | GemTag.Melee | GemTag.Slam,
+                AimMode.Ground,
+                DeliveryPattern.GroundPulse,
+                melee: true,
+                projectile: false,
+                attackSpeed: 75f,
+                level1Multiply: 1.555f,
+                projectileCount: null,
+                levelCount: 2);
+
+            AssertCheckAttack(
+                LightningArrowJson,
+                "Lightning_Arrow",
+                GemTag.Attack | GemTag.Aoe | GemTag.Projectile,
+                AimMode.Direct,
+                DeliveryPattern.Straight,
+                melee: false,
+                projectile: true,
+                attackSpeed: 100f,
+                level1Multiply: 1.539f,
+                projectileCount: 1f,
+                levelCount: 2);
+
+            AssertCheckAttack(
+                BurningArrowJson,
+                "Burning_Arrow",
+                GemTag.Attack | GemTag.Projectile,
+                AimMode.Direct,
+                DeliveryPattern.Straight,
+                melee: false,
+                projectile: true,
+                attackSpeed: 70f,
+                level1Multiply: 3.021f,
+                projectileCount: 1f,
+                levelCount: 2);
+
+            AssertCheckAttack(
+                HeavyStrikeJson,
+                "Heavy_Strike",
+                GemTag.Attack | GemTag.Melee | GemTag.Strike,
+                AimMode.Direct,
+                DeliveryPattern.WarpStrike,
+                melee: true,
+                projectile: false,
+                attackSpeed: 85f,
+                level1Multiply: 2.565f,
+                projectileCount: null,
+                levelCount: 2);
+        }
+
+        static void AssertCheckAttack(
+            string json,
+            string slug,
+            GemTag tags,
+            AimMode aim,
+            DeliveryPattern delivery,
+            bool melee,
+            bool projectile,
+            float attackSpeed,
+            float level1Multiply,
+            float? projectileCount,
+            int levelCount)
+        {
+            var r = SkillGemTowerMap.FromJson(json);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.AreEqual(slug, r.Slug);
+            Assert.AreEqual(tags, r.Tags);
+            Assert.AreEqual(attackSpeed, FindModifier(attack.Modifiers, RoleStat.AttackSpeed).Value, 0.001f);
+            Assert.AreEqual(
+                melee ? 3.5f : 5f,
+                FindModifier(attack.Modifiers, RoleStat.TowerRadius).Value,
+                0.001f);
+            Assert.AreEqual(projectile, HasModifier(attack.Modifiers, RoleStat.ProjectileSpeed));
+            if (projectileCount.HasValue)
+                Assert.AreEqual(
+                    projectileCount.Value,
+                    FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value,
+                    0.001f);
+            else
+                Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
+            Assert.AreEqual(levelCount, attack.Levels.Length);
+            Assert.AreEqual(
+                RoleModifierOperation.Multiply,
+                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
+            Assert.AreEqual(
+                level1Multiply,
+                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value,
+                0.001f);
+            Assert.IsFalse(HasModifier(attack.Levels[0].Modifiers, RoleStat.SplashRadius));
+            SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var mappedAim, out var mappedDelivery);
+            Assert.AreEqual(aim, mappedAim);
+            Assert.AreEqual(delivery, mappedDelivery);
+        }
+
+        static bool HasModifier(RoleStatModifier[] modifiers, RoleStat stat)
+        {
+            for (var i = 0; i < modifiers.Length; i++)
+            {
+                if (modifiers[i].Stat == stat)
+                    return true;
+            }
+
+            return false;
         }
 
         static RoleStatModifier FindModifier(RoleLevelDefinition level, RoleStat stat)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 using Newtonsoft.Json.Linq;
 
@@ -38,6 +39,30 @@ namespace GemTD.Gameplay.Towers
         public const float DefaultRadiusAttackSpell = 5f;
         public const float DefaultReservationPercent = 50f;
         public const float DefaultProjectileSpeed = 1f;
+        public const int MoltenStrikeProjectileCount = 4;
+
+        public static void ResolveFireBehavior(
+            GemTag tags,
+            out AimMode aim,
+            out DeliveryPattern delivery)
+        {
+            if ((tags & GemTag.Melee) != 0 && (tags & GemTag.Strike) != 0)
+            {
+                aim = AimMode.Direct;
+                delivery = DeliveryPattern.WarpStrike;
+                return;
+            }
+
+            if ((tags & GemTag.Slam) != 0)
+            {
+                aim = AimMode.Ground;
+                delivery = DeliveryPattern.GroundPulse;
+                return;
+            }
+
+            aim = AimMode.Direct;
+            delivery = DeliveryPattern.Straight;
+        }
 
         public sealed class Result
         {
@@ -223,7 +248,8 @@ namespace GemTD.Gameplay.Towers
                         tags,
                         header,
                         radiusValue,
-                        result.Damage),
+                        result.Damage,
+                        result.Slug),
                     Effects = Array.Empty<RoleEffectModifier>(),
                     Levels = MapLevelDefinitions(
                         levels,
@@ -242,7 +268,8 @@ namespace GemTD.Gameplay.Towers
             GemTag tags,
             JObject header,
             float? radiusValue,
-            float baseDamage)
+            float baseDamage,
+            string slug)
         {
             var modifiers = new List<RoleStatModifier>(6);
             switch (kind)
@@ -327,6 +354,19 @@ namespace GemTD.Gameplay.Towers
 
             if ((tags & GemTag.Projectile) != 0)
                 AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
+
+            if (kind == RoleKind.Attack
+                && string.Equals(slug, "Molten_Strike", StringComparison.OrdinalIgnoreCase))
+            {
+                AddSet(modifiers, RoleStat.ProjectileCount, MoltenStrikeProjectileCount);
+            }
+            else if ((tags & GemTag.Projectile) != 0
+                && (kind == RoleKind.Attack || kind == RoleKind.Spell))
+            {
+                ResolveFireBehavior(tags, out _, out var delivery);
+                if (delivery == DeliveryPattern.Straight)
+                    AddSet(modifiers, RoleStat.ProjectileCount, 1);
+            }
 
             return modifiers.ToArray();
         }
@@ -831,6 +871,7 @@ namespace GemTD.Gameplay.Towers
                 case "Melee": return GemTag.Melee;
                 case "Projectile": return GemTag.Projectile;
                 case "Slam": return GemTag.Slam;
+                case "Strike": return GemTag.Strike;
                 case "Chaining": return GemTag.Chaining;
                 default: return GemTag.None;
             }

@@ -15,7 +15,10 @@ namespace GemTD.Gameplay.Combat
     public enum DeliveryPattern
     {
         Straight,
-        PayloadNova
+        PayloadNova,
+        WarpStrike,
+        GroundPulse,
+        GroundPath
     }
 
     /// <summary>

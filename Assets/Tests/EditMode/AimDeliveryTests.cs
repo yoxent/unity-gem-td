@@ -86,6 +86,22 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void GemSet_WarpStrikeOrdinal_IsAccepted()
+        {
+            var spec = SkillSpec.FromBase(10f);
+            spec = GemStatResolver.Apply(
+                spec,
+                new[]
+                {
+                    GemStatModifier.Single(
+                        GemStat.DeliveryPattern,
+                        RoleModifierOperation.Set,
+                        (float)DeliveryPattern.WarpStrike)
+                });
+            Assert.AreEqual(DeliveryPattern.WarpStrike, spec.DeliveryPattern);
+        }
+
+        [Test]
         public void Resolve_SocketedGem_OverridesRoleAim()
         {
             var def = ScriptableObject.CreateInstance<TowerDefinition>();

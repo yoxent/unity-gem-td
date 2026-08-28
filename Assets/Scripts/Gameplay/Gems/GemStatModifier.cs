@@ -402,7 +402,7 @@ namespace GemTD.Gameplay.Gems
             if (operation != RoleModifierOperation.Set)
                 return;
             var ordinal = Mathf.RoundToInt(scalar);
-            if (ordinal == (int)DeliveryPattern.Straight || ordinal == (int)DeliveryPattern.PayloadNova)
+            if (System.Enum.IsDefined(typeof(DeliveryPattern), ordinal))
                 spec.DeliveryPattern = (DeliveryPattern)ordinal;
         }
 

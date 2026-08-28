@@ -126,6 +126,30 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void StrikeGem_RequiresStrikeOnTower()
+        {
+            var strikeTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            strikeTower.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
+            strikeTower.SocketCount = 1;
+            var meleeOnly = ScriptableObject.CreateInstance<TowerDefinition>();
+            meleeOnly.Tags = GemTag.Attack | GemTag.Melee;
+            meleeOnly.SocketCount = 1;
+            var behead = ScriptableObject.CreateInstance<GemDefinition>();
+            behead.Tags = GemTag.Support | GemTag.Strike | GemTag.Melee | GemTag.Attack;
+            try
+            {
+                Assert.IsTrue(GemTags.CanSocket(strikeTower, behead));
+                Assert.IsFalse(GemTags.CanSocket(meleeOnly, behead));
+            }
+            finally
+            {
+                Object.DestroyImmediate(strikeTower);
+                Object.DestroyImmediate(meleeOnly);
+                Object.DestroyImmediate(behead);
+            }
+        }
+
+        [Test]
         public void Format_JoinsActiveTags()
         {
             Assert.AreEqual("—", GemTags.Format(GemTag.None));

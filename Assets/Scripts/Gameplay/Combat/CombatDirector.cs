@@ -4,6 +4,7 @@ using UnityEngine;
 using GemTD.Core;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
+using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Combat
@@ -19,19 +20,22 @@ namespace GemTD.Gameplay.Combat
         readonly List<ProjectileRuntime> _projectiles = new List<ProjectileRuntime>(32);
         readonly List<ProjectileRuntime> _spawnBuffer = new List<ProjectileRuntime>(16);
         readonly Action<TowerDefinition, float> _recordDamage;
+        readonly TileHeightMap _heights;
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
 
         public CombatDirector(
             float cellSize = 1f,
             float projectileSpeed = ProjectileRuntime.DefaultProjectileSpeed,
-            Action<TowerDefinition, float> recordDamage = null)
+            Action<TowerDefinition, float> recordDamage = null,
+            TileHeightMap heights = null)
         {
             _cellSize = cellSize > 0f ? cellSize : 1f;
             _projectileSpeed = projectileSpeed > 0f
                 ? projectileSpeed
                 : ProjectileRuntime.DefaultProjectileSpeed;
             _recordDamage = recordDamage;
+            _heights = heights;
         }
 
         /// <summary>Despawn all in-flight bolts (wave end / leave combat). Views pool via sync.</summary>
@@ -87,8 +91,16 @@ namespace GemTD.Gameplay.Combat
                     ListPool<ISkillModifier>.Release(modifiers);
 
                     var towerPos = CellToWorld(tower.Cell);
-                    var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
-                    var range = tower.Def.GetFireTowerRadius(tower.Level) * rangeMul;
+                    var muzzle = towerPos;
+                    var gemMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
+                    var heightMul = 1f;
+                    if (_heights != null)
+                    {
+                        var layer = _heights.Get(tower.Cell.x, tower.Cell.y);
+                        muzzle.y = TileHeightVisual.TopY(layer);
+                        heightMul = TileHeightRules.RangeMultiplier(layer);
+                    }
+                    var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul * heightMul;
                     if (!_selector.TrySelect(tower.Targeting, towerPos, range, living, out var primary))
                         continue;
 
@@ -107,10 +119,38 @@ namespace GemTD.Gameplay.Combat
                         : primary.WorldPosition;
                     for (var v = 0; v < volleys; v++)
                     {
+                        if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
+                        {
+                            SpawnWarpStrike(
+                                muzzle,
+                                primary,
+                                spec,
+                                volleyMin,
+                                volleyMax,
+                                speed,
+                                statuses,
+                                tower.Def);
+                            continue;
+                        }
+
+                        if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
+                        {
+                            ApplyGroundPulse(
+                                muzzle,
+                                primary,
+                                spec,
+                                volleyMin,
+                                volleyMax,
+                                living,
+                                statuses,
+                                tower.Def);
+                            continue;
+                        }
+
                         if (spec.DeliveryPattern == DeliveryPattern.PayloadNova)
                         {
                             SpawnPayloadNova(
-                                towerPos,
+                                muzzle,
                                 aimPoint,
                                 spec,
                                 ProjectileRuntime.DefaultChainRange,
@@ -127,11 +167,11 @@ namespace GemTD.Gameplay.Combat
                             var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                             var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
                             for (var h = 0; h < laterals.Length; h++)
-                                SpawnVolley(towerPos, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h]);
+                                SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h]);
                         }
                         else
                         {
-                            SpawnVolley(towerPos, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f);
+                            SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f);
                         }
                     }
                 }
@@ -145,6 +185,82 @@ namespace GemTD.Gameplay.Combat
             for (var i = 0; i < _spawnBuffer.Count; i++)
                 _projectiles.Add(_spawnBuffer[i]);
             _spawnBuffer.Clear();
+        }
+
+        void SpawnWarpStrike(
+            Vector3 origin,
+            EnemyRuntime primary,
+            SkillSpec spec,
+            float damageMin,
+            float damageMax,
+            float speed,
+            StatusRuntime statuses,
+            TowerDefinition sourceTower)
+        {
+            var warp = new ProjectileRuntime();
+            warp.InitWarpStrike(
+                origin,
+                primary,
+                spec,
+                RoleStatValue.SampleHitDamage(damageMin, damageMax),
+                damageMin * ProjectileRuntime.MoltenMagmaDamageFactor,
+                damageMax * ProjectileRuntime.MoltenMagmaDamageFactor,
+                speed,
+                ProjectileRuntime.DefaultChainRange,
+                statuses,
+                _spawnBuffer,
+                sourceTower,
+                _recordDamage);
+            _projectiles.Add(warp);
+        }
+
+        void ApplyGroundPulse(
+            Vector3 origin,
+            EnemyRuntime primary,
+            SkillSpec spec,
+            float damageMin,
+            float damageMax,
+            List<EnemyRuntime> living,
+            StatusRuntime statuses,
+            TowerDefinition sourceTower)
+        {
+            if (primary == null || !primary.IsAlive)
+                return;
+
+            var damage = RoleStatValue.SampleHitDamage(damageMin, damageMax);
+            ApplyPulseDamage(primary, damage, statuses, sourceTower);
+
+            var radius = spec.AoeRadius;
+            if (radius <= 0f || living == null)
+                return;
+
+            var radiusSq = radius * radius;
+            for (var i = 0; i < living.Count; i++)
+            {
+                var enemy = living[i];
+                if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, primary))
+                    continue;
+
+                if ((enemy.WorldPosition - origin).sqrMagnitude <= radiusSq)
+                    ApplyPulseDamage(enemy, damage, statuses, sourceTower);
+            }
+        }
+
+        void ApplyPulseDamage(
+            EnemyRuntime enemy,
+            float damage,
+            StatusRuntime statuses,
+            TowerDefinition sourceTower)
+        {
+            if (sourceTower != null)
+                enemy.LastDamageSource = sourceTower;
+
+            if (statuses != null)
+                statuses.ApplyDamage(enemy, damage);
+            else
+                enemy.ApplyDamage(damage);
+
+            _recordDamage?.Invoke(sourceTower, damage);
         }
 
         void SpawnPayloadNova(

@@ -12,6 +12,7 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 | --- | --- |
 | `GDD.md` / `ARCHITECTURE.md` / `UI-SPEC.md` | Canonical design |
 | `planning/` | Phase designs, implementation plans, STATUS |
+| `planning/handoff.md` | Category-by-category tower catalog import workflow |
 | `planning/sdd/` | Superpowers / SDD session ledger (briefs, reports, `progress.md`) |
 
 **Do not** put design docs, plans, or `.superpowers` / SDD scratch in this game repo. If a skill defaults to `<game-repo>/.superpowers/sdd`, write to `planning/sdd/` in the docs repo instead.

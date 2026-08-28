@@ -22,6 +22,20 @@ namespace GemTD.Gameplay.Map
     {
         readonly bool[] _prevPath = new bool[ChunkMask.CellCount];
         readonly bool[] _prevBuildable = new bool[ChunkMask.CellCount];
+        readonly TileHeightMap _heights;
+        readonly System.Random _rng;
+
+        public HeightInfluenceWeights Weights { get; set; }
+
+        public ChunkStampService(
+            TileHeightMap heights = null,
+            System.Random rng = null,
+            HeightInfluenceWeights weights = default)
+        {
+            _heights = heights;
+            _rng = rng;
+            Weights = weights.IsUnset ? HeightInfluenceWeights.Default : weights;
+        }
 
         /// <summary>
         /// One tentative stamp at a time — rollback buffers are reused.
@@ -46,6 +60,8 @@ namespace GemTD.Gameplay.Map
         public void Commit(Vector2Int coord, MapChunkStamp prefab, int yaw, ChunkMask mask, ChunkGrid grid)
         {
             grid.Place(coord, new ChunkSlot(prefab, yaw, mask));
+            if (_heights != null && _rng != null)
+                TileHeightAssigner.AssignChunk(_heights, mask, coord, _rng, Weights);
             GameEvents.RaiseChunkPlaced(coord);
         }
 
