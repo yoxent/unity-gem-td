@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 13
   DisplayName: Knockback
-  Description: 34% chance to knock back 1 unit along the path.
+  Description: Pushes enemies away from the tower. Can push enemies out of favorable
+    kill zones or other tower ranges.
   DraftWeight: 1
   Tags: 256
   Modifiers:
@@ -24,9 +25,8 @@ MonoBehaviour:
     Value: 0.34
     Min: 0
     Max: 0
-  - Stat: 19
-    Operation: 0
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
+    Lesser: 0.25
+    Normal: 0.34
+    Greater: 0.44
+    Falloff: 0
+  EffectPayloads: []

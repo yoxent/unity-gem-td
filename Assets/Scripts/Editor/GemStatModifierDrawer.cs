@@ -11,7 +11,7 @@ namespace GemTD.Editor
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             var kind = (RoleStatValueKind)property.FindPropertyRelative("ValueKind").enumValueIndex;
-            var lines = kind == RoleStatValueKind.Range ? 5 : 4;
+            var lines = kind == RoleStatValueKind.Range ? 5 : 6;
             if (IsChainCount(property))
                 lines++;
             return lines * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
@@ -36,7 +36,9 @@ namespace GemTD.Editor
             }
             else
             {
-                RoleModifierDrawerUtil.Draw(property, "Value", ref y, position.x, position.width, line, gap);
+                RoleModifierDrawerUtil.Draw(property, "Lesser", ref y, position.x, position.width, line, gap);
+                RoleModifierDrawerUtil.Draw(property, "Normal", ref y, position.x, position.width, line, gap);
+                RoleModifierDrawerUtil.Draw(property, "Greater", ref y, position.x, position.width, line, gap);
             }
 
             if (IsChainCount(property))

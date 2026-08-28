@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 36
   DisplayName: Iron Grip
-  Description: "Increases the tower's offensive output in a specialized way. Reduces another aspect of offensive performance, consistency, or flexibility. Strength's Damage bonus applies to Projectile Attack Damage as well for Supported Skills"
+  Description: Increases the tower's offensive output in a specialized way. Reduces
+    another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
   Tags: 257
   Modifiers:
@@ -24,4 +25,8 @@ MonoBehaviour:
     Value: 1.18
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 1.18
+    Greater: 1.38
     Falloff: 0
+  EffectPayloads: []

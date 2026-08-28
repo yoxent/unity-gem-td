@@ -15,10 +15,7 @@ MonoBehaviour:
   Id: 88
   DisplayName: Arrow Nova
   Description: Changes projectile behavior or improves target coverage. Reduces damage,
-    consistency, or targeting flexibility. Supported Skills fire a Payload Arrow
-    into the airProjectiles from the Supported Skill Fire from where the Payload
-    Arrow lands Supported Skills Fire Projectiles in a circle Supported Skills fire
-    # additional Projectiles Supported Skills can only be used with Bows
+    consistency, or targeting flexibility.
   DraftWeight: 1
   Tags: 257
   Modifiers:
@@ -28,6 +25,9 @@ MonoBehaviour:
     Value: 0.77
     Min: 0
     Max: 0
+    Lesser: 0.7
+    Normal: 0.77
+    Greater: 0.84
     Falloff: 0
   - Stat: 50
     Operation: 0
@@ -35,6 +35,9 @@ MonoBehaviour:
     Value: 1
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 1
+    Greater: 1
     Falloff: 0
   - Stat: 51
     Operation: 0
@@ -42,4 +45,8 @@ MonoBehaviour:
     Value: 1
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 1
+    Greater: 1
     Falloff: 0
+  EffectPayloads: []

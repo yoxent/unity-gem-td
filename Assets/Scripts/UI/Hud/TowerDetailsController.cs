@@ -114,7 +114,7 @@ namespace GemTD.UI
                 var showSlot = tower != null && i < socketCount;
                 socketSlots[i].gameObject.SetActive(showSlot);
                 if (!showSlot) continue;
-                var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : null;
+                var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : default;
                 socketSlots[i].Configure(_root, i, gem);
             }
             _lockOverlayShown = _root.SelectedSocketLockRemaining > 0f;

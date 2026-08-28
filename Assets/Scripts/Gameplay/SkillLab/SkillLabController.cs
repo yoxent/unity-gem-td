@@ -113,17 +113,35 @@ namespace GemTD.Gameplay.SkillLab
 
         public void Fire()
         {
+            ClearHitFlashes();
             _session.Fire();
+            var hits = _session.LastTrace.HitTargets;
+            for (var h = 0; h < hits.Count; h++)
+            {
+                var hit = hits[h];
+                for (var i = 0; i < DummyField.PinCount; i++)
+                {
+                    if (dummyViews == null || i >= dummyViews.Length || dummyViews[i] == null)
+                        continue;
+                    if (!ReferenceEquals(_session.Dummies.GetDummy(i), hit))
+                        continue;
+
+                    dummyViews[i].FlashHit();
+                    break;
+                }
+            }
         }
 
         public void ClearOverlay()
         {
             _session.ClearOverlay();
+            ClearHitFlashes();
         }
 
         public void ResetPins()
         {
             _session.ResetPins();
+            ClearHitFlashes();
         }
 
         public void BackToMenu()
@@ -164,6 +182,18 @@ namespace GemTD.Gameplay.SkillLab
             {
                 _draggingTower = false;
                 _draggingDummy = -1;
+            }
+        }
+
+        void ClearHitFlashes()
+        {
+            if (dummyViews == null)
+                return;
+
+            for (var i = 0; i < dummyViews.Length; i++)
+            {
+                if (dummyViews[i] != null)
+                    dummyViews[i].ClearHitFlash();
             }
         }
     }

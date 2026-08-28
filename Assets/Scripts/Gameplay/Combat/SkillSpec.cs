@@ -35,6 +35,11 @@ namespace GemTD.Gameplay.Combat
         public float ChainHopFalloff;
         public int ForkCount;
         public float AoeRadius;
+        /// <summary>
+        /// Accumulated multiply from AoE support gems. Applies to AoE-tagged payload radii even when
+        /// <see cref="AoeRadius"/> is zero on the primary delivery.
+        /// </summary>
+        public float AoeRadiusMultiplier;
         public float FireRateMultiplier;
         public float AttackSpeedMultiplier;
         public float CastSpeedMultiplier;
@@ -110,6 +115,7 @@ namespace GemTD.Gameplay.Combat
                 ChainHopFalloff = 1f,
                 ForkCount = 0,
                 AoeRadius = aoe,
+                AoeRadiusMultiplier = 1f,
                 FireRateMultiplier = 1f,
                 AttackSpeedMultiplier = 1f,
                 CastSpeedMultiplier = 1f,

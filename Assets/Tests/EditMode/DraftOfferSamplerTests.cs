@@ -57,16 +57,77 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(4, dest.Count);
             Assert.IsTrue(dest[0].IsGem);
             Assert.IsTrue(dest[1].IsGem);
-            Assert.AreNotSame(dest[0].Gem, dest[1].Gem);
+            Assert.AreNotSame(dest[0].Gem.Def, dest[1].Gem.Def);
             Assert.IsTrue(dest[2].IsTower);
             Assert.IsTrue(dest[3].IsGem || dest[3].IsTower);
             if (dest[3].IsGem)
             {
-                Assert.AreNotSame(dest[3].Gem, dest[0].Gem);
-                Assert.AreNotSame(dest[3].Gem, dest[1].Gem);
+                Assert.AreNotSame(dest[3].Gem.Def, dest[0].Gem.Def);
+                Assert.AreNotSame(dest[3].Gem.Def, dest[1].Gem.Def);
             }
             else
                 Assert.AreNotSame(dest[3].Tower, dest[2].Tower);
+        }
+
+        [Test]
+        public void CampaignSampling_RollsRarityAfterUniqueFamilySelection()
+        {
+            var catalog = MakeCatalog(DraftMixKind.TwoGemsOneTowerContested, gems: 5, towers: 4);
+            catalog.RarityTable = MakeRarityTable(lesser: 0f, normal: 0f, greater: 1f);
+            var offer = new List<DraftOfferCard>();
+            DraftOfferSampler.Fill(offer, catalog, new System.Random(42), shuffle: false);
+
+            var seen = new List<GemDefinition>();
+            for (var i = 0; i < offer.Count; i++)
+            {
+                if (!offer[i].IsGem)
+                    continue;
+                Assert.AreEqual(GemRarity.Greater, offer[i].Gem.Rarity);
+                Assert.IsFalse(ContainsDefinition(seen, offer[i].Gem.Def));
+                seen.Add(offer[i].Gem.Def);
+            }
+        }
+
+        [Test]
+        public void CampaignSampling_NullRarityTable_UsesNormal()
+        {
+            var catalog = MakeCatalog(DraftMixKind.TwoGemsOneTowerContested, gems: 5, towers: 4);
+            var offer = new List<DraftOfferCard>();
+            DraftOfferSampler.Fill(offer, catalog, new System.Random(42), shuffle: false);
+
+            for (var i = 0; i < offer.Count; i++)
+            {
+                if (offer[i].IsGem)
+                    Assert.AreEqual(GemRarity.Normal, offer[i].Gem.Rarity);
+            }
+        }
+
+        [Test]
+        public void CampaignSampling_RarityTable_CanProduceMixedRarities()
+        {
+            var catalog = MakeCatalog(DraftMixKind.TwoGemsOneTowerContested, gems: 5, towers: 4);
+            catalog.RarityTable = MakeRarityTable(lesser: 1f, normal: 1f, greater: 1f);
+            var offer = new List<DraftOfferCard>();
+            var sawLesser = false;
+            var sawNormal = false;
+            var sawGreater = false;
+
+            for (var seed = 1; seed <= 80; seed++)
+            {
+                DraftOfferSampler.Fill(offer, catalog, new System.Random(seed), shuffle: false);
+                for (var i = 0; i < offer.Count; i++)
+                {
+                    if (!offer[i].IsGem)
+                        continue;
+                    sawLesser |= offer[i].Gem.Rarity == GemRarity.Lesser;
+                    sawNormal |= offer[i].Gem.Rarity == GemRarity.Normal;
+                    sawGreater |= offer[i].Gem.Rarity == GemRarity.Greater;
+                }
+            }
+
+            Assert.IsTrue(sawLesser);
+            Assert.IsTrue(sawNormal);
+            Assert.IsTrue(sawGreater);
         }
 
         [Test]
@@ -212,6 +273,27 @@ namespace GemTD.Tests.EditMode
             }
 
             return catalog;
+        }
+
+        GemRarityTable MakeRarityTable(float lesser, float normal, float greater)
+        {
+            var table = ScriptableObject.CreateInstance<GemRarityTable>();
+            table.LesserWeight = lesser;
+            table.NormalWeight = normal;
+            table.GreaterWeight = greater;
+            _destroy.Add(table);
+            return table;
+        }
+
+        static bool ContainsDefinition(List<GemDefinition> definitions, GemDefinition definition)
+        {
+            for (var i = 0; i < definitions.Count; i++)
+            {
+                if (ReferenceEquals(definitions[i], definition))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

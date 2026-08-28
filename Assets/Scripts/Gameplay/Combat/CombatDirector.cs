@@ -19,16 +19,23 @@ namespace GemTD.Gameplay.Combat
         readonly TargetSelector _selector = new TargetSelector();
         readonly List<ProjectileRuntime> _projectiles = new List<ProjectileRuntime>(32);
         readonly List<ProjectileRuntime> _spawnBuffer = new List<ProjectileRuntime>(16);
+        readonly List<EffectPayloadRuntime> _effectPayloads = new List<EffectPayloadRuntime>(16);
+        readonly List<EffectPayloadDefinition> _payloadDefinitionsScratch =
+            new List<EffectPayloadDefinition>(8);
+        readonly List<EffectPayloadPlan> _payloadPlanScratch = new List<EffectPayloadPlan>(8);
+        readonly System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
         readonly TileHeightMap _heights;
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
+        public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _effectPayloads;
 
         public CombatDirector(
             float cellSize = 1f,
             float projectileSpeed = ProjectileRuntime.DefaultProjectileSpeed,
             Action<TowerDefinition, float> recordDamage = null,
-            TileHeightMap heights = null)
+            TileHeightMap heights = null,
+            System.Random payloadRng = null)
         {
             _cellSize = cellSize > 0f ? cellSize : 1f;
             _projectileSpeed = projectileSpeed > 0f
@@ -36,6 +43,7 @@ namespace GemTD.Gameplay.Combat
                 : ProjectileRuntime.DefaultProjectileSpeed;
             _recordDamage = recordDamage;
             _heights = heights;
+            _payloadRng = payloadRng ?? new System.Random();
         }
 
         /// <summary>Despawn all in-flight bolts (wave end / leave combat). Views pool via sync.</summary>
@@ -45,6 +53,11 @@ namespace GemTD.Gameplay.Combat
                 _projectiles[i].Deactivate();
             _projectiles.Clear();
             _spawnBuffer.Clear();
+            for (var i = 0; i < _effectPayloads.Count; i++)
+                _effectPayloads[i].Deactivate();
+            _effectPayloads.Clear();
+            _payloadDefinitionsScratch.Clear();
+            _payloadPlanScratch.Clear();
         }
 
         public void Tick(
@@ -59,6 +72,12 @@ namespace GemTD.Gameplay.Combat
 
             var living = ListPool<EnemyRuntime>.Get();
             enemies.CopyAlive(living);
+
+            for (var p = _effectPayloads.Count - 1; p >= 0; p--)
+            {
+                if (!_effectPayloads[p].Tick(dt, living))
+                    _effectPayloads.RemoveAt(p);
+            }
 
             for (var i = _projectiles.Count - 1; i >= 0; i--)
             {
@@ -87,6 +106,7 @@ namespace GemTD.Gameplay.Combat
                         continue;
 
                     var modifiers = ListPool<ISkillModifier>.Get();
+                    var baseline = pipeline.ResolveBaseline(tower);
                     var spec = pipeline.Resolve(tower, modifiers);
                     ListPool<ISkillModifier>.Release(modifiers);
 
@@ -125,11 +145,12 @@ namespace GemTD.Gameplay.Combat
                                 muzzle,
                                 primary,
                                 spec,
+                                baseline,
                                 volleyMin,
                                 volleyMax,
                                 speed,
                                 statuses,
-                                tower.Def);
+                                tower);
                             continue;
                         }
 
@@ -191,11 +212,12 @@ namespace GemTD.Gameplay.Combat
             Vector3 origin,
             EnemyRuntime primary,
             SkillSpec spec,
+            SkillSpec baseline,
             float damageMin,
             float damageMax,
             float speed,
             StatusRuntime statuses,
-            TowerDefinition sourceTower)
+            TowerInstance sourceTower)
         {
             var warp = new ProjectileRuntime();
             warp.InitWarpStrike(
@@ -203,15 +225,66 @@ namespace GemTD.Gameplay.Combat
                 primary,
                 spec,
                 RoleStatValue.SampleHitDamage(damageMin, damageMax),
-                damageMin * ProjectileRuntime.MoltenMagmaDamageFactor,
-                damageMax * ProjectileRuntime.MoltenMagmaDamageFactor,
                 speed,
                 ProjectileRuntime.DefaultChainRange,
                 statuses,
                 _spawnBuffer,
-                sourceTower,
-                _recordDamage);
+                sourceTower.Def,
+                _recordDamage,
+                (anchor, landedSpec) => SpawnOnImpactPayloads(
+                    anchor,
+                    landedSpec,
+                    baseline,
+                    speed,
+                    statuses,
+                    sourceTower));
             _projectiles.Add(warp);
+        }
+
+        void SpawnOnImpactPayloads(
+            Vector3 anchor,
+            SkillSpec spec,
+            SkillSpec baseline,
+            float speed,
+            StatusRuntime statuses,
+            TowerInstance sourceTower)
+        {
+            if (sourceTower == null || sourceTower.Def == null)
+                return;
+
+            GemModifierPipeline.CollectEffectPayloads(
+                sourceTower,
+                _payloadDefinitionsScratch);
+            if (_payloadDefinitionsScratch.Count == 0)
+                return;
+
+            _payloadPlanScratch.Clear();
+            EffectPayloadResolver.BuildOnImpact(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                anchor,
+                _payloadRng,
+                _payloadPlanScratch);
+
+            for (var i = 0; i < _payloadPlanScratch.Count; i++)
+            {
+                var plan = _payloadPlanScratch[i];
+                var flight = ResolvePayloadFlightSeconds(plan, speed);
+                var runtime = new EffectPayloadRuntime();
+                runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage);
+                _effectPayloads.Add(runtime);
+            }
+        }
+
+        static float ResolvePayloadFlightSeconds(in EffectPayloadPlan plan, float speed)
+        {
+            if (plan.TravelPattern != EffectPayloadTravelPattern.Fountain)
+                return EffectPayloadRuntime.MinFlightSeconds;
+
+            var safeSpeed = speed > 0.01f ? speed : ProjectileRuntime.DefaultProjectileSpeed;
+            var dist = plan.HorizontalDistance;
+            return Mathf.Clamp(dist / safeSpeed, 0.12f, 0.45f);
         }
 
         void ApplyGroundPulse(

@@ -16,6 +16,7 @@ namespace GemTD.Gameplay.Run
     {
         public DraftMixKind Mix = DraftMixKind.TwoGemsOneTowerContested;
         public DraftPoolCatalog GemPool;
+        public GemRarityTable RarityTable;
         public TowerCatalog TowerPool;
     }
 }

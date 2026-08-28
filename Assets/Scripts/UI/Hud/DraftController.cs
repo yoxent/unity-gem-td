@@ -194,7 +194,7 @@ namespace GemTD.UI
                 && _popup != null)
             {
                 _replacePopupShown = true;
-                var name = draft.PendingReplaceGem != null ? draft.PendingReplaceGem.DisplayName : "gem";
+                var name = !draft.PendingReplaceGem.IsEmpty ? draft.PendingReplaceGem.DisplayName : "gem";
                 _popup.ShowConfirm("DraftReplace", "Bag full — replace a gem?",
                     $"Take {name}? You'll destroy an inventory gem. Pick an inventory slot, or Cancel.",
                     onConfirm: () => _root.RequestDraftReplaceYes(),

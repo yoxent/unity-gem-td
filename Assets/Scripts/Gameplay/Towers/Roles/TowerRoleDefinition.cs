@@ -17,6 +17,9 @@ namespace GemTD.Gameplay.Towers
         [Tooltip("Only stats and effects that scale at a selected source level. SourceLevel values are the relabelled 1-10 levels.")]
         public RoleLevelDefinition[] Levels;
 
+        [Tooltip("Secondary effects emitted after the primary delivery resolves (magma fountains, aftershocks, etc.).")]
+        public EffectPayloadDefinition[] EffectPayloads;
+
         public abstract float BaseFireInterval { get; }
 
         /// <summary>True = Faster Attacks / attack speed. False = Faster Casting / cast speed.</summary>

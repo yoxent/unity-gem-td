@@ -21,6 +21,12 @@ namespace GemTD.Gameplay.SkillLab
         readonly GemModifierPipeline _pipeline = new GemModifierPipeline();
         readonly List<ISkillModifier> _scratch = new List<ISkillModifier>(8);
         readonly List<SimShot> _queue = new List<SimShot>(32);
+        readonly List<EffectPayloadDefinition> _payloadDefinitionsScratch =
+            new List<EffectPayloadDefinition>(8);
+        readonly List<EffectPayloadPlan> _payloadPlans = new List<EffectPayloadPlan>(8);
+        readonly List<Vector3> _polylineScratch = new List<Vector3>(16);
+        readonly List<EnemyRuntime> _impactScratch = new List<EnemyRuntime>(8);
+        readonly System.Random _previewRng = new System.Random(12345);
 
         public AttackTracer(float baseProjectileSpeed = ProjectileRuntime.DefaultProjectileSpeed)
         {
@@ -54,6 +60,7 @@ namespace GemTD.Gameplay.SkillLab
             if (dummies == null || dummies.Count == 0)
                 return trace;
 
+            var baseline = _pipeline.ResolveBaseline(tower);
             var spec = _pipeline.Resolve(tower, _scratch);
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.GetFireTowerRadius(tower.Level) * rangeMul;
@@ -65,8 +72,15 @@ namespace GemTD.Gameplay.SkillLab
 
             var pierceRemaining = spec.GetPierceRemaining();
             var damage = spec.Damage;
-            var hydra = EvolutionEvaluator.IsHydraTower(tower);
-            if (hydra)
+            if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
+            {
+                TraceWarpStrike(trace, origin, primary, spec, baseline, damage, dummies, tower);
+            }
+            else if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
+            {
+                TraceGroundPulse(trace, origin, primary, spec, dummies);
+            }
+            else if (EvolutionEvaluator.IsHydraTower(tower))
             {
                 var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                 var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
@@ -91,6 +105,106 @@ namespace GemTD.Gameplay.SkillLab
 
             Simulate(trace, dummies);
             return trace;
+        }
+
+        void TraceWarpStrike(
+            AttackTrace trace,
+            Vector3 origin,
+            EnemyRuntime primary,
+            SkillSpec spec,
+            SkillSpec baseline,
+            float damage,
+            List<EnemyRuntime> dummies,
+            TowerInstance tower)
+        {
+            var riseTop = origin + Vector3.up * ProjectileRuntime.WarpRiseHeight;
+            AddSegment(trace, origin, riseTop, AttackTraceKind.WarpRise, 0f);
+
+            var landPoint = primary.WorldPosition;
+            var dropStart = landPoint + Vector3.up * ProjectileRuntime.WarpDropHeight;
+            AddSegment(trace, dropStart, landPoint, AttackTraceKind.WarpDrop, damage);
+            trace.Discs.Add(new AttackTraceDisc
+            {
+                Center = landPoint,
+                Radius = 0.25f,
+                Kind = AttackTraceKind.WarpDrop
+            });
+            AddHitTarget(trace, primary);
+            RecordAoeTargets(trace, landPoint, primary, spec.AoeRadius, dummies);
+
+            if (tower == null || tower.Def == null)
+                return;
+
+            GemModifierPipeline.CollectEffectPayloads(
+                tower,
+                _payloadDefinitionsScratch);
+            if (_payloadDefinitionsScratch.Count == 0)
+                return;
+
+            _payloadPlans.Clear();
+            EffectPayloadResolver.BuildOnImpact(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                landPoint,
+                _previewRng,
+                _payloadPlans);
+
+            for (var i = 0; i < _payloadPlans.Count; i++)
+            {
+                var plan = _payloadPlans[i];
+                var payloadDamage = (plan.DamageMin + plan.DamageMax) * 0.5f;
+                _polylineScratch.Clear();
+                FountainTrajectory.SamplePolyline(
+                    plan.Origin,
+                    plan.LandingPoint,
+                    plan.ArcHeight,
+                    FountainTrajectory.DefaultSampleCount,
+                    _polylineScratch);
+
+                for (var s = 1; s < _polylineScratch.Count; s++)
+                {
+                    AddSegment(
+                        trace,
+                        _polylineScratch[s - 1],
+                        _polylineScratch[s],
+                        AttackTraceKind.Magma,
+                        payloadDamage);
+                }
+
+                trace.Discs.Add(new AttackTraceDisc
+                {
+                    Center = plan.LandingPoint,
+                    Radius = plan.AoeRadius,
+                    Kind = AttackTraceKind.Magma
+                });
+
+                _impactScratch.Clear();
+                AreaEffectResolver.CollectCircle(
+                    plan.LandingPoint,
+                    plan.AoeRadius,
+                    dummies,
+                    _impactScratch,
+                    plan.HitPolicy);
+
+                for (var t = 0; t < _impactScratch.Count; t++)
+                {
+                    var victim = _impactScratch[t];
+                    AddHitTarget(trace, victim);
+                    trace.PayloadHitRecords.Add(victim);
+                }
+            }
+        }
+
+        static void TraceGroundPulse(
+            AttackTrace trace,
+            Vector3 origin,
+            EnemyRuntime primary,
+            SkillSpec spec,
+            List<EnemyRuntime> dummies)
+        {
+            AddHitTarget(trace, primary);
+            RecordAoeTargets(trace, origin, primary, spec.AoeRadius, dummies);
         }
 
         void EnqueueVolley(
@@ -199,6 +313,7 @@ namespace GemTD.Gameplay.SkillLab
                 shot.RemainingFlight -= traveled;
                 shot.Position = hit.WorldPosition;
                 shot.LastHit = hit;
+                AddHitTarget(trace, hit);
 
                 if (shot.AoeRadius > 0f)
                 {
@@ -208,6 +323,18 @@ namespace GemTD.Gameplay.SkillLab
                         Radius = shot.AoeRadius,
                         Kind = AttackTraceKind.Aoe
                     });
+
+                    var radiusSq = shot.AoeRadius * shot.AoeRadius;
+                    for (var i = 0; i < dummies.Count; i++)
+                    {
+                        var splashTarget = dummies[i];
+                        if (splashTarget == null
+                            || !splashTarget.IsAlive
+                            || ReferenceEquals(splashTarget, hit))
+                            continue;
+                        if ((splashTarget.WorldPosition - hit.WorldPosition).sqrMagnitude <= radiusSq)
+                            AddHitTarget(trace, splashTarget);
+                    }
                 }
 
                 if (shot.PierceRemaining == ProjectileRuntime.InfinitePierceRemaining
@@ -287,6 +414,51 @@ namespace GemTD.Gameplay.SkillLab
                 Kind = kind,
                 Damage = damage
             });
+        }
+
+        static void AddHitTarget(AttackTrace trace, EnemyRuntime target)
+        {
+            if (trace == null || target == null)
+                return;
+
+            for (var i = 0; i < trace.HitTargets.Count; i++)
+            {
+                if (ReferenceEquals(trace.HitTargets[i], target))
+                    return;
+            }
+
+            trace.HitTargets.Add(target);
+        }
+
+        static void RecordAoeTargets(
+            AttackTrace trace,
+            Vector3 center,
+            EnemyRuntime primary,
+            float radius,
+            List<EnemyRuntime> dummies)
+        {
+            if (trace == null || radius <= 0f)
+                return;
+
+            trace.Discs.Add(new AttackTraceDisc
+            {
+                Center = center,
+                Radius = radius,
+                Kind = AttackTraceKind.Aoe
+            });
+
+            if (dummies == null)
+                return;
+
+            var radiusSq = radius * radius;
+            for (var i = 0; i < dummies.Count; i++)
+            {
+                var target = dummies[i];
+                if (target == null || !target.IsAlive || ReferenceEquals(target, primary))
+                    continue;
+                if ((target.WorldPosition - center).sqrMagnitude <= radiusSq)
+                    AddHitTarget(trace, target);
+            }
         }
 
         static EnemyRuntime FindCandidate(

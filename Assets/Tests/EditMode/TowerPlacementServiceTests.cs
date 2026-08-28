@@ -141,7 +141,7 @@ namespace GemTD.Tests.EditMode
                 Assert.IsFalse(_placement.TrySell(tower, RunStateId.Plan, inventory));
                 Assert.AreEqual(50, _economy.Gold);
                 Assert.IsTrue(_placement.IsOccupied(cell));
-                Assert.AreSame(socketGem, tower.Sockets[0]);
+                Assert.AreSame(socketGem, tower.Sockets[0].Def);
             }
             finally
             {
@@ -212,9 +212,9 @@ namespace GemTD.Tests.EditMode
                 Assert.IsFalse(_placement.TrySell(tower, RunStateId.Plan, inventory));
                 Assert.AreEqual(50, _economy.Gold);
                 Assert.IsTrue(_placement.IsOccupied(cell));
-                Assert.AreSame(chain, tower.Sockets[0]);
-                Assert.AreSame(fork, tower.Sockets[1]);
-                Assert.AreSame(pierce, tower.Sockets[2]);
+                Assert.AreSame(chain, tower.Sockets[0].Def);
+                Assert.AreSame(fork, tower.Sockets[1].Def);
+                Assert.AreSame(pierce, tower.Sockets[2].Def);
                 Assert.AreEqual(2, inventory.OccupiedCount);
             }
             finally
@@ -225,11 +225,30 @@ namespace GemTD.Tests.EditMode
             }
         }
 
+        [Test]
+        public void TrySell_ReturnsExactRarityBearingInstance()
+        {
+            var inventory = new GemInventory(1);
+            Assert.IsTrue(_placement.TryPlace(
+                _tower,
+                new Vector2Int(3, 4),
+                RunStateId.Plan,
+                _tower.Cost,
+                out var tower));
+            var socketed = new GemInstance(_multipleProjectiles, GemRarity.Greater);
+            Assert.IsTrue(tower.TrySocket(socketed, 0, allowSocket: true));
+
+            Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, inventory));
+
+            Assert.AreSame(_multipleProjectiles, inventory.Slots[0].Def);
+            Assert.AreEqual(GemRarity.Greater, inventory.Slots[0].Rarity);
+        }
+
         static bool ContainsGem(GemInventory inventory, GemDefinition gem)
         {
             for (var i = 0; i < inventory.Slots.Count; i++)
             {
-                if (inventory.Slots[i] == gem)
+                if (inventory.Slots[i].Def == gem)
                     return true;
             }
 

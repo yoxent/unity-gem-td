@@ -12,39 +12,123 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90380bed116b50b4cbbe7a067d12fab8, type: 3}
   m_Name: Role_Attack_Holy_Hammers
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AttackRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 0
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 1
+    Operation: 0
+    ValueKind: 0
+    Value: 85
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3.5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 10
+    Min: 0
+    Max: 0
   Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.358
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.5680001
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.7789999
+      Min: 0
+      Max: 0
+    Effects: []
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.989
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.2
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.411
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.621
+      Min: 0
+      Max: 0
     Effects: []
   - SourceLevel: 8
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.779
+      Min: 0
+      Max: 0
     Effects: []
-  - SourceLevel: 12
-    Modifiers: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.8839998
+      Min: 0
+      Max: 0
     Effects: []
-  - SourceLevel: 16
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 20
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 24
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 28
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 32
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 36
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 40
-    Modifiers: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.9889998
+      Min: 0
+      Max: 0
     Effects: []
   PierceBehavior: 0
   AimMode: 1
-  DeliveryPattern: 0
+  DeliveryPattern: 3

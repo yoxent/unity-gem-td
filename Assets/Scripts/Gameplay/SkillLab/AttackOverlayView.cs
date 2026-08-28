@@ -20,6 +20,9 @@ namespace GemTD.Gameplay.SkillLab
                 case AttackTraceKind.Fork: return Color.magenta;
                 case AttackTraceKind.Chain: return new Color(1f, 0.5f, 0f);
                 case AttackTraceKind.Aoe: return Color.red;
+                case AttackTraceKind.WarpRise: return Color.cyan;
+                case AttackTraceKind.WarpDrop: return new Color(1f, 0.8f, 0.1f);
+                case AttackTraceKind.Magma: return new Color(1f, 0.2f, 0.05f);
                 default: return Color.white;
             }
         }

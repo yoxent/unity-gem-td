@@ -72,6 +72,11 @@ namespace GemTD.Gameplay.Gems
             return CanSocket(EffectiveTowerTags(tower), EffectiveRequiredTags(gem));
         }
 
+        public static bool CanSocket(TowerDefinition tower, GemInstance gem)
+        {
+            return !gem.IsEmpty && CanSocket(tower, gem.Def);
+        }
+
         public static bool CanSocket(GemTag towerTags, GemTag required)
         {
             if (required == GemTag.None)

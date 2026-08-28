@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
 
@@ -11,6 +12,47 @@ namespace GemTD.Tests.EditMode
 
         const string AncestralCallJson =
             "{\"name\":\"Ancestral Call Support\",\"tags\":[\"Support\",\"Melee\",\"Attack\",\"Strike\"],\"upside\":\"Changes projectile behavior or improves target coverage.\",\"downside\":\"Reduces damage, consistency, or targeting flexibility.\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% less Damage\",\"values\":{\"lesser\":19,\"normal\":10,\"greater\":0}},{\"text\":\"Supported Strike Skills target # additional nearby Enemies\",\"values\":null}]}";
+
+        [Test]
+        public void FullValuesObject_FillsLesserNormalAndGreater()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Test Support\",\"tags\":[\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% more Damage\",\"values\":{\"lesser\":10,\"normal\":20,\"greater\":30}}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(1, result.Modifiers.Length);
+            Assert.AreEqual(1.1f, result.Modifiers[0].Lesser, 1e-4f);
+            Assert.AreEqual(1.2f, result.Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(1.3f, result.Modifiers[0].Greater, 1e-4f);
+        }
+
+        [Test]
+        public void ChainSupport_AddsWikiChainCountWhenJsonCountIsNull()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Chain Support\",\"tags\":[\"Support\",\"Chaining\",\"Projectile\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% less Damage with Hits\",\"values\":{\"lesser\":30,\"normal\":21,\"greater\":11}},{\"text\":\"Supported Skills Chain # times\",\"values\":null}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.Damage, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[0].Operation);
+            Assert.AreEqual(0.79f, result.Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(GemStat.ChainCount, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Add, result.Modifiers[1].Operation);
+            Assert.AreEqual(1f, result.Modifiers[1].Value, 1e-4f);
+            Assert.AreEqual(ProjectileRuntime.DefaultChainHopFalloff, result.Modifiers[1].Falloff, 1e-4f);
+            Assert.AreEqual(0, result.FlavorTexts.Length);
+        }
+
+        [Test]
+        public void NullValuesRow_DoesNotCreateModifier()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Test Support\",\"tags\":[\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Reminder only\",\"values\":null}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(0, result.Modifiers.Length);
+        }
 
         [Test]
         public void ChanceToBleed_MapsBleedDamageAndChance()
@@ -26,9 +68,15 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(GemStat.AilmentDamage, result.Modifiers[0].Stat);
             Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[0].Operation);
             Assert.AreEqual(1.19f, result.Modifiers[0].Value, 0.001f);
+            Assert.AreEqual(1.1f, result.Modifiers[0].Lesser, 0.001f);
+            Assert.AreEqual(1.19f, result.Modifiers[0].Normal, 0.001f);
+            Assert.AreEqual(1.29f, result.Modifiers[0].Greater, 0.001f);
             Assert.AreEqual(GemStat.BleedChance, result.Modifiers[1].Stat);
             Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[1].Operation);
             Assert.AreEqual(0.25f, result.Modifiers[1].Value, 0.001f);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Lesser, 0.001f);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Normal, 0.001f);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Greater, 0.001f);
         }
 
         [Test]
@@ -74,6 +122,9 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(GemStat.Damage, result.Modifiers[0].Stat);
             Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[0].Operation);
             Assert.AreEqual(1.4f, result.Modifiers[0].Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Lesser).Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Normal).Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Greater).Value, 0.001f);
         }
 
         [Test]
@@ -85,8 +136,12 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(2, result.Modifiers.Length);
             Assert.AreEqual(GemStat.AttackSpeedMultiplier, result.Modifiers[0].Stat);
             Assert.AreEqual(1.4f, result.Modifiers[0].Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Lesser).Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Greater).Value, 0.001f);
             Assert.AreEqual(GemStat.CastSpeedMultiplier, result.Modifiers[1].Stat);
             Assert.AreEqual(1.4f, result.Modifiers[1].Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[1].Resolve(GemRarity.Lesser).Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[1].Resolve(GemRarity.Greater).Value, 0.001f);
         }
 
         [Test]
@@ -97,6 +152,9 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(result.CanIngest);
             Assert.AreEqual(GemStat.RangeMultiplier, result.Modifiers[0].Stat);
             Assert.AreEqual(1.4f, result.Modifiers[0].Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Lesser).Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Normal).Value, 0.001f);
+            Assert.AreEqual(1.4f, result.Modifiers[0].Resolve(GemRarity.Greater).Value, 0.001f);
         }
 
         [Test]

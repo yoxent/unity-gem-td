@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 86
   DisplayName: Volley
-  Description: Adds a spread of additional projectiles. Each projectile deals reduced damage and the spread is wider. Supported Skills fire # additional Projectiles Supported Skills also fire Projectiles from up to # points on each side of you
+  Description: Adds a spread of additional projectiles. Each projectile deals reduced
+    damage and the spread is wider.
   DraftWeight: 1
   Tags: 257
   Modifiers:
@@ -24,4 +25,8 @@ MonoBehaviour:
     Value: 0.92
     Min: 0
     Max: 0
+    Lesser: 0.88
+    Normal: 0.92
+    Greater: 0.97
     Falloff: 0
+  EffectPayloads: []

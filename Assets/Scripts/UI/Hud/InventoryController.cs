@@ -84,7 +84,7 @@ namespace GemTD.UI
 
                 slots[i].Configure(_root, _popup, i, gem);
 
-                var filled = gem != null;
+                var filled = !gem.IsEmpty;
                 slots[i].SetPointerInteractable(filled && (canSocket || replacePick || inPlan));
             }
         }

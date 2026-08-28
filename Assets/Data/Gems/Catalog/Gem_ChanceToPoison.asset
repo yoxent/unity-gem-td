@@ -14,16 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 82
   DisplayName: Chance to Poison
-  Description: "Increases the tower's offensive output in a specialized way. Reduces another aspect of offensive performance, consistency, or flexibility."
+  Description: Increases the tower's offensive output in a specialized way. Reduces
+    another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
   Tags: 256
   Modifiers:
   - Stat: 0
     Operation: 1
     ValueKind: 0
-    Value: 11.0
+    Value: 11
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 11
+    Greater: 94
     Falloff: 0
   - Stat: 32
     Operation: 0
@@ -31,4 +35,8 @@ MonoBehaviour:
     Value: 0.4
     Min: 0
     Max: 0
+    Lesser: 0.4
+    Normal: 0.4
+    Greater: 0.4
     Falloff: 0
+  EffectPayloads: []

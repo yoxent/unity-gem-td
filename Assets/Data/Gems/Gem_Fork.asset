@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 3
   DisplayName: Fork
-  Description: "\u221215% damage. On hit, split \xD72 at \xB145\xB0."
+  Description: Projectile splits into additional projectiles after hitting. Split
+    projectiles deal reduced damage.
   DraftWeight: 2
   Tags: 257
   Modifiers:
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 0.85
+    Value: 0.99
     Min: 0
     Max: 0
-  - Stat: 4
-    Operation: 1
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
+    Lesser: 0.9
+    Normal: 0.99
+    Greater: 0.91
+    Falloff: 0
+  EffectPayloads: []

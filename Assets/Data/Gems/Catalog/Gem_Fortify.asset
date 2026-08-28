@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 52
   DisplayName: Fortify
-  Description: Adds defensive mitigation. Attack damage is reduced. Melee Hits from Supported Skills Fortify
+  Description: Adds defensive mitigation. Attack damage is reduced.
   DraftWeight: 1
   Tags: 328
   Modifiers:
@@ -24,6 +24,9 @@ MonoBehaviour:
     Value: 1.14
     Min: 0
     Max: 0
+    Lesser: 1.1
+    Normal: 1.14
+    Greater: 1.19
     Falloff: 0
   - Stat: 48
     Operation: 2
@@ -31,4 +34,8 @@ MonoBehaviour:
     Value: 1.14
     Min: 0
     Max: 0
+    Lesser: 1.1
+    Normal: 1.14
+    Greater: 1.19
     Falloff: 0
+  EffectPayloads: []

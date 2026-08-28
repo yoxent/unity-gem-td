@@ -78,8 +78,8 @@ namespace GemTD.Tests.EditMode
             {
                 Assert.IsTrue(tower.TrySocket(first, 0, allowSocket: true));
                 Assert.IsTrue(tower.TrySocket(second, 1, allowSocket: true));
-                Assert.AreSame(first, tower.Sockets[0]);
-                Assert.AreSame(second, tower.Sockets[1]);
+                Assert.AreSame(first, tower.Sockets[0].Def);
+                Assert.AreSame(second, tower.Sockets[1].Def);
             }
             finally
             {
@@ -89,7 +89,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TrySocket_RejectsSameNoneAssetTwice()
+        public void TrySocket_AllowsSameNoneAssetTwice()
         {
             var tower = new TowerInstance(Vector2Int.zero, _definition);
             var gem = ScriptableObject.CreateInstance<GemDefinition>();
@@ -98,7 +98,55 @@ namespace GemTD.Tests.EditMode
             try
             {
                 Assert.IsTrue(tower.TrySocket(gem, 0, allowSocket: true));
-                Assert.IsFalse(tower.TrySocket(gem, 1, allowSocket: true));
+                Assert.IsTrue(tower.TrySocket(gem, 1, allowSocket: true));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gem);
+            }
+        }
+
+        [Test]
+        public void TrySocket_RejectsDuplicateFamilyAcrossRarities()
+        {
+            var tower = new TowerInstance(Vector2Int.zero, _definition);
+            var chain = ScriptableObject.CreateInstance<GemDefinition>();
+            chain.Id = GemId.Chain;
+            chain.Tags = GemTag.Support;
+            try
+            {
+                var lesser = new GemInstance(chain, GemRarity.Lesser);
+                var greater = new GemInstance(chain, GemRarity.Greater);
+
+                Assert.IsTrue(tower.TrySocket(lesser, 0, allowSocket: true));
+                Assert.IsFalse(tower.TrySocket(greater, 1, allowSocket: true));
+                Assert.AreEqual(GemRarity.Lesser, tower.Sockets[0].Rarity);
+                Assert.IsTrue(tower.Sockets[1].IsEmpty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(chain);
+            }
+        }
+
+        [Test]
+        public void TryUnsocket_PreservesRarity()
+        {
+            var tower = new TowerInstance(Vector2Int.zero, _definition);
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.Id = GemId.Fork;
+            gem.Tags = GemTag.Support;
+            try
+            {
+                Assert.IsTrue(tower.TrySocket(
+                    new GemInstance(gem, GemRarity.Greater),
+                    0,
+                    allowSocket: true));
+
+                Assert.IsTrue(tower.TryUnsocket(0, out var unsocketed, allowSocket: true));
+                Assert.AreSame(gem, unsocketed.Def);
+                Assert.AreEqual(GemRarity.Greater, unsocketed.Rarity);
+                Assert.IsTrue(tower.Sockets[0].IsEmpty);
             }
             finally
             {

@@ -14,20 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 2
   DisplayName: Chain
-  Description: "\u221230% damage / +1 chain (3 units). Hop damage \xD70.6 after first hit."
+  Description: Projectile chains to additional targets. Each subsequent chain deals
+    reduced damage; chain count is limited.
   DraftWeight: 2
   Tags: 385
   Modifiers:
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 0.7
+    Value: 0.79
     Min: 0
     Max: 0
+    Lesser: 0.7
+    Normal: 0.79
+    Greater: 0.89
+    Falloff: 0
   - Stat: 3
     Operation: 1
     ValueKind: 0
     Value: 1
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 2
+    Greater: 3
     Falloff: 0.6
+  EffectPayloads: []

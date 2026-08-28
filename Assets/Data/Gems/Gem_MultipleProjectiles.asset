@@ -14,25 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 1
   DisplayName: Multiple Projectiles
-  Description: "\u221220% damage / +2 projectiles. Spread shotgun."
+  Description: Fires additional projectiles. Each projectile deals reduced damage.
   DraftWeight: 2
   Tags: 257
   Modifiers:
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 0.8
+    Value: 0.89
     Min: 0
     Max: 0
+    Lesser: 0.85
+    Normal: 0.89
+    Greater: 0.94
+    Falloff: 0
   - Stat: 1
     Operation: 1
     ValueKind: 0
     Value: 2
     Min: 0
     Max: 0
-  - Stat: 2
-    Operation: 0
-    ValueKind: 0
-    Value: 24
-    Min: 0
-    Max: 0
+    Lesser: 1
+    Normal: 2
+    Greater: 3
+    Falloff: 0
+  EffectPayloads: []

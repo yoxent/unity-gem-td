@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 38
   DisplayName: Melee Physical Damage
-  Description: "Increases the tower's offensive output in a specialized way. Reduces another aspect of offensive performance, consistency, or flexibility. Supported Skills have #% less Attack Speed"
+  Description: Increases the tower's offensive output in a specialized way. Reduces
+    another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
   Tags: 328
   Modifiers:
@@ -24,6 +25,9 @@ MonoBehaviour:
     Value: 1.39
     Min: 0
     Max: 0
+    Lesser: 1.3
+    Normal: 1.39
+    Greater: 1.49
     Falloff: 0
   - Stat: 48
     Operation: 2
@@ -31,4 +35,8 @@ MonoBehaviour:
     Value: 1.39
     Min: 0
     Max: 0
+    Lesser: 1.3
+    Normal: 1.39
+    Greater: 1.49
     Falloff: 0
+  EffectPayloads: []

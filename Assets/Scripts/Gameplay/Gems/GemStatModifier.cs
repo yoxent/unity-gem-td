@@ -71,8 +71,14 @@ namespace GemTD.Gameplay.Gems
         public float Value;
         public float Min;
         public float Max;
+        public float Lesser;
+        public float Normal;
+        public float Greater;
         [Tooltip("ChainCount only. Per-hop damage factor. 0 = no falloff (hops keep full damage).")]
         public float Falloff;
+
+        public bool HasTierValues =>
+            Lesser != 0f || Normal != 0f || Greater != 0f;
 
         public float OperandMin => ValueKind == RoleStatValueKind.Range ? Min : Value;
 
@@ -86,12 +92,26 @@ namespace GemTD.Gameplay.Gems
             float value,
             float falloff = 0f)
         {
+            return TieredSingle(stat, operation, value, value, value, falloff);
+        }
+
+        public static GemStatModifier TieredSingle(
+            GemStat stat,
+            RoleModifierOperation operation,
+            float lesser,
+            float normal,
+            float greater,
+            float falloff = 0f)
+        {
             return new GemStatModifier
             {
                 Stat = stat,
                 Operation = operation,
                 ValueKind = RoleStatValueKind.Single,
-                Value = value,
+                Lesser = lesser,
+                Normal = normal,
+                Greater = greater,
+                Value = normal,
                 Falloff = falloff
             };
         }
@@ -111,6 +131,34 @@ namespace GemTD.Gameplay.Gems
                 Max = max
             };
         }
+
+        public GemStatModifier Resolve(GemRarity rarity)
+        {
+            if (!HasTierValues)
+                return this;
+
+            var value = Value;
+            switch (GemRarityUtility.Normalize(rarity))
+            {
+                case GemRarity.Lesser:
+                    value = Lesser;
+                    break;
+                case GemRarity.Greater:
+                    value = Greater;
+                    break;
+                case GemRarity.Normal:
+                default:
+                    value = Normal;
+                    break;
+            }
+
+            var resolved = this;
+            resolved.ValueKind = RoleStatValueKind.Single;
+            resolved.Value = value;
+            resolved.Min = value;
+            resolved.Max = value;
+            return resolved;
+        }
     }
 
     /// <summary>
@@ -120,19 +168,28 @@ namespace GemTD.Gameplay.Gems
     {
         public static SkillSpec Apply(SkillSpec spec, GemStatModifier[] modifiers)
         {
+            return Apply(spec, modifiers, GemRarity.Normal);
+        }
+
+        public static SkillSpec Apply(
+            SkillSpec spec,
+            GemStatModifier[] modifiers,
+            GemRarity rarity)
+        {
             if (modifiers == null || modifiers.Length == 0)
                 return spec;
 
-            ApplyGroup(ref spec, modifiers, RoleModifierOperation.Set);
-            ApplyGroup(ref spec, modifiers, RoleModifierOperation.Add);
-            ApplyGroup(ref spec, modifiers, RoleModifierOperation.Multiply);
+            ApplyGroup(ref spec, modifiers, RoleModifierOperation.Set, rarity);
+            ApplyGroup(ref spec, modifiers, RoleModifierOperation.Add, rarity);
+            ApplyGroup(ref spec, modifiers, RoleModifierOperation.Multiply, rarity);
             return spec;
         }
 
         static void ApplyGroup(
             ref SkillSpec spec,
             GemStatModifier[] modifiers,
-            RoleModifierOperation operation)
+            RoleModifierOperation operation,
+            GemRarity rarity)
         {
             for (var i = 0; i < modifiers.Length; i++)
             {
@@ -140,7 +197,7 @@ namespace GemTD.Gameplay.Gems
                 if (modifier.Operation != operation)
                     continue;
 
-                ApplyOne(ref spec, modifier);
+                ApplyOne(ref spec, modifier.Resolve(rarity));
             }
         }
 
@@ -177,6 +234,14 @@ namespace GemTD.Gameplay.Gems
                     break;
                 case GemStat.AoeRadius:
                     spec.AoeRadius = FloatOp(spec.AoeRadius, modifier.Operation, scalar);
+                    if (modifier.Operation == RoleModifierOperation.Multiply)
+                    {
+                        spec.AoeRadiusMultiplier = FloatOp(
+                            spec.AoeRadiusMultiplier,
+                            RoleModifierOperation.Multiply,
+                            scalar);
+                    }
+
                     break;
                 case GemStat.FireRateMultiplier:
                     spec.FireRateMultiplier = FloatOp(spec.FireRateMultiplier, modifier.Operation, scalar);

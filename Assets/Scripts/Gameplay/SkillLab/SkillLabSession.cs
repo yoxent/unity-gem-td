@@ -131,26 +131,28 @@ namespace GemTD.Gameplay.SkillLab
             var current = Tower.Sockets[index];
             if (id == GemId.None)
             {
-                if (current == null)
+                if (current.IsEmpty)
                     return;
                 Tower.TryUnsocket(index, out _, true, ignoreHydraLock: true);
                 ClearOverlay();
                 return;
             }
 
-            if (current != null && current.Id == id)
+            if (!current.IsEmpty && current.Id == id)
                 return;
 
             var gem = FindCatalog(id);
             if (gem == null)
                 return;
-            if (!GemTags.CanSocket(Tower.Def, gem))
+
+            var instance = GemInstance.FromDefinition(gem);
+            if (!GemTags.CanSocket(Tower.Def, instance))
                 return;
             if (HasOtherSocket(index, id))
                 return;
 
             Tower.TryUnsocket(index, out _, true, ignoreHydraLock: true);
-            Tower.TrySocket(gem, index, true);
+            Tower.TrySocket(instance, index, true);
             ClearOverlay();
         }
 
@@ -271,7 +273,7 @@ namespace GemTD.Gameplay.SkillLab
             {
                 if (i == exceptIndex)
                     continue;
-                if (sockets[i] != null && sockets[i].Id == id)
+                if (!sockets[i].IsEmpty && sockets[i].Id == id)
                     return true;
             }
 

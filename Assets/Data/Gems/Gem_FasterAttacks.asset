@@ -14,12 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 7
   DisplayName: Faster Attacks
-  Description: +25% fire rate
+  Description: Increases attack speed. Damage per attack is reduced.
+  DraftWeight: 1
   Tags: 264
   Modifiers:
   - Stat: 7
     Operation: 2
     ValueKind: 0
-    Value: 1.25
+    Value: 1.31
     Min: 0
     Max: 0
+    Lesser: 1.2
+    Normal: 1.31
+    Greater: 1.44
+    Falloff: 0
+  EffectPayloads: []

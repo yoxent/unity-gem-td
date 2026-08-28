@@ -81,27 +81,27 @@ namespace GemTD.Gameplay.Run
 
             for (var n = 0; n < 2; n++)
             {
-                var g = TakeGem(gems, rng);
-                if (g == null)
+                var gem = RollGem(TakeGemFamily(gems, rng), catalog.RarityTable, rng);
+                if (gem.IsEmpty)
                     break;
-                dest.Add(DraftOfferCard.FromGem(g));
+                dest.Add(DraftOfferCard.FromGem(gem));
             }
 
             var guaranteedTower = TakeTower(towers, rng);
             if (guaranteedTower != null)
                 dest.Add(DraftOfferCard.FromTower(guaranteedTower));
 
-            var extraGem = TakeGem(gems, rng);
+            var extraGemFamily = TakeGemFamily(gems, rng);
             var extraTower = TakeTower(towers, rng);
-            if (extraGem != null && extraTower != null)
+            if (extraGemFamily != null && extraTower != null)
             {
                 if (rng.Next(0, 2) == 0)
-                    dest.Add(DraftOfferCard.FromGem(extraGem));
+                    dest.Add(DraftOfferCard.FromGem(RollGem(extraGemFamily, catalog.RarityTable, rng)));
                 else
                     dest.Add(DraftOfferCard.FromTower(extraTower));
             }
-            else if (extraGem != null)
-                dest.Add(DraftOfferCard.FromGem(extraGem));
+            else if (extraGemFamily != null)
+                dest.Add(DraftOfferCard.FromGem(RollGem(extraGemFamily, catalog.RarityTable, rng)));
             else if (extraTower != null)
                 dest.Add(DraftOfferCard.FromTower(extraTower));
         }
@@ -165,14 +165,29 @@ namespace GemTD.Gameplay.Run
             return false;
         }
 
-        static GemDefinition TakeGem(List<GemDefinition> pool, System.Random rng)
+        static GemDefinition TakeGemFamily(List<GemDefinition> pool, System.Random rng)
         {
             if (pool.Count == 0)
                 return null;
-            var i = PickIndex(pool.Count, rng, j => Weight(pool[j].DraftWeight));
-            var chosen = pool[i];
-            pool.RemoveAt(i);
-            return chosen;
+
+            var index = PickIndex(pool.Count, rng, j => Weight(pool[j].DraftWeight));
+            var definition = pool[index];
+            pool.RemoveAt(index);
+            return definition;
+        }
+
+        static GemInstance RollGem(
+            GemDefinition definition,
+            GemRarityTable rarityTable,
+            System.Random rng)
+        {
+            if (definition == null)
+                return default;
+
+            var rarity = rarityTable != null
+                ? rarityTable.Roll(rng)
+                : GemRarity.Normal;
+            return new GemInstance(definition, rarity);
         }
 
         static TowerDefinition TakeTower(List<TowerDefinition> pool, System.Random rng)

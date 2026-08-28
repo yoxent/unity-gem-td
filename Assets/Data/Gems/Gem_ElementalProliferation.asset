@@ -14,19 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 6
   DisplayName: Elemental Proliferation
-  Description: "\u221225% direct damage. Spread Ignite + Chill + Shock nearby."
+  Description: Spreads elemental ailments to nearby enemies. Direct damage is reduced.
   DraftWeight: 1
   Tags: 258
-  Modifiers:
-  - Stat: 0
-    Operation: 2
-    ValueKind: 0
-    Value: 0.75
-    Min: 0
-    Max: 0
-  - Stat: 17
-    Operation: 0
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
+  Modifiers: []
+  EffectPayloads: []

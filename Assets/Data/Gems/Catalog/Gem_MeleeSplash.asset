@@ -15,8 +15,7 @@ MonoBehaviour:
   Id: 27
   DisplayName: Melee Splash
   Description: Attacks damage nearby enemies around the primary target. Primary-hit
-    damage is reduced. Supported Skills deal Splash Damage to surrounding targets
-    Supported Skills deal #% less Splash Damage to surrounding targets
+    damage is reduced.
   DraftWeight: 1
   Tags: 330
   Modifiers:
@@ -26,6 +25,9 @@ MonoBehaviour:
     Value: 1.4
     Min: 0
     Max: 0
+    Lesser: 1.4
+    Normal: 1.4
+    Greater: 1.4
     Falloff: 0
   - Stat: 5
     Operation: 2
@@ -33,4 +35,8 @@ MonoBehaviour:
     Value: 1.27
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 1.27
+    Greater: 1.57
     Falloff: 0
+  EffectPayloads: []

@@ -39,7 +39,11 @@ namespace GemTD.Gameplay.Towers
         public const float DefaultRadiusAttackSpell = 5f;
         public const float DefaultReservationPercent = 50f;
         public const float DefaultProjectileSpeed = 1f;
-        public const int MoltenStrikeProjectileCount = 4;
+        public const int MoltenStrikeMagmaCount = 4;
+        public const float MoltenStrikeMagmaDamageMultiplier = 0.4f;
+        public const float MoltenStrikeMagmaAoeRadius = 1f;
+        public const float MoltenStrikeMagmaMinDistance = 1f;
+        public const float MoltenStrikeMagmaMaxDistance = 4f;
 
         public static void ResolveFireBehavior(
             GemTag tags,
@@ -113,6 +117,7 @@ namespace GemTD.Gameplay.Towers
             public RoleStatModifier[] Modifiers;
             public RoleEffectModifier[] Effects;
             public RoleLevelDefinition[] Levels;
+            public EffectPayloadDefinition[] EffectPayloads;
         }
 
         public static Result FromJson(string gemJson)
@@ -256,7 +261,8 @@ namespace GemTD.Gameplay.Towers
                         radiusByLevel,
                         radiusValue,
                         kind,
-                        result)
+                        result),
+                    EffectPayloads = MapEffectPayloads(kind, result.Slug)
                 };
             }
 
@@ -355,12 +361,7 @@ namespace GemTD.Gameplay.Towers
             if ((tags & GemTag.Projectile) != 0)
                 AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
 
-            if (kind == RoleKind.Attack
-                && string.Equals(slug, "Molten_Strike", StringComparison.OrdinalIgnoreCase))
-            {
-                AddSet(modifiers, RoleStat.ProjectileCount, MoltenStrikeProjectileCount);
-            }
-            else if ((tags & GemTag.Projectile) != 0
+            if ((tags & GemTag.Projectile) != 0
                 && (kind == RoleKind.Attack || kind == RoleKind.Spell))
             {
                 ResolveFireBehavior(tags, out _, out var delivery);
@@ -369,6 +370,34 @@ namespace GemTD.Gameplay.Towers
             }
 
             return modifiers.ToArray();
+        }
+
+        static EffectPayloadDefinition[] MapEffectPayloads(RoleKind kind, string slug)
+        {
+            if (kind == RoleKind.Attack
+                && string.Equals(slug, "Molten_Strike", StringComparison.OrdinalIgnoreCase))
+            {
+                return new[]
+                {
+                    new EffectPayloadDefinition
+                    {
+                        Trigger = EffectPayloadTrigger.OnImpact,
+                        Anchor = EffectPayloadAnchor.PrimaryTarget,
+                        TravelPattern = EffectPayloadTravelPattern.Fountain,
+                        ScatterPattern = EffectPayloadScatterPattern.RandomRing,
+                        HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                        Tags = GemTag.Aoe | GemTag.Projectile,
+                        Count = MoltenStrikeMagmaCount,
+                        DamageMultiplier = MoltenStrikeMagmaDamageMultiplier,
+                        AoeRadius = MoltenStrikeMagmaAoeRadius,
+                        MinDistance = MoltenStrikeMagmaMinDistance,
+                        MaxDistance = MoltenStrikeMagmaMaxDistance,
+                        ArcHeight = 1.5f
+                    }
+                };
+            }
+
+            return Array.Empty<EffectPayloadDefinition>();
         }
 
         static RoleLevelDefinition[] MapLevelDefinitions(

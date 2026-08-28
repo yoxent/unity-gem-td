@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 34
   DisplayName: Elemental Damage with Attacks
-  Description: "Increases the tower's offensive output in a specialized way. Reduces another aspect of offensive performance, consistency, or flexibility."
+  Description: Increases the tower's offensive output in a specialized way. Reduces
+    another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
   Tags: 264
   Modifiers:
@@ -24,4 +25,8 @@ MonoBehaviour:
     Value: 1.26
     Min: 0
     Max: 0
+    Lesser: 1.2
+    Normal: 1.26
+    Greater: 1.34
     Falloff: 0
+  EffectPayloads: []

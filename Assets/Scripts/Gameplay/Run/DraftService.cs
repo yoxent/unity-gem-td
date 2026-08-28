@@ -36,7 +36,7 @@ namespace GemTD.Gameplay.Run
         public bool AllowSkip { get; private set; }
         public bool IsActive { get; private set; }
         public DraftReplacePhase ReplacePhase { get; private set; }
-        public GemDefinition PendingReplaceGem { get; private set; }
+        public GemInstance PendingReplaceGem { get; private set; }
         public int SelectedIndex => _selectedIndex;
         public int NextRerollCost => ScaleRerollCost(_rerollsThisOffer);
         public int NextBanCost => BanBaseCost * (1 + _bansThisRun);
@@ -67,7 +67,7 @@ namespace GemTD.Gameplay.Run
         public void BeginOffer(DraftCatalog catalog, bool allowSkip)
         {
             _offer.Clear();
-            PendingReplaceGem = null;
+            PendingReplaceGem = default;
             ReplacePhase = DraftReplacePhase.None;
             AllowSkip = allowSkip;
             IsActive = false;
@@ -193,7 +193,7 @@ namespace GemTD.Gameplay.Run
 
             var card = _offer[_selectedIndex];
             if (card.IsGem)
-                _bannedGems.Add(card.Gem);
+                _bannedGems.Add(card.Gem.Def);
             else if (card.IsTower)
                 _bannedTowers.Add(card.Tower);
 
@@ -205,7 +205,7 @@ namespace GemTD.Gameplay.Run
 
         public void ConfirmReplaceYes()
         {
-            if (!IsActive || ReplacePhase != DraftReplacePhase.AwaitingConfirm || PendingReplaceGem == null)
+            if (!IsActive || ReplacePhase != DraftReplacePhase.AwaitingConfirm || PendingReplaceGem.IsEmpty)
                 return;
 
             ReplacePhase = DraftReplacePhase.AwaitingInventoryPick;
@@ -216,7 +216,7 @@ namespace GemTD.Gameplay.Run
             if (!IsActive)
                 return;
 
-            PendingReplaceGem = null;
+            PendingReplaceGem = default;
             ReplacePhase = DraftReplacePhase.None;
         }
 
@@ -228,7 +228,7 @@ namespace GemTD.Gameplay.Run
             if (!IsActive || inventory == null || ReplacePhase != DraftReplacePhase.AwaitingInventoryPick)
                 return false;
 
-            if (PendingReplaceGem == null)
+            if (PendingReplaceGem.IsEmpty)
                 return false;
 
             if (!inventory.TryDiscardAt(inventoryIndex, out _))
@@ -259,7 +259,7 @@ namespace GemTD.Gameplay.Run
             {
                 var card = _offer[i];
                 if (card.IsGem)
-                    _excludeGems.Add(card.Gem);
+                    _excludeGems.Add(card.Gem.Def);
                 else if (card.IsTower)
                     _excludeTowers.Add(card.Tower);
             }
@@ -301,7 +301,7 @@ namespace GemTD.Gameplay.Run
         void ClearOffer()
         {
             _offer.Clear();
-            PendingReplaceGem = null;
+            PendingReplaceGem = default;
             ReplacePhase = DraftReplacePhase.None;
             IsActive = false;
             AllowSkip = false;

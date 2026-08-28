@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 9
   DisplayName: Combustion
-  Description: +14% more damage. Apply Ignite.
+  Description: Strengthens ignite and reduces fire resistance. Direct hit fire damage
+    is reduced.
   DraftWeight: 1
   Tags: 256
   Modifiers:
@@ -24,9 +25,8 @@ MonoBehaviour:
     Value: 1.14
     Min: 0
     Max: 0
-  - Stat: 14
-    Operation: 0
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
+    Lesser: 1.1
+    Normal: 1.14
+    Greater: 1.19
+    Falloff: 0
+  EffectPayloads: []

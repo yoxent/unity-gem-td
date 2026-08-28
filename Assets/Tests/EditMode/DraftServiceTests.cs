@@ -101,8 +101,10 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TryPick_Gem_WhenFull_EntersReplaceConfirm_NoMeansStay()
         {
+            var catalog = MakeCampaignCatalog(5, 3);
+            catalog.RarityTable = MakeRarityTable(lesser: 0f, normal: 0f, greater: 1f);
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(MakeCampaignCatalog(5, 3), allowSkip: true);
+            draft.BeginOffer(catalog, allowSkip: true);
             var inventory = FillInventory(10);
             var gemIndex = FirstGemIndex(draft);
             var first = draft.CurrentOffer[gemIndex];
@@ -110,11 +112,12 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(draft.TryPick(gemIndex, inventory, out var resolved));
             Assert.IsFalse(resolved);
             Assert.AreEqual(DraftReplacePhase.AwaitingConfirm, draft.ReplacePhase);
-            Assert.AreSame(first.Gem, draft.PendingReplaceGem);
+            Assert.AreEqual(first.Gem.Def, draft.PendingReplaceGem.Def);
+            Assert.AreEqual(first.Gem.Rarity, draft.PendingReplaceGem.Rarity);
 
             draft.ConfirmReplaceNo();
             Assert.AreEqual(DraftReplacePhase.None, draft.ReplacePhase);
-            Assert.IsNull(draft.PendingReplaceGem);
+            Assert.IsTrue(draft.PendingReplaceGem.IsEmpty);
             Assert.IsTrue(draft.IsActive);
             Assert.AreEqual(4, draft.CurrentOffer.Count);
         }
@@ -130,20 +133,25 @@ namespace GemTD.Tests.EditMode
 
             Assert.IsTrue(draft.TryPick(gemIndex, inventory, out var resolved));
             Assert.IsTrue(resolved);
-            Assert.AreSame(picked.Gem, inventory.Slots[0]);
+            Assert.AreSame(picked.Gem.Def, inventory.Slots[0].Def);
+            Assert.AreEqual(picked.Gem.Rarity, inventory.Slots[0].Rarity);
             Assert.IsFalse(draft.IsActive);
         }
 
         [Test]
         public void TryPick_FullGem_YesThenDiscardSlot_AddsAndResolves()
         {
+            var catalog = MakeCampaignCatalog(5, 3);
+            catalog.RarityTable = MakeRarityTable(lesser: 0f, normal: 0f, greater: 1f);
             var draft = new DraftService(new System.Random(1));
-            draft.BeginOffer(MakeCampaignCatalog(5, 3), allowSkip: true);
+            draft.BeginOffer(catalog, allowSkip: true);
             var inventory = FillInventory(10);
             var gemIndex = FirstGemIndex(draft);
             var picked = draft.CurrentOffer[gemIndex];
 
             Assert.IsTrue(draft.TryPick(gemIndex, inventory, out _));
+            Assert.AreSame(picked.Gem.Def, draft.PendingReplaceGem.Def);
+            Assert.AreEqual(picked.Gem.Rarity, draft.PendingReplaceGem.Rarity);
             draft.ConfirmReplaceYes();
             Assert.AreEqual(DraftReplacePhase.AwaitingInventoryPick, draft.ReplacePhase);
 
@@ -154,11 +162,39 @@ namespace GemTD.Tests.EditMode
             var found = false;
             for (var i = 0; i < inventory.Slots.Count; i++)
             {
-                if (ReferenceEquals(inventory.Slots[i], picked.Gem))
+                if (ReferenceEquals(inventory.Slots[i].Def, picked.Gem.Def)
+                    && inventory.Slots[i].Rarity == picked.Gem.Rarity)
                     found = true;
             }
 
             Assert.IsTrue(found);
+        }
+
+        [Test]
+        public void TryBan_Gem_ExcludesFamilyAcrossRarities()
+        {
+            var catalog = MakeCampaignCatalog(8, 4);
+            var rarityTable = MakeRarityTable(lesser: 0f, normal: 0f, greater: 1f);
+            catalog.RarityTable = rarityTable;
+            var draft = new DraftService(new System.Random(9));
+            draft.BeginOffer(catalog, allowSkip: true);
+            var gemIndex = FirstGemIndex(draft);
+            var bannedFamily = draft.CurrentOffer[gemIndex].Gem.Def;
+            Assert.AreEqual(GemRarity.Greater, draft.CurrentOffer[gemIndex].Gem.Rarity);
+            Assert.IsTrue(draft.TrySelect(gemIndex));
+            Assert.IsTrue(draft.TryBan(new RunEconomy(1000, 20)));
+
+            rarityTable.LesserWeight = 1f;
+            rarityTable.GreaterWeight = 0f;
+            draft.BeginOffer(catalog, allowSkip: true);
+
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+            {
+                if (!draft.CurrentOffer[i].IsGem)
+                    continue;
+                Assert.AreEqual(GemRarity.Lesser, draft.CurrentOffer[i].Gem.Rarity);
+                Assert.AreNotSame(bannedFamily, draft.CurrentOffer[i].Gem.Def);
+            }
         }
 
         [Test]
@@ -308,6 +344,16 @@ namespace GemTD.Tests.EditMode
             }
 
             return pool;
+        }
+
+        GemRarityTable MakeRarityTable(float lesser, float normal, float greater)
+        {
+            var table = ScriptableObject.CreateInstance<GemRarityTable>();
+            table.LesserWeight = lesser;
+            table.NormalWeight = normal;
+            table.GreaterWeight = greater;
+            _destroy.Add(table);
+            return table;
         }
 
         GemInventory FillInventory(int capacity)

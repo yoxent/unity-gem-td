@@ -22,7 +22,7 @@ namespace GemTD.UI
 
         GameCompositionRoot _root;
         int _socketIndex = -1;
-        GemDefinition _gem;
+        GemInstance _gem;
 
         static TowerGemSlot s_dragSource;
         static RectTransform s_ghost;
@@ -51,13 +51,13 @@ namespace GemTD.UI
                 () => _root != null && _root.CanUnsocketSelected(_socketIndex));
         }
 
-        public void Configure(GameCompositionRoot root, int socketIndex, GemDefinition gem)
+        public void Configure(GameCompositionRoot root, int socketIndex, GemInstance gem)
         {
             _root = root;
             _socketIndex = socketIndex;
             _gem = gem;
-            if (icon != null) icon.color = gem != null ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
-            if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
+            if (icon != null) icon.color = !gem.IsEmpty ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
+            if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : "—";
             if (xButton != null && (_root == null || !_root.CanUnsocketSelected(_socketIndex)))
                 xButton.gameObject.SetActive(false);
             RefreshLockOverlay();
@@ -134,7 +134,7 @@ namespace GemTD.UI
         {
             if (eventData.button != PointerEventData.InputButton.Right)
                 return;
-            if (_root == null || _gem == null)
+            if (_root == null || _gem.IsEmpty)
                 return;
             if (_root.States == null)
                 return;
@@ -149,7 +149,7 @@ namespace GemTD.UI
 
         bool CanBeginDrag()
         {
-            if (_root == null || _gem == null)
+            if (_root == null || _gem.IsEmpty)
                 return false;
             if (_socketIndex < 0)
                 return false;
@@ -198,7 +198,7 @@ namespace GemTD.UI
             tmp.raycastTarget = false;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.fontSize = nameLabel != null ? nameLabel.fontSize : 16f;
-            tmp.text = nameLabel != null ? nameLabel.text : (_gem != null ? _gem.DisplayName : "—");
+            tmp.text = nameLabel != null ? nameLabel.text : (!_gem.IsEmpty ? _gem.DisplayName : "—");
             if (nameLabel != null)
                 tmp.font = nameLabel.font;
 

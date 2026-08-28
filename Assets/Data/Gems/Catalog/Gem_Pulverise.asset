@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 59
   DisplayName: Pulverise
-  Description: Increases melee impact damage. Attack speed and area coverage are reduced. Supported Skills have #% less Attack Speed
+  Description: Increases melee impact damage. Attack speed and area coverage are
+    reduced.
   DraftWeight: 1
   Tags: 334
   Modifiers:
@@ -24,6 +25,9 @@ MonoBehaviour:
     Value: 1.41
     Min: 0
     Max: 0
+    Lesser: 1.35
+    Normal: 1.41
+    Greater: 1.49
     Falloff: 0
   - Stat: 5
     Operation: 2
@@ -31,4 +35,8 @@ MonoBehaviour:
     Value: 1.29
     Min: 0
     Max: 0
+    Lesser: 1.25
+    Normal: 1.29
+    Greater: 1.34
     Falloff: 0
+  EffectPayloads: []

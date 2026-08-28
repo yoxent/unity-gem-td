@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 15
   DisplayName: Empower
-  Description: +40% more damage.
+  Description: Increases the tower's damage. Consumes a socket.
   DraftWeight: 1
   Tags: 256
   Modifiers:
@@ -24,4 +24,8 @@ MonoBehaviour:
     Value: 1.4
     Min: 0
     Max: 0
+    Lesser: 1.4
+    Normal: 1.4
+    Greater: 1.4
     Falloff: 0
+  EffectPayloads: []

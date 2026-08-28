@@ -77,6 +77,7 @@ namespace GemTD.Tests.EditMode
         {
             var result = ApplyCatalog(GemId.IncreasedArea, SkillSpec.FromBase(10f, 1, aoe: 1f));
             Assert.AreEqual(1.35f, result.AoeRadius, 0.001f);
+            Assert.AreEqual(1.35f, result.AoeRadiusMultiplier, 0.001f);
             Assert.AreEqual(0.9f, result.FireRateMultiplier, 0.001f);
         }
 
@@ -183,6 +184,42 @@ namespace GemTD.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(def);
+                Object.DestroyImmediate(gem);
+            }
+        }
+
+        [Test]
+        public void GemDefinitionModifier_GreaterInstance_UsesGreaterScalar()
+        {
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.Modifiers = new[]
+            {
+                GemStatModifier.TieredSingle(
+                    GemStat.Damage,
+                    RoleModifierOperation.Multiply,
+                    lesser: 0.8f,
+                    normal: 1f,
+                    greater: 1.3f)
+            };
+
+            try
+            {
+                var baseline = SkillSpec.FromBase(10f, 10f, projectiles: 1, aoe: 0f);
+                var greater = new GemModifierPipeline().Apply(
+                    baseline,
+                    new ISkillModifier[]
+                    {
+                        new GemDefinitionModifier(new GemInstance(gem, GemRarity.Greater))
+                    });
+                var normal = new GemModifierPipeline().Apply(
+                    baseline,
+                    new ISkillModifier[] { new GemDefinitionModifier(gem) });
+
+                Assert.AreEqual(13f, greater.Damage, 1e-4f);
+                Assert.AreEqual(10f, normal.Damage, 1e-4f);
+            }
+            finally
+            {
                 Object.DestroyImmediate(gem);
             }
         }

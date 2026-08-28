@@ -47,26 +47,45 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Hidden_WhenNoTowerSelected()
         {
-            Assert.IsFalse(InventoryGemSlot.ShouldShowDisabledOverlay(_projectileGem, null));
+            Assert.IsFalse(InventoryGemSlot.ShouldShowDisabledOverlay(
+                new GemInstance(_projectileGem, GemRarity.Normal), null));
         }
 
         [Test]
         public void Hidden_WhenSlotEmpty()
         {
-            Assert.IsFalse(InventoryGemSlot.ShouldShowDisabledOverlay(null, _projectile));
+            Assert.IsFalse(InventoryGemSlot.ShouldShowDisabledOverlay(default, _projectile));
         }
 
         [Test]
         public void Hidden_WhenGemSocketsSelectedTower()
         {
-            Assert.IsFalse(InventoryGemSlot.ShouldShowDisabledOverlay(_projectileGem, _projectile));
+            Assert.IsFalse(InventoryGemSlot.ShouldShowDisabledOverlay(
+                new GemInstance(_projectileGem, GemRarity.Normal), _projectile));
         }
 
         [Test]
         public void Shown_WhenGemCannotSocketSelectedTower()
         {
-            Assert.IsTrue(InventoryGemSlot.ShouldShowDisabledOverlay(_projectileGem, _aura));
-            Assert.IsTrue(InventoryGemSlot.ShouldShowDisabledOverlay(_aoeGem, _projectile));
+            Assert.IsTrue(InventoryGemSlot.ShouldShowDisabledOverlay(
+                new GemInstance(_projectileGem, GemRarity.Normal), _aura));
+            Assert.IsTrue(InventoryGemSlot.ShouldShowDisabledOverlay(
+                new GemInstance(_aoeGem, GemRarity.Normal), _projectile));
+        }
+
+        [Test]
+        public void DisabledOverlay_UsesFamilyTagsRegardlessOfRarity()
+        {
+            var lesser = new GemInstance(_projectileGem, GemRarity.Lesser);
+            var normal = new GemInstance(_projectileGem, GemRarity.Normal);
+            var greater = new GemInstance(_projectileGem, GemRarity.Greater);
+
+            Assert.AreEqual(
+                InventoryGemSlot.ShouldShowDisabledOverlay(lesser, _aura),
+                InventoryGemSlot.ShouldShowDisabledOverlay(greater, _aura));
+            Assert.AreEqual(
+                InventoryGemSlot.ShouldShowDisabledOverlay(lesser, _aura),
+                InventoryGemSlot.ShouldShowDisabledOverlay(normal, _aura));
         }
     }
 }

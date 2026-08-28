@@ -97,6 +97,18 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ProjectileGem_RarityDoesNotChangeSocketEligibility()
+        {
+            var lesser = new GemInstance(_multipleProjectiles, GemRarity.Lesser);
+            var greater = new GemInstance(_multipleProjectiles, GemRarity.Greater);
+
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, lesser));
+            Assert.IsTrue(GemTags.CanSocket(_projectileTower, greater));
+            Assert.IsFalse(GemTags.CanSocket(_auraTower, lesser));
+            Assert.IsFalse(GemTags.CanSocket(_auraTower, greater));
+        }
+
+        [Test]
         public void Chain_RequiresProjectile_NotChaining()
         {
             Assert.AreEqual(GemTag.Projectile, GemTags.EffectiveRequiredTags(_chain));

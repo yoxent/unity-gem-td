@@ -27,12 +27,8 @@ namespace GemTD.Gameplay.Gems
         /// Live skill spec for a tower (same path Combat uses). <paramref name="scratch"/>
         /// is cleared and filled with socket modifiers — caller owns pooling.
         /// </summary>
-        public SkillSpec Resolve(TowerInstance tower, List<ISkillModifier> scratch)
+        public SkillSpec ResolveBaseline(TowerInstance tower)
         {
-            if (scratch == null)
-                throw new ArgumentNullException(nameof(scratch));
-
-            CollectSocketModifiers(tower, scratch);
             var baseline = SkillSpec.FromBase(0f, projectiles: 0);
             if (tower?.Def != null)
             {
@@ -49,7 +45,16 @@ namespace GemTD.Gameplay.Gems
                 baseline.DeliveryPattern = tower.Def.GetDeliveryPattern();
             }
 
-            return Apply(baseline, scratch);
+            return baseline;
+        }
+
+        public SkillSpec Resolve(TowerInstance tower, List<ISkillModifier> scratch)
+        {
+            if (scratch == null)
+                throw new ArgumentNullException(nameof(scratch));
+
+            CollectSocketModifiers(tower, scratch);
+            return Apply(ResolveBaseline(tower), scratch);
         }
 
         public static void CollectSocketModifiers(TowerInstance tower, List<ISkillModifier> into)
@@ -62,10 +67,47 @@ namespace GemTD.Gameplay.Gems
             for (var i = 0; i < sockets.Length; i++)
             {
                 var gem = sockets[i];
-                if (gem == null)
+                if (gem.IsEmpty)
                     continue;
 
                 into.Add(new GemDefinitionModifier(gem));
+            }
+        }
+
+        public static void CollectEffectPayloads(
+            TowerInstance tower,
+            List<EffectPayloadDefinition> into)
+        {
+            if (into == null)
+                throw new ArgumentNullException(nameof(into));
+
+            into.Clear();
+            if (tower == null || tower.Def == null)
+                return;
+
+            AppendPayloads(into, tower.Def.GetEffectPayloads());
+            var sockets = tower.Sockets;
+            for (var i = 0; i < sockets.Length; i++)
+            {
+                var gem = sockets[i];
+                if (gem.IsEmpty || gem.Def.EffectPayloads == null)
+                    continue;
+
+                AppendPayloads(into, gem.Def.EffectPayloads);
+            }
+        }
+
+        static void AppendPayloads(
+            List<EffectPayloadDefinition> into,
+            IReadOnlyList<EffectPayloadDefinition> payloads)
+        {
+            if (payloads == null)
+                return;
+
+            for (var i = 0; i < payloads.Count; i++)
+            {
+                if (payloads[i] != null)
+                    into.Add(payloads[i]);
             }
         }
     }

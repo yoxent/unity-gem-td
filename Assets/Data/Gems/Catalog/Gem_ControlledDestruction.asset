@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 149
   DisplayName: Controlled Destruction
-  Description: "Increases the tower's offensive output in a specialized way. Reduces another aspect of offensive performance, consistency, or flexibility. Supported Skills have #% less Critical Strike Chance"
+  Description: Increases the tower's offensive output in a specialized way. Reduces
+    another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
   Tags: 272
   Modifiers:
@@ -24,4 +25,8 @@ MonoBehaviour:
     Value: 1.31
     Min: 0
     Max: 0
+    Lesser: 1.25
+    Normal: 1.31
+    Greater: 1.39
     Falloff: 0
+  EffectPayloads: []

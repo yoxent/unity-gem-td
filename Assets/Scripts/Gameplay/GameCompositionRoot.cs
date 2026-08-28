@@ -126,7 +126,7 @@ namespace GemTD.Gameplay
                 return false;
             if (socketIndex < 0 || socketIndex >= tower.Sockets.Length)
                 return false;
-            if (tower.Sockets[socketIndex] == null)
+            if (tower.Sockets[socketIndex].IsEmpty)
                 return false;
             if (SelectedSocketsLocked)
                 return false;
@@ -960,7 +960,7 @@ namespace GemTD.Gameplay
                 var gemCount = 0;
                 for (var s = 0; s < selected.Sockets.Length; s++)
                 {
-                    if (selected.Sockets[s] != null)
+                    if (!selected.Sockets[s].IsEmpty)
                         gemCount++;
                 }
 
@@ -1040,9 +1040,9 @@ namespace GemTD.Gameplay
             GameEvents.RaiseInventoryChanged();
         }
 
-        void NotifySocketChanged(TowerInstance tower, GemDefinition socketedGem)
+        void NotifySocketChanged(TowerInstance tower, GemInstance socketedGem)
         {
-            if (socketedGem != null)
+            if (!socketedGem.IsEmpty)
                 _runStats.RecordGemSocketed(socketedGem.Id);
             OnSocketChanged(tower);
         }
@@ -1080,7 +1080,7 @@ namespace GemTD.Gameplay
             var socketWasOccupied = socketIndex >= 0
                                      && tower.Sockets != null
                                      && socketIndex < tower.Sockets.Length
-                                     && tower.Sockets[socketIndex] != null;
+                                     && !tower.Sockets[socketIndex].IsEmpty;
 
             if (!socketWasOccupied)
             {
@@ -1092,7 +1092,8 @@ namespace GemTD.Gameplay
                 }
 
                 // Socket rejected (usually uniqueness). Put the gem back.
-                Inventory.TryAdd(gem);
+                if (!Inventory.TryAddAt(inventoryIndex, gem))
+                    Inventory.TryAdd(gem);
                 GameEvents.RaiseInventoryChanged();
                 return;
             }
@@ -1101,7 +1102,8 @@ namespace GemTD.Gameplay
             // and only then move the displaced gem into inventory.
             if (!tower.TryUnsocket(socketIndex, out var displacedGem, allowSocket: true))
             {
-                Inventory.TryAdd(gem);
+                if (!Inventory.TryAddAt(inventoryIndex, gem))
+                    Inventory.TryAdd(gem);
                 GameEvents.RaiseInventoryChanged();
                 return;
             }
@@ -1110,7 +1112,8 @@ namespace GemTD.Gameplay
             {
                 // Rejected (usually uniqueness); restore displaced gem and return dragged gem.
                 tower.TrySocket(displacedGem, socketIndex, allowSocket: true);
-                Inventory.TryAdd(gem);
+                if (!Inventory.TryAddAt(inventoryIndex, gem))
+                    Inventory.TryAdd(gem);
                 GameEvents.RaiseInventoryChanged();
                 return;
             }
@@ -1189,13 +1192,13 @@ namespace GemTD.Gameplay
             if (inventoryIndex < 0 || inventoryIndex >= Inventory.Capacity)
                 return;
 
-            var targetInventoryGem = Inventory.Slots[inventoryIndex]; // null if empty
+            var targetInventoryGem = Inventory.Slots[inventoryIndex]; // default if empty
 
             // Remove gem from socket.
             if (!tower.TryUnsocket(socketIndex, out var unsocketed, allowSocket: true))
                 return;
 
-            if (targetInventoryGem == null)
+            if (targetInventoryGem.IsEmpty)
             {
                 // Target slot is empty — place directly.
                 if (!Inventory.TryAddAt(inventoryIndex, unsocketed))
@@ -1648,7 +1651,7 @@ namespace GemTD.Gameplay
                 return;
 
             var filler = ResolveDebugFillGem();
-            if (filler == null)
+            if (filler.IsEmpty)
             {
                 Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or DraftPoolCatalog.");
                 return;
@@ -1667,14 +1670,14 @@ namespace GemTD.Gameplay
                 GameEvents.RaiseInventoryChanged();
         }
 
-        GemDefinition ResolveDebugFillGem()
+        GemInstance ResolveDebugFillGem()
         {
             if (runConfig != null && runConfig.SeedGems != null)
             {
                 for (var i = 0; i < runConfig.SeedGems.Length; i++)
                 {
                     if (runConfig.SeedGems[i] != null)
-                        return runConfig.SeedGems[i];
+                        return GemInstance.FromDefinition(runConfig.SeedGems[i]);
                 }
             }
 
@@ -1683,11 +1686,11 @@ namespace GemTD.Gameplay
                 for (var i = 0; i < draftPoolCatalog.Gems.Length; i++)
                 {
                     if (draftPoolCatalog.Gems[i] != null)
-                        return draftPoolCatalog.Gems[i];
+                        return GemInstance.FromDefinition(draftPoolCatalog.Gems[i]);
                 }
             }
 
-            return null;
+            return default;
         }
 #endif
 

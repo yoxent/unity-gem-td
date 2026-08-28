@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 62
   DisplayName: Brutality
-  Description: Greatly increases physical damage. Elemental and chaos damage are disabled. Supported Skills deal no Chaos Damage Supported Skills deal no Elemental Damage
+  Description: Greatly increases physical damage. Elemental and chaos damage are
+    disabled.
   DraftWeight: 1
   Tags: 256
   Modifiers:
@@ -24,4 +25,8 @@ MonoBehaviour:
     Value: 1.31
     Min: 0
     Max: 0
+    Lesser: 1.25
+    Normal: 1.31
+    Greater: 1.39
     Falloff: 0
+  EffectPayloads: []

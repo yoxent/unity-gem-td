@@ -424,11 +424,27 @@ namespace GemTD.Tests.EditMode
                 Modifier(RoleStat.TowerRadius, 20f),
                 Modifier(RoleStat.AttackTime, 1f),
                 Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.ProjectileCount, 4f)
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _towerRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.OnImpact,
+                    Anchor = EffectPayloadAnchor.PrimaryTarget,
+                    TravelPattern = EffectPayloadTravelPattern.Fountain,
+                    ScatterPattern = EffectPayloadScatterPattern.RandomRing,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Count = 4,
+                    DamageMultiplier = 0.4f,
+                    AoeRadius = 1f,
+                    MinDistance = 1f,
+                    MaxDistance = 4f
+                }
             };
             _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike | GemTag.Projectile;
 
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f, payloadRng: new System.Random(42));
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             var enemy = CreateEnemyNearTower();
             var registry = new EnemyRegistry();
@@ -444,6 +460,96 @@ namespace GemTD.Tests.EditMode
                 director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(enemy.Hp, 100f);
+        }
+
+        [Test]
+        public void Tick_WarpStrike_SpawnsPayloadsThatCanAoE()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.WarpStrike;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _towerRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.OnImpact,
+                    TravelPattern = EffectPayloadTravelPattern.Fountain,
+                    ScatterPattern = EffectPayloadScatterPattern.FixedRadial,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Count = 1,
+                    DamageMultiplier = 1f,
+                    AoeRadius = 2f,
+                    MinDistance = 2f,
+                    MaxDistance = 2f
+                }
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
+
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.Id = GemId.Knockback;
+            gem.Tags = GemTag.Support;
+            gem.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.OnImpact,
+                    Anchor = EffectPayloadAnchor.PrimaryTarget,
+                    TravelPattern = EffectPayloadTravelPattern.Fountain,
+                    ScatterPattern = EffectPayloadScatterPattern.FixedRadial,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Count = 1,
+                    DamageMultiplier = 1f,
+                    AoeRadius = 1f,
+                    MinDistance = 1f,
+                    MaxDistance = 1f
+                }
+            };
+
+            try
+            {
+                const int rolePayloadCount = 1;
+                var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+                var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+                Assert.IsTrue(tower.TrySocket(gem, 0, allowSocket: true));
+
+                var primary = CreateEnemyNearTower();
+                var bystander = CreateEnemyAtProgress(0.12f);
+                var registry = new EnemyRegistry();
+                registry.Register(primary);
+                registry.Register(bystander);
+                var hpPrimary = primary.Hp;
+                var hpBystander = bystander.Hp;
+
+                director.Tick(0.01f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+                var observedPayloads = false;
+                for (var i = 0; i < 80; i++)
+                {
+                    director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
+                    if (director.EffectPayloads.Count == 0)
+                        continue;
+
+                    Assert.AreEqual(rolePayloadCount + 1, director.EffectPayloads.Count);
+                    observedPayloads = true;
+                    break;
+                }
+
+                Assert.IsTrue(observedPayloads);
+                for (var i = 0; i < 80; i++)
+                    director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
+
+                Assert.That(primary.Hp < hpPrimary || bystander.Hp < hpBystander);
+            }
+            finally
+            {
+                Object.DestroyImmediate(gem);
+            }
         }
 
         [Test]

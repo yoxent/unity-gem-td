@@ -109,7 +109,7 @@ namespace GemTD.Gameplay.Towers
             var gemCount = 0;
             for (var i = 0; i < tower.Sockets.Length; i++)
             {
-                if (tower.Sockets[i] != null)
+                if (!tower.Sockets[i].IsEmpty)
                     gemCount++;
             }
 

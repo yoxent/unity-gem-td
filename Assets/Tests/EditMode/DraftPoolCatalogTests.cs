@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using GemTD.Gameplay.Gems;
+using GemTD.Gameplay.Run;
 
 namespace GemTD.Tests.EditMode
 {
@@ -48,6 +49,20 @@ namespace GemTD.Tests.EditMode
             };
             catalog.Gems = gems;
             Assert.AreSame(gems, catalog.GetGemsOrEmpty());
+        }
+
+        [Test]
+        public void DraftCatalog_RarityTable_IsOptionalReference()
+        {
+            var catalog = ScriptableObject.CreateInstance<DraftCatalog>();
+            var rarityTable = ScriptableObject.CreateInstance<GemRarityTable>();
+
+            Assert.IsNull(catalog.RarityTable);
+            catalog.RarityTable = rarityTable;
+            Assert.AreSame(rarityTable, catalog.RarityTable);
+
+            Object.DestroyImmediate(rarityTable);
+            Object.DestroyImmediate(catalog);
         }
     }
 }

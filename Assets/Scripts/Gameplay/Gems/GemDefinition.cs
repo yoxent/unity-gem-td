@@ -1,4 +1,5 @@
 using UnityEngine;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Gems
 {
@@ -14,5 +15,7 @@ namespace GemTD.Gameplay.Gems
         public GemTag Tags = GemTag.None;
         [Tooltip("Combat rows applied onto SkillSpec when this gem is socketed. Same Set / Add / Multiply order as tower roles.")]
         public GemStatModifier[] Modifiers;
+        [Tooltip("Secondary payloads authored by this support gem. Rarity changes modifier scalars, not payload shape.")]
+        public EffectPayloadDefinition[] EffectPayloads;
     }
 }

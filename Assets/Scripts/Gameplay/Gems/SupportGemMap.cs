@@ -15,10 +15,26 @@ namespace GemTD.Gameplay.Gems
         public const int ExpectedGemCount = 212;
         public const float ExceptionalNormalMultiplier = 1.4f;
 
+        struct TierValues
+        {
+            public readonly float Lesser;
+            public readonly float Normal;
+            public readonly float Greater;
+
+            public TierValues(float lesser, float normal, float greater)
+            {
+                Lesser = lesser;
+                Normal = normal;
+                Greater = greater;
+            }
+        }
+
         public sealed class UnmappedMod
         {
             public string Text;
+            public float Lesser;
             public float Normal;
+            public float Greater;
         }
 
         public sealed class Result
@@ -108,40 +124,97 @@ namespace GemTD.Gameplay.Gems
             List<UnmappedMod> unmapped)
         {
             var text = mod["text"]?.Value<string>() ?? "";
-            var values = mod["values"];
-            if (values == null || values.Type == JTokenType.Null)
+            var valuesObject = mod["values"];
+            if (valuesObject == null || valuesObject.Type == JTokenType.Null)
             {
                 flavor.Add(text);
                 return;
             }
 
-            var normal = ReadNormal(values as JObject);
-            if (TryMapNumbered(text, normal, modifiers))
+            var values = ReadValues(valuesObject as JObject);
+            if (TryMapNumbered(text, values, modifiers))
                 return;
 
-            unmapped.Add(new UnmappedMod { Text = text, Normal = normal });
+            unmapped.Add(new UnmappedMod
+            {
+                Text = text,
+                Lesser = values.Lesser,
+                Normal = values.Normal,
+                Greater = values.Greater
+            });
         }
 
-        static bool TryMapNumbered(string text, float normal, List<GemStatModifier> modifiers)
+        static TierValues ReadValues(JObject values)
         {
-            if (TryMapHitsAndAilments(text, normal, modifiers))
+            if (values == null)
+                return default;
+
+            var normal = ReadValue(values, "normal", 0f);
+            var lesser = ReadValue(values, "lesser", normal);
+            var greater = ReadValue(values, "greater", normal);
+            return new TierValues(lesser, normal, greater);
+        }
+
+        static float ReadValue(JObject values, string key, float fallback)
+        {
+            var token = values[key];
+            if (token == null || token.Type == JTokenType.Null)
+                return fallback;
+            return token.Value<float>();
+        }
+
+        static GemStatModifier Tiered(
+            GemStat stat,
+            RoleModifierOperation operation,
+            TierValues values,
+            float falloff = 0f)
+        {
+            return GemStatModifier.TieredSingle(
+                stat,
+                operation,
+                values.Lesser,
+                values.Normal,
+                values.Greater,
+                falloff);
+        }
+
+        static TierValues PercentFactor(TierValues values, bool more)
+        {
+            var sign = more ? 1f : -1f;
+            return new TierValues(
+                1f + sign * values.Lesser / 100f,
+                1f + sign * values.Normal / 100f,
+                1f + sign * values.Greater / 100f);
+        }
+
+        static TierValues Fraction(TierValues values)
+        {
+            return new TierValues(
+                values.Lesser / 100f,
+                values.Normal / 100f,
+                values.Greater / 100f);
+        }
+
+        static bool TryMapNumbered(string text, TierValues values, List<GemStatModifier> modifiers)
+        {
+            if (TryMapHitsAndAilments(text, values, modifiers))
                 return true;
 
             if (text == "Supported Skills have #% increased Effect of non-Damaging Ailments on Enemies")
             {
-                var factor = 1f + normal / 100f;
-                modifiers.Add(GemStatModifier.Single(
+                var factor = PercentFactor(values, more: true);
+                modifiers.Add(Tiered(
                     GemStat.ChillEffect,
                     RoleModifierOperation.Multiply,
                     factor));
-                modifiers.Add(GemStatModifier.Single(
+                modifiers.Add(Tiered(
                     GemStat.ShockEffect,
                     RoleModifierOperation.Multiply,
                     factor));
                 return true;
             }
 
-            if (TryMapNumberedSingle(text, normal, out var mapped))
+            if (TryMapNumberedSingle(text, values, out var mapped))
             {
                 modifiers.Add(mapped);
                 return true;
@@ -150,124 +223,124 @@ namespace GemTD.Gameplay.Gems
             return false;
         }
 
-        static bool TryMapNumberedSingle(string text, float normal, out GemStatModifier mapped)
+        static bool TryMapNumberedSingle(string text, TierValues values, out GemStatModifier mapped)
         {
             mapped = default;
             if (text == "Supported Skills deal #% more Damage"
                 || text == "Supported Attacks deal #% more Damage")
             {
-                mapped = MoreDamage(normal);
+                mapped = MoreDamage(values);
                 return true;
             }
 
             if (text == "Supported Skills deal #% less Damage"
                 || text == "Supported Attacks deal #% less Damage")
             {
-                mapped = LessDamage(normal);
+                mapped = LessDamage(values);
                 return true;
             }
 
             if (IsConditional(text))
                 return false;
 
-            if (TryMapHitDamageLine(text, normal, out mapped))
+            if (TryMapHitDamageLine(text, values, out mapped))
                 return true;
 
-            if (TryMapAilmentDamageLine(text, normal, out mapped))
+            if (TryMapAilmentDamageLine(text, values, out mapped))
                 return true;
 
             if (text == "Supported Attacks have #% chance to cause Bleeding"
                 || text == "Supported Skills have #% chance to cause Bleeding")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.BleedChance,
                     RoleModifierOperation.Set,
-                    normal / 100f);
+                    Fraction(values));
                 return true;
             }
 
-            if (TryMapChance(text, normal, out mapped))
+            if (TryMapChance(text, values, out mapped))
                 return true;
 
             if (text == "#% increased Effect of Chill inflicted with Supported Skills")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ChillEffect,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             if (text == "#% increased Effect of Shock inflicted with Supported Skills")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ShockEffect,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             if (text == "Supported Skills gain #% of Physical Damage as Extra Fire Damage"
                 || text == "Supported Attacks gain #% of Physical Damage as Extra Fire Damage")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.PhysAsExtraFire,
                     RoleModifierOperation.Set,
-                    normal / 100f);
+                    Fraction(values));
                 return true;
             }
 
             if (text == "Supported Skills gain #% of Physical Damage as Extra Cold Damage"
                 || text == "Supported Attacks gain #% of Physical Damage as Extra Cold Damage")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.PhysAsExtraCold,
                     RoleModifierOperation.Set,
-                    normal / 100f);
+                    Fraction(values));
                 return true;
             }
 
             if (text == "Supported Skills gain #% of Physical Damage as Extra Lightning Damage"
                 || text == "Supported Attacks gain #% of Physical Damage as Extra Lightning Damage")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.PhysAsExtraLightning,
                     RoleModifierOperation.Set,
-                    normal / 100f);
+                    Fraction(values));
                 return true;
             }
 
             if (text == "Supported Skills gain #% of Physical Damage as Extra Chaos Damage"
                 || text == "Supported Attacks gain #% of Physical Damage as Extra Chaos Damage")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.PhysAsExtraChaos,
                     RoleModifierOperation.Set,
-                    normal / 100f);
+                    Fraction(values));
                 return true;
             }
 
             if (text == "#% increased magnitude of Hallowing Flame inflicted by Supported Skills")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.PhysAsExtraFire,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
-            if (TryMapConversion(text, normal, out mapped))
+            if (TryMapConversion(text, values, out mapped))
                 return true;
 
-            if (TryMapSpeedAoeDelivery(text, normal, out mapped))
+            if (TryMapSpeedAoeDelivery(text, values, out mapped))
                 return true;
 
             if (text == "Supported Skills have #% chance to Knock Enemies Back on hit")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.KnockbackChance,
                     RoleModifierOperation.Set,
-                    normal / 100f);
+                    Fraction(values));
                 return true;
             }
 
@@ -277,23 +350,23 @@ namespace GemTD.Gameplay.Gems
                 || text.Contains("added Fire Damage")
                 || text.Contains("added Physical Damage"))
             {
-                mapped = GemStatModifier.Single(GemStat.Damage, RoleModifierOperation.Add, normal);
+                mapped = Tiered(GemStat.Damage, RoleModifierOperation.Add, values);
                 return true;
             }
 
             if (text == "#% increased Duration of Ailments inflicted with Supported Skills")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.AilmentDuration,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             return false;
         }
 
-        static bool TryMapHitsAndAilments(string text, float normal, List<GemStatModifier> modifiers)
+        static bool TryMapHitsAndAilments(string text, TierValues values, List<GemStatModifier> modifiers)
         {
             if (IsConditional(text))
                 return false;
@@ -301,22 +374,22 @@ namespace GemTD.Gameplay.Gems
                 return false;
             if (text.IndexOf("more", StringComparison.Ordinal) >= 0)
             {
-                modifiers.Add(MoreDamage(normal));
-                modifiers.Add(MoreAilment(normal));
+                modifiers.Add(MoreDamage(values));
+                modifiers.Add(MoreAilment(values));
                 return true;
             }
 
             if (text.IndexOf("less", StringComparison.Ordinal) >= 0)
             {
-                modifiers.Add(LessDamage(normal));
-                modifiers.Add(LessAilment(normal));
+                modifiers.Add(LessDamage(values));
+                modifiers.Add(LessAilment(values));
                 return true;
             }
 
             return false;
         }
 
-        static bool TryMapHitDamageLine(string text, float normal, out GemStatModifier mapped)
+        static bool TryMapHitDamageLine(string text, TierValues values, out GemStatModifier mapped)
         {
             mapped = default;
             var more = text.IndexOf(" more ", StringComparison.Ordinal) >= 0
@@ -352,15 +425,15 @@ namespace GemTD.Gameplay.Gems
 
             if (more || increased)
             {
-                mapped = MoreDamage(normal);
+                mapped = MoreDamage(values);
                 return true;
             }
 
-            mapped = LessDamage(normal);
+            mapped = LessDamage(values);
             return true;
         }
 
-        static bool TryMapAilmentDamageLine(string text, float normal, out GemStatModifier mapped)
+        static bool TryMapAilmentDamageLine(string text, TierValues values, out GemStatModifier mapped)
         {
             mapped = default;
             var ailment = text.IndexOf("Ailment", StringComparison.Ordinal) >= 0
@@ -383,29 +456,29 @@ namespace GemTD.Gameplay.Gems
                 return false;
 
             var less = text.IndexOf(" less ", StringComparison.Ordinal) >= 0;
-            mapped = less ? LessAilment(normal) : MoreAilment(normal);
+            mapped = less ? LessAilment(values) : MoreAilment(values);
             return true;
         }
 
-        static bool TryMapSpeedAoeDelivery(string text, float normal, out GemStatModifier mapped)
+        static bool TryMapSpeedAoeDelivery(string text, TierValues values, out GemStatModifier mapped)
         {
             mapped = default;
             if (text == "Supported Skills have #% increased Attack Speed"
                 || text == "Supported Attacks have #% increased Attack Speed")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.AttackSpeedMultiplier,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             if (text == "Supported Skills have #% increased Cast Speed")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.CastSpeedMultiplier,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
@@ -415,10 +488,10 @@ namespace GemTD.Gameplay.Gems
                 var stat = text.IndexOf("Cast", StringComparison.Ordinal) >= 0
                     ? GemStat.CastSpeedMultiplier
                     : GemStat.AttackSpeedMultiplier;
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     stat,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
@@ -427,14 +500,14 @@ namespace GemTD.Gameplay.Gems
             {
                 if (text.IndexOf("Damage", StringComparison.Ordinal) >= 0)
                 {
-                    mapped = LessDamage(normal);
+                    mapped = LessDamage(values);
                     return true;
                 }
 
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.AttackSpeedMultiplier,
                     RoleModifierOperation.Multiply,
-                    1f - normal / 100f);
+                    PercentFactor(values, more: false));
                 return true;
             }
 
@@ -442,103 +515,103 @@ namespace GemTD.Gameplay.Gems
                 || text == "Supported Skills have #% more Area of Effect"
                 || text == "Supported Skills have #% more Melee Splash Area of Effect")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.AoeRadius,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             if (text == "Supported Skills have #% less Area of Effect")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.AoeRadius,
                     RoleModifierOperation.Multiply,
-                    1f - normal / 100f);
+                    PercentFactor(values, more: false));
                 return true;
             }
 
             if (text == "Supported Skills have #% increased Range")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.RangeMultiplier,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             if (text == "Supported Skills have #% increased Projectile Speed")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ProjectileSpeedMultiplier,
                     RoleModifierOperation.Multiply,
-                    1f + normal / 100f);
+                    PercentFactor(values, more: true));
                 return true;
             }
 
             if (text == "Supported Skills have #% less Projectile Speed")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ProjectileSpeedMultiplier,
                     RoleModifierOperation.Multiply,
-                    1f - normal / 100f);
+                    PercentFactor(values, more: false));
                 return true;
             }
 
             if (text == "Projectiles from Supported Skills Pierce # additional Targets")
             {
-                mapped = GemStatModifier.Single(GemStat.PierceCount, RoleModifierOperation.Add, normal);
+                mapped = Tiered(GemStat.PierceCount, RoleModifierOperation.Add, values);
                 return true;
             }
 
             if (text == "Supported Skills fire # additional Projectiles")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ProjectileCount,
                     RoleModifierOperation.Add,
-                    normal);
+                    values);
                 return true;
             }
 
             if (text == "Supported Skills Chain # times")
             {
-                mapped = GemStatModifier.Single(GemStat.ChainCount, RoleModifierOperation.Add, normal);
+                mapped = Tiered(GemStat.ChainCount, RoleModifierOperation.Add, values);
                 return true;
             }
 
             return false;
         }
 
-        static GemStatModifier MoreDamage(float percent)
+        static GemStatModifier MoreDamage(TierValues values)
         {
-            return GemStatModifier.Single(
+            return Tiered(
                 GemStat.Damage,
                 RoleModifierOperation.Multiply,
-                1f + percent / 100f);
+                PercentFactor(values, more: true));
         }
 
-        static GemStatModifier LessDamage(float percent)
+        static GemStatModifier LessDamage(TierValues values)
         {
-            return GemStatModifier.Single(
+            return Tiered(
                 GemStat.Damage,
                 RoleModifierOperation.Multiply,
-                1f - percent / 100f);
+                PercentFactor(values, more: false));
         }
 
-        static GemStatModifier MoreAilment(float percent)
+        static GemStatModifier MoreAilment(TierValues values)
         {
-            return GemStatModifier.Single(
+            return Tiered(
                 GemStat.AilmentDamage,
                 RoleModifierOperation.Multiply,
-                1f + percent / 100f);
+                PercentFactor(values, more: true));
         }
 
-        static GemStatModifier LessAilment(float percent)
+        static GemStatModifier LessAilment(TierValues values)
         {
-            return GemStatModifier.Single(
+            return Tiered(
                 GemStat.AilmentDamage,
                 RoleModifierOperation.Multiply,
-                1f - percent / 100f);
+                PercentFactor(values, more: false));
         }
 
         static bool IsConditional(string text)
@@ -650,6 +723,16 @@ namespace GemTD.Gameplay.Gems
             List<GemStatModifier> modifiers,
             List<string> flavor)
         {
+            if (name == "Chain Support")
+            {
+                modifiers.Add(GemStatModifier.Single(
+                    GemStat.ChainCount,
+                    RoleModifierOperation.Add,
+                    1f,
+                    ProjectileRuntime.DefaultChainHopFalloff));
+                RemoveFlavorContaining(flavor, "Chain # times");
+            }
+
             if (name == "Chance to Poison Support")
             {
                 modifiers.Add(GemStatModifier.Single(
@@ -661,7 +744,10 @@ namespace GemTD.Gameplay.Gems
 
             if (name == "Deadly Ailments Support")
             {
-                modifiers.Add(LessDamage(80f));
+                modifiers.Add(GemStatModifier.Single(
+                    GemStat.Damage,
+                    RoleModifierOperation.Multiply,
+                    0.2f));
                 RemoveFlavorContaining(flavor, "less Damage with Hits");
             }
 
@@ -699,28 +785,28 @@ namespace GemTD.Gameplay.Gems
             }
         }
 
-        static bool TryMapConversion(string text, float normal, out GemStatModifier mapped)
+        static bool TryMapConversion(string text, TierValues values, out GemStatModifier mapped)
         {
             mapped = default;
-            var fraction = normal / 100f;
+            var fraction = Fraction(values);
             if (text == "Supported Skills have #% of Fire Damage Converted to Cold Damage"
                 || text == "#% of Fire Damage Converted to Cold Damage")
             {
-                mapped = GemStatModifier.Single(GemStat.ConvertFireToCold, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.ConvertFireToCold, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             if (text == "Supported Skills have #% of Cold Damage Converted to Lightning Damage"
                 || text == "#% of Cold Damage Converted to Lightning Damage")
             {
-                mapped = GemStatModifier.Single(GemStat.ConvertColdToLightning, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.ConvertColdToLightning, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             if (text == "Supported Skills have #% of Lightning Damage Converted to Physical Damage"
                 || text == "#% of Lightning Damage Converted to Physical Damage")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ConvertLightningToPhysical,
                     RoleModifierOperation.Set,
                     fraction);
@@ -730,14 +816,14 @@ namespace GemTD.Gameplay.Gems
             if (text == "Supported Skills have #% of Fire Damage Converted to Chaos Damage"
                 || text == "#% of Fire Damage Converted to Chaos Damage")
             {
-                mapped = GemStatModifier.Single(GemStat.ConvertFireToChaos, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.ConvertFireToChaos, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             if (text == "Supported Skills have #% of Lightning Damage Converted to Chaos Damage"
                 || text == "#% of Lightning Damage Converted to Chaos Damage")
             {
-                mapped = GemStatModifier.Single(
+                mapped = Tiered(
                     GemStat.ConvertLightningToChaos,
                     RoleModifierOperation.Set,
                     fraction);
@@ -747,7 +833,7 @@ namespace GemTD.Gameplay.Gems
             if (text == "Supported Skills have #% of Cold Damage Converted to Chaos Damage"
                 || text == "#% of Cold Damage Converted to Chaos Damage")
             {
-                mapped = GemStatModifier.Single(GemStat.ConvertColdToChaos, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.ConvertColdToChaos, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
@@ -817,49 +903,39 @@ namespace GemTD.Gameplay.Gems
             }
         }
 
-        static bool TryMapChance(string text, float normal, out GemStatModifier mapped)
+        static bool TryMapChance(string text, TierValues values, out GemStatModifier mapped)
         {
             mapped = default;
-            var fraction = normal / 100f;
+            var fraction = Fraction(values);
             if (text == "Supported Skills have #% chance to Ignite"
                 || text == "Supported Attacks have #% chance to Ignite")
             {
-                mapped = GemStatModifier.Single(GemStat.IgniteChance, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.IgniteChance, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             if (text == "Supported Skills have #% chance to Shock"
                 || text == "Supported Attacks have #% chance to Shock")
             {
-                mapped = GemStatModifier.Single(GemStat.ShockChance, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.ShockChance, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             if (text == "Supported Skills have #% chance to Freeze"
                 || text == "Supported Attacks have #% chance to Freeze")
             {
-                mapped = GemStatModifier.Single(GemStat.FreezeChance, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.FreezeChance, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             if (text == "Supported Skills have #% chance to Poison on Hit"
                 || text == "Supported Attacks have #% chance to Poison on Hit")
             {
-                mapped = GemStatModifier.Single(GemStat.PoisonChance, RoleModifierOperation.Set, fraction);
+                mapped = Tiered(GemStat.PoisonChance, RoleModifierOperation.Set, fraction);
                 return true;
             }
 
             return false;
-        }
-
-        static float ReadNormal(JObject values)
-        {
-            if (values == null)
-                return 0f;
-            var token = values["normal"];
-            if (token == null || token.Type == JTokenType.Null)
-                return 0f;
-            return token.Value<float>();
         }
 
         static GemTag MapTags(JArray tags)

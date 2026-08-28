@@ -44,9 +44,11 @@ namespace GemTD.Tests.EditMode
             inventory.Seed(new[] { _multipleProjectiles, _chain });
 
             Assert.AreEqual(6, inventory.Slots.Count);
-            Assert.AreSame(_multipleProjectiles, inventory.Slots[0]);
-            Assert.AreSame(_chain, inventory.Slots[1]);
-            Assert.IsNull(inventory.Slots[2]);
+            Assert.AreSame(_multipleProjectiles, inventory.Slots[0].Def);
+            Assert.AreEqual(GemRarity.Normal, inventory.Slots[0].Rarity);
+            Assert.AreSame(_chain, inventory.Slots[1].Def);
+            Assert.AreEqual(GemRarity.Normal, inventory.Slots[1].Rarity);
+            Assert.IsTrue(inventory.Slots[2].IsEmpty);
         }
 
         [Test]
@@ -55,8 +57,8 @@ namespace GemTD.Tests.EditMode
             var inventory = new GemInventory(2);
             Assert.IsTrue(inventory.TryAdd(_multipleProjectiles));
             Assert.IsTrue(inventory.TryAdd(_chain));
-            Assert.AreSame(_multipleProjectiles, inventory.Slots[0]);
-            Assert.AreSame(_chain, inventory.Slots[1]);
+            Assert.AreSame(_multipleProjectiles, inventory.Slots[0].Def);
+            Assert.AreSame(_chain, inventory.Slots[1].Def);
         }
 
         [Test]
@@ -74,9 +76,21 @@ namespace GemTD.Tests.EditMode
             inventory.Seed(new[] { _multipleProjectiles, _chain });
 
             Assert.IsTrue(inventory.TryTake(GemId.MultipleProjectiles, out var taken));
-            Assert.AreSame(_multipleProjectiles, taken);
-            Assert.IsNull(inventory.Slots[0]);
-            Assert.AreSame(_chain, inventory.Slots[1]);
+            Assert.AreSame(_multipleProjectiles, taken.Def);
+            Assert.IsTrue(inventory.Slots[0].IsEmpty);
+            Assert.AreSame(_chain, inventory.Slots[1].Def);
+        }
+
+        [Test]
+        public void TryAddAndTake_PreserveRarity()
+        {
+            var inventory = new GemInventory(2);
+            var instance = new GemInstance(_chain, GemRarity.Greater);
+
+            Assert.IsTrue(inventory.TryAdd(instance));
+            Assert.IsTrue(inventory.TryTake(GemId.Chain, out var taken));
+            Assert.AreSame(_chain, taken.Def);
+            Assert.AreEqual(GemRarity.Greater, taken.Rarity);
         }
 
         [Test]
@@ -104,8 +118,8 @@ namespace GemTD.Tests.EditMode
             var inv = new GemInventory(10);
             inv.Seed(new[] { _multipleProjectiles, _chain });
             Assert.IsTrue(inv.TryDiscardAt(0, out var gone));
-            Assert.AreSame(_multipleProjectiles, gone);
-            Assert.IsNull(inv.Slots[0]);
+            Assert.AreSame(_multipleProjectiles, gone.Def);
+            Assert.IsTrue(inv.Slots[0].IsEmpty);
             Assert.AreEqual(9, inv.FreeSlotCount);
         }
 
@@ -121,7 +135,7 @@ namespace GemTD.Tests.EditMode
         {
             var inv = new GemInventory(3);
             Assert.IsTrue(inv.TryAddAt(2, _multipleProjectiles));
-            Assert.AreSame(_multipleProjectiles, inv.Slots[2]);
+            Assert.AreSame(_multipleProjectiles, inv.Slots[2].Def);
         }
 
         [Test]
@@ -130,7 +144,7 @@ namespace GemTD.Tests.EditMode
             var inv = new GemInventory(2);
             Assert.IsTrue(inv.TryAddAt(0, _multipleProjectiles));
             Assert.IsFalse(inv.TryAddAt(0, _chain));
-            Assert.AreSame(_multipleProjectiles, inv.Slots[0]);
+            Assert.AreSame(_multipleProjectiles, inv.Slots[0].Def);
         }
 
         [Test]
@@ -140,8 +154,8 @@ namespace GemTD.Tests.EditMode
             inv.Seed(new[] { _multipleProjectiles });
 
             Assert.IsTrue(inv.TryMoveOrSwapAt(0, 2));
-            Assert.IsNull(inv.Slots[0]);
-            Assert.AreSame(_multipleProjectiles, inv.Slots[2]);
+            Assert.IsTrue(inv.Slots[0].IsEmpty);
+            Assert.AreSame(_multipleProjectiles, inv.Slots[2].Def);
         }
 
         [Test]
@@ -151,8 +165,8 @@ namespace GemTD.Tests.EditMode
             inv.Seed(new[] { _multipleProjectiles, _chain });
 
             Assert.IsTrue(inv.TryMoveOrSwapAt(0, 1));
-            Assert.AreSame(_chain, inv.Slots[0]);
-            Assert.AreSame(_multipleProjectiles, inv.Slots[1]);
+            Assert.AreSame(_chain, inv.Slots[0].Def);
+            Assert.AreSame(_multipleProjectiles, inv.Slots[1].Def);
         }
 
         [Test]
@@ -161,8 +175,8 @@ namespace GemTD.Tests.EditMode
             var tower = new TowerInstance(new Vector2Int(2, 3), _tower);
 
             Assert.AreEqual(2, tower.Sockets.Length);
-            Assert.IsNull(tower.Sockets[0]);
-            Assert.IsNull(tower.Sockets[1]);
+            Assert.IsTrue(tower.Sockets[0].IsEmpty);
+            Assert.IsTrue(tower.Sockets[1].IsEmpty);
             Assert.AreEqual(new Vector2Int(2, 3), tower.Cell);
             Assert.AreSame(_tower, tower.Def);
         }
@@ -173,7 +187,8 @@ namespace GemTD.Tests.EditMode
             var tower = new TowerInstance(Vector2Int.zero, _tower);
 
             Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
-            Assert.AreSame(_multipleProjectiles, tower.Sockets[0]);
+            Assert.AreSame(_multipleProjectiles, tower.Sockets[0].Def);
+            Assert.AreEqual(GemRarity.Normal, tower.Sockets[0].Rarity);
         }
 
         [Test]
@@ -182,7 +197,7 @@ namespace GemTD.Tests.EditMode
             var tower = new TowerInstance(Vector2Int.zero, _tower);
 
             Assert.IsFalse(tower.TrySocket(_multipleProjectiles, 0, allowSocket: false));
-            Assert.IsNull(tower.Sockets[0]);
+            Assert.IsTrue(tower.Sockets[0].IsEmpty);
         }
 
         [Test]
@@ -192,8 +207,8 @@ namespace GemTD.Tests.EditMode
             tower.TrySocket(_multipleProjectiles, 0, allowSocket: true);
 
             Assert.IsTrue(tower.TryUnsocket(0, out var gem, allowSocket: true));
-            Assert.AreSame(_multipleProjectiles, gem);
-            Assert.IsNull(tower.Sockets[0]);
+            Assert.AreSame(_multipleProjectiles, gem.Def);
+            Assert.IsTrue(tower.Sockets[0].IsEmpty);
         }
 
         [Test]
@@ -203,7 +218,7 @@ namespace GemTD.Tests.EditMode
             tower.TrySocket(_multipleProjectiles, 0, allowSocket: true);
 
             Assert.IsFalse(tower.TryUnsocket(0, out _, allowSocket: false));
-            Assert.AreSame(_multipleProjectiles, tower.Sockets[0]);
+            Assert.AreSame(_multipleProjectiles, tower.Sockets[0].Def);
         }
 
         [Test]
@@ -244,7 +259,7 @@ namespace GemTD.Tests.EditMode
             {
                 Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
                 Assert.IsFalse(tower.TrySocket(multipleProjectiles2, 1, allowSocket: true));
-                Assert.IsNull(tower.Sockets[1]);
+                Assert.IsTrue(tower.Sockets[1].IsEmpty);
             }
             finally
             {

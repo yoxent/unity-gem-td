@@ -79,9 +79,7 @@ namespace GemTD.Gameplay.Combat
         bool _warpDropping;
         Vector3 _warpOrigin;
         SkillSpec _warpSpec;
-        float _warpMagmaMin;
-        float _warpMagmaMax;
-        float _warpChainRange;
+        Action<Vector3, SkillSpec> _onImpactPayloads;
 
         public void Init(
             Vector3 origin,
@@ -208,14 +206,13 @@ namespace GemTD.Gameplay.Combat
             EnemyRuntime target,
             SkillSpec spec,
             float meleeDamage,
-            float magmaDamageMin,
-            float magmaDamageMax,
             float speed,
             float chainRange,
             StatusRuntime statuses,
             List<ProjectileRuntime> spawnBuffer,
             TowerDefinition sourceTower,
-            Action<TowerDefinition, float> recordDamage)
+            Action<TowerDefinition, float> recordDamage,
+            Action<Vector3, SkillSpec> onImpactPayloads = null)
         {
             Init(
                 origin,
@@ -248,9 +245,7 @@ namespace GemTD.Gameplay.Combat
             _warpDropping = false;
             _warpOrigin = origin;
             _warpSpec = spec;
-            _warpMagmaMin = magmaDamageMin;
-            _warpMagmaMax = magmaDamageMax;
-            _warpChainRange = chainRange;
+            _onImpactPayloads = onImpactPayloads;
             PierceRemaining = 0;
             ForkRemaining = 0;
             ChainRemaining = 0;
@@ -446,55 +441,8 @@ namespace GemTD.Gameplay.Combat
                 OnHit(livingCandidates);
             }
 
-            SpawnWarpMagma();
+            _onImpactPayloads?.Invoke(Position, _warpSpec);
             IsActive = false;
-        }
-
-        void SpawnWarpMagma()
-        {
-            if (_spawnBuffer == null)
-                return;
-
-            var count = _warpSpec.ProjectileCount;
-            if (count <= 0)
-                return;
-
-            var origin = Position;
-            var step = 360f / count;
-            for (var i = 0; i < count; i++)
-            {
-                var yaw = i * step;
-                var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
-                var child = new ProjectileRuntime();
-                child.Init(
-                    origin,
-                    dir,
-                    null,
-                    RoleStatValue.SampleHitDamage(_warpMagmaMin, _warpMagmaMax),
-                    0,
-                    Speed,
-                    _warpChainRange,
-                    _warpSpec.AoeRadius,
-                    0,
-                    0,
-                    _warpSpec.Ignite,
-                    _warpSpec.Chill,
-                    _warpSpec.Shock,
-                    _warpSpec.Proliferate,
-                    _statuses,
-                    _spawnBuffer,
-                    false,
-                    default,
-                    _sourceTower,
-                    _recordDamage,
-                    _warpSpec.KnockbackChance,
-                    _warpSpec.KnockbackDistance,
-                    _warpSpec.ChainHopFalloff,
-                    _warpSpec.BleedChance,
-                    _warpSpec.BleedDamageMultiplier,
-                    AilmentTune.FromSkillSpec(_warpSpec));
-                _spawnBuffer.Add(child);
-            }
         }
 
         void OnHit(List<EnemyRuntime> livingCandidates)

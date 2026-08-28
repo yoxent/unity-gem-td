@@ -138,6 +138,20 @@ namespace GemTD.Editor
                 "Heavy_Strike");
         }
 
+        [MenuItem("Gem TD/Import Attack Proof Set Two")]
+        public static void ImportAttackProofSetTwo()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_attack.json",
+                folder: "Attack",
+                dialogTitle: "Attack Proof Set Two",
+                "Double_Strike",
+                "Dual_Strike",
+                "Holy_Hammers",
+                "Ice_Crash",
+                "Kinetic_Blast");
+        }
+
         static void ImportProofs(
             string categoryFile,
             string folder,
@@ -288,6 +302,9 @@ namespace GemTD.Editor
             role.Levels = payload != null
                 ? CreateLevels(payload.Levels)
                 : Array.Empty<RoleLevelDefinition>();
+            role.EffectPayloads = payload != null
+                ? CopyEffectPayloads(payload.EffectPayloads)
+                : Array.Empty<EffectPayloadDefinition>();
             EditorUtility.SetDirty(role);
             return role;
         }
@@ -360,6 +377,40 @@ namespace GemTD.Editor
 
             var copy = new RoleEffectModifier[effects.Length];
             Array.Copy(effects, copy, effects.Length);
+            return copy;
+        }
+
+        static EffectPayloadDefinition[] CopyEffectPayloads(EffectPayloadDefinition[] payloads)
+        {
+            if (payloads == null || payloads.Length == 0)
+                return Array.Empty<EffectPayloadDefinition>();
+
+            var copy = new EffectPayloadDefinition[payloads.Length];
+            for (var i = 0; i < payloads.Length; i++)
+            {
+                var source = payloads[i];
+                copy[i] = source != null
+                    ? new EffectPayloadDefinition
+                    {
+                        Trigger = source.Trigger,
+                        Anchor = source.Anchor,
+                        TravelPattern = source.TravelPattern,
+                        ScatterPattern = source.ScatterPattern,
+                        HitPolicy = source.HitPolicy,
+                        Tags = source.Tags,
+                        Count = source.Count,
+                        DamageMultiplier = source.DamageMultiplier,
+                        AoeRadius = source.AoeRadius,
+                        MinDistance = source.MinDistance,
+                        MaxDistance = source.MaxDistance,
+                        ArcHeight = source.ArcHeight,
+                        DelaySeconds = source.DelaySeconds,
+                        IntervalSeconds = source.IntervalSeconds,
+                        RepeatCount = source.RepeatCount
+                    }
+                    : null;
+            }
+
             return copy;
         }
 

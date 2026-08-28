@@ -44,7 +44,7 @@ namespace GemTD.Gameplay.Towers
             for (var i = 0; i < sockets.Length; i++)
             {
                 var gem = sockets[i];
-                if (gem == null)
+                if (gem.IsEmpty)
                     continue;
 
                 if (gem.Id == GemId.MultipleProjectiles)

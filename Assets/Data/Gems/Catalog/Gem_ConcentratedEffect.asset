@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 148
   DisplayName: Concentrated Effect
-  Description: Greatly increases area damage. Area of effect is substantially reduced. Supported Skills have #% less Area of Effect
+  Description: Greatly increases area damage. Area of effect is substantially reduced.
   DraftWeight: 1
   Tags: 258
   Modifiers:
@@ -24,4 +24,8 @@ MonoBehaviour:
     Value: 1.31
     Min: 0
     Max: 0
+    Lesser: 1.25
+    Normal: 1.31
+    Greater: 1.39
     Falloff: 0
+  EffectPayloads: []

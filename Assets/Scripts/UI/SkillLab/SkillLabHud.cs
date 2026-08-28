@@ -64,7 +64,7 @@ namespace GemTD.UI
             }
 
             if (legendLabel != null)
-                legendLabel.text = "White primary  Yellow pierce  Magenta fork  Orange chain  Red AoE";
+                legendLabel.text = "White primary  Yellow pierce  Magenta fork  Orange chain  Red AoE  Cyan warp rise  Gold warp drop  Red-orange magma";
         }
 
         void LateUpdate()
@@ -159,7 +159,7 @@ namespace GemTD.UI
                     {
                         if (s == i)
                             continue;
-                        if (sockets[s] != null && sockets[s].Id == id)
+                        if (!sockets[s].IsEmpty && sockets[s].Id == id)
                         {
                             usedElsewhere = true;
                             break;
@@ -178,7 +178,7 @@ namespace GemTD.UI
                 dropdown.AddOptions(_optionScratch);
 
                 var selected = 0;
-                var currentId = current == null ? GemId.None : current.Id;
+                var currentId = current.IsEmpty ? GemId.None : current.Id;
                 for (var o = 0; o < _optionIds[i].Count; o++)
                 {
                     if (_optionIds[i][o] == currentId)
@@ -262,7 +262,7 @@ namespace GemTD.UI
             for (var i = 0; i < sockets.Length; i++)
             {
                 var gem = sockets[i];
-                h = h * 31 + (gem == null ? 0 : (int)gem.Id + 1);
+                h = h * 31 + (gem.IsEmpty ? 0 : (int)gem.Id + 1);
             }
 
             return h;

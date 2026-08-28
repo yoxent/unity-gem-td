@@ -262,5 +262,79 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(10f, spec.Damage, 0.001f);
             Assert.AreEqual(1.36f, spec.AilmentDamageMultiplier, 0.001f);
         }
+
+        [Test]
+        public void TieredDamageModifier_UsesSelectedRarity()
+        {
+            var baseline = SkillSpec.FromBase(10f, 10f, projectiles: 1, aoe: 0f);
+            var modifier = GemStatModifier.TieredSingle(
+                GemStat.Damage,
+                RoleModifierOperation.Multiply,
+                lesser: 0.8f,
+                normal: 1f,
+                greater: 1.3f);
+
+            var lesser = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Lesser);
+            var greater = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Greater);
+
+            Assert.AreEqual(8f, lesser.Damage, 1e-4f);
+            Assert.AreEqual(13f, greater.Damage, 1e-4f);
+        }
+
+        [Test]
+        public void TieredModifiers_PreserveSetAddMultiplyOrderForEveryRarity()
+        {
+            var baseline = SkillSpec.FromBase(1f);
+            var modifiers = new[]
+            {
+                GemStatModifier.TieredSingle(
+                    GemStat.Damage,
+                    RoleModifierOperation.Multiply,
+                    lesser: 2f,
+                    normal: 3f,
+                    greater: 4f),
+                GemStatModifier.TieredSingle(
+                    GemStat.Damage,
+                    RoleModifierOperation.Add,
+                    lesser: 1f,
+                    normal: 2f,
+                    greater: 3f),
+                GemStatModifier.TieredSingle(
+                    GemStat.Damage,
+                    RoleModifierOperation.Set,
+                    lesser: 10f,
+                    normal: 20f,
+                    greater: 30f)
+            };
+
+            var lesser = GemStatResolver.Apply(baseline, modifiers, GemRarity.Lesser);
+            var normal = GemStatResolver.Apply(baseline, modifiers, GemRarity.Normal);
+            var greater = GemStatResolver.Apply(baseline, modifiers, GemRarity.Greater);
+
+            Assert.AreEqual(22f, lesser.Damage, 1e-4f);
+            Assert.AreEqual(66f, normal.Damage, 1e-4f);
+            Assert.AreEqual(132f, greater.Damage, 1e-4f);
+        }
+
+        [Test]
+        public void LegacyModifierWithoutTierValues_UsesValueForEveryRarity()
+        {
+            var baseline = SkillSpec.FromBase(10f, 10f, projectiles: 1, aoe: 0f);
+            var legacy = GemStatModifier.Single(
+                GemStat.Damage,
+                RoleModifierOperation.Multiply,
+                0.7f);
+            legacy.Lesser = 0f;
+            legacy.Normal = 0f;
+            legacy.Greater = 0f;
+
+            var lesser = GemStatResolver.Apply(baseline, new[] { legacy }, GemRarity.Lesser);
+            var normal = GemStatResolver.Apply(baseline, new[] { legacy }, GemRarity.Normal);
+            var greater = GemStatResolver.Apply(baseline, new[] { legacy }, GemRarity.Greater);
+
+            Assert.AreEqual(7f, lesser.Damage, 1e-4f);
+            Assert.AreEqual(7f, normal.Damage, 1e-4f);
+            Assert.AreEqual(7f, greater.Damage, 1e-4f);
+        }
     }
 }

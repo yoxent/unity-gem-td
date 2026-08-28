@@ -200,6 +200,101 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Straight_Hit_RecordsTargetForSkillLabFeedback()
+        {
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
+            var dummy = MakeEnemy(new Vector3(3f, 0f, 0f));
+            var tracer = new AttackTracer();
+            var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.HitTargets.Count);
+            Assert.AreSame(dummy, trace.HitTargets[0]);
+        }
+
+        [Test]
+        public void WarpStrike_RecordsCueAndMagmaHits()
+        {
+            _projectileTower.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
+            _projectileRole.AimMode = AimMode.Direct;
+            _projectileRole.DeliveryPattern = DeliveryPattern.WarpStrike;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _projectileRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.OnImpact,
+                    Anchor = EffectPayloadAnchor.PrimaryTarget,
+                    TravelPattern = EffectPayloadTravelPattern.Fountain,
+                    ScatterPattern = EffectPayloadScatterPattern.FixedRadial,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Count = 4,
+                    DamageMultiplier = 0.4f,
+                    AoeRadius = 1f,
+                    MinDistance = 2f,
+                    MaxDistance = 2f
+                }
+            };
+
+            var primary = MakeEnemy(new Vector3(4f, 0f, 0f));
+            var magmaHit = MakeEnemy(new Vector3(4f, 0f, 2f));
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.Id = GemId.Knockback;
+            gem.Tags = GemTag.Support;
+            gem.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.OnImpact,
+                    Anchor = EffectPayloadAnchor.PrimaryTarget,
+                    TravelPattern = EffectPayloadTravelPattern.Fountain,
+                    ScatterPattern = EffectPayloadScatterPattern.FixedRadial,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Count = 1,
+                    DamageMultiplier = 1f,
+                    AoeRadius = 0.6f,
+                    MinDistance = 0.5f,
+                    MaxDistance = 0.5f
+                }
+            };
+
+            try
+            {
+                var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
+                var roleOnlyTrace = new AttackTracer().Trace(
+                    tower,
+                    Vector3.zero,
+                    Living(primary, magmaHit));
+                var roleOnlyMagmaDiscCount = CountDiscKind(roleOnlyTrace, AttackTraceKind.Magma);
+                var roleOnlyPayloadHitCount = roleOnlyTrace.PayloadHitRecords.Count;
+
+                Assert.IsTrue(tower.TrySocket(gem, 0, allowSocket: true));
+                var trace = new AttackTracer().Trace(
+                    tower,
+                    Vector3.zero,
+                    Living(primary, magmaHit));
+
+                Assert.IsTrue(trace.HasTarget);
+                Assert.AreEqual(1, CountKind(trace, AttackTraceKind.WarpRise));
+                Assert.AreEqual(1, CountKind(trace, AttackTraceKind.WarpDrop));
+                Assert.AreEqual(roleOnlyMagmaDiscCount + 1, CountDiscKind(trace, AttackTraceKind.Magma));
+                Assert.AreEqual(roleOnlyPayloadHitCount + 1, trace.PayloadHitRecords.Count);
+                CollectionAssert.Contains(trace.HitTargets, primary);
+                CollectionAssert.Contains(trace.HitTargets, magmaHit);
+                Assert.AreEqual(1000f, primary.Hp, 1e-3f);
+                Assert.AreEqual(1000f, magmaHit.Hp, 1e-3f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(gem);
+            }
+        }
+
+        [Test]
         public void OutOfRange_HasNoTarget()
         {
             _projectileRole.Levels = new[]
@@ -269,6 +364,18 @@ namespace GemTD.Tests.EditMode
             for (var i = 0; i < trace.Segments.Count; i++)
             {
                 if (trace.Segments[i].Kind == kind)
+                    n++;
+            }
+
+            return n;
+        }
+
+        static int CountDiscKind(AttackTrace trace, AttackTraceKind kind)
+        {
+            var n = 0;
+            for (var i = 0; i < trace.Discs.Count; i++)
+            {
+                if (trace.Discs[i].Kind == kind)
                     n++;
             }
 

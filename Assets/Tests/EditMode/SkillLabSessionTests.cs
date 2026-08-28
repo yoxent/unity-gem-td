@@ -119,6 +119,7 @@ namespace GemTD.Tests.EditMode
             session.SetSocket(0, GemId.MultipleProjectiles);
             Assert.AreEqual(0, session.LastTrace.Segments.Count);
             Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
+            Assert.AreEqual(GemRarity.Normal, session.Tower.Sockets[0].Rarity);
         }
 
         [Test]
@@ -169,6 +170,7 @@ namespace GemTD.Tests.EditMode
             session.SetSocket(0, GemId.MultipleProjectiles);
             session.SelectTower(0);
             Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
+            Assert.AreEqual(GemRarity.Normal, session.Tower.Sockets[0].Rarity);
         }
 
         [Test]
@@ -211,9 +213,12 @@ namespace GemTD.Tests.EditMode
             session.SetSocket(0, GemId.MultipleProjectiles);
             session.SetSocket(1, GemId.Chain);
             session.SetSocket(2, GemId.Fork);
+            Assert.AreEqual(GemRarity.Normal, session.Tower.Sockets[0].Rarity);
+            Assert.AreEqual(GemRarity.Normal, session.Tower.Sockets[1].Rarity);
+            Assert.AreEqual(GemRarity.Normal, session.Tower.Sockets[2].Rarity);
             Assert.IsFalse(session.IsHydra);
             session.SetSocket(2, GemId.None);
-            Assert.IsNull(session.Tower.Sockets[2]);
+            Assert.IsTrue(session.Tower.Sockets[2].IsEmpty);
             Assert.IsFalse(session.IsHydra);
         }
 
@@ -224,7 +229,7 @@ namespace GemTD.Tests.EditMode
             session.SetSocket(0, GemId.MultipleProjectiles);
             session.SetSocket(1, GemId.MultipleProjectiles);
             Assert.AreEqual(GemId.MultipleProjectiles, session.Tower.Sockets[0].Id);
-            Assert.IsNull(session.Tower.Sockets[1]);
+            Assert.IsTrue(session.Tower.Sockets[1].IsEmpty);
         }
 
         static RoleStatModifier Modifier(RoleStat stat, float value)

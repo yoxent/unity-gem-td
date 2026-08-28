@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 185
   DisplayName: Bonechill
-  Description: Strengthens chill and damage against chilled enemies. Requires chilled targets and reduces direct damage. Enemies Chilled by Supported Skills increase Cold Damage taken by Chill Effect Enemies in Chilling Areas from Supported Skills increase Cold Damage taken by Chill Effect
+  Description: Strengthens chill and damage against chilled enemies. Requires chilled
+    targets and reduces direct damage.
   DraftWeight: 1
   Tags: 256
   Modifiers:
@@ -24,6 +25,9 @@ MonoBehaviour:
     Value: 1.34
     Min: 0
     Max: 0
+    Lesser: 1.25
+    Normal: 1.34
+    Greater: 1.44
     Falloff: 0
   - Stat: 0
     Operation: 2
@@ -31,4 +35,8 @@ MonoBehaviour:
     Value: 1.09
     Min: 0
     Max: 0
+    Lesser: 1.05
+    Normal: 1.09
+    Greater: 1.14
     Falloff: 0
+  EffectPayloads: []

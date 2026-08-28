@@ -14,21 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 14
   DisplayName: Chance to Bleed
-  Description: 25% chance to Bleed. Bleed damage ×1.19.
+  Description: Increases the tower's offensive output in a specialized way. Reduces
+    another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
   Tags: 264
   Modifiers:
-  - Stat: 20
-    Operation: 0
-    ValueKind: 0
-    Value: 0.25
-    Min: 0
-    Max: 0
-    Falloff: 0
   - Stat: 48
     Operation: 2
     ValueKind: 0
     Value: 1.19
     Min: 0
     Max: 0
+    Lesser: 1.1
+    Normal: 1.19
+    Greater: 1.29
     Falloff: 0
+  - Stat: 20
+    Operation: 0
+    ValueKind: 0
+    Value: 0.25
+    Min: 0
+    Max: 0
+    Lesser: 0.25
+    Normal: 0.25
+    Greater: 0.25
+    Falloff: 0
+  EffectPayloads: []

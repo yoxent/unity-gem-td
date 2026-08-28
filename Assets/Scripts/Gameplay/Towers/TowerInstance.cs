@@ -11,7 +11,7 @@ namespace GemTD.Gameplay.Towers
 
         public Vector2Int Cell { get; }
         public TowerDefinition Def { get; }
-        public GemDefinition[] Sockets { get; }
+        public GemInstance[] Sockets { get; }
         public float Cooldown { get; set; }
         public TargetingRecipe Targeting { get; set; }
         public int PurchaseCost { get; }
@@ -39,7 +39,7 @@ namespace GemTD.Gameplay.Towers
             _levelIndex = 0;
             Level = DefaultLevel;
             var socketCount = def != null && def.SocketCount > 0 ? def.SocketCount : 1;
-            Sockets = new GemDefinition[socketCount];
+            Sockets = new GemInstance[socketCount];
             Targeting = TargetingRecipe.Default;
         }
 
@@ -54,7 +54,7 @@ namespace GemTD.Gameplay.Towers
             {
                 for (var i = 0; i < Sockets.Length; i++)
                 {
-                    if (Sockets[i] != null)
+                    if (!Sockets[i].IsEmpty)
                         return true;
                 }
 
@@ -62,12 +62,12 @@ namespace GemTD.Gameplay.Towers
             }
         }
 
-        public bool TrySocket(GemDefinition gem, int index, bool allowSocket)
+        public bool TrySocket(GemInstance gem, int index, bool allowSocket)
         {
-            if (!allowSocket || gem == null || index < 0 || index >= Sockets.Length)
+            if (!allowSocket || gem.IsEmpty || index < 0 || index >= Sockets.Length)
                 return false;
 
-            if (Sockets[index] != null)
+            if (!Sockets[index].IsEmpty)
                 return false;
 
             if (!GemTags.CanSocket(Def, gem))
@@ -76,10 +76,8 @@ namespace GemTD.Gameplay.Towers
             for (var i = 0; i < Sockets.Length; i++)
             {
                 var existing = Sockets[i];
-                if (existing == null)
+                if (existing.IsEmpty)
                     continue;
-                if (existing == gem)
-                    return false;
                 if (gem.Id != GemId.None && existing.Id == gem.Id)
                     return false;
             }
@@ -88,25 +86,30 @@ namespace GemTD.Gameplay.Towers
             return true;
         }
 
-        public bool TryUnsocket(int index, out GemDefinition gem, bool allowSocket, bool ignoreHydraLock = false)
+        public bool TrySocket(GemDefinition gem, int index, bool allowSocket)
+        {
+            return TrySocket(GemInstance.FromDefinition(gem), index, allowSocket);
+        }
+
+        public bool TryUnsocket(int index, out GemInstance gem, bool allowSocket, bool ignoreHydraLock = false)
         {
             if (!allowSocket || index < 0 || index >= Sockets.Length)
             {
-                gem = null;
+                gem = default;
                 return false;
             }
 
             gem = Sockets[index];
-            if (gem == null)
+            if (gem.IsEmpty)
                 return false;
 
             if (!ignoreHydraLock && EvolutionEvaluator.IsHydraTower(this))
             {
-                gem = null;
+                gem = default;
                 return false;
             }
 
-            Sockets[index] = null;
+            Sockets[index] = default;
             return true;
         }
     }

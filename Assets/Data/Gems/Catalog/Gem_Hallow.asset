@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 18
   DisplayName: Hallow
-  Description: Melee hits apply Hallowing Flame (6s). Other towers' hits vs that enemy
-    deal extra fire (25% of physical, magnitude +16%) then consume the flame. The
-    inflictor does not benefit.
+  Description: Fundamentally changes the tower into a new functional archetype. Replaces
+    or restricts part of the tower's original behavior and introduces a meaningful
+    tradeoff.
   DraftWeight: 1
   Tags: 328
   Modifiers:
@@ -26,6 +26,9 @@ MonoBehaviour:
     Value: 1
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 1
+    Greater: 1
     Falloff: 0
   - Stat: 37
     Operation: 0
@@ -33,6 +36,9 @@ MonoBehaviour:
     Value: 0.25
     Min: 0
     Max: 0
+    Lesser: 0.25
+    Normal: 0.25
+    Greater: 0.25
     Falloff: 0
   - Stat: 37
     Operation: 2
@@ -40,4 +46,8 @@ MonoBehaviour:
     Value: 1.16
     Min: 0
     Max: 0
+    Lesser: 1
+    Normal: 1.16
+    Greater: 1.36
     Falloff: 0
+  EffectPayloads: []

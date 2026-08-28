@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 109
   DisplayName: Faster Projectiles
-  Description: Projectiles travel faster and gain effective reach. Projectile damage is reduced.
+  Description: Projectiles travel faster and gain effective reach. Projectile damage
+    is reduced.
   DraftWeight: 1
   Tags: 257
   Modifiers:
@@ -24,6 +25,9 @@ MonoBehaviour:
     Value: 1.59
     Min: 0
     Max: 0
+    Lesser: 1.5
+    Normal: 1.59
+    Greater: 1.69
     Falloff: 0
   - Stat: 0
     Operation: 2
@@ -31,4 +35,8 @@ MonoBehaviour:
     Value: 1.24
     Min: 0
     Max: 0
+    Lesser: 1.2
+    Normal: 1.24
+    Greater: 1.29
     Falloff: 0
+  EffectPayloads: []

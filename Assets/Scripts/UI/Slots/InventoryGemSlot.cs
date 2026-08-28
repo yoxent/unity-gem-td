@@ -33,29 +33,31 @@ namespace GemTD.UI
         GameCompositionRoot _root;
         PopupManager _popup;
         int _slotIndex = -1;
-        GemDefinition _gem;
+        GemInstance _gem;
         bool _pointerOverSlot;
         bool _pointerOverX;
 
-        public void Configure(GameCompositionRoot root, PopupManager popup, int slotIndex, GemDefinition gem)
+        public void Configure(GameCompositionRoot root, PopupManager popup, int slotIndex, GemInstance gem)
         {
             _root = root;
             _popup = popup;
             _slotIndex = slotIndex;
             _gem = gem;
-            if (icon != null) icon.color = gem != null ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
-            if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
+            if (icon != null) icon.color = !gem.IsEmpty ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
+            if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : "—";
             if (slotEvents != null)
-                slotEvents.SetBaseColor(gem != null ? FilledColor : EmptyColor);
+                slotEvents.SetBaseColor(!gem.IsEmpty ? FilledColor : EmptyColor);
             RefreshDisabledOverlay();
             RefreshXVisible();
         }
 
-        public static bool ShouldShowDisabledOverlay(GemDefinition gem, TowerDefinition selectedTower)
+        public static bool ShouldShowDisabledOverlay(
+            GemInstance gem,
+            TowerDefinition selectedTower)
         {
-            if (gem == null || selectedTower == null)
-                return false;
-            return !GemTags.CanSocket(selectedTower, gem);
+            return !gem.IsEmpty
+                && selectedTower != null
+                && !GemTags.CanSocket(selectedTower, gem);
         }
 
         public void RefreshDisabledOverlay()
@@ -127,14 +129,14 @@ namespace GemTD.UI
             var show = (_pointerOverSlot || _pointerOverX)
                        && _root != null && _root.States != null
                        && _root.States.Current == RunStateId.Plan
-                       && _gem != null
+                       && !_gem.IsEmpty
                        && !dragging;
             xButton.gameObject.SetActive(show);
         }
 
         void OnXClicked()
         {
-            if (_root == null || _popup == null || _gem == null)
+            if (_root == null || _popup == null || _gem.IsEmpty)
                 return;
             if (slotEvents != null && slotEvents.DragStarted)
                 return;
@@ -162,7 +164,7 @@ namespace GemTD.UI
 
         void OnSlotRightClicked(PointerEventData eventData)
         {
-            if (_root == null || _gem == null)
+            if (_root == null || _gem.IsEmpty)
                 return;
             if (_root.States == null)
                 return;
@@ -240,7 +242,7 @@ namespace GemTD.UI
         {
             if (_root == null || _root.States == null)
                 return false;
-            if (!IsReorderState(_root.States.Current) || _gem == null)
+            if (!IsReorderState(_root.States.Current) || _gem.IsEmpty)
                 return false;
             if (xButton != null && eventData.pointerEnter == xButton.gameObject)
                 return false;
@@ -281,7 +283,7 @@ namespace GemTD.UI
             tmp.raycastTarget = false;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.fontSize = nameLabel != null ? nameLabel.fontSize : 16f;
-            tmp.text = nameLabel != null ? nameLabel.text : (_gem != null ? _gem.DisplayName : "—");
+            tmp.text = nameLabel != null ? nameLabel.text : (!_gem.IsEmpty ? _gem.DisplayName : "—");
             if (nameLabel != null)
                 tmp.font = nameLabel.font;
 

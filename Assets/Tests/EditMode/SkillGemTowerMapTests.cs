@@ -1,3 +1,4 @@
+using System.Globalization;
 using NUnit.Framework;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
@@ -326,13 +327,36 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1.46f, FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value, 0.001f);
             Assert.AreEqual(3.292f, FindModifier(attack.Levels[1].Modifiers, RoleStat.Damage).Value, 0.001f);
             Assert.AreEqual(7.003f, FindModifier(attack.Levels[2].Modifiers, RoleStat.Damage).Value, 0.001f);
-            Assert.AreEqual(4f, FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value, 0.001f);
+            Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
+            Assert.AreEqual(1, attack.EffectPayloads.Length);
+            var magma = attack.EffectPayloads[0];
+            Assert.AreEqual(EffectPayloadTrigger.OnImpact, magma.Trigger);
+            Assert.AreEqual(EffectPayloadAnchor.PrimaryTarget, magma.Anchor);
+            Assert.AreEqual(EffectPayloadTravelPattern.Fountain, magma.TravelPattern);
+            Assert.AreEqual(EffectPayloadScatterPattern.RandomRing, magma.ScatterPattern);
+            Assert.AreEqual(EffectPayloadHitPolicy.PerImpact, magma.HitPolicy);
+            Assert.AreEqual(GemTag.Aoe | GemTag.Projectile, magma.Tags);
+            Assert.AreEqual(4, magma.Count);
+            Assert.AreEqual(0.4f, magma.DamageMultiplier, 0.001f);
+            Assert.AreEqual(1f, magma.AoeRadius, 0.001f);
+            Assert.AreEqual(1f, magma.MinDistance, 0.001f);
+            Assert.AreEqual(4f, magma.MaxDistance, 0.001f);
             SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
             Assert.AreEqual(AimMode.Direct, aim);
             Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
             Assert.IsFalse(HasModifier(attack.Levels[0], RoleStat.SplashRadius));
             Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.SplashRadius));
             Assert.IsTrue(r.IsActiveCatalogCompatible);
+        }
+
+        [Test]
+        public void HeavyStrike_HasNoEffectPayloads()
+        {
+            var r = SkillGemTowerMap.FromJson(HeavyStrikeJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
+            Assert.IsNotNull(attack.EffectPayloads);
+            Assert.AreEqual(0, attack.EffectPayloads.Length);
         }
 
         [Test]
@@ -370,7 +394,7 @@ namespace GemTD.Tests.EditMode
                 projectile: true,
                 attackSpeed: 100f,
                 level1Multiply: 1.46f,
-                projectileCount: 4f,
+                projectileCount: null,
                 levelCount: 3);
 
             AssertCheckAttack(
@@ -424,6 +448,233 @@ namespace GemTD.Tests.EditMode
                 level1Multiply: 2.565f,
                 projectileCount: null,
                 levelCount: 2);
+        }
+
+        [Test]
+        public void AttackProofSetTwo_MapsFullLevelsAndRuntimeDelivery()
+        {
+            AssertAttackProof(
+                BuildAttackJson(
+                    "Double Strike",
+                    "Double_Strike",
+                    "[\"Attack\",\"Melee\",\"Strike\",\"Physical\"]",
+                    80f,
+                    168.2f,
+                    210.9f,
+                    263.6f,
+                    329.2f,
+                    409.6f,
+                    504.4f,
+                    621.1f,
+                    762.6f,
+                    847.1f,
+                    941f),
+                "Double_Strike",
+                GemTag.Attack | GemTag.Melee | GemTag.Strike,
+                AimMode.Direct,
+                DeliveryPattern.WarpStrike,
+                attackSpeed: 80f,
+                towerRadius: 3.5f,
+                projectile: false,
+                projectileCount: null,
+                level1DamagePercent: 168.2f,
+                level10DamagePercent: 941f);
+
+            AssertAttackProof(
+                BuildAttackJson(
+                    "Dual Strike",
+                    "Dual_Strike",
+                    "[\"Critical\",\"Attack\",\"Melee\",\"Strike\"]",
+                    70f,
+                    181.7f,
+                    227.8f,
+                    284.7f,
+                    355.6f,
+                    442.4f,
+                    544.8f,
+                    670.7f,
+                    823.6f,
+                    914.9f,
+                    1016.2f),
+                "Dual_Strike",
+                GemTag.Attack | GemTag.Melee | GemTag.Strike,
+                AimMode.Direct,
+                DeliveryPattern.WarpStrike,
+                attackSpeed: 70f,
+                towerRadius: 3.5f,
+                projectile: false,
+                projectileCount: null,
+                level1DamagePercent: 181.7f,
+                level10DamagePercent: 1016.2f);
+
+            AssertAttackProof(
+                BuildAttackJson(
+                    "Holy Hammers",
+                    "Holy_Hammers",
+                    "[\"Attack\",\"Slam\",\"Melee\",\"AoE\",\"Lightning\"]",
+                    85f,
+                    135.8f,
+                    156.8f,
+                    177.9f,
+                    198.9f,
+                    220f,
+                    241.1f,
+                    262.1f,
+                    277.9f,
+                    288.4f,
+                    298.9f),
+                "Holy_Hammers",
+                GemTag.Attack | GemTag.Slam | GemTag.Melee | GemTag.Aoe,
+                AimMode.Ground,
+                DeliveryPattern.GroundPulse,
+                attackSpeed: 85f,
+                towerRadius: 3.5f,
+                projectile: false,
+                projectileCount: null,
+                level1DamagePercent: 135.8f,
+                level10DamagePercent: 298.9f);
+
+            AssertAttackProof(
+                BuildAttackJson(
+                    "Ice Crash",
+                    "Ice_Crash",
+                    "[\"Attack\",\"AoE\",\"Melee\",\"Cold\",\"Slam\"]",
+                    70f,
+                    368.2f,
+                    418.7f,
+                    475.1f,
+                    539.2f,
+                    611.6f,
+                    693.8f,
+                    786.9f,
+                    889.6f,
+                    947.7f,
+                    1009.5f),
+                "Ice_Crash",
+                GemTag.Attack | GemTag.Aoe | GemTag.Melee | GemTag.Slam,
+                AimMode.Ground,
+                DeliveryPattern.GroundPulse,
+                attackSpeed: 70f,
+                towerRadius: 3.5f,
+                projectile: false,
+                projectileCount: null,
+                level1DamagePercent: 368.2f,
+                level10DamagePercent: 1009.5f);
+
+            AssertAttackProof(
+                BuildAttackJson(
+                    "Kinetic Blast",
+                    "Kinetic_Blast",
+                    "[\"Attack\",\"Projectile\",\"AoE\"]",
+                    115f,
+                    142.4f,
+                    145.5f,
+                    148.7f,
+                    151.8f,
+                    155f,
+                    158.2f,
+                    161.3f,
+                    163.7f,
+                    165.3f,
+                    166.8f),
+                "Kinetic_Blast",
+                GemTag.Attack | GemTag.Projectile | GemTag.Aoe,
+                AimMode.Direct,
+                DeliveryPattern.Straight,
+                attackSpeed: 115f,
+                towerRadius: 5f,
+                projectile: true,
+                projectileCount: 1f,
+                level1DamagePercent: 142.4f,
+                level10DamagePercent: 166.8f);
+        }
+
+        static string BuildAttackJson(
+            string name,
+            string slug,
+            string tagsJson,
+            float attackSpeed,
+            params float[] damagePercents)
+        {
+            var levels = string.Empty;
+            for (var i = 0; i < damagePercents.Length; i++)
+            {
+                if (i > 0)
+                    levels += ",";
+
+                levels += "\""
+                    + (i + 1)
+                    + "\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":"
+                    + damagePercents[i].ToString(CultureInfo.InvariantCulture)
+                    + "}}";
+            }
+
+            return "{\"name\":\""
+                + name
+                + "\",\"slug\":\""
+                + slug
+                + "\",\"tags\":"
+                + tagsJson
+                + ",\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":"
+                + attackSpeed.ToString(CultureInfo.InvariantCulture)
+                + "}},\"levels\":{"
+                + levels
+                + "}}";
+        }
+
+        static void AssertAttackProof(
+            string json,
+            string slug,
+            GemTag tags,
+            AimMode aim,
+            DeliveryPattern delivery,
+            float attackSpeed,
+            float towerRadius,
+            bool projectile,
+            float? projectileCount,
+            float level1DamagePercent,
+            float level10DamagePercent)
+        {
+            var result = SkillGemTowerMap.FromJson(json);
+            var attack = result.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.AreEqual(slug, result.Slug);
+            Assert.AreEqual(tags, result.Tags);
+            Assert.AreEqual(1, result.RoleKinds.Length);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, result.RoleKinds[0]);
+            Assert.AreEqual(10, result.SourceLevels.Length);
+            Assert.AreEqual(10, attack.Levels.Length);
+            for (var i = 0; i < 10; i++)
+                Assert.AreEqual(i + 1, result.SourceLevels[i]);
+
+            Assert.AreEqual(1f, FindModifier(attack.Modifiers, RoleStat.AttackTime).Value, 0.001f);
+            Assert.AreEqual(attackSpeed, FindModifier(attack.Modifiers, RoleStat.AttackSpeed).Value, 0.001f);
+            Assert.AreEqual(towerRadius, FindModifier(attack.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(10f, FindModifier(attack.Modifiers, RoleStat.Damage).Value, 0.001f);
+            Assert.AreEqual(projectile, HasModifier(attack.Modifiers, RoleStat.ProjectileSpeed));
+            if (projectileCount.HasValue)
+                Assert.AreEqual(
+                    projectileCount.Value,
+                    FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value,
+                    0.001f);
+            else
+                Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
+
+            Assert.AreEqual(
+                RoleModifierOperation.Multiply,
+                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
+            Assert.AreEqual(
+                level1DamagePercent / 100f,
+                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value,
+                0.001f);
+            Assert.AreEqual(
+                level10DamagePercent / 100f,
+                FindModifier(attack.Levels[9].Modifiers, RoleStat.Damage).Value,
+                0.001f);
+            Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.SplashRadius));
+            Assert.IsFalse(HasModifier(attack.Levels[0], RoleStat.SplashRadius));
+            SkillGemTowerMap.ResolveFireBehavior(result.Tags, out var mappedAim, out var mappedDelivery);
+            Assert.AreEqual(aim, mappedAim);
+            Assert.AreEqual(delivery, mappedDelivery);
         }
 
         static void AssertCheckAttack(

@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
   Id: 12
   DisplayName: Added Lightning Damage
-  Description: +4 added damage. Apply Shock.
+  Description: Adds lightning damage. Other scaling is diluted by the added damage
+    type.
   DraftWeight: 1
   Tags: 256
   Modifiers:
@@ -24,9 +25,8 @@ MonoBehaviour:
     Value: 4
     Min: 0
     Max: 0
-  - Stat: 16
-    Operation: 0
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
+    Lesser: 1
+    Normal: 4
+    Greater: 19
+    Falloff: 0
+  EffectPayloads: []
