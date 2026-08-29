@@ -71,5 +71,13 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(GemRarity.Normal, table.Roll(new System.Random(123)));
             UnityEngine.Object.DestroyImmediate(table);
         }
+
+        [Test]
+        public void RarityTable_StaticRoll_UsesProvidedWeights()
+        {
+            Assert.AreEqual(
+                GemRarity.Greater,
+                GemRarityTable.Roll(new System.Random(123), lesserWeight: 0f, normalWeight: 0f, greaterWeight: 1f));
+        }
     }
 }

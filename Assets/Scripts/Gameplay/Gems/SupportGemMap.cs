@@ -725,11 +725,15 @@ namespace GemTD.Gameplay.Gems
         {
             if (name == "Chain Support")
             {
-                modifiers.Add(GemStatModifier.Single(
+                modifiers.Add(GemStatModifier.TieredSingle(
                     GemStat.ChainCount,
                     RoleModifierOperation.Add,
-                    1f,
-                    ProjectileRuntime.DefaultChainHopFalloff));
+                    lesser: 1f,
+                    normal: 1f,
+                    greater: 1f,
+                    lesserFalloff: ProjectileRuntime.LesserChainHopFalloff,
+                    normalFalloff: ProjectileRuntime.DefaultChainHopFalloff,
+                    greaterFalloff: ProjectileRuntime.GreaterChainHopFalloff));
                 RemoveFlavorContaining(flavor, "Chain # times");
             }
 

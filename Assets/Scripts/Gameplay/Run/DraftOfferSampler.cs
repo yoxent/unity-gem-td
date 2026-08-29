@@ -184,10 +184,26 @@ namespace GemTD.Gameplay.Run
             if (definition == null)
                 return default;
 
-            var rarity = rarityTable != null
+            return new GemInstance(definition, RollRarity(definition, rarityTable, rng));
+        }
+
+        static GemRarity RollRarity(
+            GemDefinition definition,
+            GemRarityTable rarityTable,
+            System.Random rng)
+        {
+            if (definition.HasCustomRarityWeights)
+            {
+                return GemRarityTable.Roll(
+                    rng,
+                    definition.LesserRarityWeight,
+                    definition.NormalRarityWeight,
+                    definition.GreaterRarityWeight);
+            }
+
+            return rarityTable != null
                 ? rarityTable.Roll(rng)
                 : GemRarity.Normal;
-            return new GemInstance(definition, rarity);
         }
 
         static TowerDefinition TakeTower(List<TowerDefinition> pool, System.Random rng)

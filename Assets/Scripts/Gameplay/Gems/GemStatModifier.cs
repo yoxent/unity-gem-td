@@ -74,11 +74,20 @@ namespace GemTD.Gameplay.Gems
         public float Lesser;
         public float Normal;
         public float Greater;
-        [Tooltip("ChainCount only. Per-hop damage factor. 0 = no falloff (hops keep full damage).")]
+        [Tooltip("ChainCount only. Resolved per-hop damage factor. 0 = no falloff (hops keep full damage).")]
         public float Falloff;
+        [Tooltip("ChainCount only. Lesser rarity hop falloff. 0 with other tiers 0 = use Falloff for every rarity.")]
+        public float LesserFalloff;
+        [Tooltip("ChainCount only. Normal rarity hop falloff.")]
+        public float NormalFalloff;
+        [Tooltip("ChainCount only. Greater rarity hop falloff.")]
+        public float GreaterFalloff;
 
         public bool HasTierValues =>
             Lesser != 0f || Normal != 0f || Greater != 0f;
+
+        public bool HasTierFalloff =>
+            LesserFalloff != 0f || NormalFalloff != 0f || GreaterFalloff != 0f;
 
         public float OperandMin => ValueKind == RoleStatValueKind.Range ? Min : Value;
 
@@ -92,7 +101,7 @@ namespace GemTD.Gameplay.Gems
             float value,
             float falloff = 0f)
         {
-            return TieredSingle(stat, operation, value, value, value, falloff);
+            return TieredSingle(stat, operation, value, value, value, falloff, falloff, falloff);
         }
 
         public static GemStatModifier TieredSingle(
@@ -103,6 +112,19 @@ namespace GemTD.Gameplay.Gems
             float greater,
             float falloff = 0f)
         {
+            return TieredSingle(stat, operation, lesser, normal, greater, falloff, falloff, falloff);
+        }
+
+        public static GemStatModifier TieredSingle(
+            GemStat stat,
+            RoleModifierOperation operation,
+            float lesser,
+            float normal,
+            float greater,
+            float lesserFalloff,
+            float normalFalloff,
+            float greaterFalloff)
+        {
             return new GemStatModifier
             {
                 Stat = stat,
@@ -112,7 +134,10 @@ namespace GemTD.Gameplay.Gems
                 Normal = normal,
                 Greater = greater,
                 Value = normal,
-                Falloff = falloff
+                Falloff = normalFalloff,
+                LesserFalloff = lesserFalloff,
+                NormalFalloff = normalFalloff,
+                GreaterFalloff = greaterFalloff
             };
         }
 
@@ -134,29 +159,52 @@ namespace GemTD.Gameplay.Gems
 
         public GemStatModifier Resolve(GemRarity rarity)
         {
-            if (!HasTierValues)
+            if (!HasTierValues && !HasTierFalloff)
                 return this;
 
-            var value = Value;
-            switch (GemRarityUtility.Normalize(rarity))
-            {
-                case GemRarity.Lesser:
-                    value = Lesser;
-                    break;
-                case GemRarity.Greater:
-                    value = Greater;
-                    break;
-                case GemRarity.Normal:
-                default:
-                    value = Normal;
-                    break;
-            }
-
+            var normalized = GemRarityUtility.Normalize(rarity);
             var resolved = this;
             resolved.ValueKind = RoleStatValueKind.Single;
-            resolved.Value = value;
-            resolved.Min = value;
-            resolved.Max = value;
+
+            if (HasTierValues)
+            {
+                var value = Value;
+                switch (normalized)
+                {
+                    case GemRarity.Lesser:
+                        value = Lesser;
+                        break;
+                    case GemRarity.Greater:
+                        value = Greater;
+                        break;
+                    case GemRarity.Normal:
+                    default:
+                        value = Normal;
+                        break;
+                }
+
+                resolved.Value = value;
+                resolved.Min = value;
+                resolved.Max = value;
+            }
+
+            if (HasTierFalloff)
+            {
+                switch (normalized)
+                {
+                    case GemRarity.Lesser:
+                        resolved.Falloff = LesserFalloff;
+                        break;
+                    case GemRarity.Greater:
+                        resolved.Falloff = GreaterFalloff;
+                        break;
+                    case GemRarity.Normal:
+                    default:
+                        resolved.Falloff = NormalFalloff;
+                        break;
+                }
+            }
+
             return resolved;
         }
     }

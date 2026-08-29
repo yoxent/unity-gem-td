@@ -40,6 +40,9 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(GemStat.ChainCount, result.Modifiers[1].Stat);
             Assert.AreEqual(RoleModifierOperation.Add, result.Modifiers[1].Operation);
             Assert.AreEqual(1f, result.Modifiers[1].Value, 1e-4f);
+            Assert.AreEqual(ProjectileRuntime.LesserChainHopFalloff, result.Modifiers[1].LesserFalloff, 1e-4f);
+            Assert.AreEqual(ProjectileRuntime.DefaultChainHopFalloff, result.Modifiers[1].NormalFalloff, 1e-4f);
+            Assert.AreEqual(ProjectileRuntime.GreaterChainHopFalloff, result.Modifiers[1].GreaterFalloff, 1e-4f);
             Assert.AreEqual(ProjectileRuntime.DefaultChainHopFalloff, result.Modifiers[1].Falloff, 1e-4f);
             Assert.AreEqual(0, result.FlavorTexts.Length);
         }

@@ -56,6 +56,52 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ChainCount_TieredFalloff_UsesSelectedRarity()
+        {
+            var baseline = SkillSpec.FromBase(10f);
+            var modifier = GemStatModifier.TieredSingle(
+                GemStat.ChainCount,
+                RoleModifierOperation.Add,
+                lesser: 1f,
+                normal: 1f,
+                greater: 1f,
+                lesserFalloff: ProjectileRuntime.LesserChainHopFalloff,
+                normalFalloff: ProjectileRuntime.DefaultChainHopFalloff,
+                greaterFalloff: ProjectileRuntime.GreaterChainHopFalloff);
+
+            var lesser = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Lesser);
+            var normal = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Normal);
+            var greater = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Greater);
+
+            Assert.AreEqual(ProjectileRuntime.LesserChainHopFalloff, lesser.ChainHopFalloff, 1e-4f);
+            Assert.AreEqual(ProjectileRuntime.DefaultChainHopFalloff, normal.ChainHopFalloff, 1e-4f);
+            Assert.AreEqual(ProjectileRuntime.GreaterChainHopFalloff, greater.ChainHopFalloff, 1e-4f);
+        }
+
+        [Test]
+        public void ChainCount_LegacySingleFalloff_AppliesToEveryRarity()
+        {
+            var baseline = SkillSpec.FromBase(10f);
+            var legacy = new GemStatModifier
+            {
+                Stat = GemStat.ChainCount,
+                Operation = RoleModifierOperation.Add,
+                ValueKind = RoleStatValueKind.Single,
+                Value = 1f,
+                Lesser = 1f,
+                Normal = 1f,
+                Greater = 1f,
+                Falloff = 0.55f
+            };
+
+            var lesser = GemStatResolver.Apply(baseline, new[] { legacy }, GemRarity.Lesser);
+            var greater = GemStatResolver.Apply(baseline, new[] { legacy }, GemRarity.Greater);
+
+            Assert.AreEqual(0.55f, lesser.ChainHopFalloff, 1e-4f);
+            Assert.AreEqual(0.55f, greater.ChainHopFalloff, 1e-4f);
+        }
+
+        [Test]
         public void EmptyModifiers_LeaveBaseline()
         {
             var baseline = SkillSpec.FromBase(10f);

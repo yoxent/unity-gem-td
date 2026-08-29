@@ -12,12 +12,21 @@ namespace GemTD.Gameplay.Gems
 
         public GemRarity Roll(System.Random rng)
         {
+            return Roll(rng, LesserWeight, NormalWeight, GreaterWeight);
+        }
+
+        public static GemRarity Roll(
+            System.Random rng,
+            float lesserWeight,
+            float normalWeight,
+            float greaterWeight)
+        {
             if (rng == null)
                 throw new ArgumentNullException(nameof(rng));
 
-            var lesser = SafeWeight(LesserWeight);
-            var normal = SafeWeight(NormalWeight);
-            var greater = SafeWeight(GreaterWeight);
+            var lesser = SafeWeight(lesserWeight);
+            var normal = SafeWeight(normalWeight);
+            var greater = SafeWeight(greaterWeight);
             var total = lesser + normal + greater;
             if (total <= 0f)
                 return GemRarity.Normal;

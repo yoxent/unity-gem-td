@@ -131,6 +131,31 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void CampaignSampling_FamilyRarityOverride_BeatsCatalogTable()
+        {
+            var catalog = MakeCatalog(DraftMixKind.TwoGemsOneTowerContested, gems: 3, towers: 2);
+            catalog.RarityTable = MakeRarityTable(lesser: 1f, normal: 0f, greater: 0f);
+            catalog.GemPool.Gems[0].LesserRarityWeight = 0f;
+            catalog.GemPool.Gems[0].NormalRarityWeight = 0f;
+            catalog.GemPool.Gems[0].GreaterRarityWeight = 1f;
+            catalog.GemPool.Gems[1].LesserRarityWeight = 0f;
+            catalog.GemPool.Gems[1].NormalRarityWeight = 0f;
+            catalog.GemPool.Gems[1].GreaterRarityWeight = 1f;
+            catalog.GemPool.Gems[2].LesserRarityWeight = 0f;
+            catalog.GemPool.Gems[2].NormalRarityWeight = 0f;
+            catalog.GemPool.Gems[2].GreaterRarityWeight = 1f;
+
+            var offer = new List<DraftOfferCard>();
+            DraftOfferSampler.Fill(offer, catalog, new System.Random(11), shuffle: false);
+
+            for (var i = 0; i < offer.Count; i++)
+            {
+                if (offer[i].IsGem)
+                    Assert.AreEqual(GemRarity.Greater, offer[i].Gem.Rarity);
+            }
+        }
+
+        [Test]
         public void Campaign_ContestedSlot_BothKindsAppear()
         {
             var catalog = MakeCatalog(DraftMixKind.TwoGemsOneTowerContested, gems: 5, towers: 4);

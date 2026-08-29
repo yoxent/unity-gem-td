@@ -13,7 +13,10 @@ namespace GemTD.Gameplay.Combat
     /// </summary>
     public sealed class ProjectileRuntime
     {
+        /// <summary>Normal Chain rarity hop damage factor. Lesser / Greater use the tier constants below.</summary>
         public const float DefaultChainHopFalloff = 0.6f;
+        public const float LesserChainHopFalloff = 0.5f;
+        public const float GreaterChainHopFalloff = 0.7f;
         public const float DefaultChainRange = 3f;
         public const int DefaultPierceRemaining = 1;
         public const int InfinitePierceRemaining = -1;

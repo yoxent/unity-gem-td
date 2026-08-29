@@ -29,6 +29,9 @@ MonoBehaviour:
     Normal: 0.79
     Greater: 0.89
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
   - Stat: 3
     Operation: 1
     ValueKind: 0
@@ -36,7 +39,10 @@ MonoBehaviour:
     Min: 0
     Max: 0
     Lesser: 1
-    Normal: 2
-    Greater: 3
+    Normal: 1
+    Greater: 1
     Falloff: 0.6
+    LesserFalloff: 0.5
+    NormalFalloff: 0.6
+    GreaterFalloff: 0.7
   EffectPayloads: []
