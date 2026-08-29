@@ -10,5 +10,11 @@ namespace GemTD.Gameplay.Combat
         Freeze,
         Bleed,
         HallowingFlame,
+        CurseFlammability,
+        CurseFrostbite,
+        CurseConductivity,
+        CurseDespair,
+        CurseVulnerability,
+        CurseTemporalChains,
     }
 }

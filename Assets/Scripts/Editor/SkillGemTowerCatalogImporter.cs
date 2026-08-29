@@ -166,6 +166,21 @@ namespace GemTD.Editor
                 "Fireball");
         }
 
+        [MenuItem("Gem TD/Import Curse Proof Set")]
+        public static void ImportCurseProofSet()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_curse.json",
+                folder: "Curse",
+                dialogTitle: "Curse Proof Set",
+                "Temporal_Chains",
+                "Vulnerability",
+                "Flammability",
+                "Frostbite",
+                "Conductivity",
+                "Despair");
+        }
+
         static void ImportProofs(
             string categoryFile,
             string folder,
@@ -306,7 +321,7 @@ namespace GemTD.Editor
                     break;
             }
 
-            ClearRoleBehaviorDefaults(role, result.Tags, result.Slug);
+            ClearRoleBehaviorDefaults(role, result.Tags, result.Slug, kind);
             role.Modifiers = payload != null
                 ? CopyModifiers(payload.Modifiers)
                 : Array.Empty<RoleStatModifier>();
@@ -323,13 +338,17 @@ namespace GemTD.Editor
             return role;
         }
 
-        static void ClearRoleBehaviorDefaults(TowerRoleDefinition role, GemTag towerTags, string slug)
+        static void ClearRoleBehaviorDefaults(
+            TowerRoleDefinition role,
+            GemTag towerTags,
+            string slug,
+            SkillGemTowerMap.RoleKind kind)
         {
             var damage = role as DamageRoleDefinition;
             if (damage != null)
             {
                 damage.PierceBehavior = PierceMode.Finite;
-                SkillGemTowerMap.ResolveFireBehavior(towerTags, slug, out var aim, out var delivery);
+                SkillGemTowerMap.ResolveFireBehavior(towerTags, slug, kind, out var aim, out var delivery);
                 damage.AimMode = aim;
                 damage.DeliveryPattern = delivery;
             }

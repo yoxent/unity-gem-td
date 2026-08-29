@@ -198,14 +198,22 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void WarlordsMark_MapsCurseRadiusAndCastTime()
+        public void WarlordsMark_MapsCurseRadiusAndNoCastTime()
         {
             var r = SkillGemTowerMap.FromJson(WarlordsMarkJson);
             var curse = r.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(4.5f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(0.5f, FindModifier(curse.Modifiers, RoleStat.CastTime).Value, 0.001f);
+            Assert.AreEqual(3f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.IsFalse(HasModifier(curse.Modifiers, RoleStat.CastTime));
             Assert.AreEqual(0f, r.Damage, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, r.RoleKinds[0]);
+            SkillGemTowerMap.ResolveFireBehavior(
+                r.Tags,
+                r.Slug,
+                SkillGemTowerMap.RoleKind.Curse,
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.CasterNova, delivery);
         }
 
         [Test]
@@ -242,26 +250,45 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Frostbite_MapsDurationResistAndRadiusBonus()
+        public void Frostbite_MapsAuthoredResistAndRadius_IgnoresPoEDuration()
         {
             var r = SkillGemTowerMap.FromJson(FrostbiteJson);
             var curse = r.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(0.5f, FindModifier(curse.Modifiers, RoleStat.CastTime).Value, 0.001f);
-            Assert.AreEqual(100f, FindModifier(curse.Modifiers, RoleStat.CastSpeed).Value, 0.001f);
-            Assert.AreEqual(4.5f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.IsFalse(HasModifier(curse.Modifiers, RoleStat.CastTime));
+            Assert.AreEqual(3f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
             Assert.AreEqual(0, curse.Effects.Length);
+            Assert.AreEqual(3f, FindModifier(curse.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
             Assert.AreEqual(
-                0.2f,
-                FindModifier(curse.Levels[0], RoleStat.TowerRadius).Value,
-                0.001f);
-            Assert.AreEqual(
-                RoleModifierOperation.Add,
+                RoleModifierOperation.Set,
                 FindModifier(curse.Levels[0], RoleStat.TowerRadius).Operation);
-            Assert.AreEqual(8.6f, FindEffect(curse.Levels[0], RoleEffectKind.SkillDuration).Value, 0.001f);
-            Assert.AreEqual(-20f, FindEffect(curse.Levels[0], RoleEffectKind.EnemyColdResistance).Value, 0.001f);
-            Assert.AreEqual(1f, FindModifier(curse.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(11.8f, FindEffect(curse.Levels[1], RoleEffectKind.SkillDuration).Value, 0.001f);
-            Assert.AreEqual(-36f, FindEffect(curse.Levels[1], RoleEffectKind.EnemyColdResistance).Value, 0.001f);
+            Assert.IsFalse(HasEffect(curse.Levels[0], RoleEffectKind.SkillDuration));
+            Assert.AreEqual(-30f, FindEffect(curse.Levels[0], RoleEffectKind.EnemyColdResistance).Value, 0.001f);
+            Assert.AreEqual(5.25f, FindModifier(curse.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(-50f, FindEffect(curse.Levels[1], RoleEffectKind.EnemyColdResistance).Value, 0.001f);
+        }
+
+        [Test]
+        public void CurseProof_FlammabilityVulnerabilityAndTemporalChains_MapAuthoredHexes()
+        {
+            var flammability = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Flammability\",\"slug\":\"Flammability\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Fire\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies have #% to Fire Resistance\":{\"kind\":\"percent\",\"value\":-20},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"Cursed enemies have #% to Fire Resistance\":{\"kind\":\"percent\",\"value\":-51},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var fire = flammability.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(-30f, FindEffect(fire.Levels[0], RoleEffectKind.EnemyFireResistance).Value, 0.001f);
+            Assert.AreEqual(-75f, FindEffect(fire.Levels[1], RoleEffectKind.EnemyFireResistance).Value, 0.001f);
+            Assert.AreEqual(3f, FindModifier(fire.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(10.55f, FindModifier(fire.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
+
+            var vulnerability = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Vulnerability\",\"slug\":\"Vulnerability\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies take #% increased Physical Damage\":{\"kind\":\"percent\",\"value\":18}},\"10\":{\"Cursed enemies take #% increased Physical Damage\":{\"kind\":\"percent\",\"value\":41}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var vuln = vulnerability.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(27f, FindEffect(vuln.Levels[0], RoleEffectKind.EnemyPhysicalDamageTakenIncreased).Value, 0.001f);
+            Assert.AreEqual(60f, FindEffect(vuln.Levels[1], RoleEffectKind.EnemyPhysicalDamageTakenIncreased).Value, 0.001f);
+
+            var chains = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Temporal Chains\",\"slug\":\"Temporal_Chains\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed Normal and Magic Enemies have #% less Action Speed\":{\"kind\":\"percent\",\"value\":17},\"Cursed Rare and Unique Enemies have #% less Action Speed\":{\"kind\":\"percent\",\"value\":10}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var tc = chains.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(17f, FindEffect(tc.Levels[0], RoleEffectKind.EnemyActionSpeedLessNormal).Value, 0.001f);
+            Assert.AreEqual(10f, FindEffect(tc.Levels[0], RoleEffectKind.EnemyActionSpeedLessRare).Value, 0.001f);
         }
 
         [Test]
@@ -1099,6 +1126,19 @@ namespace GemTD.Tests.EditMode
         static RoleStatModifier FindModifier(RoleLevelDefinition level, RoleStat stat)
         {
             return FindModifier(level.Modifiers, stat);
+        }
+
+        static bool HasEffect(RoleLevelDefinition level, RoleEffectKind kind)
+        {
+            if (level.Effects == null)
+                return false;
+            for (var i = 0; i < level.Effects.Length; i++)
+            {
+                if (level.Effects[i].Kind == kind)
+                    return true;
+            }
+
+            return false;
         }
 
         static RoleEffectModifier FindEffect(RoleLevelDefinition level, RoleEffectKind kind)

@@ -42,7 +42,7 @@ namespace GemTD.Gameplay.Towers
 
         public bool HasDamageRole => FireRole is DamageRoleDefinition;
 
-        /// <summary>Role that drives fire cadence. Attack wins if present (Smite). Aura never fires.</summary>
+        /// <summary>Role that drives fire cadence. Attack wins if present (Smite). Curse presence uses the curse role even at interval 0. Aura never fires.</summary>
         public TowerRoleDefinition FireRole
         {
             get
@@ -50,6 +50,9 @@ namespace GemTD.Gameplay.Towers
                 var attack = GetRole<AttackRoleDefinition>();
                 if (attack != null)
                     return attack;
+                var curse = GetRole<CurseRoleDefinition>();
+                if (curse != null)
+                    return curse;
                 if (Roles == null)
                     return null;
                 for (var i = 0; i < Roles.Length; i++)

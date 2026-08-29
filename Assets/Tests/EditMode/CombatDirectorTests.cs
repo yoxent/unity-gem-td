@@ -811,6 +811,135 @@ namespace GemTD.Tests.EditMode
             Assert.Less(near.Hp, nearHp);
         }
 
+        [Test]
+        public void Tick_CursePresence_AppliesHexWithoutDamage()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyColdResistance,
+                            RoleModifierOperation.Set,
+                            -30f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+            curseDef.Damage = 0f;
+
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var hp = enemy.Hp;
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var statuses = new StatusRuntime();
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(hp, enemy.Hp, 1e-4f);
+            Assert.IsTrue(statuses.Has(enemy, StatusId.CurseFrostbite));
+            Assert.IsTrue(statuses.TryGetMagnitude(enemy, StatusId.CurseFrostbite, out var mag));
+            Assert.AreEqual(-30f, mag, 0.001f);
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
+        public void Tick_CursePresence_DropsHexWhenEnemyLeaves()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyColdResistance,
+                            RoleModifierOperation.Set,
+                            -30f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var statuses = new StatusRuntime();
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            Assert.IsTrue(statuses.Has(enemy, StatusId.CurseFrostbite));
+
+            enemy.SetWorldPosition(new Vector3(20f, 0f, 0.5f));
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            Assert.IsFalse(statuses.Has(enemy, StatusId.CurseFrostbite));
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
+        public void Tick_TemporalChains_SlowsMoveSpeed()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyActionSpeedLessNormal,
+                            RoleModifierOperation.Set,
+                            17f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var statuses = new StatusRuntime();
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            statuses.Tick(0f, new List<EnemyRuntime> { enemy });
+            Assert.AreEqual(0.83f, enemy.MoveSpeedMultiplier, 0.001f);
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
         static RoleStatModifier Modifier(RoleStat stat, float value)
         {
             return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);

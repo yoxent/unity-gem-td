@@ -91,6 +91,9 @@ namespace GemTD.Gameplay.Combat
             // Refresh after projectile kills so tower targeting sees current alive set.
             enemies.CopyAlive(living);
 
+            if (statuses != null)
+                statuses.ClearCurseHexes(living);
+
             if (towers != null)
             {
                 for (var t = 0; t < towers.Count; t++)
@@ -98,6 +101,12 @@ namespace GemTD.Gameplay.Combat
                     var tower = towers[t];
                     if (tower == null || tower.Def == null)
                         continue;
+
+                    if (tower.Def.HasRole<CurseRoleDefinition>())
+                    {
+                        ApplyCursePresence(tower, living, pipeline, statuses);
+                        continue;
+                    }
 
                     if (!tower.Def.IsFireable)
                         continue;
@@ -368,6 +377,52 @@ namespace GemTD.Gameplay.Combat
 
                 payload.Deactivate();
                 _effectPayloads.RemoveAt(i);
+            }
+        }
+
+        void ApplyCursePresence(
+            TowerInstance tower,
+            List<EnemyRuntime> living,
+            GemModifierPipeline pipeline,
+            StatusRuntime statuses)
+        {
+            if (statuses == null || living == null)
+                return;
+
+            var role = tower.Def.GetRole<CurseRoleDefinition>();
+            if (role == null || !CurseHex.TryResolve(role, tower.Level, out var id, out var magnitude))
+                return;
+
+            var modifiers = ListPool<ISkillModifier>.Get();
+            var spec = pipeline.Resolve(tower, modifiers);
+            ListPool<ISkillModifier>.Release(modifiers);
+
+            var towerPos = CellToWorld(tower.Cell);
+            var muzzle = towerPos;
+            var gemMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
+            var heightMul = 1f;
+            if (_heights != null)
+            {
+                var layer = _heights.Get(tower.Cell.x, tower.Cell.y);
+                muzzle.y = TileHeightVisual.TopY(layer);
+                heightMul = TileHeightRules.RangeMultiplier(layer);
+            }
+
+            var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul * heightMul;
+            _casterNovaScratch.Clear();
+            AreaEffectResolver.CollectCircle(
+                muzzle,
+                range,
+                living,
+                _casterNovaScratch,
+                EffectPayloadHitPolicy.PerImpact);
+            for (var i = 0; i < _casterNovaScratch.Count; i++)
+            {
+                statuses.Apply(
+                    _casterNovaScratch[i],
+                    id,
+                    CurseHex.PresenceDuration,
+                    magnitude);
             }
         }
 

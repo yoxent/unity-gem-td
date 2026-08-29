@@ -237,9 +237,15 @@ namespace GemTD.Gameplay.Towers
                 case RoleEffectKind.AllyAddedAttackFireDamage:
                 case RoleEffectKind.AllyAddedSpellFireDamage:
                 case RoleEffectKind.SkillDuration:
+                case RoleEffectKind.EnemyPhysicalDamageTakenIncreased:
+                case RoleEffectKind.EnemyActionSpeedLessNormal:
+                case RoleEffectKind.EnemyActionSpeedLessRare:
                     return Mathf.Max(0f, value);
                 case RoleEffectKind.EnemyColdResistance:
-                    return Mathf.Clamp(value, -100f, 100f);
+                case RoleEffectKind.EnemyFireResistance:
+                case RoleEffectKind.EnemyLightningResistance:
+                case RoleEffectKind.EnemyChaosResistance:
+                    return Mathf.Clamp(value, -200f, 100f);
                 default:
                     return Mathf.Max(0f, value);
             }

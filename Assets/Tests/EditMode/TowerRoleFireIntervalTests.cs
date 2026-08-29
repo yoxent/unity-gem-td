@@ -79,6 +79,26 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(def.UsesAttackSpeed);
         }
 
+        [Test]
+        public void CurseRole_IsFireableWithZeroInterval()
+        {
+            var role = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            role.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 3f)
+            };
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.Roles = new TowerRoleDefinition[] { role };
+
+            Assert.AreEqual(0f, def.BaseFireInterval, 0.001f);
+            Assert.IsTrue(def.IsFireable);
+            Assert.IsInstanceOf<CurseRoleDefinition>(def.FireRole);
+            Assert.AreEqual(3f, def.GetFireTowerRadius(1), 0.001f);
+
+            UnityEngine.Object.DestroyImmediate(role);
+            UnityEngine.Object.DestroyImmediate(def);
+        }
+
         static RoleStatModifier Modifier(RoleStat stat, float value)
         {
             return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);

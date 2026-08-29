@@ -64,6 +64,46 @@ namespace GemTD.Gameplay.Combat
             });
         }
 
+        public void ClearCurseHexes(List<EnemyRuntime> living)
+        {
+            if (living == null)
+                return;
+
+            for (var e = 0; e < living.Count; e++)
+            {
+                var enemy = living[e];
+                if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
+                    continue;
+
+                for (var i = list.Count - 1; i >= 0; i--)
+                {
+                    if (!CurseHex.IsCurseStatus(list[i].Id))
+                        continue;
+                    list.RemoveAt(i);
+                }
+
+                if (list.Count == 0)
+                    _byEnemy.Remove(enemy);
+            }
+        }
+
+        public bool TryGetMagnitude(EnemyRuntime enemy, StatusId id, out float magnitude)
+        {
+            magnitude = 0f;
+            if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
+                return false;
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].Id != id || list[i].Duration <= 0f)
+                    continue;
+                magnitude = list[i].Magnitude;
+                return true;
+            }
+
+            return false;
+        }
+
         public bool Has(EnemyRuntime enemy, StatusId id)
         {
             if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
@@ -115,6 +155,7 @@ namespace GemTD.Gameplay.Combat
                 enemy.MoveSpeedMultiplier = 1f;
                 var chillMagnitude = -1f;
                 var frozen = false;
+                var temporalLess = 0f;
 
                 for (var i = list.Count - 1; i >= 0; i--)
                 {
@@ -150,12 +191,17 @@ namespace GemTD.Gameplay.Combat
                         chillMagnitude = entry.Magnitude;
                     else if (entry.Id == StatusId.Freeze)
                         frozen = true;
+                    else if (entry.Id == StatusId.CurseTemporalChains)
+                        temporalLess = entry.Magnitude;
                 }
 
                 if (frozen)
                     enemy.MoveSpeedMultiplier = 0f;
                 else if (chillMagnitude >= 0f)
                     enemy.MoveSpeedMultiplier = chillMagnitude;
+
+                if (!frozen && temporalLess > 0f)
+                    enemy.MoveSpeedMultiplier *= Mathf.Max(0f, 1f - temporalLess / 100f);
 
                 if (list.Count == 0)
                     _byEnemy.Remove(enemy);

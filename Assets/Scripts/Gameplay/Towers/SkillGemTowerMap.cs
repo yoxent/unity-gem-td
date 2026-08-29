@@ -97,6 +97,23 @@ namespace GemTD.Gameplay.Towers
             delivery = DeliveryPattern.Straight;
         }
 
+        public static void ResolveFireBehavior(
+            GemTag tags,
+            string slug,
+            RoleKind kind,
+            out AimMode aim,
+            out DeliveryPattern delivery)
+        {
+            if (kind == RoleKind.Curse)
+            {
+                aim = AimMode.Direct;
+                delivery = DeliveryPattern.CasterNova;
+                return;
+            }
+
+            ResolveFireBehavior(tags, slug, out aim, out delivery);
+        }
+
         public sealed class Result
         {
             public string DisplayName;
@@ -340,13 +357,8 @@ namespace GemTD.Gameplay.Towers
                 case RoleKind.Curse:
                     AddSet(
                         modifiers,
-                        RoleStat.CastTime,
-                        HeaderNumber(header, "cast_time") ?? DefaultCastTimeCurse);
-                    AddSet(modifiers, RoleStat.CastSpeed, DefaultCastSpeed);
-                    AddSet(
-                        modifiers,
                         RoleStat.TowerRadius,
-                        radiusValue ?? DefaultRadiusCurse);
+                        CurseProofNumbers.Radius(TowerInstance.DefaultLevel));
                     break;
 
                 case RoleKind.Aura:
@@ -490,7 +502,8 @@ namespace GemTD.Gameplay.Towers
                 AddLevelDamage(modifiers, values, kind);
                 AddLevelChain(modifiers, values, result.Slug);
                 AddLevelRadiusBonus(modifiers, values, result.Slug);
-                AddLevelEffects(effects, values);
+                AddCurseLevelRadius(modifiers, kind, sourceLevel);
+                AddLevelEffects(effects, values, kind, result.Slug, sourceLevel);
 
                 mapped[i] = new RoleLevelDefinition
                 {
@@ -671,11 +684,86 @@ namespace GemTD.Gameplay.Towers
 
         static bool IsClassifiedRadiusBonusSource(string slug)
         {
-            return string.Equals(slug, "Anger", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(slug, "Frostbite", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(slug, "Anger", StringComparison.OrdinalIgnoreCase);
         }
 
-        static void AddLevelEffects(List<RoleEffectModifier> effects, JObject values)
+        static void AddCurseLevelRadius(List<RoleStatModifier> modifiers, RoleKind kind, int sourceLevel)
+        {
+            if (kind != RoleKind.Curse)
+                return;
+
+            AddSet(modifiers, RoleStat.TowerRadius, CurseProofNumbers.Radius(sourceLevel));
+        }
+
+        static void AddLevelEffects(
+            List<RoleEffectModifier> effects,
+            JObject values,
+            RoleKind kind,
+            string slug,
+            int sourceLevel)
+        {
+            if (kind == RoleKind.Curse)
+            {
+                AddCurseLevelEffects(effects, values, slug, sourceLevel);
+                return;
+            }
+
+            AddAuraLevelEffects(effects, values);
+        }
+
+        static void AddCurseLevelEffects(
+            List<RoleEffectModifier> effects,
+            JObject values,
+            string slug,
+            int sourceLevel)
+        {
+            if (CurseProofNumbers.IsResistSlug(slug))
+            {
+                AddEffectSet(
+                    effects,
+                    CurseProofNumbers.ResistKind(slug),
+                    CurseProofNumbers.Resist(sourceLevel));
+                return;
+            }
+
+            if (CurseProofNumbers.IsVulnerability(slug))
+            {
+                AddEffectSet(
+                    effects,
+                    RoleEffectKind.EnemyPhysicalDamageTakenIncreased,
+                    CurseProofNumbers.Vulnerability(sourceLevel));
+                return;
+            }
+
+            if (!CurseProofNumbers.IsTemporalChains(slug) || values == null)
+                return;
+
+            foreach (var effect in values.Properties())
+            {
+                var amount = ReadNumber(effect.Value) ?? ReadNumber(effect.Value?["value"]);
+                if (!amount.HasValue)
+                    continue;
+
+                if (IsTemporalChainsNormalHeader(effect.Name))
+                    AddEffectSet(effects, RoleEffectKind.EnemyActionSpeedLessNormal, amount.Value);
+                else if (IsTemporalChainsRareHeader(effect.Name))
+                    AddEffectSet(effects, RoleEffectKind.EnemyActionSpeedLessRare, amount.Value);
+            }
+        }
+
+        static bool IsTemporalChainsNormalHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Normal and Magic")
+                && ContainsIgnoreCase(header, "Action Speed");
+        }
+
+        static bool IsTemporalChainsRareHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Rare and Unique")
+                && ContainsIgnoreCase(header, "Action Speed");
+        }
+
+        static void AddAuraLevelEffects(List<RoleEffectModifier> effects, JObject values)
         {
             if (values == null)
                 return;

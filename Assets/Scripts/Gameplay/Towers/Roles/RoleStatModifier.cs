@@ -125,7 +125,13 @@ namespace GemTD.Gameplay.Towers
         AllyAddedAttackFireDamage,
         AllyAddedSpellFireDamage,
         SkillDuration,
-        EnemyColdResistance
+        EnemyColdResistance,
+        EnemyFireResistance,
+        EnemyLightningResistance,
+        EnemyChaosResistance,
+        EnemyPhysicalDamageTakenIncreased,
+        EnemyActionSpeedLessNormal,
+        EnemyActionSpeedLessRare
     }
 
     [Serializable]
