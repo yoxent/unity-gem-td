@@ -148,6 +148,24 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ResolveProofMix_HexProofSlugs_AreSingleType()
+        {
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Fireball"), DamageType.Fire);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Frostbolt"), DamageType.Cold);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Arc"), DamageType.Lightning);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Heavy_Strike"), DamageType.Physical);
+            Assert.IsTrue(DamageMix.IsEmpty(SkillGemTowerMap.ResolveProofMix("Cleave")));
+        }
+
+        static void AssertHundred(DamageTypeShare[] mix, DamageType type)
+        {
+            Assert.IsTrue(DamageMix.TryValidate(mix, out _));
+            Assert.AreEqual(1, mix.Length);
+            Assert.AreEqual(type, mix[0].Type);
+            Assert.AreEqual(100, mix[0].Percent);
+        }
+
+        [Test]
         public void Vitality_MapsAuraSocketAndZeroDamage()
         {
             var r = SkillGemTowerMap.FromJson(VitalityJson);

@@ -90,6 +90,7 @@ namespace GemTD.Gameplay.Combat
 
             // Refresh after projectile kills so tower targeting sees current alive set.
             enemies.CopyAlive(living);
+            PackAuraRuntime.Apply(living);
 
             if (statuses != null)
                 statuses.ClearCurseHexes(living);
@@ -169,6 +170,7 @@ namespace GemTD.Gameplay.Combat
                             ApplyCasterNova(
                                 muzzle,
                                 range,
+                                spec,
                                 volleyMin,
                                 volleyMax,
                                 living,
@@ -418,17 +420,23 @@ namespace GemTD.Gameplay.Combat
                 EffectPayloadHitPolicy.PerImpact);
             for (var i = 0; i < _casterNovaScratch.Count; i++)
             {
+                var enemy = _casterNovaScratch[i];
+                var scaled = CurseHex.ScaleMagnitude(enemy, magnitude);
+                if (scaled == 0f)
+                    continue;
+
                 statuses.Apply(
-                    _casterNovaScratch[i],
+                    enemy,
                     id,
                     CurseHex.PresenceDuration,
-                    magnitude);
+                    scaled);
             }
         }
 
         void ApplyCasterNova(
             Vector3 muzzle,
             float radius,
+            SkillSpec spec,
             float damageMin,
             float damageMax,
             List<EnemyRuntime> living,
@@ -447,7 +455,7 @@ namespace GemTD.Gameplay.Combat
                 _casterNovaScratch,
                 EffectPayloadHitPolicy.PerImpact);
             for (var i = 0; i < _casterNovaScratch.Count; i++)
-                ApplyPulseDamage(_casterNovaScratch[i], damage, statuses, sourceTower);
+                ApplyPulseDamage(_casterNovaScratch[i], damage, spec, statuses, sourceTower);
         }
 
         void ApplyGroundPulse(
@@ -464,7 +472,7 @@ namespace GemTD.Gameplay.Combat
                 return;
 
             var damage = RoleStatValue.SampleHitDamage(damageMin, damageMax);
-            ApplyPulseDamage(primary, damage, statuses, sourceTower);
+            ApplyPulseDamage(primary, damage, spec, statuses, sourceTower);
 
             var radius = spec.AoeRadius;
             if (radius <= 0f || living == null)
@@ -478,13 +486,14 @@ namespace GemTD.Gameplay.Combat
                     continue;
 
                 if ((enemy.WorldPosition - pulseOrigin).sqrMagnitude <= radiusSq)
-                    ApplyPulseDamage(enemy, damage, statuses, sourceTower);
+                    ApplyPulseDamage(enemy, damage, spec, statuses, sourceTower);
             }
         }
 
         void ApplyPulseDamage(
             EnemyRuntime enemy,
             float damage,
+            SkillSpec spec,
             StatusRuntime statuses,
             TowerDefinition sourceTower)
         {
@@ -492,9 +501,9 @@ namespace GemTD.Gameplay.Combat
                 enemy.LastDamageSource = sourceTower;
 
             if (statuses != null)
-                statuses.ApplyDamage(enemy, damage);
+                statuses.ApplyDamage(enemy, damage, spec);
             else
-                enemy.ApplyDamage(damage);
+                enemy.ApplyDamage(damage, spec, null);
 
             _recordDamage?.Invoke(sourceTower, damage);
         }
@@ -612,7 +621,8 @@ namespace GemTD.Gameplay.Combat
                     spec.ChainHopFalloff,
                     spec.BleedChance,
                     spec.BleedDamageMultiplier,
-                    AilmentTune.FromSkillSpec(spec));
+                    AilmentTune.FromSkillSpec(spec),
+                    spec);
                 _projectiles.Add(projectile);
             }
         }

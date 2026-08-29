@@ -24,6 +24,7 @@ namespace GemTD.Gameplay.Combat
         public bool Proliferate;
         public float KnockbackChance;
         public float KnockbackDistance;
+        public SkillSpec HitSpec;
 
         public float HorizontalDistance =>
             new Vector3(LandingPoint.x - Origin.x, 0f, LandingPoint.z - Origin.z).magnitude;

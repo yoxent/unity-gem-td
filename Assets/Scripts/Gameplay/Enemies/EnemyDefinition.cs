@@ -10,10 +10,17 @@ namespace GemTD.Gameplay.Enemies
         public float MoveSpeed = 2f;
         public int Armor;
         public float ShieldMax;
+        [Tooltip("Percent. No Physical resist.")]
+        public int FireResistance;
+        public int ColdResistance;
+        public int LightningResistance;
+        public int ChaosResistance;
         public bool CanDash;
         public int KillGold = 5;
         public int LeakDamage = 1;
-        public bool IsBoss;
+        public EnemyRank Rank;
+        public bool IsBoss => Rank == EnemyRank.Boss;
+        public EnemyAffix[] Affixes;
         public LocomotionStyle Locomotion = LocomotionStyle.Slide;
         public float HopHeight = 0.35f;
         public float HopPeriod = 0.4f;

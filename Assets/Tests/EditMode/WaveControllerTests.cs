@@ -172,7 +172,7 @@ namespace GemTD.Tests.EditMode
         public void BuildSpawnQueue_SkipsAuthoredBossEntries_RegardlessOfBossEnemyWiring()
         {
             var authoredBoss = ScriptableObject.CreateInstance<EnemyDefinition>();
-            authoredBoss.IsBoss = true;
+            authoredBoss.Rank = EnemyRank.Boss;
             var wave = CreateWave(
                 1,
                 new[]
@@ -209,7 +209,7 @@ namespace GemTD.Tests.EditMode
         public void StartWave_NonBossWave_CurrentBossCountIsZero_EvenWithBossEnemyWired()
         {
             var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
-            boss.IsBoss = true;
+            boss.Rank = EnemyRank.Boss;
             try
             {
                 var controller = CreateController(new[] { _wave1 }, endWaveGold: 25, bossEnemy: boss);
@@ -229,7 +229,7 @@ namespace GemTD.Tests.EditMode
         public void StartWave_BossWaveTen_InjectsOneCadenceBossAfterRegulars()
         {
             var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
-            boss.IsBoss = true;
+            boss.Rank = EnemyRank.Boss;
             var waves = BuildWaveArrayUpTo(10, regularCountForLastWave: 2);
 
             try
@@ -262,7 +262,7 @@ namespace GemTD.Tests.EditMode
         public void StartWave_BossWaveTwenty_InjectsTwoBosses_CappedAtLiveTipCount()
         {
             var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
-            boss.IsBoss = true;
+            boss.Rank = EnemyRank.Boss;
             var waves = BuildWaveArrayUpTo(20, regularCountForLastWave: 1);
 
             try
@@ -370,7 +370,7 @@ namespace GemTD.Tests.EditMode
         public void Endless_AllowsWavesPastEndWave_NoVictory()
         {
             var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
-            boss.IsBoss = true;
+            boss.Rank = EnemyRank.Boss;
             try
             {
                 var controller = new WaveController(

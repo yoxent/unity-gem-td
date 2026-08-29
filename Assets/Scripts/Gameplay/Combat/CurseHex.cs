@@ -1,3 +1,4 @@
+using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Combat
@@ -5,6 +6,12 @@ namespace GemTD.Gameplay.Combat
     public static class CurseHex
     {
         public const float PresenceDuration = 1f;
+
+        public static float ScaleMagnitude(EnemyRuntime enemy, float magnitude)
+        {
+            var affixes = enemy != null ? enemy.Affixes : null;
+            return magnitude * EnemyAffixRules.CurseEffectiveness(affixes);
+        }
 
         public static bool IsCurseStatus(StatusId id)
         {

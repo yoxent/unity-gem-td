@@ -351,6 +351,7 @@ namespace GemTD.Editor
                 SkillGemTowerMap.ResolveFireBehavior(towerTags, slug, kind, out var aim, out var delivery);
                 damage.AimMode = aim;
                 damage.DeliveryPattern = delivery;
+                damage.Mix = SkillGemTowerMap.ResolveProofMix(slug);
             }
         }
 

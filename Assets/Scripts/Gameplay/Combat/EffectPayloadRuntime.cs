@@ -125,9 +125,9 @@ namespace GemTD.Gameplay.Combat
                 enemy.LastDamageSource = _sourceTower;
 
             if (_statuses != null)
-                _statuses.ApplyDamage(enemy, damage);
+                _statuses.ApplyDamage(enemy, damage, _plan.HitSpec);
             else
-                enemy.ApplyDamage(damage);
+                enemy.ApplyDamage(damage, _plan.HitSpec, null);
 
             _recordDamage?.Invoke(_sourceTower, damage);
         }

@@ -44,6 +44,17 @@ namespace GemTD.Gameplay.Gems
                 baseline.PierceBehavior = tower.Def.GetProjectilePierceMode();
                 baseline.AimMode = tower.Def.GetAimMode();
                 baseline.DeliveryPattern = tower.Def.GetDeliveryPattern();
+                var damageRole = tower.Def.FireRole as DamageRoleDefinition;
+                if (damageRole != null)
+                {
+                    DamageMix.ToFractions(
+                        damageRole.Mix,
+                        out baseline.MixPhysical,
+                        out baseline.MixFire,
+                        out baseline.MixCold,
+                        out baseline.MixLightning,
+                        out baseline.MixChaos);
+                }
             }
 
             return baseline;

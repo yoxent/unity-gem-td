@@ -1464,6 +1464,13 @@ namespace GemTD.Gameplay
 
         void TickEnemies(float dt)
         {
+            if (_registry != null && _livingScratch != null)
+            {
+                _livingScratch.Clear();
+                _registry.CopyAlive(_livingScratch);
+                PackAuraRuntime.Apply(_livingScratch);
+            }
+
             for (var i = _registry.Count - 1; i >= 0; i--)
             {
                 var enemy = _registry.GetAt(i);

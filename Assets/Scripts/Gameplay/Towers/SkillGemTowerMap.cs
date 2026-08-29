@@ -114,6 +114,24 @@ namespace GemTD.Gameplay.Towers
             ResolveFireBehavior(tags, slug, out aim, out delivery);
         }
 
+        public static DamageTypeShare[] ResolveProofMix(string slug)
+        {
+            if (string.Equals(slug, "Fireball", StringComparison.OrdinalIgnoreCase))
+                return SingleShare(DamageType.Fire);
+            if (string.Equals(slug, "Frostbolt", StringComparison.OrdinalIgnoreCase))
+                return SingleShare(DamageType.Cold);
+            if (IsArcSpell(slug))
+                return SingleShare(DamageType.Lightning);
+            if (string.Equals(slug, "Heavy_Strike", StringComparison.OrdinalIgnoreCase))
+                return SingleShare(DamageType.Physical);
+            return null;
+        }
+
+        static DamageTypeShare[] SingleShare(DamageType type)
+        {
+            return new[] { new DamageTypeShare { Type = type, Percent = 100 } };
+        }
+
         public sealed class Result
         {
             public string DisplayName;

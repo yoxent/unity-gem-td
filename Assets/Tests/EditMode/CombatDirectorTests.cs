@@ -858,6 +858,108 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_CursePresence_Hexproof_DoesNotApplyHex()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyColdResistance,
+                            RoleModifierOperation.Set,
+                            -30f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+            curseDef.Damage = 0f;
+
+            _enemyDef.Affixes = new[] { EnemyAffix.Hexproof };
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var statuses = new StatusRuntime();
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+
+            Assert.IsFalse(statuses.Has(enemy, StatusId.CurseFrostbite));
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
+        public void Tick_CursePresence_Unhallowed_ScalesMagnitude()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyColdResistance,
+                            RoleModifierOperation.Set,
+                            -30f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+            curseDef.Damage = 0f;
+
+            _enemyDef.Affixes = new[] { EnemyAffix.Unhallowed };
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var statuses = new StatusRuntime();
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+
+            Assert.IsTrue(statuses.TryGetMagnitude(enemy, StatusId.CurseFrostbite, out var mag));
+            Assert.AreEqual(-18f, mag, 0.001f);
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
+        public void Tick_Bloody_AppliesPackHealthWithoutTowers()
+        {
+            _enemyDef.MaxHealth = 20f;
+            _enemyDef.Affixes = new[] { EnemyAffix.Bloody };
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var director = new CombatDirector(CellSize);
+
+            director.Tick(0.016f, new List<TowerInstance>(), registry, _pipeline);
+
+            var expected = 20f * DamageTypeCombat.PackAuraHealthFraction * DamageTypeCombat.PackAuraSelfMultiplier;
+            Assert.AreEqual(20f + expected, enemy.MaxHealth, 1e-4f);
+        }
+
+        [Test]
         public void Tick_CursePresence_DropsHexWhenEnemyLeaves()
         {
             var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();

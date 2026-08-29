@@ -210,6 +210,11 @@ namespace GemTD.Gameplay.Combat
 
         public float ApplyDamage(EnemyRuntime enemy, float amount)
         {
+            return ApplyDamage(enemy, amount, default);
+        }
+
+        public float ApplyDamage(EnemyRuntime enemy, float amount, SkillSpec spec)
+        {
             if (enemy == null || amount <= 0f)
                 return 0f;
 
@@ -226,7 +231,7 @@ namespace GemTD.Gameplay.Combat
                 }
             }
 
-            enemy.ApplyDamage(amplified);
+            enemy.ApplyDamage(amplified, spec, this);
             return amplified;
         }
 

@@ -16,5 +16,8 @@ namespace GemTD.Gameplay.Towers
 
         [Tooltip("Straight fires the skill volley. PayloadNova fires one payload, then a radial burst on land. CasterNova is an instant circle around the caster (Ice Nova damages; curse presence applies a hex). Rain falls from above onto a ground aim patch.")]
         public DeliveryPattern DeliveryPattern;
+
+        [Tooltip("Sparse damage-type shares. Empty = untyped. Non-empty percents must sum to 100.")]
+        public DamageTypeShare[] Mix;
     }
 }

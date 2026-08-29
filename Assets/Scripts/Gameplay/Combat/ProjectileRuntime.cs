@@ -76,6 +76,7 @@ namespace GemTD.Gameplay.Combat
         float _age;
         Vector3 _landPoint;
         SkillSpec _payloadSpec;
+        SkillSpec _hitSpec;
         float _payloadDamageMin;
         float _payloadDamageMax;
         float _payloadChainRange;
@@ -110,7 +111,8 @@ namespace GemTD.Gameplay.Combat
             float chainHopFalloff = 0f,
             float bleedChance = 0f,
             float bleedDamageMultiplier = 0f,
-            AilmentTune ailments = default)
+            AilmentTune ailments = default,
+            SkillSpec hitSpec = default)
         {
             Position = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
@@ -154,6 +156,7 @@ namespace GemTD.Gameplay.Combat
             IsActive = true;
             IsPayload = false;
             IsWarpStrike = false;
+            _hitSpec = hitSpec;
         }
 
         public void InitPayload(
@@ -199,6 +202,7 @@ namespace GemTD.Gameplay.Combat
             IsPayload = true;
             _landPoint = landPoint;
             _payloadSpec = spec;
+            _hitSpec = spec;
             _payloadDamageMin = damageMin;
             _payloadDamageMax = damageMax;
             _payloadChainRange = chainRange;
@@ -248,6 +252,7 @@ namespace GemTD.Gameplay.Combat
             _warpDropping = false;
             _warpOrigin = origin;
             _warpSpec = spec;
+            _hitSpec = spec;
             _onImpactPayloads = onImpactPayloads;
             PierceRemaining = 0;
             ForkRemaining = 0;
@@ -305,7 +310,8 @@ namespace GemTD.Gameplay.Combat
                     _payloadSpec.ChainHopFalloff,
                     _payloadSpec.BleedChance,
                     _payloadSpec.BleedDamageMultiplier,
-                    ailments);
+                    ailments,
+                    _payloadSpec);
                 _spawnBuffer.Add(child);
             }
 
@@ -525,9 +531,9 @@ namespace GemTD.Gameplay.Combat
 
             var dealt = Damage + ExtraHitDamage(enemy);
             if (_statuses != null)
-                _statuses.ApplyDamage(enemy, dealt);
+                _statuses.ApplyDamage(enemy, dealt, _hitSpec);
             else
-                enemy.ApplyDamage(dealt);
+                enemy.ApplyDamage(dealt, _hitSpec, null);
 
             _recordDamage?.Invoke(_sourceTower, dealt);
         }
@@ -734,7 +740,8 @@ namespace GemTD.Gameplay.Combat
                 knockbackChance: _knockbackChance,
                 knockbackDistance: _knockbackDistance,
                 chainHopFalloff: ChainHopFalloff,
-                ailments: _ailments);
+                ailments: _ailments,
+                hitSpec: _hitSpec);
             child._lastHit = _lastHit;
             _spawnBuffer.Add(child);
         }

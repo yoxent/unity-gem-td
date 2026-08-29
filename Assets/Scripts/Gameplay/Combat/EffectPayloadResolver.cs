@@ -99,7 +99,8 @@ namespace GemTD.Gameplay.Combat
                         Ailments = ailments,
                         Proliferate = spec.Proliferate,
                         KnockbackChance = spec.KnockbackChance,
-                        KnockbackDistance = spec.KnockbackDistance
+                        KnockbackDistance = spec.KnockbackDistance,
+                        HitSpec = spec
                     });
                 }
             }
@@ -261,7 +262,8 @@ namespace GemTD.Gameplay.Combat
                 Ailments = ailments,
                 Proliferate = spec.Proliferate,
                 KnockbackChance = spec.KnockbackChance,
-                KnockbackDistance = spec.KnockbackDistance
+                KnockbackDistance = spec.KnockbackDistance,
+                HitSpec = spec
             });
         }
 

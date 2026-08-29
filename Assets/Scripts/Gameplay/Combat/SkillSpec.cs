@@ -31,6 +31,11 @@ namespace GemTD.Gameplay.Combat
         public float Damage;
         public float DamageMin;
         public float DamageMax;
+        public float MixPhysical;
+        public float MixFire;
+        public float MixCold;
+        public float MixLightning;
+        public float MixChaos;
         public int ProjectileCount;
         public float SpreadDegrees;
         public int ChainCount;
@@ -116,6 +121,11 @@ namespace GemTD.Gameplay.Combat
                 Damage = (damageMin + damageMax) * 0.5f,
                 DamageMin = damageMin,
                 DamageMax = damageMax,
+                MixPhysical = 0f,
+                MixFire = 0f,
+                MixCold = 0f,
+                MixLightning = 0f,
+                MixChaos = 0f,
                 ProjectileCount = projectiles,
                 SpreadDegrees = 0f,
                 ChainCount = chainCount,
