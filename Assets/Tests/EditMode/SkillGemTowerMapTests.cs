@@ -339,8 +339,8 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(4, magma.Count);
             Assert.AreEqual(0.4f, magma.DamageMultiplier, 0.001f);
             Assert.AreEqual(1f, magma.AoeRadius, 0.001f);
-            Assert.AreEqual(1f, magma.MinDistance, 0.001f);
-            Assert.AreEqual(4f, magma.MaxDistance, 0.001f);
+            Assert.AreEqual(1.5f, magma.MinDistance, 0.001f);
+            Assert.AreEqual(2.5f, magma.MaxDistance, 0.001f);
             SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
             Assert.AreEqual(AimMode.Direct, aim);
             Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
@@ -473,7 +473,8 @@ namespace GemTD.Tests.EditMode
                 attackSpeed: 100f,
                 level1Multiply: 1.539f,
                 projectileCount: 1f,
-                levelCount: 2);
+                levelCount: 2,
+                splashRadius: 2f);
 
             AssertCheckAttack(
                 BurningArrowJson,
@@ -1043,7 +1044,8 @@ namespace GemTD.Tests.EditMode
             float attackSpeed,
             float level1Multiply,
             float? projectileCount,
-            int levelCount)
+            int levelCount,
+            float? splashRadius = null)
         {
             var r = SkillGemTowerMap.FromJson(json);
             var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
@@ -1071,6 +1073,13 @@ namespace GemTD.Tests.EditMode
                 FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value,
                 0.001f);
             Assert.IsFalse(HasModifier(attack.Levels[0].Modifiers, RoleStat.SplashRadius));
+            if (splashRadius.HasValue)
+                Assert.AreEqual(
+                    splashRadius.Value,
+                    FindModifier(attack.Modifiers, RoleStat.SplashRadius).Value,
+                    0.001f);
+            else
+                Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.SplashRadius));
             SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var mappedAim, out var mappedDelivery);
             Assert.AreEqual(aim, mappedAim);
             Assert.AreEqual(delivery, mappedDelivery);

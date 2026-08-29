@@ -42,8 +42,9 @@ namespace GemTD.Gameplay.Towers
         public const int MoltenStrikeMagmaCount = 4;
         public const float MoltenStrikeMagmaDamageMultiplier = 0.4f;
         public const float MoltenStrikeMagmaAoeRadius = 1f;
-        public const float MoltenStrikeMagmaMinDistance = 1f;
-        public const float MoltenStrikeMagmaMaxDistance = 4f;
+        public const float MoltenStrikeMagmaMinDistance = 1.5f;
+        public const float MoltenStrikeMagmaMaxDistance = 2.5f;
+        public const float LightningArrowSplashRadius = 2f;
         public const int FirestormImpactCount = 10;
         public const float FirestormIntervalSeconds = 0.15f;
         public const float FirestormStormRadius = 2.5f;
@@ -400,6 +401,9 @@ namespace GemTD.Gameplay.Towers
                 AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
             }
 
+            if (kind == RoleKind.Attack && IsLightningArrow(slug))
+                AddSet(modifiers, RoleStat.SplashRadius, LightningArrowSplashRadius);
+
             return modifiers.ToArray();
         }
 
@@ -584,6 +588,11 @@ namespace GemTD.Gameplay.Towers
         static bool IsArcSpell(string slug)
         {
             return string.Equals(slug, "Arc", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsLightningArrow(string slug)
+        {
+            return string.Equals(slug, "Lightning_Arrow", StringComparison.OrdinalIgnoreCase);
         }
 
         static void AddLevelDamage(
