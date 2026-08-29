@@ -196,6 +196,41 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void GetChainCount_ReturnsLevelSetWholeNumber()
+        {
+            var spell = ScriptableObject.CreateInstance<SpellRoleDefinition>();
+            try
+            {
+                spell.Levels = new[]
+                {
+                    new RoleLevelDefinition
+                    {
+                        SourceLevel = 1,
+                        Modifiers = new[]
+                        {
+                            Modifier(RoleStat.ChainCount, RoleModifierOperation.Set, 4f)
+                        }
+                    },
+                    new RoleLevelDefinition
+                    {
+                        SourceLevel = 10,
+                        Modifiers = new[]
+                        {
+                            Modifier(RoleStat.ChainCount, RoleModifierOperation.Set, 11f)
+                        }
+                    }
+                };
+
+                Assert.AreEqual(4, spell.GetChainCount(1));
+                Assert.AreEqual(11, spell.GetChainCount(10));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(spell);
+            }
+        }
+
+        [Test]
         public void ResolveEffect_AppliesConstantThenLevelScaling()
         {
             var aura = ScriptableObject.CreateInstance<AuraRoleDefinition>();

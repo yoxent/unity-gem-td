@@ -33,6 +33,78 @@ namespace GemTD.Gameplay.Combat
             }
         }
 
+        public static void BuildFallingRain(
+            IReadOnlyList<EffectPayloadDefinition> definitions,
+            in SkillSpec spec,
+            in SkillSpec baseline,
+            Vector3 aimPoint,
+            System.Random rng,
+            List<EffectPayloadPlan> into)
+        {
+            if (definitions == null || definitions.Count == 0 || into == null)
+                return;
+            if (rng == null)
+                throw new ArgumentNullException(nameof(rng));
+
+            for (var d = 0; d < definitions.Count; d++)
+            {
+                var def = definitions[d];
+                if (def == null
+                    || def.TravelPattern != EffectPayloadTravelPattern.FallFromSky
+                    || !def.IsValid)
+                    continue;
+
+                ResolvePayloadStats(def, spec, baseline, out var count, out var aoeRadius);
+                if (count <= 0 || aoeRadius <= 0f)
+                    continue;
+
+                var damageMin = spec.DamageMin * def.DamageMultiplier;
+                var damageMax = spec.DamageMax * def.DamageMultiplier;
+                var ailments = AilmentTune.FromSkillSpec(spec);
+                var drop = def.ArcHeight > 0f ? def.ArcHeight : 3f;
+                var interval = def.IntervalSeconds;
+
+                for (var i = 0; i < count; i++)
+                {
+                    Vector3 landing;
+                    if (i == 0)
+                    {
+                        landing = aimPoint;
+                    }
+                    else
+                    {
+                        var u = (float)rng.NextDouble();
+                        var angle = (float)(rng.NextDouble() * 360.0);
+                        var dist = def.MaxDistance * Mathf.Sqrt(u);
+                        var dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+                        landing = aimPoint + dir * dist;
+                        landing.y = aimPoint.y;
+                    }
+
+                    var origin = landing + Vector3.up * drop;
+                    into.Add(new EffectPayloadPlan
+                    {
+                        Trigger = def.Trigger,
+                        TravelPattern = def.TravelPattern,
+                        HitPolicy = def.HitPolicy,
+                        Origin = origin,
+                        LandingPoint = landing,
+                        DamageMin = damageMin,
+                        DamageMax = damageMax,
+                        AoeRadius = aoeRadius,
+                        ArcHeight = drop,
+                        DelaySeconds = i * interval,
+                        IntervalSeconds = interval,
+                        RepeatCount = def.RepeatCount,
+                        Ailments = ailments,
+                        Proliferate = spec.Proliferate,
+                        KnockbackChance = spec.KnockbackChance,
+                        KnockbackDistance = spec.KnockbackDistance
+                    });
+                }
+            }
+        }
+
         static void AppendPlans(
             EffectPayloadDefinition def,
             in SkillSpec spec,

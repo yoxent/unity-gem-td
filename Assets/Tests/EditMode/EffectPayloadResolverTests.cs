@@ -44,6 +44,23 @@ namespace GemTD.Tests.EditMode
         static SkillSpec BaseSpec =>
             SkillSpec.FromBase(10f, 10f, projectiles: 1, aoe: 0f);
 
+        static EffectPayloadDefinition FirestormDefinition => new EffectPayloadDefinition
+        {
+            Trigger = EffectPayloadTrigger.AfterDelay,
+            Anchor = EffectPayloadAnchor.GroundTarget,
+            TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+            ScatterPattern = EffectPayloadScatterPattern.None,
+            HitPolicy = EffectPayloadHitPolicy.PerImpact,
+            Tags = GemTag.Aoe,
+            Count = 10,
+            DamageMultiplier = 1f,
+            AoeRadius = 1.3f,
+            MinDistance = 0f,
+            MaxDistance = 2.5f,
+            ArcHeight = 3f,
+            IntervalSeconds = 0.15f
+        };
+
         [Test]
         public void BuildOnImpact_SeededPlan_IsReproducible()
         {
@@ -208,6 +225,35 @@ namespace GemTD.Tests.EditMode
                 new System.Random(1),
                 plans);
             Assert.AreEqual(0, plans.Count);
+        }
+
+        [Test]
+        public void BuildFallingRain_FirstBoltOnAim_OthersInDisk_StaggeredDelays()
+        {
+            var aim = new Vector3(4f, 0f, 1f);
+            var into = new List<EffectPayloadPlan>(10);
+            EffectPayloadResolver.BuildFallingRain(
+                new[] { FirestormDefinition },
+                BaseSpec,
+                BaseSpec,
+                aim,
+                new System.Random(12345),
+                into);
+            Assert.AreEqual(10, into.Count);
+            Assert.AreEqual(aim.x, into[0].LandingPoint.x, 1e-4f);
+            Assert.AreEqual(aim.z, into[0].LandingPoint.z, 1e-4f);
+            Assert.AreEqual(0f, into[0].DelaySeconds, 1e-4f);
+            for (var i = 0; i < into.Count; i++)
+            {
+                Assert.AreEqual(i * 0.15f, into[i].DelaySeconds, 1e-4f);
+                Assert.AreEqual(EffectPayloadTravelPattern.FallFromSky, into[i].TravelPattern);
+                Assert.AreEqual(into[i].LandingPoint.x, into[i].Origin.x, 1e-4f);
+                Assert.AreEqual(into[i].LandingPoint.z, into[i].Origin.z, 1e-4f);
+                Assert.Greater(into[i].Origin.y, into[i].LandingPoint.y);
+                var dx = into[i].LandingPoint.x - aim.x;
+                var dz = into[i].LandingPoint.z - aim.z;
+                Assert.LessOrEqual(dx * dx + dz * dz, 2.5f * 2.5f + 1e-3f);
+            }
         }
 
         static List<EffectPayloadPlan> Build(

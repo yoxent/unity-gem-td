@@ -161,6 +161,12 @@ namespace GemTD.Gameplay.Towers
             return fire != null ? fire.GetProjectileCount(sourceLevel) : 0;
         }
 
+        public int GetChainCount(int sourceLevel)
+        {
+            var fire = FireRole;
+            return fire != null ? fire.GetChainCount(sourceLevel) : 0;
+        }
+
         public EffectPayloadDefinition[] GetEffectPayloads()
         {
             var fire = FireRole;

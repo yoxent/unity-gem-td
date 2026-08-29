@@ -15,7 +15,8 @@ namespace GemTD.Gameplay.Towers
         Damage,
         ReservationPercent,
         ProjectileSpeed,
-        ProjectileCount
+        ProjectileCount,
+        ChainCount
     }
 
     public enum RoleModifierOperation

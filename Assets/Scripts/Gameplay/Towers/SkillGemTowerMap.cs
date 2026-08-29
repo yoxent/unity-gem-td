@@ -44,12 +44,40 @@ namespace GemTD.Gameplay.Towers
         public const float MoltenStrikeMagmaAoeRadius = 1f;
         public const float MoltenStrikeMagmaMinDistance = 1f;
         public const float MoltenStrikeMagmaMaxDistance = 4f;
+        public const int FirestormImpactCount = 10;
+        public const float FirestormIntervalSeconds = 0.15f;
+        public const float FirestormStormRadius = 2.5f;
+        public const float FirestormExplosionRadius = 1.3f;
+        public const float FirestormDropHeight = 3f;
 
         public static void ResolveFireBehavior(
             GemTag tags,
             out AimMode aim,
             out DeliveryPattern delivery)
         {
+            ResolveFireBehavior(tags, slug: null, out aim, out delivery);
+        }
+
+        public static void ResolveFireBehavior(
+            GemTag tags,
+            string slug,
+            out AimMode aim,
+            out DeliveryPattern delivery)
+        {
+            if (string.Equals(slug, "Ice_Nova", StringComparison.OrdinalIgnoreCase))
+            {
+                aim = AimMode.Direct;
+                delivery = DeliveryPattern.CasterNova;
+                return;
+            }
+
+            if (string.Equals(slug, "Firestorm", StringComparison.OrdinalIgnoreCase))
+            {
+                aim = AimMode.Ground;
+                delivery = DeliveryPattern.Rain;
+                return;
+            }
+
             if ((tags & GemTag.Melee) != 0 && (tags & GemTag.Strike) != 0)
             {
                 aim = AimMode.Direct;
@@ -358,15 +386,18 @@ namespace GemTD.Gameplay.Towers
                     break;
             }
 
-            if ((tags & GemTag.Projectile) != 0)
-                AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
-
-            if ((tags & GemTag.Projectile) != 0
-                && (kind == RoleKind.Attack || kind == RoleKind.Spell))
+            ResolveFireBehavior(tags, slug, out _, out var delivery);
+            var firesStraightBolt = delivery == DeliveryPattern.Straight
+                && ((tags & GemTag.Projectile) != 0 || IsArcSpell(slug));
+            if (firesStraightBolt)
             {
-                ResolveFireBehavior(tags, out _, out var delivery);
-                if (delivery == DeliveryPattern.Straight)
+                AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
+                if (kind == RoleKind.Attack || kind == RoleKind.Spell)
                     AddSet(modifiers, RoleStat.ProjectileCount, 1);
+            }
+            else if ((tags & GemTag.Projectile) != 0)
+            {
+                AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
             }
 
             return modifiers.ToArray();
@@ -393,6 +424,31 @@ namespace GemTD.Gameplay.Towers
                         MinDistance = MoltenStrikeMagmaMinDistance,
                         MaxDistance = MoltenStrikeMagmaMaxDistance,
                         ArcHeight = 1.5f
+                    }
+                };
+            }
+
+            if (kind == RoleKind.Spell
+                && string.Equals(slug, "Firestorm", StringComparison.OrdinalIgnoreCase))
+            {
+                return new[]
+                {
+                    new EffectPayloadDefinition
+                    {
+                        Trigger = EffectPayloadTrigger.AfterDelay,
+                        Anchor = EffectPayloadAnchor.GroundTarget,
+                        TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                        ScatterPattern = EffectPayloadScatterPattern.None,
+                        HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                        Tags = GemTag.Aoe,
+                        Count = FirestormImpactCount,
+                        DamageMultiplier = 1f,
+                        AoeRadius = FirestormExplosionRadius,
+                        MinDistance = 0f,
+                        MaxDistance = FirestormStormRadius,
+                        ArcHeight = FirestormDropHeight,
+                        DelaySeconds = 0f,
+                        IntervalSeconds = FirestormIntervalSeconds
                     }
                 };
             }
@@ -428,6 +484,7 @@ namespace GemTD.Gameplay.Towers
                     result.Slug,
                     sourceLevel);
                 AddLevelDamage(modifiers, values, kind);
+                AddLevelChain(modifiers, values, result.Slug);
                 AddLevelRadiusBonus(modifiers, values, result.Slug);
                 AddLevelEffects(effects, values);
 
@@ -487,10 +544,46 @@ namespace GemTD.Gameplay.Towers
 
             return string.Equals(slug, "Cleave", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(slug, "Fireball", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Ice_Nova", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(
                     slug,
                     "Explosive_Trap",
                     StringComparison.OrdinalIgnoreCase);
+        }
+
+        static void AddLevelChain(List<RoleStatModifier> modifiers, JObject values, string slug)
+        {
+            if (!IsClassifiedChainSource(slug) || values == null)
+                return;
+
+            foreach (var effect in values.Properties())
+            {
+                if (!IsChainTimesHeader(effect.Name))
+                    continue;
+
+                var hops = ReadNumber(effect.Value);
+                if (hops.HasValue)
+                {
+                    AddSet(modifiers, RoleStat.ChainCount, hops.Value);
+                    return;
+                }
+            }
+        }
+
+        static bool IsClassifiedChainSource(string slug)
+        {
+            return IsArcSpell(slug);
+        }
+
+        static bool IsChainTimesHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Chains")
+                && ContainsIgnoreCase(header, "Times");
+        }
+
+        static bool IsArcSpell(string slug)
+        {
+            return string.Equals(slug, "Arc", StringComparison.OrdinalIgnoreCase);
         }
 
         static void AddLevelDamage(

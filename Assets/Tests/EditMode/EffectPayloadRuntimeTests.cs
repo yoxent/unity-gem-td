@@ -96,6 +96,52 @@ namespace GemTD.Tests.EditMode
             Assert.Less(enemy.Hp, hpAfterFirst);
         }
 
+        [Test]
+        public void FallFromSky_DoesNotDamageBeforeLanding()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var enemy = MakeEnemy(landing);
+            var living = Living(enemy);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+            runtime.Tick(0.05f, living);
+            Assert.AreEqual(100f, enemy.Hp, 1e-4f);
+            Assert.IsTrue(runtime.IsActive);
+        }
+
+        [Test]
+        public void FallFromSky_DetonatesAtLanding()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var enemy = MakeEnemy(landing);
+            var living = Living(enemy);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+            while (runtime.IsActive)
+                runtime.Tick(0.05f, living);
+            Assert.Less(enemy.Hp, 100f);
+        }
+
         static EffectPayloadRuntime MakeFountainRuntime(
             Vector3 origin,
             Vector3 landing,

@@ -20,18 +20,21 @@ namespace GemTD.Gameplay.Combat
         bool _resolved;
         StatusRuntime _statuses;
         TowerDefinition _sourceTower;
+        TowerInstance _owner;
         Action<TowerDefinition, float> _recordDamage;
         readonly List<EnemyRuntime> _impactScratch = new List<EnemyRuntime>(8);
 
         public bool IsActive { get; private set; }
         public Vector3 Position { get; private set; }
+        public TowerInstance Owner => _owner;
 
         public void Init(
             in EffectPayloadPlan plan,
             float flightSeconds,
             StatusRuntime statuses,
             TowerDefinition sourceTower,
-            Action<TowerDefinition, float> recordDamage)
+            Action<TowerDefinition, float> recordDamage,
+            TowerInstance owner = null)
         {
             _plan = plan;
             _progress = 0f;
@@ -41,6 +44,7 @@ namespace GemTD.Gameplay.Combat
             _statuses = statuses;
             _sourceTower = sourceTower;
             _recordDamage = recordDamage;
+            _owner = owner;
             Position = plan.Origin;
             IsActive = true;
         }
@@ -76,11 +80,14 @@ namespace GemTD.Gameplay.Combat
                 return false;
             }
 
-            Position = FountainTrajectory.Evaluate(
-                _plan.Origin,
-                _plan.LandingPoint,
-                _plan.ArcHeight,
-                _progress);
+            if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+                Position = Vector3.Lerp(_plan.Origin, _plan.LandingPoint, _progress);
+            else
+                Position = FountainTrajectory.Evaluate(
+                    _plan.Origin,
+                    _plan.LandingPoint,
+                    _plan.ArcHeight,
+                    _progress);
             return true;
         }
 

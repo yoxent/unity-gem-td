@@ -37,7 +37,8 @@ namespace GemTD.Gameplay.Gems
                     damage.Min,
                     damage.Max,
                     tower.Def.GetProjectileCount(tower.Level),
-                    tower.Def.GetSplashRadius(tower.Level));
+                    tower.Def.GetSplashRadius(tower.Level),
+                    tower.Def.GetChainCount(tower.Level));
                 baseline.ProjectileSpeedMultiplier =
                     tower.Def.GetProjectileSpeedMultiplier(tower.Level);
                 baseline.PierceBehavior = tower.Def.GetProjectilePierceMode();

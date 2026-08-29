@@ -12,37 +12,136 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e6db3b80c401b448a86b7a04ea2a6fe, type: 3}
   m_Name: Role_Spell_Eye_of_Winter
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.SpellRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.8
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 8
+    Min: 0
+    Max: 0
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 9
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
   Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 31
+      Max: 46
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 56
+      Max: 84
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 93
+      Max: 139
+    Effects: []
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 152
+      Max: 228
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 245
+      Max: 367
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 391
+      Max: 587
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 620
+      Max: 930
     Effects: []
   - SourceLevel: 8
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 871
+      Max: 1307
     Effects: []
-  - SourceLevel: 12
-    Modifiers: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 1091
+      Max: 1636
     Effects: []
-  - SourceLevel: 16
-    Modifiers: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 1364
+      Max: 2046
     Effects: []
-  - SourceLevel: 20
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 24
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 28
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 32
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 36
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 40
-    Modifiers: []
-    Effects: []
-  PierceBehavior: 1
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0

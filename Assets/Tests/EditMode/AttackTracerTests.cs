@@ -213,6 +213,192 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void CasterNova_DiscUsesTowerRadiusNotSplash()
+        {
+            _projectileRole.AimMode = AimMode.Direct;
+            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var dummy = MakeEnemy(new Vector3(1.5f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.Discs.Count);
+            Assert.AreEqual(5f, trace.Discs[0].Radius, 0.001f);
+            Assert.AreEqual(AttackTraceKind.Aoe, trace.Discs[0].Kind);
+        }
+
+        [Test]
+        public void CasterNova_DoesNotRecordEnemyOutsideTowerRadius()
+        {
+            _projectileRole.AimMode = AimMode.Direct;
+            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var near = MakeEnemy(new Vector3(1.5f, 0f, 0f));
+            var outsider = MakeEnemy(new Vector3(8f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(near, outsider));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.HitTargets.Count);
+            Assert.AreSame(near, trace.HitTargets[0]);
+        }
+
+        [Test]
+        public void CasterNova_RecordsEnemyInsideTowerRadiusOutsideSplash()
+        {
+            _projectileRole.AimMode = AimMode.Direct;
+            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var dummy = MakeEnemy(new Vector3(4f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.HitTargets.Count);
+            Assert.AreSame(dummy, trace.HitTargets[0]);
+        }
+
+        [Test]
+        public void CasterNova_RecordsEnemyInsideRadius()
+        {
+            _projectileRole.AimMode = AimMode.Direct;
+            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var dummy = MakeEnemy(new Vector3(1.5f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.HitTargets.Count);
+            Assert.AreSame(dummy, trace.HitTargets[0]);
+        }
+
+        [Test]
+        public void GroundPulse_SplashUsesAimPointNotOrigin()
+        {
+            _projectileRole.AimMode = AimMode.Ground;
+            _projectileRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2f)
+            };
+            _projectileTower.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+
+            var primary = MakeEnemy(new Vector3(8f, 0f, 0f));
+            var atOrigin = MakeEnemy(Vector3.zero);
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(primary, atOrigin));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(1, trace.HitTargets.Count);
+            Assert.AreSame(primary, trace.HitTargets[0]);
+        }
+
+        [Test]
+        public void Rain_RecordsPayloadHitsAtAim()
+        {
+            _projectileRole.AimMode = AimMode.Ground;
+            _projectileRole.DeliveryPattern = DeliveryPattern.Rain;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _projectileRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    Anchor = EffectPayloadAnchor.GroundTarget,
+                    TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                    ScatterPattern = EffectPayloadScatterPattern.None,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Tags = GemTag.Aoe,
+                    Count = 10,
+                    DamageMultiplier = 1f,
+                    AoeRadius = 1.3f,
+                    MinDistance = 0f,
+                    MaxDistance = 2.5f,
+                    ArcHeight = 3f,
+                    IntervalSeconds = 0.15f
+                }
+            };
+            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var dummy = MakeEnemy(new Vector3(4f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(dummy));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.Greater(trace.PayloadHitRecords.Count, 0);
+            Assert.AreEqual(10, CountKind(trace, AttackTraceKind.Rain));
+            Assert.AreEqual(10, CountDiscKind(trace, AttackTraceKind.Rain));
+            Assert.AreEqual(1, CountDiscKind(trace, AttackTraceKind.Aoe));
+
+            var storm = FirstDiscKind(trace, AttackTraceKind.Aoe);
+            Assert.AreEqual(2.5f, storm.Radius, 0.001f);
+            Assert.AreEqual(4f, storm.Center.x, 0.2f);
+            Assert.AreEqual(0f, storm.Center.z, 0.2f);
+
+            var explosion = FirstDiscKind(trace, AttackTraceKind.Rain);
+            Assert.AreEqual(1.3f, explosion.Radius, 0.001f);
+
+            var fall = FirstKind(trace, AttackTraceKind.Rain);
+            Assert.Greater(fall.From.y, fall.To.y);
+            Assert.AreEqual(fall.From.x, fall.To.x, 1e-4f);
+            Assert.AreEqual(fall.From.z, fall.To.z, 1e-4f);
+        }
+
+        [Test]
         public void WarpStrike_RecordsCueAndMagmaHits()
         {
             _projectileTower.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
@@ -391,6 +577,18 @@ namespace GemTD.Tests.EditMode
             }
 
             Assert.Fail("missing kind " + kind);
+            return default;
+        }
+
+        static AttackTraceDisc FirstDiscKind(AttackTrace trace, AttackTraceKind kind)
+        {
+            for (var i = 0; i < trace.Discs.Count; i++)
+            {
+                if (trace.Discs[i].Kind == kind)
+                    return trace.Discs[i];
+            }
+
+            Assert.Fail("missing disc kind " + kind);
             return default;
         }
     }

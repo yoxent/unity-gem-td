@@ -23,6 +23,7 @@ namespace GemTD.Gameplay.Combat
         readonly List<EffectPayloadDefinition> _payloadDefinitionsScratch =
             new List<EffectPayloadDefinition>(8);
         readonly List<EffectPayloadPlan> _payloadPlanScratch = new List<EffectPayloadPlan>(8);
+        readonly List<EnemyRuntime> _casterNovaScratch = new List<EnemyRuntime>(16);
         readonly System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
         readonly TileHeightMap _heights;
@@ -154,10 +155,23 @@ namespace GemTD.Gameplay.Combat
                             continue;
                         }
 
+                        if (spec.DeliveryPattern == DeliveryPattern.CasterNova)
+                        {
+                            ApplyCasterNova(
+                                muzzle,
+                                range,
+                                volleyMin,
+                                volleyMax,
+                                living,
+                                statuses,
+                                tower.Def);
+                            continue;
+                        }
+
                         if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
                         {
                             ApplyGroundPulse(
-                                muzzle,
+                                aimPoint,
                                 primary,
                                 spec,
                                 volleyMin,
@@ -165,6 +179,18 @@ namespace GemTD.Gameplay.Combat
                                 living,
                                 statuses,
                                 tower.Def);
+                            continue;
+                        }
+
+                        if (spec.DeliveryPattern == DeliveryPattern.Rain)
+                        {
+                            SpawnRain(
+                                aimPoint,
+                                spec,
+                                baseline,
+                                speed,
+                                statuses,
+                                tower);
                             continue;
                         }
 
@@ -279,6 +305,13 @@ namespace GemTD.Gameplay.Combat
 
         static float ResolvePayloadFlightSeconds(in EffectPayloadPlan plan, float speed)
         {
+            if (plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+            {
+                var drop = plan.ArcHeight > 0.01f ? plan.ArcHeight : 3f;
+                var rainSpeed = speed > 0.01f ? speed : ProjectileRuntime.DefaultProjectileSpeed;
+                return Mathf.Clamp(drop / rainSpeed, EffectPayloadRuntime.MinFlightSeconds, 0.45f);
+            }
+
             if (plan.TravelPattern != EffectPayloadTravelPattern.Fountain)
                 return EffectPayloadRuntime.MinFlightSeconds;
 
@@ -287,8 +320,83 @@ namespace GemTD.Gameplay.Combat
             return Mathf.Clamp(dist / safeSpeed, 0.12f, 0.45f);
         }
 
+        void SpawnRain(
+            Vector3 aimPoint,
+            SkillSpec spec,
+            SkillSpec baseline,
+            float speed,
+            StatusRuntime statuses,
+            TowerInstance sourceTower)
+        {
+            CancelRainFrom(sourceTower);
+            if (sourceTower == null || sourceTower.Def == null)
+                return;
+
+            GemModifierPipeline.CollectEffectPayloads(sourceTower, _payloadDefinitionsScratch);
+            if (_payloadDefinitionsScratch.Count == 0)
+                return;
+
+            _payloadPlanScratch.Clear();
+            EffectPayloadResolver.BuildFallingRain(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                aimPoint,
+                _payloadRng,
+                _payloadPlanScratch);
+
+            for (var i = 0; i < _payloadPlanScratch.Count; i++)
+            {
+                var plan = _payloadPlanScratch[i];
+                var flight = ResolvePayloadFlightSeconds(plan, speed);
+                var runtime = new EffectPayloadRuntime();
+                runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
+                _effectPayloads.Add(runtime);
+            }
+        }
+
+        void CancelRainFrom(TowerInstance tower)
+        {
+            if (tower == null)
+                return;
+
+            for (var i = _effectPayloads.Count - 1; i >= 0; i--)
+            {
+                var payload = _effectPayloads[i];
+                if (payload.Owner != tower)
+                    continue;
+
+                payload.Deactivate();
+                _effectPayloads.RemoveAt(i);
+            }
+        }
+
+        void ApplyCasterNova(
+            Vector3 muzzle,
+            float radius,
+            float damageMin,
+            float damageMax,
+            List<EnemyRuntime> living,
+            StatusRuntime statuses,
+            TowerDefinition sourceTower)
+        {
+            if (radius <= 0f || living == null)
+                return;
+
+            var damage = RoleStatValue.SampleHitDamage(damageMin, damageMax);
+            _casterNovaScratch.Clear();
+            AreaEffectResolver.CollectCircle(
+                muzzle,
+                radius,
+                living,
+                _casterNovaScratch,
+                EffectPayloadHitPolicy.PerImpact);
+            for (var i = 0; i < _casterNovaScratch.Count; i++)
+                ApplyPulseDamage(_casterNovaScratch[i], damage, statuses, sourceTower);
+        }
+
         void ApplyGroundPulse(
-            Vector3 origin,
+            Vector3 pulseOrigin,
             EnemyRuntime primary,
             SkillSpec spec,
             float damageMin,
@@ -314,7 +422,7 @@ namespace GemTD.Gameplay.Combat
                 if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, primary))
                     continue;
 
-                if ((enemy.WorldPosition - origin).sqrMagnitude <= radiusSq)
+                if ((enemy.WorldPosition - pulseOrigin).sqrMagnitude <= radiusSq)
                     ApplyPulseDamage(enemy, damage, statuses, sourceTower);
             }
         }

@@ -578,6 +578,239 @@ namespace GemTD.Tests.EditMode
             Assert.Less(enemy.Hp, hpBefore);
         }
 
+        [Test]
+        public void Tick_GroundPulse_SplashUsesAimPointNotMuzzle()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2f)
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var primary = CreateEnemyAtProgress(0.8f);
+            var atMuzzle = new EnemyRuntime();
+            atMuzzle.Init(_enemyDef, new[] { new Vector3(0.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(primary);
+            registry.Register(atMuzzle);
+            var muzzleHp = atMuzzle.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.Less(primary.Hp, 100f);
+            Assert.AreEqual(muzzleHp, atMuzzle.Hp, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_Rain_DoesNotSnipePrimary_SpawnsTenPayloads()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.Rain;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _towerRole.EffectPayloads = new[] { FirestormCombatPayload() };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+            _towerDef.Damage = 10f;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f, payloadRng: new System.Random(1));
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var hpBefore = enemy.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(10, director.EffectPayloads.Count);
+            Assert.AreEqual(hpBefore, enemy.Hp, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_Rain_RecastReplacesSameTowerStorm()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.Rain;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 0.05f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _towerRole.EffectPayloads = new[] { FirestormCombatPayload() };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f, payloadRng: new System.Random(1));
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            Assert.AreEqual(10, director.EffectPayloads.Count);
+            director.Tick(1f, new List<TowerInstance> { tower }, registry, _pipeline);
+            Assert.AreEqual(10, director.EffectPayloads.Count);
+        }
+
+        static EffectPayloadDefinition FirestormCombatPayload()
+        {
+            return new EffectPayloadDefinition
+            {
+                Trigger = EffectPayloadTrigger.AfterDelay,
+                Anchor = EffectPayloadAnchor.GroundTarget,
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                ScatterPattern = EffectPayloadScatterPattern.None,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Tags = GemTag.Aoe,
+                Count = 10,
+                DamageMultiplier = 1f,
+                AoeRadius = 1.3f,
+                MinDistance = 0f,
+                MaxDistance = 2.5f,
+                ArcHeight = 3f,
+                DelaySeconds = 0f,
+                IntervalSeconds = 0.15f
+            };
+        }
+
+        [Test]
+        public void Tick_CasterNova_HitsPrimaryInsideTowerRadiusOutsideSplash()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(4.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var hpBefore = enemy.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.Less(enemy.Hp, hpBefore);
+        }
+
+        [Test]
+        public void Tick_CasterNova_MissesEnemyOutsideTowerRadius()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var near = new EnemyRuntime();
+            near.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var outsider = new EnemyRuntime();
+            outsider.Init(_enemyDef, new[] { new Vector3(8.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(near);
+            registry.Register(outsider);
+            var nearHp = near.Hp;
+            var outsiderHp = outsider.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.Less(near.Hp, nearHp);
+            Assert.AreEqual(outsiderHp, outsider.Hp, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_CasterNova_HitsPrimaryInsideRadius()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var hpBefore = enemy.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.Less(enemy.Hp, hpBefore);
+        }
+
+        [Test]
+        public void Tick_CasterNova_HitsEnemyInsideRadiusEvenIfNotPrimary()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var far = new EnemyRuntime();
+            far.Init(
+                _enemyDef,
+                new[] { new Vector3(0.5f, 0f, 0.5f), new Vector3(20.5f, 0f, 0.5f) });
+            _enemyDef.MoveSpeed = 1f;
+            for (var i = 0; i < 10; i++)
+                far.TickMove(0.5f);
+            _enemyDef.MoveSpeed = 0.01f;
+            var near = new EnemyRuntime();
+            near.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var registry = new EnemyRegistry();
+            registry.Register(far);
+            registry.Register(near);
+            var farHp = far.Hp;
+            var nearHp = near.Hp;
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.Less(far.Hp, farHp);
+            Assert.Less(near.Hp, nearHp);
+        }
+
         static RoleStatModifier Modifier(RoleStat stat, float value)
         {
             return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);

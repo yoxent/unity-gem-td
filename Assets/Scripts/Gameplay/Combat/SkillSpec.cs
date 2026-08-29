@@ -18,7 +18,9 @@ namespace GemTD.Gameplay.Combat
         PayloadNova,
         WarpStrike,
         GroundPulse,
-        GroundPath
+        GroundPath,
+        CasterNova,
+        Rain
     }
 
     /// <summary>
@@ -90,12 +92,17 @@ namespace GemTD.Gameplay.Combat
 
         public bool Pierce => PierceBehavior == PierceMode.Infinite || PierceCount > 0;
 
-        public static SkillSpec FromBase(float damage, int projectiles = 1, float aoe = 0f)
+        public static SkillSpec FromBase(float damage, int projectiles = 1, float aoe = 0f, int chainCount = 0)
         {
-            return FromBase(damage, damage, projectiles, aoe);
+            return FromBase(damage, damage, projectiles, aoe, chainCount);
         }
 
-        public static SkillSpec FromBase(float damageMin, float damageMax, int projectiles = 1, float aoe = 0f)
+        public static SkillSpec FromBase(
+            float damageMin,
+            float damageMax,
+            int projectiles = 1,
+            float aoe = 0f,
+            int chainCount = 0)
         {
             if (damageMax < damageMin)
             {
@@ -111,7 +118,7 @@ namespace GemTD.Gameplay.Combat
                 DamageMax = damageMax,
                 ProjectileCount = projectiles,
                 SpreadDegrees = 0f,
-                ChainCount = 0,
+                ChainCount = chainCount,
                 ChainHopFalloff = 1f,
                 ForkCount = 0,
                 AoeRadius = aoe,

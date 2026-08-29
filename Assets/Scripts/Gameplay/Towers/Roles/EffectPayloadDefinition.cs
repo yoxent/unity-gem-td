@@ -23,7 +23,8 @@ namespace GemTD.Gameplay.Towers
     {
         Straight = 0,
         Fountain = 1,
-        StationaryPulse = 2
+        StationaryPulse = 2,
+        FallFromSky = 3
     }
 
     public enum EffectPayloadScatterPattern

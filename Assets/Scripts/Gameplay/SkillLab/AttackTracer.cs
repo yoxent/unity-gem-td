@@ -72,13 +72,27 @@ namespace GemTD.Gameplay.SkillLab
 
             var pierceRemaining = spec.GetPierceRemaining();
             var damage = spec.Damage;
+            var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
+            var speed = _baseProjectileSpeed * speedMul;
+            var aimPoint = spec.AimMode == AimMode.Ground
+                ? PathIntercept.Predict(origin, speed, primary)
+                : primary.WorldPosition;
+
             if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
             {
                 TraceWarpStrike(trace, origin, primary, spec, baseline, damage, dummies, tower);
             }
+            else if (spec.DeliveryPattern == DeliveryPattern.CasterNova)
+            {
+                TraceCasterNova(trace, origin, range, dummies);
+            }
+            else if (spec.DeliveryPattern == DeliveryPattern.Rain)
+            {
+                TraceRain(trace, aimPoint, spec, baseline, dummies, tower);
+            }
             else if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
             {
-                TraceGroundPulse(trace, origin, primary, spec, dummies);
+                TraceGroundPulse(trace, aimPoint, primary, spec, dummies);
             }
             else if (EvolutionEvaluator.IsHydraTower(tower))
             {
@@ -196,15 +210,116 @@ namespace GemTD.Gameplay.SkillLab
             }
         }
 
-        static void TraceGroundPulse(
+        void TraceCasterNova(
             AttackTrace trace,
             Vector3 origin,
+            float radius,
+            List<EnemyRuntime> dummies)
+        {
+            if (radius <= 0f)
+                return;
+
+            trace.Discs.Add(new AttackTraceDisc
+            {
+                Center = origin,
+                Radius = radius,
+                Kind = AttackTraceKind.Aoe
+            });
+
+            _impactScratch.Clear();
+            AreaEffectResolver.CollectCircle(
+                origin,
+                radius,
+                dummies,
+                _impactScratch,
+                EffectPayloadHitPolicy.PerImpact);
+            for (var i = 0; i < _impactScratch.Count; i++)
+                AddHitTarget(trace, _impactScratch[i]);
+        }
+
+        void TraceRain(
+            AttackTrace trace,
+            Vector3 aimPoint,
+            SkillSpec spec,
+            SkillSpec baseline,
+            List<EnemyRuntime> dummies,
+            TowerInstance tower)
+        {
+            if (tower == null || tower.Def == null)
+                return;
+
+            GemModifierPipeline.CollectEffectPayloads(tower, _payloadDefinitionsScratch);
+            if (_payloadDefinitionsScratch.Count == 0)
+                return;
+
+            _payloadPlans.Clear();
+            EffectPayloadResolver.BuildFallingRain(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                aimPoint,
+                _previewRng,
+                _payloadPlans);
+
+            var stormRadius = 0f;
+            for (var d = 0; d < _payloadDefinitionsScratch.Count; d++)
+            {
+                var def = _payloadDefinitionsScratch[d];
+                if (def == null
+                    || def.TravelPattern != EffectPayloadTravelPattern.FallFromSky
+                    || !def.IsValid)
+                    continue;
+                if (def.MaxDistance > stormRadius)
+                    stormRadius = def.MaxDistance;
+            }
+
+            if (stormRadius > 0f)
+            {
+                trace.Discs.Add(new AttackTraceDisc
+                {
+                    Center = aimPoint,
+                    Radius = stormRadius,
+                    Kind = AttackTraceKind.Aoe
+                });
+            }
+
+            for (var i = 0; i < _payloadPlans.Count; i++)
+            {
+                var plan = _payloadPlans[i];
+                var payloadDamage = (plan.DamageMin + plan.DamageMax) * 0.5f;
+                AddSegment(trace, plan.Origin, plan.LandingPoint, AttackTraceKind.Rain, payloadDamage);
+                trace.Discs.Add(new AttackTraceDisc
+                {
+                    Center = plan.LandingPoint,
+                    Radius = plan.AoeRadius,
+                    Kind = AttackTraceKind.Rain
+                });
+
+                _impactScratch.Clear();
+                AreaEffectResolver.CollectCircle(
+                    plan.LandingPoint,
+                    plan.AoeRadius,
+                    dummies,
+                    _impactScratch,
+                    plan.HitPolicy);
+                for (var t = 0; t < _impactScratch.Count; t++)
+                {
+                    var victim = _impactScratch[t];
+                    AddHitTarget(trace, victim);
+                    trace.PayloadHitRecords.Add(victim);
+                }
+            }
+        }
+
+        static void TraceGroundPulse(
+            AttackTrace trace,
+            Vector3 pulseOrigin,
             EnemyRuntime primary,
             SkillSpec spec,
             List<EnemyRuntime> dummies)
         {
             AddHitTarget(trace, primary);
-            RecordAoeTargets(trace, origin, primary, spec.AoeRadius, dummies);
+            RecordAoeTargets(trace, pulseOrigin, primary, spec.AoeRadius, dummies);
         }
 
         void EnqueueVolley(

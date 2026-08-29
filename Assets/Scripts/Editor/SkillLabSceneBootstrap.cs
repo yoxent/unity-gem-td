@@ -154,7 +154,7 @@ namespace GemTD.Editor
             var back = CreateButton(panel.transform, "BackButton", "Back");
             var hydra = CreateLabel(panel.transform, "HydraLabel", "Hydra");
             var status = CreateLabel(panel.transform, "StatusLabel", "");
-            var legend = CreateLabel(panel.transform, "LegendLabel", "White primary  Cyan hydra  Yellow pierce  Magenta fork  Orange chain  Red AoE");
+            var legend = CreateLabel(panel.transform, "LegendLabel", "White primary  Cyan hydra  Yellow pierce  Magenta fork  Orange chain  Red AoE  Amber rain");
             legend.fontSize = 16f;
             hydra.gameObject.SetActive(false);
 

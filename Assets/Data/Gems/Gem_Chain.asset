@@ -17,6 +17,9 @@ MonoBehaviour:
   Description: Projectile chains to additional targets. Each subsequent chain deals
     reduced damage; chain count is limited.
   DraftWeight: 2
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
   Tags: 385
   Modifiers:
   - Stat: 0
@@ -39,8 +42,8 @@ MonoBehaviour:
     Min: 0
     Max: 0
     Lesser: 1
-    Normal: 1
-    Greater: 1
+    Normal: 2
+    Greater: 3
     Falloff: 0.6
     LesserFalloff: 0.5
     NormalFalloff: 0.6

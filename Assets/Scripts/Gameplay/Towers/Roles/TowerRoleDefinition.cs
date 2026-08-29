@@ -42,7 +42,7 @@ namespace GemTD.Gameplay.Towers
 
         public int GetProjectileCount(int sourceLevel)
         {
-            if (!ValidateProjectileCountModifiers(Modifiers, "Modifiers"))
+            if (!ValidateWholeCountModifiers(Modifiers, RoleStat.ProjectileCount, "ProjectileCount", "Modifiers"))
                 return 0;
 
             if (Levels != null)
@@ -51,8 +51,10 @@ namespace GemTD.Gameplay.Towers
                 {
                     var level = Levels[i];
                     if (level != null
-                        && !ValidateProjectileCountModifiers(
+                        && !ValidateWholeCountModifiers(
                             level.Modifiers,
+                            RoleStat.ProjectileCount,
+                            "ProjectileCount",
                             $"Levels[{level.SourceLevel}].Modifiers"))
                     {
                         return 0;
@@ -68,6 +70,42 @@ namespace GemTD.Gameplay.Towers
             {
                 Debug.LogError(
                     $"Role '{name}' resolved ProjectileCount to {value}, but projectile count must be a whole number.");
+                return 0;
+            }
+
+            return (int)value;
+        }
+
+        public int GetChainCount(int sourceLevel)
+        {
+            if (!ValidateWholeCountModifiers(Modifiers, RoleStat.ChainCount, "ChainCount", "Modifiers"))
+                return 0;
+
+            if (Levels != null)
+            {
+                for (var i = 0; i < Levels.Length; i++)
+                {
+                    var level = Levels[i];
+                    if (level != null
+                        && !ValidateWholeCountModifiers(
+                            level.Modifiers,
+                            RoleStat.ChainCount,
+                            "ChainCount",
+                            $"Levels[{level.SourceLevel}].Modifiers"))
+                    {
+                        return 0;
+                    }
+                }
+            }
+
+            var value = ResolveStat(RoleStat.ChainCount, sourceLevel);
+            if (value <= 0f)
+                return 0;
+
+            if (!IsWholeNumber(value))
+            {
+                Debug.LogError(
+                    $"Role '{name}' resolved ChainCount to {value}, but chain count must be a whole number.");
                 return 0;
             }
 
@@ -207,7 +245,11 @@ namespace GemTD.Gameplay.Towers
             }
         }
 
-        bool ValidateProjectileCountModifiers(RoleStatModifier[] modifiers, string source)
+        bool ValidateWholeCountModifiers(
+            RoleStatModifier[] modifiers,
+            RoleStat stat,
+            string label,
+            string source)
         {
             if (modifiers == null)
                 return true;
@@ -216,7 +258,7 @@ namespace GemTD.Gameplay.Towers
             for (var i = 0; i < modifiers.Length; i++)
             {
                 var modifier = modifiers[i];
-                if (modifier.Stat != RoleStat.ProjectileCount)
+                if (modifier.Stat != stat)
                     continue;
 
                 if (modifier.Operation == RoleModifierOperation.Multiply
@@ -225,7 +267,7 @@ namespace GemTD.Gameplay.Towers
                     || !IsWholeNumber(modifier.OperandMax))
                 {
                     Debug.LogError(
-                        $"Role '{name}' has invalid ProjectileCount modifier at {source}[{i}]. "
+                        $"Role '{name}' has invalid {label} modifier at {source}[{i}]. "
                         + "Use whole-number Set/Add values only; Multiply and Range are unsupported.");
                     valid = false;
                 }
@@ -248,7 +290,7 @@ namespace GemTD.Gameplay.Towers
 
             ApplyStatOperation(ref value, stat, modifiers, RoleModifierOperation.Set);
             ApplyStatOperation(ref value, stat, modifiers, RoleModifierOperation.Add);
-            if (stat != RoleStat.ProjectileCount)
+            if (stat != RoleStat.ProjectileCount && stat != RoleStat.ChainCount)
                 ApplyStatOperation(ref value, stat, modifiers, RoleModifierOperation.Multiply);
         }
 

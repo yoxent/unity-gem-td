@@ -12,28 +12,136 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e6db3b80c401b448a86b7a04ea2a6fe, type: 3}
   m_Name: Role_Spell_Essence_Drain
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.SpellRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.7
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 8
+    Min: 0
+    Max: 0
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 9
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 31
+      Max: 46
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 95
+      Max: 142
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 216
+      Max: 324
+    Effects: []
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 474
+      Max: 710
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 786
+      Max: 1179
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 1291
+      Max: 1937
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 2104
+      Max: 3156
+    Effects: []
   - SourceLevel: 8
-    Modifiers: []
-  - SourceLevel: 12
-    Modifiers: []
-  - SourceLevel: 16
-    Modifiers: []
-  - SourceLevel: 20
-    Modifiers: []
-  - SourceLevel: 24
-    Modifiers: []
-  - SourceLevel: 28
-    Modifiers: []
-  - SourceLevel: 32
-    Modifiers: []
-  - SourceLevel: 36
-    Modifiers: []
-  - SourceLevel: 40
-    Modifiers: []
-  CastTime: 0.7
-  CastSpeed: 100
-  TowerRadius: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 3020
+      Max: 4531
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 3836
+      Max: 5754
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 4865
+      Max: 7297
+    Effects: []
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0

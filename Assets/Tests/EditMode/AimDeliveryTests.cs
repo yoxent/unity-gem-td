@@ -102,6 +102,33 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void GemSet_CasterNovaAndRainOrdinals_AreAccepted()
+        {
+            var spec = SkillSpec.FromBase(10f);
+            spec = GemStatResolver.Apply(
+                spec,
+                new[]
+                {
+                    GemStatModifier.Single(
+                        GemStat.DeliveryPattern,
+                        RoleModifierOperation.Set,
+                        (float)DeliveryPattern.CasterNova)
+                });
+            Assert.AreEqual(DeliveryPattern.CasterNova, spec.DeliveryPattern);
+
+            spec = GemStatResolver.Apply(
+                spec,
+                new[]
+                {
+                    GemStatModifier.Single(
+                        GemStat.DeliveryPattern,
+                        RoleModifierOperation.Set,
+                        (float)DeliveryPattern.Rain)
+                });
+            Assert.AreEqual(DeliveryPattern.Rain, spec.DeliveryPattern);
+        }
+
+        [Test]
         public void Resolve_SocketedGem_OverridesRoleAim()
         {
             var def = ScriptableObject.CreateInstance<TowerDefinition>();

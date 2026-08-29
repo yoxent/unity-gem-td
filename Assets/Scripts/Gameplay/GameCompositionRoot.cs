@@ -158,7 +158,8 @@ namespace GemTD.Gameplay
                     damage.Min,
                     damage.Max,
                     def.GetProjectileCount(tower.Level),
-                    def.GetSplashRadius(tower.Level));
+                    def.GetSplashRadius(tower.Level),
+                    def.GetChainCount(tower.Level));
             }
             var interval = def.FireInterval(spec, tower.Level);
             var attackRate = interval > 0.01f ? 1f / interval : 0f;
@@ -387,7 +388,8 @@ namespace GemTD.Gameplay
                     damage.Min,
                     damage.Max,
                     tower.Def.GetProjectileCount(tower.Level),
-                    tower.Def.GetSplashRadius(tower.Level));
+                    tower.Def.GetSplashRadius(tower.Level),
+                    tower.Def.GetChainCount(tower.Level));
             }
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.IsFireable

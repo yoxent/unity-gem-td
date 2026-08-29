@@ -14,7 +14,8 @@ namespace GemTD.Gameplay.SkillLab
         Aoe = 5,
         WarpRise = 6,
         WarpDrop = 7,
-        Magma = 8
+        Magma = 8,
+        Rain = 9
     }
 
     public struct AttackTraceSegment

@@ -360,10 +360,62 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Firestorm_MapsFallingRainPayload()
+        {
+            var json = BuildSpellJson(
+                "Firestorm",
+                "Firestorm",
+                "[\"Spell\",\"AoE\",\"Duration\",\"Fire\"]",
+                0.75f,
+                "Deals # to # Fire Damage",
+                splashByLevel: null,
+                chainByLevel: null,
+                44f, 66f,
+                81f, 121f,
+                135f, 202f,
+                222f, 333f,
+                361f, 541f,
+                581f, 872f,
+                927f, 1391f,
+                1311f, 1966f,
+                1648f, 2472f,
+                2068f, 3103f);
+            var spell = SkillGemTowerMap.FromJson(json).GetRolePayload(SkillGemTowerMap.RoleKind.Spell);
+            Assert.AreEqual(1, spell.EffectPayloads.Length);
+            var rain = spell.EffectPayloads[0];
+            Assert.AreEqual(EffectPayloadTrigger.AfterDelay, rain.Trigger);
+            Assert.AreEqual(EffectPayloadAnchor.GroundTarget, rain.Anchor);
+            Assert.AreEqual(EffectPayloadTravelPattern.FallFromSky, rain.TravelPattern);
+            Assert.AreEqual(EffectPayloadScatterPattern.None, rain.ScatterPattern);
+            Assert.AreEqual(EffectPayloadHitPolicy.PerImpact, rain.HitPolicy);
+            Assert.AreEqual(GemTag.Aoe, rain.Tags);
+            Assert.AreEqual(SkillGemTowerMap.FirestormImpactCount, rain.Count);
+            Assert.AreEqual(1f, rain.DamageMultiplier, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.FirestormExplosionRadius, rain.AoeRadius, 0.001f);
+            Assert.AreEqual(0f, rain.MinDistance, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.FirestormStormRadius, rain.MaxDistance, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.FirestormDropHeight, rain.ArcHeight, 0.001f);
+            Assert.AreEqual(0f, rain.DelaySeconds, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.FirestormIntervalSeconds, rain.IntervalSeconds, 0.001f);
+        }
+
+        [Test]
         public void ResolveFireBehavior_Slam_IsGroundPulse()
         {
             SkillGemTowerMap.ResolveFireBehavior(
                 GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe,
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Ground, aim);
+            Assert.AreEqual(DeliveryPattern.GroundPulse, delivery);
+        }
+
+        [Test]
+        public void ResolveFireBehavior_EarthquakeSlug_StillGroundPulse()
+        {
+            SkillGemTowerMap.ResolveFireBehavior(
+                GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe,
+                "Earthquake",
                 out var aim,
                 out var delivery);
             Assert.AreEqual(AimMode.Ground, aim);
@@ -587,6 +639,309 @@ namespace GemTD.Tests.EditMode
                 projectileCount: 1f,
                 level1DamagePercent: 142.4f,
                 level10DamagePercent: 166.8f);
+        }
+
+        [Test]
+        public void SpellProofSetOne_MapsUserSelectedDeliveryAndLevels()
+        {
+            AssertSpellProof(
+                BuildSpellJson(
+                    "Frostbolt",
+                    "Frostbolt",
+                    "[\"Spell\",\"Projectile\",\"Cold\"]",
+                    0.75f,
+                    "Deals # to # Cold Damage",
+                    splashByLevel: null,
+                    chainByLevel: null,
+                    18f, 27f,
+                    81f, 121f,
+                    249f, 373f,
+                    688f, 1033f,
+                    1594f, 2392f,
+                    2539f, 3809f,
+                    4010f, 6015f,
+                    5623f, 8434f,
+                    7030f, 10545f,
+                    8778f, 13166f),
+                "Frostbolt",
+                GemTag.Spell | GemTag.Projectile,
+                0.75f,
+                AimMode.Direct,
+                DeliveryPattern.Straight,
+                projectileCount: 1f,
+                projectileSpeed: true,
+                18f,
+                27f,
+                8778f,
+                13166f);
+
+            AssertSpellProof(
+                BuildSpellJson(
+                    "Firestorm",
+                    "Firestorm",
+                    "[\"Spell\",\"AoE\",\"Duration\",\"Fire\"]",
+                    0.75f,
+                    "Deals # to # Fire Damage",
+                    splashByLevel: null,
+                    chainByLevel: null,
+                    44f, 66f,
+                    81f, 121f,
+                    135f, 202f,
+                    222f, 333f,
+                    361f, 541f,
+                    581f, 872f,
+                    927f, 1391f,
+                    1311f, 1966f,
+                    1648f, 2472f,
+                    2068f, 3103f),
+                "Firestorm",
+                GemTag.Spell | GemTag.Aoe,
+                0.75f,
+                AimMode.Ground,
+                DeliveryPattern.Rain,
+                projectileCount: null,
+                projectileSpeed: false,
+                44f,
+                66f,
+                2068f,
+                3103f);
+
+            AssertSpellProof(
+                BuildSpellJson(
+                    "Ice Nova",
+                    "Ice_Nova",
+                    "[\"Spell\",\"AoE\",\"Cold\",\"Nova\"]",
+                    0.7f,
+                    "Deals # to # Cold Damage",
+                    splashByLevel: new[] { 2.6f, 2.7f, 2.8f, 2.9f, 3f, 3.1f, 3.2f, 3.3f, 3.4f, 3.4f },
+                    chainByLevel: null,
+                    61f, 91f,
+                    169f, 254f,
+                    355f, 533f,
+                    715f, 1073f,
+                    1122f, 1683f,
+                    1742f, 2614f,
+                    2683f, 4025f,
+                    3692f, 5538f,
+                    4558f, 6837f,
+                    5619f, 8429f),
+                "Ice_Nova",
+                GemTag.Spell | GemTag.Aoe,
+                0.7f,
+                AimMode.Direct,
+                DeliveryPattern.CasterNova,
+                projectileCount: null,
+                projectileSpeed: false,
+                61f,
+                91f,
+                5619f,
+                8429f,
+                splashL1: 2.6f,
+                splashL10: 3.4f);
+
+            AssertSpellProof(
+                BuildSpellJson(
+                    "Arc",
+                    "Arc",
+                    "[\"Spell\",\"Chaining\",\"Lightning\"]",
+                    0.6f,
+                    "Deals # to # Lightning Damage",
+                    splashByLevel: null,
+                    chainByLevel: new[] { 4, 5, 6, 7, 7, 8, 9, 10, 11, 11 },
+                    13f, 75f,
+                    34f, 194f,
+                    68f, 387f,
+                    131f, 740f,
+                    198f, 1122f,
+                    297f, 1683f,
+                    442f, 2503f,
+                    592f, 3356f,
+                    719f, 4072f,
+                    871f, 4934f),
+                "Arc",
+                GemTag.Spell | GemTag.Chaining,
+                0.6f,
+                AimMode.Direct,
+                DeliveryPattern.Straight,
+                projectileCount: 1f,
+                projectileSpeed: true,
+                13f,
+                75f,
+                871f,
+                4934f,
+                chainL1: 4,
+                chainL10: 11);
+
+            AssertSpellProof(
+                FireballJson,
+                "Fireball",
+                GemTag.Projectile | GemTag.Spell | GemTag.Aoe,
+                0.75f,
+                AimMode.Direct,
+                DeliveryPattern.Straight,
+                projectileCount: 1f,
+                projectileSpeed: true,
+                19f,
+                28f,
+                11041f,
+                16562f,
+                splashL1: 1.1f,
+                splashL10: 2.4f);
+        }
+
+        static string BuildSpellJson(
+            string name,
+            string slug,
+            string tagsJson,
+            float castTime,
+            string dealsHeader,
+            float[] splashByLevel,
+            int[] chainByLevel,
+            params float[] minMaxPairs)
+        {
+            var levels = string.Empty;
+            var levelCount = minMaxPairs.Length / 2;
+            for (var i = 0; i < levelCount; i++)
+            {
+                if (i > 0)
+                    levels += ",";
+
+                var extra = string.Empty;
+                if (splashByLevel != null && i < splashByLevel.Length)
+                {
+                    extra += "\"Base radius is # metres\":{\"kind\":\"metres\",\"value\":"
+                        + splashByLevel[i].ToString(CultureInfo.InvariantCulture)
+                        + "},";
+                }
+
+                if (chainByLevel != null && i < chainByLevel.Length)
+                {
+                    extra += "\"Chains # Times\":{\"kind\":\"flat\",\"value\":"
+                        + chainByLevel[i].ToString(CultureInfo.InvariantCulture)
+                        + "},";
+                }
+
+                var min = minMaxPairs[i * 2].ToString(CultureInfo.InvariantCulture);
+                var max = minMaxPairs[i * 2 + 1].ToString(CultureInfo.InvariantCulture);
+                levels += "\""
+                    + (i + 1)
+                    + "\":{"
+                    + extra
+                    + "\""
+                    + dealsHeader
+                    + "\":{\"kind\":\"flat\",\"value\":["
+                    + min
+                    + ","
+                    + max
+                    + "]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}";
+            }
+
+            return "{\"name\":\""
+                + name
+                + "\",\"slug\":\""
+                + slug
+                + "\",\"tags\":"
+                + tagsJson
+                + ",\"category\":\"spell\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":"
+                + castTime.ToString(CultureInfo.InvariantCulture)
+                + "}},\"levels\":{"
+                + levels
+                + "}}";
+        }
+
+        static void AssertSpellProof(
+            string json,
+            string slug,
+            GemTag tags,
+            float castTime,
+            AimMode aim,
+            DeliveryPattern delivery,
+            float? projectileCount,
+            bool projectileSpeed,
+            float level1Min,
+            float level1Max,
+            float level10Min,
+            float level10Max,
+            float? splashL1 = null,
+            float? splashL10 = null,
+            int? chainL1 = null,
+            int? chainL10 = null)
+        {
+            var result = SkillGemTowerMap.FromJson(json);
+            var spell = result.GetRolePayload(SkillGemTowerMap.RoleKind.Spell);
+            Assert.AreEqual(slug, result.Slug);
+            Assert.AreEqual("spell", result.Category);
+            Assert.AreEqual(tags, result.Tags);
+            Assert.AreEqual(1, result.RoleKinds.Length);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Spell, result.RoleKinds[0]);
+            Assert.AreEqual(10, result.SourceLevels.Length);
+            Assert.AreEqual(10, spell.Levels.Length);
+            for (var i = 0; i < 10; i++)
+                Assert.AreEqual(i + 1, result.SourceLevels[i]);
+
+            Assert.AreEqual(castTime, FindModifier(spell.Modifiers, RoleStat.CastTime).Value, 0.001f);
+            Assert.AreEqual(100f, FindModifier(spell.Modifiers, RoleStat.CastSpeed).Value, 0.001f);
+            Assert.AreEqual(5f, FindModifier(spell.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(8f, FindModifier(spell.Modifiers, RoleStat.Damage).Value, 0.001f);
+            Assert.AreEqual(projectileSpeed, HasModifier(spell.Modifiers, RoleStat.ProjectileSpeed));
+            if (projectileCount.HasValue)
+                Assert.AreEqual(
+                    projectileCount.Value,
+                    FindModifier(spell.Modifiers, RoleStat.ProjectileCount).Value,
+                    0.001f);
+            else
+                Assert.IsFalse(HasModifier(spell.Modifiers, RoleStat.ProjectileCount));
+
+            var level1Damage = FindModifier(spell.Levels[0].Modifiers, RoleStat.Damage);
+            Assert.AreEqual(RoleModifierOperation.Set, level1Damage.Operation);
+            Assert.AreEqual(level1Min, level1Damage.Min, 0.001f);
+            Assert.AreEqual(level1Max, level1Damage.Max, 0.001f);
+            var level10Damage = FindModifier(spell.Levels[9].Modifiers, RoleStat.Damage);
+            Assert.AreEqual(RoleModifierOperation.Set, level10Damage.Operation);
+            Assert.AreEqual(level10Min, level10Damage.Min, 0.001f);
+            Assert.AreEqual(level10Max, level10Damage.Max, 0.001f);
+            if (splashL1.HasValue)
+            {
+                Assert.AreEqual(
+                    splashL1.Value,
+                    FindModifier(spell.Levels[0], RoleStat.SplashRadius).Value,
+                    0.001f);
+                Assert.AreEqual(
+                    splashL10.Value,
+                    FindModifier(spell.Levels[9], RoleStat.SplashRadius).Value,
+                    0.001f);
+            }
+            else
+            {
+                Assert.IsFalse(HasModifier(spell.Modifiers, RoleStat.SplashRadius));
+                Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.SplashRadius));
+                Assert.IsFalse(HasModifier(spell.Levels[9], RoleStat.SplashRadius));
+            }
+
+            if (chainL1.HasValue)
+            {
+                Assert.AreEqual(
+                    chainL1.Value,
+                    FindModifier(spell.Levels[0], RoleStat.ChainCount).Value,
+                    0.001f);
+                Assert.AreEqual(
+                    chainL10.Value,
+                    FindModifier(spell.Levels[9], RoleStat.ChainCount).Value,
+                    0.001f);
+            }
+            else
+            {
+                Assert.IsFalse(HasModifier(spell.Modifiers, RoleStat.ChainCount));
+                Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.ChainCount));
+            }
+
+            SkillGemTowerMap.ResolveFireBehavior(
+                result.Tags,
+                result.Slug,
+                out var mappedAim,
+                out var mappedDelivery);
+            Assert.AreEqual(aim, mappedAim);
+            Assert.AreEqual(delivery, mappedDelivery);
         }
 
         static string BuildAttackJson(

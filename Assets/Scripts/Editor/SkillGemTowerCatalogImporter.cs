@@ -152,6 +152,20 @@ namespace GemTD.Editor
                 "Kinetic_Blast");
         }
 
+        [MenuItem("Gem TD/Import Spell Proof Set One")]
+        public static void ImportSpellProofSetOne()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_spell.json",
+                folder: "Spell",
+                dialogTitle: "Spell Proof Set One",
+                "Frostbolt",
+                "Firestorm",
+                "Ice_Nova",
+                "Arc",
+                "Fireball");
+        }
+
         static void ImportProofs(
             string categoryFile,
             string folder,
@@ -292,7 +306,7 @@ namespace GemTD.Editor
                     break;
             }
 
-            ClearRoleBehaviorDefaults(role, result.Tags);
+            ClearRoleBehaviorDefaults(role, result.Tags, result.Slug);
             role.Modifiers = payload != null
                 ? CopyModifiers(payload.Modifiers)
                 : Array.Empty<RoleStatModifier>();
@@ -309,13 +323,13 @@ namespace GemTD.Editor
             return role;
         }
 
-        static void ClearRoleBehaviorDefaults(TowerRoleDefinition role, GemTag towerTags)
+        static void ClearRoleBehaviorDefaults(TowerRoleDefinition role, GemTag towerTags, string slug)
         {
             var damage = role as DamageRoleDefinition;
             if (damage != null)
             {
                 damage.PierceBehavior = PierceMode.Finite;
-                SkillGemTowerMap.ResolveFireBehavior(towerTags, out var aim, out var delivery);
+                SkillGemTowerMap.ResolveFireBehavior(towerTags, slug, out var aim, out var delivery);
                 damage.AimMode = aim;
                 damage.DeliveryPattern = delivery;
             }

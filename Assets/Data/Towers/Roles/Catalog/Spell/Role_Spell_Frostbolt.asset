@@ -13,10 +13,34 @@ MonoBehaviour:
   m_Name: Role_Spell_Frostbolt
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.SpellRoleDefinition
   Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.75
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
   - Stat: 4
     Operation: 0
     ValueKind: 0
-    Value: 3.5
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 8
+    Min: 0
+    Max: 0
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
     Min: 0
     Max: 0
   - Stat: 9
@@ -25,48 +49,99 @@ MonoBehaviour:
     Value: 1
     Min: 0
     Max: 0
-  - Stat: 2
-    Operation: 0
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
-  - Stat: 3
-    Operation: 0
-    ValueKind: 0
-    Value: 1
-    Min: 0
-    Max: 0
   Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 18
+      Max: 27
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 81
+      Max: 121
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 249
+      Max: 373
+    Effects: []
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 688
+      Max: 1033
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 1594
+      Max: 2392
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 2539
+      Max: 3809
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 4010
+      Max: 6015
     Effects: []
   - SourceLevel: 8
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 5623
+      Max: 8434
     Effects: []
-  - SourceLevel: 12
-    Modifiers: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 7030
+      Max: 10545
     Effects: []
-  - SourceLevel: 16
-    Modifiers: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 8778
+      Max: 13166
     Effects: []
-  - SourceLevel: 20
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 24
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 28
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 32
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 36
-    Modifiers: []
-    Effects: []
-  - SourceLevel: 40
-    Modifiers: []
-    Effects: []
-  PierceBehavior: 1
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0

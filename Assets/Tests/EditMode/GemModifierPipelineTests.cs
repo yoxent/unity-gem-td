@@ -73,6 +73,42 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ResolveBaseline_CopiesRoleChainCount()
+        {
+            var role = ScriptableObject.CreateInstance<SpellRoleDefinition>();
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.Roles = new[] { role };
+            role.Modifiers = new[]
+            {
+                RoleStatModifier.Single(RoleStat.CastTime, RoleModifierOperation.Set, 0.6f),
+                RoleStatModifier.Single(RoleStat.CastSpeed, RoleModifierOperation.Set, 100f)
+            };
+            role.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Modifiers = new[]
+                    {
+                        RoleStatModifier.Single(RoleStat.ChainCount, RoleModifierOperation.Set, 4f)
+                    }
+                }
+            };
+
+            try
+            {
+                var tower = new TowerInstance(Vector2Int.zero, def);
+                var spec = new GemModifierPipeline().ResolveBaseline(tower);
+                Assert.AreEqual(4, spec.ChainCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+                Object.DestroyImmediate(role);
+            }
+        }
+
+        [Test]
         public void IncreasedArea_BoostsAoeAndCutsFireRate()
         {
             var result = ApplyCatalog(GemId.IncreasedArea, SkillSpec.FromBase(10f, 1, aoe: 1f));
