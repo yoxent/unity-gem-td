@@ -21,7 +21,19 @@ namespace GemTD.Tests.EditMode
             "{\"name\":\"Vitality\",\"slug\":\"Vitality\",\"tags\":[\"Aura\",\"Spell\",\"AoE\"],\"category\":\"aura\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":100},\"You and nearby Allies Regenerate # Life per second\":{\"kind\":\"seconds\",\"value\":19.7}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
 
         const string AngerJson =
-            "{\"name\":\"Anger\",\"slug\":\"Anger\",\"tags\":[\"Aura\",\"Spell\",\"AoE\",\"Fire\"],\"category\":\"aura\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":50,\"resource\":\"mana\"}}},\"levels\":{\"1\":{\"You and nearby allies deal # to # additional Fire Damage with Attacks\":{\"kind\":\"flat\",\"value\":[25,36]},\"You and nearby allies deal # to # additional Fire Damage with Spells\":{\"kind\":\"flat\",\"value\":[25,36]},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.3},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"5\":{\"You and nearby allies deal # to # additional Fire Damage with Attacks\":{\"kind\":\"flat\",\"value\":[109,155]},\"You and nearby allies deal # to # additional Fire Damage with Spells\":{\"kind\":\"flat\",\"value\":[109,155]},\"# metres to radius\":{\"kind\":\"metres\",\"value\":1.9},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
+            "{\"name\":\"Anger\",\"slug\":\"Anger\",\"tags\":[\"Aura\",\"Spell\",\"AoE\",\"Fire\"],\"category\":\"aura\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":50,\"resource\":\"mana\"}}},\"levels\":{\"1\":{\"You and nearby allies deal # to # additional Fire Damage with Attacks\":{\"kind\":\"flat\",\"value\":[25,36]},\"You and nearby allies deal # to # additional Fire Damage with Spells\":{\"kind\":\"flat\",\"value\":[25,36]},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.3},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"5\":{\"You and nearby allies deal # to # additional Fire Damage with Attacks\":{\"kind\":\"flat\",\"value\":[109,155]},\"You and nearby allies deal # to # additional Fire Damage with Spells\":{\"kind\":\"flat\",\"value\":[109,155]},\"# metres to radius\":{\"kind\":\"metres\",\"value\":1.9},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"You and nearby allies deal # to # additional Fire Damage with Attacks\":{\"kind\":\"flat\",\"value\":[296,423]},\"You and nearby allies deal # to # additional Fire Damage with Spells\":{\"kind\":\"flat\",\"value\":[296,423]},\"# metres to radius\":{\"kind\":\"metres\",\"value\":3.4},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
+
+        const string PurityOfIceJson =
+            "{\"name\":\"Purity of Ice\",\"slug\":\"Purity_of_Ice\",\"tags\":[\"Aura\",\"Spell\",\"AoE\",\"Cold\"],\"category\":\"aura\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":35,\"resource\":\"mana\"}}},\"levels\":{\"1\":{\"You and nearby allies gain #% additional Cold Resistance\":{\"kind\":\"percent\",\"value\":25},\"#% to maximum Cold Resistance\":{\"kind\":\"percent\",\"value\":0},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.3},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"You and nearby allies gain #% additional Cold Resistance\":{\"kind\":\"percent\",\"value\":56},\"#% to maximum Cold Resistance\":{\"kind\":\"percent\",\"value\":5},\"# metres to radius\":{\"kind\":\"metres\",\"value\":3.4},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
+
+        const string HasteJson =
+            "{\"name\":\"Haste\",\"slug\":\"Haste\",\"tags\":[\"Aura\",\"Spell\",\"AoE\"],\"category\":\"aura\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":50,\"resource\":\"mana\"}}},\"levels\":{\"1\":{\"You and nearby allies gain #% increased Attack Speed\":{\"kind\":\"percent\",\"value\":16},\"You and nearby allies gain #% increased Cast Speed\":{\"kind\":\"percent\",\"value\":16},\"You and nearby allies gain #% increased Movement Speed\":{\"kind\":\"percent\",\"value\":11},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.3},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"You and nearby allies gain #% increased Attack Speed\":{\"kind\":\"percent\",\"value\":32},\"You and nearby allies gain #% increased Cast Speed\":{\"kind\":\"percent\",\"value\":32},\"You and nearby allies gain #% increased Movement Speed\":{\"kind\":\"percent\",\"value\":21},\"# metres to radius\":{\"kind\":\"metres\",\"value\":3.4},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
+
+        const string WrathJson =
+            "{\"name\":\"Wrath\",\"slug\":\"Wrath\",\"tags\":[\"Aura\",\"Spell\",\"AoE\",\"Lightning\"],\"category\":\"aura\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":50,\"resource\":\"mana\"}}},\"levels\":{\"1\":{\"You and nearby allies deal # to # additional Lightning Damage with Attacks\":{\"kind\":\"flat\",\"value\":[4,57]},\"You and nearby allies deal #% more Spell Lightning Damage\":{\"kind\":\"percent\",\"value\":16},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.3},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"You and nearby allies deal # to # additional Lightning Damage with Attacks\":{\"kind\":\"flat\",\"value\":[42,676]},\"You and nearby allies deal #% more Spell Lightning Damage\":{\"kind\":\"percent\",\"value\":26},\"# metres to radius\":{\"kind\":\"metres\",\"value\":3.4},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
+
+        const string FleshAndStoneJson =
+            "{\"name\":\"Flesh and Stone\",\"slug\":\"Flesh_and_Stone\",\"tags\":[\"Spell\",\"Aura\",\"AoE\",\"Stance\",\"Physical\"],\"category\":\"aura\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":25,\"resource\":\"mana\"}}},\"levels\":{\"1\":{\"#% increased Cooldown Recovery Rate\":{\"kind\":\"percent\",\"value\":7},\"While in Sand Stance, Buff makes you take up to #% less Damage from Enemies in Aura\":{\"kind\":\"percent\",\"value\":11},\"While in Blood Stance, Aura makes Enemies take up to #% more Physical Damage from Hits\":{\"kind\":\"percent\",\"value\":12},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"#% increased Cooldown Recovery Rate\":{\"kind\":\"percent\",\"value\":100},\"While in Sand Stance, Buff makes you take up to #% less Damage from Enemies in Aura\":{\"kind\":\"percent\",\"value\":27},\"While in Blood Stance, Aura makes Enemies take up to #% more Physical Damage from Hits\":{\"kind\":\"percent\",\"value\":27},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
 
         const string WarlordsMarkJson =
             "{\"name\":\"Warlord's Mark\",\"slug\":\"Warlords_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}";
@@ -211,8 +223,119 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(109f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedAttackFireDamage).Min, 0.001f);
             Assert.AreEqual(155f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedAttackFireDamage).Max, 0.001f);
             Assert.AreEqual(1.9f, FindModifier(aura.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(3, aura.Levels.Length);
+            Assert.AreEqual(10, aura.Levels[2].SourceLevel);
+            Assert.AreEqual(296f, FindEffect(aura.Levels[2], RoleEffectKind.AllyAddedAttackFireDamage).Min, 0.001f);
+            Assert.AreEqual(423f, FindEffect(aura.Levels[2], RoleEffectKind.AllyAddedAttackFireDamage).Max, 0.001f);
+            Assert.AreEqual(3.4f, FindModifier(aura.Levels[2], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.IsFalse(HasModifier(aura.Modifiers, RoleStat.Damage));
+            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.Damage));
+            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.SplashRadius));
             Assert.IsFalse(r.IsActiveCatalogCompatible);
             Assert.AreEqual(0, r.UnsupportedEffectKeys.Length);
+        }
+
+        [Test]
+        public void AuraCatalog_Clarity_MapsTenLevelsWithoutEffectsOrDamage()
+        {
+            var r = SkillGemTowerMap.FromJson(BuildClarityTenLevelJson());
+            var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
+            Assert.AreEqual("Clarity", r.Slug);
+            Assert.AreEqual("aura", r.Category);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Aura, r.RoleKinds[0]);
+            Assert.AreEqual(1, r.RoleKinds.Length);
+            Assert.AreEqual(0f, r.Damage, 0.001f);
+            Assert.AreEqual(30, r.Cost);
+            Assert.AreEqual(1, r.SocketCount);
+            Assert.AreEqual(GemTag.Aura | GemTag.Spell | GemTag.Aoe, r.Tags);
+            Assert.AreEqual(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, r.SourceLevels);
+            Assert.AreEqual(10, aura.Levels.Length);
+            Assert.AreEqual(1, aura.Levels[0].SourceLevel);
+            Assert.AreEqual(10, aura.Levels[9].SourceLevel);
+            Assert.AreEqual(1.5f, FindModifier(aura.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(
+                50f,
+                FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value,
+                0.001f);
+            Assert.AreEqual(0, aura.Effects.Length);
+            Assert.AreEqual(0, aura.Levels[0].Effects.Length);
+            Assert.AreEqual(0, aura.Levels[9].Effects.Length);
+            Assert.IsFalse(HasModifier(aura.Modifiers, RoleStat.Damage));
+            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.Damage));
+            Assert.IsFalse(HasModifier(aura.Levels[9], RoleStat.Damage));
+            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.SplashRadius));
+            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.TowerRadius));
+            Assert.IsFalse(r.IsActiveCatalogCompatible);
+            Assert.AreEqual(0, r.UnsupportedEffectKeys.Length);
+        }
+
+        [Test]
+        public void AuraCatalog_UnsupportedEffects_StayUnmapped()
+        {
+            var ice = SkillGemTowerMap.FromJson(PurityOfIceJson);
+            var iceRole = ice.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
+            Assert.AreEqual("Purity_of_Ice", ice.Slug);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Aura, ice.RoleKinds[0]);
+            Assert.AreEqual(0f, ice.Damage, 0.001f);
+            Assert.AreEqual(
+                35f,
+                FindModifier(iceRole.Modifiers, RoleStat.ReservationPercent).Value,
+                0.001f);
+            Assert.AreEqual(1.5f, FindModifier(iceRole.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(0, iceRole.Levels[0].Effects.Length);
+            Assert.IsFalse(HasEffect(iceRole.Levels[0], RoleEffectKind.EnemyColdResistance));
+            Assert.IsFalse(HasModifier(iceRole.Levels[0], RoleStat.Damage));
+            Assert.IsFalse(HasModifier(iceRole.Levels[0], RoleStat.SplashRadius));
+            Assert.IsFalse(ice.IsActiveCatalogCompatible);
+            CollectionAssert.Contains(
+                ice.UnsupportedEffectKeys,
+                "You and nearby allies gain #% additional Cold Resistance");
+            CollectionAssert.Contains(
+                ice.UnsupportedEffectKeys,
+                "#% to maximum Cold Resistance");
+
+            var haste = SkillGemTowerMap.FromJson(HasteJson);
+            var hasteRole = haste.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
+            Assert.AreEqual(0, hasteRole.Levels[0].Effects.Length);
+            Assert.IsFalse(HasModifier(hasteRole.Levels[0], RoleStat.Damage));
+            CollectionAssert.Contains(
+                haste.UnsupportedEffectKeys,
+                "You and nearby allies gain #% increased Attack Speed");
+            CollectionAssert.Contains(
+                haste.UnsupportedEffectKeys,
+                "You and nearby allies gain #% increased Cast Speed");
+            CollectionAssert.Contains(
+                haste.UnsupportedEffectKeys,
+                "You and nearby allies gain #% increased Movement Speed");
+
+            var wrath = SkillGemTowerMap.FromJson(WrathJson);
+            var wrathRole = wrath.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
+            Assert.AreEqual(0, wrathRole.Levels[0].Effects.Length);
+            Assert.IsFalse(HasEffect(wrathRole.Levels[0], RoleEffectKind.AllyAddedAttackFireDamage));
+            CollectionAssert.Contains(
+                wrath.UnsupportedEffectKeys,
+                "You and nearby allies deal # to # additional Lightning Damage with Attacks");
+            CollectionAssert.Contains(
+                wrath.UnsupportedEffectKeys,
+                "You and nearby allies deal #% more Spell Lightning Damage");
+
+            var flesh = SkillGemTowerMap.FromJson(FleshAndStoneJson);
+            var fleshRole = flesh.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
+            Assert.AreEqual(
+                25f,
+                FindModifier(fleshRole.Modifiers, RoleStat.ReservationPercent).Value,
+                0.001f);
+            Assert.AreEqual(0, fleshRole.Levels[0].Effects.Length);
+            Assert.AreEqual(GemTag.Spell | GemTag.Aura | GemTag.Aoe, flesh.Tags);
+            CollectionAssert.Contains(
+                flesh.UnsupportedEffectKeys,
+                "#% increased Cooldown Recovery Rate");
+            CollectionAssert.Contains(
+                flesh.UnsupportedEffectKeys,
+                "While in Sand Stance, Buff makes you take up to #% less Damage from Enemies in Aura");
+            CollectionAssert.Contains(
+                flesh.UnsupportedEffectKeys,
+                "While in Blood Stance, Aura makes Enemies take up to #% more Physical Damage from Hits");
         }
 
         [Test]
@@ -960,6 +1083,22 @@ namespace GemTD.Tests.EditMode
                 16562f,
                 splashL1: 1.1f,
                 splashL10: 2.4f);
+        }
+
+        static string BuildClarityTenLevelJson()
+        {
+            var levels = string.Empty;
+            for (var i = 1; i <= 10; i++)
+            {
+                if (i > 1)
+                    levels += ",";
+                levels += "\"" + i
+                    + "\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}";
+            }
+
+            return "{\"name\":\"Clarity\",\"slug\":\"Clarity\",\"tags\":[\"Aura\",\"Spell\",\"AoE\"],\"category\":\"aura\",\"header\":{},\"levels\":{"
+                + levels
+                + "},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
         }
 
         static string BuildSpellJson(

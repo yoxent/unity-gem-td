@@ -200,6 +200,33 @@ namespace GemTD.Editor
                 "Hexblast");
         }
 
+        [MenuItem("Gem TD/Import Aura Catalog")]
+        public static void ImportAuraCatalog()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_aura.json",
+                folder: "Aura",
+                dialogTitle: "Aura Catalog",
+                "Vitality",
+                "Flesh_and_Stone",
+                "Anger",
+                "Determination",
+                "Pride",
+                "Purity_of_Fire",
+                "Precision",
+                "Grace",
+                "Haste",
+                "Hatred",
+                "Purity_of_Ice",
+                "Clarity",
+                "Discipline",
+                "Malevolence",
+                "Purity_of_Elements",
+                "Purity_of_Lightning",
+                "Wrath",
+                "Zealotry");
+        }
+
         static void ImportProofs(
             string categoryFile,
             string folder,

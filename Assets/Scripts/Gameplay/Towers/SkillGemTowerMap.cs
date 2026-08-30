@@ -726,7 +726,13 @@ namespace GemTD.Gameplay.Towers
                 return;
             }
 
-            AddAuraLevelEffects(effects, values);
+            if (kind == RoleKind.Aura)
+            {
+                AddAuraLevelEffects(effects, values);
+                return;
+            }
+
+            AddSharedNonAuraLevelEffects(effects, values);
         }
 
         static void AddCurseLevelEffects(
@@ -930,9 +936,17 @@ namespace GemTD.Gameplay.Towers
                         RoleEffectKind.AllyAddedSpellFireDamage,
                         spellMin,
                         spellMax);
-                    continue;
                 }
+            }
+        }
 
+        static void AddSharedNonAuraLevelEffects(List<RoleEffectModifier> effects, JObject values)
+        {
+            if (values == null)
+                return;
+
+            foreach (var effect in values.Properties())
+            {
                 if (IsDurationHeader(effect.Name))
                 {
                     var duration = ReadNumber(effect.Value)
@@ -963,9 +977,7 @@ namespace GemTD.Gameplay.Towers
         static bool IsMappedEffectHeader(string header)
         {
             return IsAddedAttackFireHeader(header)
-                || IsAddedSpellFireHeader(header)
-                || IsDurationHeader(header)
-                || IsColdResistanceHeader(header);
+                || IsAddedSpellFireHeader(header);
         }
 
         static bool IsAddedAttackFireHeader(string header)

@@ -12,28 +12,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa82269e7a3b96d4dacb5681498c016b, type: 3}
   m_Name: Role_Aura_Clarity
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AuraRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 1.5
+    Min: 0
+    Max: 0
+  - Stat: 7
+    Operation: 0
+    ValueKind: 0
+    Value: 50
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers: []
+    Effects: []
+  - SourceLevel: 2
+    Modifiers: []
+    Effects: []
+  - SourceLevel: 3
+    Modifiers: []
+    Effects: []
   - SourceLevel: 4
     Modifiers: []
+    Effects: []
+  - SourceLevel: 5
+    Modifiers: []
+    Effects: []
+  - SourceLevel: 6
+    Modifiers: []
+    Effects: []
+  - SourceLevel: 7
+    Modifiers: []
+    Effects: []
   - SourceLevel: 8
     Modifiers: []
-  - SourceLevel: 12
+    Effects: []
+  - SourceLevel: 9
     Modifiers: []
-  - SourceLevel: 16
+    Effects: []
+  - SourceLevel: 10
     Modifiers: []
-  - SourceLevel: 20
-    Modifiers: []
-  - SourceLevel: 24
-    Modifiers: []
-  - SourceLevel: 28
-    Modifiers: []
-  - SourceLevel: 32
-    Modifiers: []
-  - SourceLevel: 36
-    Modifiers: []
-  - SourceLevel: 40
-    Modifiers: []
-  TowerRadius: 1.5
-  ReservationPercent: 50
-  Effects: []
+    Effects: []
+  EffectPayloads: []
