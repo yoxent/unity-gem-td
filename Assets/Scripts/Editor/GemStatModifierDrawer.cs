@@ -13,8 +13,8 @@ namespace GemTD.Editor
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             var kind = (RoleStatValueKind)property.FindPropertyRelative("ValueKind").enumValueIndex;
-            // Stat + Operation + ValueKind + (Min/Max | header+Value row) [+ Falloff row for Chain]
-            var lines = 5;
+            // Stat + Operation + ValueKind + header + value row(s) [+ Falloff row for Chain Single]
+            var lines = kind == RoleStatValueKind.Range ? 6 : 5;
             if (IsChainCount(property) && kind != RoleStatValueKind.Range)
                 lines += 1;
             return lines * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
@@ -34,14 +34,35 @@ namespace GemTD.Editor
             RoleModifierDrawerUtil.Draw(property, "ValueKind", ref y, x, width, line, gap);
 
             var kind = (RoleStatValueKind)property.FindPropertyRelative("ValueKind").enumValueIndex;
+            DrawRarityHeader(ref y, x, width, line, gap);
             if (kind == RoleStatValueKind.Range)
             {
-                RoleModifierDrawerUtil.Draw(property, "Min", ref y, x, width, line, gap);
-                RoleModifierDrawerUtil.Draw(property, "Max", ref y, x, width, line, gap);
+                SeedRangeTiersIfEmpty(property);
+                DrawRarityRow(
+                    property,
+                    "Min",
+                    "LesserMin",
+                    "NormalMin",
+                    "GreaterMin",
+                    ref y,
+                    x,
+                    width,
+                    line,
+                    gap);
+                DrawRarityRow(
+                    property,
+                    "Max",
+                    "LesserMax",
+                    "NormalMax",
+                    "GreaterMax",
+                    ref y,
+                    x,
+                    width,
+                    line,
+                    gap);
             }
             else
             {
-                DrawRarityHeader(ref y, x, width, line, gap);
                 DrawRarityRow(
                     property,
                     "Value",
@@ -71,6 +92,46 @@ namespace GemTD.Editor
             }
 
             EditorGUI.EndProperty();
+        }
+
+        static void SeedRangeTiersIfEmpty(SerializedProperty property)
+        {
+            var lesserMin = property.FindPropertyRelative("LesserMin");
+            var lesserMax = property.FindPropertyRelative("LesserMax");
+            var normalMin = property.FindPropertyRelative("NormalMin");
+            var normalMax = property.FindPropertyRelative("NormalMax");
+            var greaterMin = property.FindPropertyRelative("GreaterMin");
+            var greaterMax = property.FindPropertyRelative("GreaterMax");
+            if (lesserMin.floatValue != 0f
+                || lesserMax.floatValue != 0f
+                || normalMin.floatValue != 0f
+                || normalMax.floatValue != 0f
+                || greaterMin.floatValue != 0f
+                || greaterMax.floatValue != 0f)
+                return;
+
+            var lesser = property.FindPropertyRelative("Lesser").floatValue;
+            var normal = property.FindPropertyRelative("Normal").floatValue;
+            var greater = property.FindPropertyRelative("Greater").floatValue;
+            var min = property.FindPropertyRelative("Min").floatValue;
+            var max = property.FindPropertyRelative("Max").floatValue;
+            if (min != 0f || max != 0f)
+            {
+                lesserMin.floatValue = min;
+                lesserMax.floatValue = max;
+                normalMin.floatValue = min;
+                normalMax.floatValue = max;
+                greaterMin.floatValue = min;
+                greaterMax.floatValue = max;
+                return;
+            }
+
+            lesserMin.floatValue = lesser;
+            lesserMax.floatValue = lesser;
+            normalMin.floatValue = normal;
+            normalMax.floatValue = normal;
+            greaterMin.floatValue = greater;
+            greaterMax.floatValue = greater;
         }
 
         static void DrawRarityHeader(ref float y, float x, float width, float line, float gap)

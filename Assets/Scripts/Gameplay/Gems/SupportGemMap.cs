@@ -737,6 +737,15 @@ namespace GemTD.Gameplay.Gems
                 RemoveFlavorContaining(flavor, "Chain # times");
             }
 
+            if (name == "Fork Support")
+            {
+                modifiers.Add(GemStatModifier.Single(
+                    GemStat.ForkCount,
+                    RoleModifierOperation.Add,
+                    2f));
+                RemoveFlavorContaining(flavor, "Skills Fork");
+            }
+
             if (name == "Chance to Poison Support")
             {
                 modifiers.Add(GemStatModifier.Single(

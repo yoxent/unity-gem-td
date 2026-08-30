@@ -48,6 +48,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ForkSupport_AddsWikiForkCountWhenJsonForkIsNull()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Fork Support\",\"tags\":[\"Support\",\"Projectile\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% less Projectile Damage\",\"values\":{\"lesser\":10,\"normal\":1,\"greater\":9}},{\"text\":\"Projectiles from Supported Skills Fork\",\"values\":null}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.Damage, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[0].Operation);
+            Assert.AreEqual(0.99f, result.Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(GemStat.ForkCount, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Add, result.Modifiers[1].Operation);
+            Assert.AreEqual(2f, result.Modifiers[1].Value, 1e-4f);
+            Assert.AreEqual(2f, result.Modifiers[1].Lesser, 1e-4f);
+            Assert.AreEqual(2f, result.Modifiers[1].Normal, 1e-4f);
+            Assert.AreEqual(2f, result.Modifiers[1].Greater, 1e-4f);
+            Assert.AreEqual(0, result.FlavorTexts.Length);
+        }
+
+        [Test]
         public void NullValuesRow_DoesNotCreateModifier()
         {
             var result = SupportGemMap.FromGemJson(

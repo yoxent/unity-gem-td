@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Tower_Earthquake
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Earthquake
-  Description: Smashes the ground, dealing damage in an area and cracking the earth. The crack will erupt in a powerful aftershock after a duration. Cracks created before the first one has erupted will not generate their own aftershocks. Requires an Axe, Mace, Sceptre, Staff or Unarmed.
+  Description: Smashes the ground, dealing damage in an area and cracking the earth.
+    The crack will erupt in a powerful aftershock after a duration. Cracks created
+    before the first one has erupted will not generate their own aftershocks. Requires
+    an Axe, Mace, Sceptre, Staff or Unarmed.
   Cost: 20
   BuildIncrement: 15
   Damage: 10
@@ -21,4 +24,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b11db49f0cd6586ce1617dd680b4b2b9, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 78
+  tags: 524366

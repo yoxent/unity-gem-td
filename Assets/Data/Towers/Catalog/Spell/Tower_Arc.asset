@@ -13,6 +13,10 @@ MonoBehaviour:
   m_Name: Tower_Arc
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Arc
+  Description: An arc of lightning reaches from the caster to a targeted enemy and
+    chains to other enemies, but not immediately back. Each time the arc chains,
+    it will also chain a secondary arc to another enemy that the main arc has not
+    already hit, which cannot chain further.
   Cost: 25
   BuildIncrement: 15
   Damage: 8
@@ -20,4 +24,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 61ca1160e127d851ddbd2b462c395d29, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 144
+  tags: 67109008

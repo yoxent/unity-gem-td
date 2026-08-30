@@ -54,6 +54,7 @@ namespace GemTD.Gameplay.Combat
         public float ProjectileSpeedMultiplier;
         public int EchoVolleyCount;
         public float EchoDamageFactor;
+        public float SequentialIntervalSeconds;
         public PierceMode PierceBehavior;
         public int PierceCount;
         public AimMode AimMode;
@@ -97,9 +98,14 @@ namespace GemTD.Gameplay.Combat
 
         public bool Pierce => PierceBehavior == PierceMode.Infinite || PierceCount > 0;
 
-        public static SkillSpec FromBase(float damage, int projectiles = 1, float aoe = 0f, int chainCount = 0)
+        public static SkillSpec FromBase(
+            float damage,
+            int projectiles = 1,
+            float aoe = 0f,
+            int chainCount = 0,
+            int forkCount = 0)
         {
-            return FromBase(damage, damage, projectiles, aoe, chainCount);
+            return FromBase(damage, damage, projectiles, aoe, chainCount, forkCount);
         }
 
         public static SkillSpec FromBase(
@@ -107,7 +113,8 @@ namespace GemTD.Gameplay.Combat
             float damageMax,
             int projectiles = 1,
             float aoe = 0f,
-            int chainCount = 0)
+            int chainCount = 0,
+            int forkCount = 0)
         {
             if (damageMax < damageMin)
             {
@@ -130,7 +137,7 @@ namespace GemTD.Gameplay.Combat
                 SpreadDegrees = 0f,
                 ChainCount = chainCount,
                 ChainHopFalloff = 1f,
-                ForkCount = 0,
+                ForkCount = forkCount,
                 AoeRadius = aoe,
                 AoeRadiusMultiplier = 1f,
                 FireRateMultiplier = 1f,
@@ -140,6 +147,7 @@ namespace GemTD.Gameplay.Combat
                 ProjectileSpeedMultiplier = 1f,
                 EchoVolleyCount = 1,
                 EchoDamageFactor = 1f,
+                SequentialIntervalSeconds = 0f,
                 PierceBehavior = PierceMode.Finite,
                 PierceCount = 0,
                 AimMode = AimMode.Direct,

@@ -24,13 +24,15 @@ namespace GemTD.Gameplay.Combat
             new List<EffectPayloadDefinition>(8);
         readonly List<EffectPayloadPlan> _payloadPlanScratch = new List<EffectPayloadPlan>(8);
         readonly List<EnemyRuntime> _casterNovaScratch = new List<EnemyRuntime>(16);
+        readonly List<PendingSequentialVolley> _pendingSequential = new List<PendingSequentialVolley>(8);
         System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
         readonly TileHeightMap _heights;
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
         public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _effectPayloads;
-        public bool HasActiveVolley => _projectiles.Count > 0 || _effectPayloads.Count > 0;
+        public bool HasActiveVolley =>
+            _projectiles.Count > 0 || _effectPayloads.Count > 0 || _pendingSequential.Count > 0;
 
         public CombatDirector(
             float cellSize = 1f,
@@ -71,6 +73,7 @@ namespace GemTD.Gameplay.Combat
 
             _payloadDefinitionsScratch.Clear();
             _payloadPlanScratch.Clear();
+            _pendingSequential.Clear();
         }
 
         static bool IsPendingAftershock(EffectPayloadRuntime payload)
@@ -161,6 +164,8 @@ namespace GemTD.Gameplay.Combat
         {
             if (living == null)
                 return;
+
+            TickPendingSequential(dt, living);
 
             for (var p = _effectPayloads.Count - 1; p >= 0; p--)
             {
@@ -323,11 +328,44 @@ namespace GemTD.Gameplay.Combat
                     var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                     var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
                     for (var h = 0; h < laterals.Length; h++)
-                        SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h]);
+                        SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h], shotIndex: -1);
+                }
+                else if (spec.SequentialIntervalSeconds > 0.001f && spec.ProjectileCount > 1)
+                {
+                    SpawnVolley(
+                        muzzle,
+                        aimPoint,
+                        primary,
+                        spec,
+                        ProjectileRuntime.DefaultChainRange,
+                        volleyMin,
+                        volleyMax,
+                        speed,
+                        statuses,
+                        tower.Def,
+                        0f,
+                        0f,
+                        shotIndex: 0);
+                    _pendingSequential.Add(
+                        new PendingSequentialVolley
+                        {
+                            Origin = muzzle,
+                            AimPoint = aimPoint,
+                            Primary = primary,
+                            Spec = spec,
+                            DamageMin = volleyMin,
+                            DamageMax = volleyMax,
+                            Speed = speed,
+                            ChainRange = ProjectileRuntime.DefaultChainRange,
+                            Statuses = statuses,
+                            SourceTower = tower.Def,
+                            NextIndex = 1,
+                            Wait = spec.SequentialIntervalSeconds
+                        });
                 }
                 else
                 {
-                    SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f);
+                    SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f, shotIndex: -1);
                 }
             }
         }
@@ -722,7 +760,8 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses,
             TowerDefinition sourceTower,
             float headYawDegrees,
-            float headLateral)
+            float headLateral,
+            int shotIndex)
         {
             var aim = aimPoint - origin;
             if (aim.sqrMagnitude < 1e-8f)
@@ -745,8 +784,12 @@ namespace GemTD.Gameplay.Combat
             var pierceRemaining = spec.GetPierceRemaining();
             var forkRemaining = spec.ForkCount;
             var count = spec.ProjectileCount;
+            var start = shotIndex >= 0 ? shotIndex : 0;
+            var end = shotIndex >= 0 ? shotIndex + 1 : count;
+            if (end > count)
+                end = count;
 
-            for (var i = 0; i < count; i++)
+            for (var i = start; i < end; i++)
             {
                 var yaw = 0f;
                 if (count > 1 && spec.SpreadDegrees > 0f)
@@ -788,6 +831,55 @@ namespace GemTD.Gameplay.Combat
                     spec);
                 _projectiles.Add(projectile);
             }
+        }
+
+        void TickPendingSequential(float dt, List<EnemyRuntime> living)
+        {
+            for (var i = _pendingSequential.Count - 1; i >= 0; i--)
+            {
+                var pending = _pendingSequential[i];
+                pending.Wait -= dt;
+                while (pending.Wait <= 0f && pending.NextIndex < pending.Spec.ProjectileCount)
+                {
+                    SpawnVolley(
+                        pending.Origin,
+                        pending.AimPoint,
+                        pending.Primary,
+                        pending.Spec,
+                        pending.ChainRange,
+                        pending.DamageMin,
+                        pending.DamageMax,
+                        pending.Speed,
+                        pending.Statuses,
+                        pending.SourceTower,
+                        0f,
+                        0f,
+                        pending.NextIndex);
+                    pending.NextIndex++;
+                    pending.Wait += pending.Spec.SequentialIntervalSeconds;
+                }
+
+                if (pending.NextIndex >= pending.Spec.ProjectileCount)
+                    _pendingSequential.RemoveAt(i);
+            }
+
+            MergeSpawnBuffer();
+        }
+
+        sealed class PendingSequentialVolley
+        {
+            public Vector3 Origin;
+            public Vector3 AimPoint;
+            public EnemyRuntime Primary;
+            public SkillSpec Spec;
+            public float DamageMin;
+            public float DamageMax;
+            public float Speed;
+            public float ChainRange;
+            public StatusRuntime Statuses;
+            public TowerDefinition SourceTower;
+            public int NextIndex;
+            public float Wait;
         }
 
         Vector3 CellToWorld(Vector2Int cell)

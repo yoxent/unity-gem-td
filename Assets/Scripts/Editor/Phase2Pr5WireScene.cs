@@ -28,7 +28,7 @@ namespace GemTD.Editor
             var chain = EnsureGem("Gem_Chain.asset", GemId.Chain, "Chain",
                 "−30% damage / +1 chain (3 units). Hop damage ×0.6 after first hit.", 2f);
             var fork = EnsureGem("Gem_Fork.asset", GemId.Fork, "Fork",
-                "−15% damage. On hit, split ×2 at ±45°.", 2f);
+                "−15% damage. On hit, split ×2 at ±30°.", 2f);
             var area = EnsureGem("Gem_IncreasedArea.asset", GemId.IncreasedArea, "Increased Area",
                 "+35% AoE / −10% fire rate.", 1f);
             var pierce = EnsureGem("Gem_Pierce.asset", GemId.Pierce, "Pierce",

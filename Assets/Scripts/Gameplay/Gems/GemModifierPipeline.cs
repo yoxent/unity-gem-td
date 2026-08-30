@@ -38,7 +38,8 @@ namespace GemTD.Gameplay.Gems
                     damage.Max,
                     tower.Def.GetProjectileCount(tower.Level),
                     tower.Def.GetSplashRadius(tower.Level),
-                    tower.Def.GetChainCount(tower.Level));
+                    tower.Def.GetChainCount(tower.Level),
+                    tower.Def.GetForkCount(tower.Level));
                 baseline.ProjectileSpeedMultiplier =
                     tower.Def.GetProjectileSpeedMultiplier(tower.Level);
                 baseline.PierceBehavior = tower.Def.GetProjectilePierceMode();
@@ -54,6 +55,8 @@ namespace GemTD.Gameplay.Gems
                         out baseline.MixCold,
                         out baseline.MixLightning,
                         out baseline.MixChaos);
+                    baseline.SpreadDegrees = damageRole.SpreadDegrees;
+                    baseline.SequentialIntervalSeconds = damageRole.SequentialIntervalSeconds;
                 }
             }
 

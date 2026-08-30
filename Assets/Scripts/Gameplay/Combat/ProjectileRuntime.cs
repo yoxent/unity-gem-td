@@ -9,7 +9,8 @@ namespace GemTD.Gameplay.Combat
     /// <summary>
     /// Domain projectile. Primary / fork / pierce / chain all fly straight (ballistic).
     /// Chain: snap-aim once toward nearest living enemy within <see cref="DefaultChainRange"/>, then fly straight.
-    /// Fork continues past the hit: inbound -o&lt; two forward-angled children.
+    /// Fork: parent dies on the forking hit, then two children at ±ForkHalfAngleDegrees.
+    /// Fork children never fork.
     /// </summary>
     public sealed class ProjectileRuntime
     {
@@ -22,8 +23,16 @@ namespace GemTD.Gameplay.Combat
         public const int InfinitePierceRemaining = -1;
         public const float DefaultProjectileSpeed = 20f;
         public const float MaxLifetimeSeconds = 2f;
-        public const float ForkHalfAngleDegrees = 45f;
+        public const float ForkHalfAngleDegrees = 30f;
         public const float ForkSpawnForwardPad = 0.08f;
+
+        public static float ForkChildYawDegrees(int index, int count)
+        {
+            if (count <= 1)
+                return 0f;
+            var t = index / (float)(count - 1);
+            return Mathf.Lerp(-ForkHalfAngleDegrees, ForkHalfAngleDegrees, t);
+        }
         public const float BleedDuration = 2f;
         public const float BleedHitFraction = 0.2f;
         public const float IgniteDuration = 2f;
@@ -711,11 +720,15 @@ namespace GemTD.Gameplay.Combat
             if (_spawnBuffer == null)
                 return;
 
-            // -o<  continue past the hit along inbound, then open ±ForkHalfAngleDegrees.
+            // Parent dies on this hit. Child count is ForkRemaining, fanned across ±ForkHalfAngleDegrees.
             var inbound = Direction.sqrMagnitude > 1e-8f ? Direction.normalized : Vector3.forward;
             var spawnAt = Position + inbound * ForkSpawnForwardPad;
-            SpawnForkChild(spawnAt, Quaternion.Euler(0f, ForkHalfAngleDegrees, 0f) * inbound);
-            SpawnForkChild(spawnAt, Quaternion.Euler(0f, -ForkHalfAngleDegrees, 0f) * inbound);
+            var count = ForkRemaining;
+            for (var i = 0; i < count; i++)
+            {
+                var yaw = ForkChildYawDegrees(i, count);
+                SpawnForkChild(spawnAt, Quaternion.Euler(0f, yaw, 0f) * inbound);
+            }
         }
 
         void SpawnForkChild(Vector3 origin, Vector3 childDirection)
@@ -731,7 +744,7 @@ namespace GemTD.Gameplay.Combat
                 ChainRange,
                 AoeRadius,
                 PierceRemaining,
-                ForkRemaining - 1,
+                forkRemaining: 0,
                 _ailments.Ignite,
                 _ailments.Chill,
                 _ailments.Shock,

@@ -145,13 +145,15 @@ MonoBehaviour:
     Count: 1
     DamageMultiplier: 2.5
     AoeRadius: 2.8
-    MinDistance: 0
-    MaxDistance: 0
-    ArcHeight: 0
+    MinDistance: 1
+    MaxDistance: 4
+    ArcHeight: 1.5
     DelaySeconds: 1
     IntervalSeconds: 0
     RepeatCount: 0
   PierceBehavior: 0
   AimMode: 1
   DeliveryPattern: 3
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
   Mix: []

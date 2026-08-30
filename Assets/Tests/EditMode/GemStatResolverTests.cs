@@ -382,5 +382,81 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(7f, normal.Damage, 1e-4f);
             Assert.AreEqual(7f, greater.Damage, 1e-4f);
         }
+
+        [Test]
+        public void Resolve_Range_UsesRarityMinMax()
+        {
+            var modifier = new GemStatModifier
+            {
+                Stat = GemStat.Damage,
+                Operation = RoleModifierOperation.Set,
+                ValueKind = RoleStatValueKind.Range,
+                LesserMin = 1f,
+                LesserMax = 2f,
+                NormalMin = 3f,
+                NormalMax = 4f,
+                GreaterMin = 5f,
+                GreaterMax = 6f
+            };
+
+            var lesser = modifier.Resolve(GemRarity.Lesser);
+            var normal = modifier.Resolve(GemRarity.Normal);
+            var greater = modifier.Resolve(GemRarity.Greater);
+
+            Assert.AreEqual(RoleStatValueKind.Range, lesser.ValueKind);
+            Assert.AreEqual(1f, lesser.Min, 1e-4f);
+            Assert.AreEqual(2f, lesser.Max, 1e-4f);
+            Assert.AreEqual(3f, normal.Min, 1e-4f);
+            Assert.AreEqual(4f, normal.Max, 1e-4f);
+            Assert.AreEqual(5f, greater.Min, 1e-4f);
+            Assert.AreEqual(6f, greater.Max, 1e-4f);
+        }
+
+        [Test]
+        public void Resolve_Range_FallsBackToMinMaxWhenTierEmpty()
+        {
+            var modifier = new GemStatModifier
+            {
+                Stat = GemStat.Damage,
+                Operation = RoleModifierOperation.Set,
+                ValueKind = RoleStatValueKind.Range,
+                Min = 8f,
+                Max = 12f
+            };
+
+            var greater = modifier.Resolve(GemRarity.Greater);
+            Assert.AreEqual(RoleStatValueKind.Range, greater.ValueKind);
+            Assert.AreEqual(8f, greater.Min, 1e-4f);
+            Assert.AreEqual(12f, greater.Max, 1e-4f);
+        }
+
+        [Test]
+        public void Apply_Range_UsesRarityMidpoint()
+        {
+            var modifier = new GemStatModifier
+            {
+                Stat = GemStat.Damage,
+                Operation = RoleModifierOperation.Set,
+                ValueKind = RoleStatValueKind.Range,
+                LesserMin = 2f,
+                LesserMax = 4f,
+                NormalMin = 10f,
+                NormalMax = 10f,
+                GreaterMin = 20f,
+                GreaterMax = 30f
+            };
+
+            var lesser = GemStatResolver.Apply(
+                SkillSpec.FromBase(1f),
+                new[] { modifier },
+                GemRarity.Lesser);
+            var greater = GemStatResolver.Apply(
+                SkillSpec.FromBase(1f),
+                new[] { modifier },
+                GemRarity.Greater);
+
+            Assert.AreEqual(3f, lesser.Damage, 1e-4f);
+            Assert.AreEqual(25f, greater.Damage, 1e-4f);
+        }
     }
 }

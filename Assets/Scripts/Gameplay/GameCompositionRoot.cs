@@ -159,7 +159,8 @@ namespace GemTD.Gameplay
                     damage.Max,
                     def.GetProjectileCount(tower.Level),
                     def.GetSplashRadius(tower.Level),
-                    def.GetChainCount(tower.Level));
+                    def.GetChainCount(tower.Level),
+                    def.GetForkCount(tower.Level));
             }
             var interval = def.FireInterval(spec, tower.Level);
             var attackRate = interval > 0.01f ? 1f / interval : 0f;
@@ -389,7 +390,8 @@ namespace GemTD.Gameplay
                     damage.Max,
                     tower.Def.GetProjectileCount(tower.Level),
                     tower.Def.GetSplashRadius(tower.Level),
-                    tower.Def.GetChainCount(tower.Level));
+                    tower.Def.GetChainCount(tower.Level),
+                    tower.Def.GetForkCount(tower.Level));
             }
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.IsFireable
@@ -1546,8 +1548,10 @@ namespace GemTD.Gameplay
                 return;
 
             var projectiles = _combat.Projectiles;
+            var payloads = _combat.EffectPayloads;
+            var total = projectiles.Count + payloads.Count;
 
-            while (_projectileViews.Count > projectiles.Count)
+            while (_projectileViews.Count > total)
             {
                 var last = _projectileViews[_projectileViews.Count - 1];
                 _projectileViews.RemoveAt(_projectileViews.Count - 1);
@@ -1561,21 +1565,33 @@ namespace GemTD.Gameplay
                 }
             }
 
-            for (var i = 0; i < projectiles.Count; i++)
+            for (var i = 0; i < total; i++)
             {
+                ProjectileView view;
                 if (i >= _projectileViews.Count)
                 {
                     if (_projectilePool == null)
                         break;
-                    var view = _projectilePool.Get();
-                    view.Bind(projectiles[i]);
+                    view = _projectilePool.Get();
                     _projectileViews.Add(view);
                 }
                 else
                 {
-                    var view = _projectileViews[i];
+                    view = _projectileViews[i];
+                }
+
+                if (i < projectiles.Count)
+                {
                     if (view.Runtime != projectiles[i])
                         view.Bind(projectiles[i]);
+                    else
+                        view.SyncTransform();
+                }
+                else
+                {
+                    var payload = payloads[i - projectiles.Count];
+                    if (view.Payload != payload)
+                        view.Bind(payload);
                     else
                         view.SyncTransform();
                 }

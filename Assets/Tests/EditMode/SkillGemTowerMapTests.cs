@@ -8,7 +8,7 @@ namespace GemTD.Tests.EditMode
     public sealed class SkillGemTowerMapTests
     {
         const string CleaveJson =
-            "{\"name\":\"Cleave\",\"slug\":\"Cleave\",\"tags\":[\"Attack\",\"AoE\",\"Melee\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":80}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":210},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.2}},\"5\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":511.2},\"# metres to radius\":{\"kind\":\"metres\",\"value\":1}}},\"radius\":{\"kind\":\"metres\",\"value\":1,\"by_level\":{\"1\":0.2,\"5\":1}}}";
+            "{\"name\":\"Cleave\",\"slug\":\"Cleave\",\"description\":\"The character swings their weapon (or both weapons if dual wielding) in an arc, damaging monsters in an area in front of them.\",\"tags\":[\"Attack\",\"AoE\",\"Melee\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":80}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":210},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.2}},\"5\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":511.2},\"# metres to radius\":{\"kind\":\"metres\",\"value\":1}}},\"radius\":{\"kind\":\"metres\",\"value\":1,\"by_level\":{\"1\":0.2,\"5\":1}}}";
 
         const string SmiteJson =
             "{\"name\":\"Smite\",\"slug\":\"Smite\",\"tags\":[\"Lightning\",\"Melee\",\"Attack\",\"AoE\",\"Duration\",\"Strike\",\"Aura\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":85}},\"radius\":{\"kind\":\"metres\",\"value\":2.1}}";
@@ -64,6 +64,14 @@ namespace GemTD.Tests.EditMode
             "{\"name\":\"Firestorm\",\"slug\":\"Firestorm\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Fire\"],\"category\":\"spell\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.75}},\"levels\":{\"1\":{\"Deals # to # Fire Damage\":{\"kind\":\"flat\",\"value\":[44,66]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}}}";
         const string EarthquakeJson =
             "{\"name\":\"Earthquake\",\"slug\":\"Earthquake\",\"description\":\"Smashes the ground, dealing damage in an area and cracking the earth. The crack will erupt in a powerful aftershock after a duration. Cracks created before the first one has erupted will not generate their own aftershocks.\",\"tags\":[\"Attack\",\"AoE\",\"Melee\",\"Duration\",\"Slam\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":75}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":155.5,\"poedb_column\":\"Base Damage\"}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":335.5,\"poedb_column\":\"Base Damage\"}}}}";
+        const string SplitArrowJson =
+            "{\"name\":\"Split Arrow\",\"slug\":\"Split_Arrow\",\"description\":\"Fires multiple arrows at different targets.\",\"tags\":[\"Attack\",\"Projectile\",\"Bow\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":110}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":123.6},\"Fires # Arrows\":{\"kind\":\"flat\",\"value\":[6,1]}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":160.8},\"Fires # Arrows\":{\"kind\":\"flat\",\"value\":[13,1]}}}}";
+        const string BarrageJson =
+            "{\"name\":\"Barrage\",\"slug\":\"Barrage\",\"description\":\"After a short preparation time, you fire individual projectiles repeatedly with a Bow or Wand.\",\"tags\":[\"Attack\",\"Projectile\",\"Bow\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":115}},\"explicitMods\":[{\"kind\":\"scaling\",\"text\":\"Fires 6 Projectiles\",\"card_text\":\"Fires 6 Projectiles\"}],\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":48.2}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":60.6}}}}";
+        const string IceShotJson =
+            "{\"name\":\"Ice Shot\",\"slug\":\"Ice_Shot\",\"description\":\"Fires an arrow that converts some physical damage to cold on its target and converts all physical damage to cold in a cone behind that target.\",\"tags\":[\"Attack\",\"Projectile\",\"AoE\",\"Cold\",\"Bow\"],\"category\":\"attack\",\"header\":{},\"explicitMods\":[{\"kind\":\"scaling\",\"text\":\"Base radius is 2.4 metres\",\"card_text\":\"Base radius is 2.4 metres\"}],\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":157.4}}}}";
+        const string CobraLashJson =
+            "{\"name\":\"Cobra Lash\",\"slug\":\"Cobra_Lash\",\"description\":\"Fires a poisonous projectile based on your weapon that will chain between enemies.\",\"tags\":[\"Attack\",\"Projectile\",\"Chaos\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":120}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":137.6},\"Chains # Times\":{\"kind\":\"flat\",\"value\":3}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":268.2},\"Chains # Times\":{\"kind\":\"flat\",\"value\":7}}}}";
 
 
 
@@ -92,10 +100,12 @@ namespace GemTD.Tests.EditMode
                 FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
             Assert.AreEqual(1, r.RoleKinds.Length);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, r.RoleKinds[0]);
-            Assert.AreEqual("", r.Description);
-            SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
+            Assert.AreEqual(
+                "The character swings their weapon (or both weapons if dual wielding) in an arc, damaging monsters in an area in front of them.",
+                r.Description);
+            SkillGemTowerMap.ResolveFireBehavior(r.Tags, r.Slug, out var aim, out var delivery);
             Assert.AreEqual(AimMode.Direct, aim);
-            Assert.AreEqual(DeliveryPattern.Straight, delivery);
+            Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
         }
 
         [Test]
@@ -603,6 +613,84 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockDamageMultiplier, aftershock.DamageMultiplier, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockRadius, aftershock.AoeRadius, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockDelaySeconds, aftershock.DelaySeconds, 0.001f);
+        }
+
+        [Test]
+        public void ResolveFireBehavior_CleaveSlug_IsWarpStrike()
+        {
+            SkillGemTowerMap.ResolveFireBehavior(
+                GemTag.Attack | GemTag.Melee | GemTag.Aoe,
+                "Cleave",
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
+        }
+
+        [Test]
+        public void SplitArrow_MapsArrowCountBowTagAndSpread()
+        {
+            var r = SkillGemTowerMap.FromJson(SplitArrowJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.AreEqual("Fires multiple arrows at different targets.", r.Description);
+            Assert.IsTrue((r.Tags & GemTag.Bow) != 0);
+            Assert.AreEqual(6f, FindModifier(attack.Levels[0], RoleStat.ProjectileCount).Value, 0.001f);
+            Assert.AreEqual(13f, FindModifier(attack.Levels[1], RoleStat.ProjectileCount).Value, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.SplitArrowSpreadDegrees, SkillGemTowerMap.ResolveSpreadDegrees(r.Slug), 0.001f);
+            Assert.AreEqual(0f, SkillGemTowerMap.ResolveSequentialIntervalSeconds(r.Slug), 0.001f);
+            SkillGemTowerMap.ResolveFireBehavior(r.Tags, r.Slug, out var aim, out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.Straight, delivery);
+        }
+
+        [Test]
+        public void Barrage_MapsSixSequentialProjectiles()
+        {
+            var r = SkillGemTowerMap.FromJson(BarrageJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.IsTrue((r.Tags & GemTag.Bow) != 0);
+            Assert.AreEqual(
+                SkillGemTowerMap.BarrageProjectileCount,
+                FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value,
+                0.001f);
+            Assert.AreEqual(
+                SkillGemTowerMap.BarrageSpreadDegrees,
+                SkillGemTowerMap.ResolveSpreadDegrees(r.Slug),
+                0.001f);
+            Assert.AreEqual(
+                SkillGemTowerMap.BarrageSequentialIntervalSeconds,
+                SkillGemTowerMap.ResolveSequentialIntervalSeconds(r.Slug),
+                0.001f);
+        }
+
+        [Test]
+        public void IceShot_MapsClassifiedSplashAndColdBowTags()
+        {
+            var r = SkillGemTowerMap.FromJson(IceShotJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.IsTrue((r.Tags & GemTag.Cold) != 0);
+            Assert.IsTrue((r.Tags & GemTag.Bow) != 0);
+            Assert.AreEqual(
+                SkillGemTowerMap.IceShotSplashRadius,
+                FindModifier(attack.Modifiers, RoleStat.SplashRadius).Value,
+                0.001f);
+        }
+
+        [Test]
+        public void CobraLash_MapsChainCountLikeArc()
+        {
+            var r = SkillGemTowerMap.FromJson(CobraLashJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.IsTrue((r.Tags & GemTag.Chaos) != 0);
+            Assert.AreEqual(3f, FindModifier(attack.Levels[0], RoleStat.ChainCount).Value, 0.001f);
+            Assert.AreEqual(7f, FindModifier(attack.Levels[1], RoleStat.ChainCount).Value, 0.001f);
+        }
+
+        [Test]
+        public void Fireball_KeepsFireTag()
+        {
+            var r = SkillGemTowerMap.FromJson(FireballJson);
+            Assert.IsTrue((r.Tags & GemTag.Fire) != 0);
         }
 
         [Test]

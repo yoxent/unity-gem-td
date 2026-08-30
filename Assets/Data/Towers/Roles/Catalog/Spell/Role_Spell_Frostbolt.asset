@@ -40,7 +40,7 @@ MonoBehaviour:
   - Stat: 8
     Operation: 0
     ValueKind: 0
-    Value: 0.7
+    Value: 1
     Min: 0
     Max: 0
   - Stat: 9
@@ -142,9 +142,11 @@ MonoBehaviour:
       Max: 13166
     Effects: []
   EffectPayloads: []
-  PierceBehavior: 1
+  PierceBehavior: 0
   AimMode: 0
   DeliveryPattern: 0
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
   Mix:
   - Type: 2
     Percent: 100

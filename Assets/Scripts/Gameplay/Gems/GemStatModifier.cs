@@ -82,12 +82,26 @@ namespace GemTD.Gameplay.Gems
         public float NormalFalloff;
         [Tooltip("ChainCount only. Greater rarity hop falloff.")]
         public float GreaterFalloff;
+        public float LesserMin;
+        public float LesserMax;
+        public float NormalMin;
+        public float NormalMax;
+        public float GreaterMin;
+        public float GreaterMax;
 
         public bool HasTierValues =>
             Lesser != 0f || Normal != 0f || Greater != 0f;
 
         public bool HasTierFalloff =>
             LesserFalloff != 0f || NormalFalloff != 0f || GreaterFalloff != 0f;
+
+        public bool HasTierRange =>
+            LesserMin != 0f
+            || LesserMax != 0f
+            || NormalMin != 0f
+            || NormalMax != 0f
+            || GreaterMin != 0f
+            || GreaterMax != 0f;
 
         public float OperandMin => ValueKind == RoleStatValueKind.Range ? Min : Value;
 
@@ -153,59 +167,112 @@ namespace GemTD.Gameplay.Gems
                 Operation = operation,
                 ValueKind = RoleStatValueKind.Range,
                 Min = min,
-                Max = max
+                Max = max,
+                LesserMin = min,
+                LesserMax = max,
+                NormalMin = min,
+                NormalMax = max,
+                GreaterMin = min,
+                GreaterMax = max
             };
         }
 
         public GemStatModifier Resolve(GemRarity rarity)
         {
+            var normalized = GemRarityUtility.Normalize(rarity);
+            var resolved = this;
+
+            if (ValueKind == RoleStatValueKind.Range)
+            {
+                PickRangeForRarity(normalized, out resolved.Min, out resolved.Max);
+                resolved.ValueKind = RoleStatValueKind.Range;
+                if (HasTierFalloff)
+                    resolved.Falloff = PickFalloff(normalized);
+                return resolved;
+            }
+
             if (!HasTierValues && !HasTierFalloff)
                 return this;
 
-            var normalized = GemRarityUtility.Normalize(rarity);
-            var resolved = this;
             resolved.ValueKind = RoleStatValueKind.Single;
 
             if (HasTierValues)
             {
-                var value = Value;
-                switch (normalized)
-                {
-                    case GemRarity.Lesser:
-                        value = Lesser;
-                        break;
-                    case GemRarity.Greater:
-                        value = Greater;
-                        break;
-                    case GemRarity.Normal:
-                    default:
-                        value = Normal;
-                        break;
-                }
-
+                var value = PickSingle(normalized);
                 resolved.Value = value;
                 resolved.Min = value;
                 resolved.Max = value;
             }
 
             if (HasTierFalloff)
-            {
-                switch (normalized)
-                {
-                    case GemRarity.Lesser:
-                        resolved.Falloff = LesserFalloff;
-                        break;
-                    case GemRarity.Greater:
-                        resolved.Falloff = GreaterFalloff;
-                        break;
-                    case GemRarity.Normal:
-                    default:
-                        resolved.Falloff = NormalFalloff;
-                        break;
-                }
-            }
+                resolved.Falloff = PickFalloff(normalized);
 
             return resolved;
+        }
+
+        float PickSingle(GemRarity rarity)
+        {
+            switch (rarity)
+            {
+                case GemRarity.Lesser:
+                    return Lesser;
+                case GemRarity.Greater:
+                    return Greater;
+                default:
+                    return Normal;
+            }
+        }
+
+        float PickFalloff(GemRarity rarity)
+        {
+            switch (rarity)
+            {
+                case GemRarity.Lesser:
+                    return LesserFalloff;
+                case GemRarity.Greater:
+                    return GreaterFalloff;
+                default:
+                    return NormalFalloff;
+            }
+        }
+
+        void PickRangeForRarity(GemRarity rarity, out float min, out float max)
+        {
+            if (TryRangePair(rarity, out min, out max))
+                return;
+            if (rarity != GemRarity.Normal && HasRangePair(NormalMin, NormalMax))
+            {
+                min = NormalMin;
+                max = NormalMax;
+                return;
+            }
+
+            min = Min;
+            max = Max;
+        }
+
+        bool TryRangePair(GemRarity rarity, out float min, out float max)
+        {
+            switch (rarity)
+            {
+                case GemRarity.Lesser:
+                    min = LesserMin;
+                    max = LesserMax;
+                    return HasRangePair(LesserMin, LesserMax);
+                case GemRarity.Greater:
+                    min = GreaterMin;
+                    max = GreaterMax;
+                    return HasRangePair(GreaterMin, GreaterMax);
+                default:
+                    min = NormalMin;
+                    max = NormalMax;
+                    return HasRangePair(NormalMin, NormalMax);
+            }
+        }
+
+        static bool HasRangePair(float min, float max)
+        {
+            return min != 0f || max != 0f;
         }
     }
 

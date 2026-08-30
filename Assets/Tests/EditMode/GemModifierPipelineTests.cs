@@ -73,6 +73,36 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ResolveBaseline_CopiesSpreadAndSequentialInterval()
+        {
+            var role = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.Roles = new[] { role };
+            role.Modifiers = new[]
+            {
+                RoleStatModifier.Single(RoleStat.AttackTime, RoleModifierOperation.Set, 1f),
+                RoleStatModifier.Single(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f),
+                RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 6f)
+            };
+            role.SpreadDegrees = 28f;
+            role.SequentialIntervalSeconds = 0.08f;
+
+            try
+            {
+                var tower = new TowerInstance(Vector2Int.zero, def);
+                var spec = new GemModifierPipeline().ResolveBaseline(tower);
+                Assert.AreEqual(28f, spec.SpreadDegrees, 0.001f);
+                Assert.AreEqual(0.08f, spec.SequentialIntervalSeconds, 0.001f);
+                Assert.AreEqual(6, spec.ProjectileCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+                Object.DestroyImmediate(role);
+            }
+        }
+
+        [Test]
         public void ResolveBaseline_CopiesRoleChainCount()
         {
             var role = ScriptableObject.CreateInstance<SpellRoleDefinition>();
@@ -100,6 +130,42 @@ namespace GemTD.Tests.EditMode
                 var tower = new TowerInstance(Vector2Int.zero, def);
                 var spec = new GemModifierPipeline().ResolveBaseline(tower);
                 Assert.AreEqual(4, spec.ChainCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+                Object.DestroyImmediate(role);
+            }
+        }
+
+        [Test]
+        public void ResolveBaseline_CopiesRoleForkCount()
+        {
+            var role = ScriptableObject.CreateInstance<SpellRoleDefinition>();
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.Roles = new[] { role };
+            role.Modifiers = new[]
+            {
+                RoleStatModifier.Single(RoleStat.CastTime, RoleModifierOperation.Set, 0.6f),
+                RoleStatModifier.Single(RoleStat.CastSpeed, RoleModifierOperation.Set, 100f)
+            };
+            role.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Modifiers = new[]
+                    {
+                        RoleStatModifier.Single(RoleStat.ForkCount, RoleModifierOperation.Set, 1f)
+                    }
+                }
+            };
+
+            try
+            {
+                var tower = new TowerInstance(Vector2Int.zero, def);
+                var spec = new GemModifierPipeline().ResolveBaseline(tower);
+                Assert.AreEqual(1, spec.ForkCount);
             }
             finally
             {
@@ -186,7 +252,7 @@ namespace GemTD.Tests.EditMode
                 var spec = new GemModifierPipeline().Resolve(tower, scratch);
                 Assert.AreEqual(10f * 0.7f * 0.85f, spec.Damage, 0.001f);
                 Assert.AreEqual(1, spec.ChainCount);
-                Assert.AreEqual(1, spec.ForkCount);
+                Assert.AreEqual(2, spec.ForkCount);
             }
             finally
             {

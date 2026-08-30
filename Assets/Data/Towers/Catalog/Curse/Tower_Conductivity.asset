@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Conductivity
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Conductivity
+  Description: Curses all targets in an area, lowering their lightning resistance
+    and giving them a chance to be shocked when hit.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6cef3c54d764f7b234c1858c535e31b0, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 18
+  tags: 101449746

@@ -192,7 +192,7 @@ namespace GemTD.Tests.EditMode
                 chainRange: 0f,
                 aoeRadius: 0f,
                 pierceRemaining: 0,
-                forkRemaining: 1,
+                forkRemaining: 2,
                 spawnBuffer: spawnBuffer);
 
             projectile.Tick(0.05f, living);
@@ -203,8 +203,8 @@ namespace GemTD.Tests.EditMode
 
             var expectedPlus = Quaternion.Euler(0f, ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound;
             var expectedMinus = Quaternion.Euler(0f, -ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound;
-            Assert.AreEqual(0f, Vector3.Angle(expectedPlus, spawnBuffer[0].Direction), 0.1f);
-            Assert.AreEqual(0f, Vector3.Angle(expectedMinus, spawnBuffer[1].Direction), 0.1f);
+            Assert.AreEqual(0f, Vector3.Angle(expectedMinus, spawnBuffer[0].Direction), 0.1f);
+            Assert.AreEqual(0f, Vector3.Angle(expectedPlus, spawnBuffer[1].Direction), 0.1f);
             // Forward bias: children continue past the hit (-o<), not back toward the tower.
             Assert.Greater(Vector3.Dot(spawnBuffer[0].Direction, inbound), 0.5f);
             Assert.Greater(Vector3.Dot(spawnBuffer[1].Direction, inbound), 0.5f);
@@ -228,6 +228,84 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Fork_CountThree_FansAcrossHalfAngle()
+        {
+            var enemy = MakeEnemyAt(Vector3.zero, 100f);
+            var living = Living(enemy);
+            var spawnBuffer = new List<ProjectileRuntime>();
+            var inbound = Vector3.forward;
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: inbound,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 100f,
+                chainRange: 0f,
+                forkRemaining: 3,
+                spawnBuffer: spawnBuffer);
+
+            projectile.Tick(0.05f, living);
+
+            Assert.AreEqual(3, spawnBuffer.Count);
+            Assert.AreEqual(
+                0f,
+                Vector3.Angle(
+                    Quaternion.Euler(0f, -ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound,
+                    spawnBuffer[0].Direction),
+                0.1f);
+            Assert.AreEqual(0f, Vector3.Angle(inbound, spawnBuffer[1].Direction), 0.1f);
+            Assert.AreEqual(
+                0f,
+                Vector3.Angle(
+                    Quaternion.Euler(0f, ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound,
+                    spawnBuffer[2].Direction),
+                0.1f);
+        }
+
+        [Test]
+        public void Fork_ParentDies_ChildrenNeverFork_EvenWithExtraCount()
+        {
+            var first = MakeEnemyAt(Vector3.zero, 100f);
+            var inbound = Vector3.forward;
+            var plusDir = Quaternion.Euler(0f, ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound;
+            var second = MakeEnemyAt(plusDir * 2f, 100f);
+            var living = Living(first, second);
+            var spawnBuffer = new List<ProjectileRuntime>();
+
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: inbound,
+                target: first,
+                damage: 10f,
+                chainCount: 0,
+                speed: 100f,
+                chainRange: 0f,
+                aoeRadius: 0f,
+                pierceRemaining: 0,
+                forkRemaining: 3,
+                spawnBuffer: spawnBuffer);
+
+            projectile.Tick(0.05f, living);
+
+            Assert.IsFalse(projectile.IsActive);
+            Assert.AreEqual(0, projectile.ForkRemaining);
+            Assert.AreEqual(3, spawnBuffer.Count);
+            Assert.AreEqual(0, spawnBuffer[0].ForkRemaining);
+            Assert.AreEqual(0, spawnBuffer[1].ForkRemaining);
+            Assert.AreEqual(0, spawnBuffer[2].ForkRemaining);
+
+            spawnBuffer[2].Tick(0.05f, living);
+
+            Assert.AreEqual(3, spawnBuffer.Count);
+            Assert.AreEqual(0, spawnBuffer[2].ForkRemaining);
+            Assert.IsFalse(spawnBuffer[2].IsActive);
+            Assert.AreEqual(90f, second.Hp, 1e-3f);
+        }
+
+        [Test]
         public void Fork_BeforeChain_OnSameCollision_OnlyForks()
         {
             var hit = MakeEnemyAt(Vector3.zero, 100f);
@@ -244,7 +322,7 @@ namespace GemTD.Tests.EditMode
                 chainCount: 2,
                 speed: 100f,
                 chainRange: 5f,
-                forkRemaining: 1,
+                forkRemaining: 2,
                 spawnBuffer: spawnBuffer);
 
             projectile.Tick(0.05f, living);

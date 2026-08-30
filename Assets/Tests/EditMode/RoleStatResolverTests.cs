@@ -231,6 +231,41 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void GetForkCount_ReturnsLevelSetWholeNumber()
+        {
+            var spell = ScriptableObject.CreateInstance<SpellRoleDefinition>();
+            try
+            {
+                spell.Levels = new[]
+                {
+                    new RoleLevelDefinition
+                    {
+                        SourceLevel = 1,
+                        Modifiers = new[]
+                        {
+                            Modifier(RoleStat.ForkCount, RoleModifierOperation.Set, 1f)
+                        }
+                    },
+                    new RoleLevelDefinition
+                    {
+                        SourceLevel = 10,
+                        Modifiers = new[]
+                        {
+                            Modifier(RoleStat.ForkCount, RoleModifierOperation.Set, 2f)
+                        }
+                    }
+                };
+
+                Assert.AreEqual(1, spell.GetForkCount(1));
+                Assert.AreEqual(2, spell.GetForkCount(10));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(spell);
+            }
+        }
+
+        [Test]
         public void ResolveEffect_AppliesConstantThenLevelScaling()
         {
             var aura = ScriptableObject.CreateInstance<AuraRoleDefinition>();

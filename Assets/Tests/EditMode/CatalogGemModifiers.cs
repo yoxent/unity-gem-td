@@ -39,7 +39,7 @@ namespace GemTD.Tests.EditMode
                     return new[]
                     {
                         Mul(GemStat.Damage, 0.85f),
-                        Add(GemStat.ForkCount, 1f)
+                        Add(GemStat.ForkCount, 2f)
                     };
                 case GemId.IncreasedArea:
                     return new[]

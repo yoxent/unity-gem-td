@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Flammability
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Flammability
+  Description: Curses all targets in an area, lowering their fire resistance and
+    giving them a chance to be ignited when hit.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b825a76ad5710316c2c921a4d01aaa7f, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 18
+  tags: 36438034

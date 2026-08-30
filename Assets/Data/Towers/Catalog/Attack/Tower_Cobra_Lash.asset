@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Cobra_Lash
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Cobra Lash
+  Description: Fires a poisonous projectile based on your weapon that will chain
+    between enemies. Requires a Dagger or Claw.
   Cost: 20
   BuildIncrement: 15
   Damage: 10
@@ -20,4 +22,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9b3ef0514e1999e161d2940932c70078, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 9
+  tags: 32777

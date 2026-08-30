@@ -130,6 +130,41 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Fork_ChildCountFollowsGemModifier()
+        {
+            _fork.Modifiers = new[]
+            {
+                GemStatModifier.Single(GemStat.Damage, RoleModifierOperation.Multiply, 0.85f),
+                GemStatModifier.Single(GemStat.ForkCount, RoleModifierOperation.Add, 3f)
+            };
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
+            Assert.IsTrue(tower.TrySocket(_fork, 0, true));
+            var dummy = MakeEnemy(new Vector3(3f, 0f, 0f));
+            var trace = new AttackTracer().Trace(tower, Vector3.zero, Living(dummy));
+            Assert.AreEqual(3, CountKind(trace, AttackTraceKind.Fork));
+        }
+
+        [Test]
+        public void Fork_ChildrenDoNotForkAgain()
+        {
+            _fork.Modifiers = new[]
+            {
+                GemStatModifier.Single(GemStat.Damage, RoleModifierOperation.Multiply, 0.85f),
+                GemStatModifier.Single(GemStat.ForkCount, RoleModifierOperation.Add, 2f)
+            };
+            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
+            Assert.IsTrue(tower.TrySocket(_fork, 0, true));
+
+            var inbound = Vector3.forward;
+            var plus = Quaternion.Euler(0f, ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound;
+            var hit = MakeEnemy(new Vector3(3f, 0f, 0f));
+            var along = MakeEnemy(new Vector3(3f, 0f, 0f) + plus * 2f);
+            var trace = new AttackTracer().Trace(tower, Vector3.zero, Living(hit, along));
+
+            Assert.AreEqual(2, CountKind(trace, AttackTraceKind.Fork));
+        }
+
+        [Test]
         public void Pierce_ContinuesWithoutForkOnSameHit()
         {
             var tower = new TowerInstance(Vector2Int.zero, _projectileTower);

@@ -1197,6 +1197,39 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(director.HasActiveVolley);
         }
 
+        [Test]
+        public void TryFireOnce_SequentialInterval_StaggersStraightBolts()
+        {
+            _towerRole.SpreadDegrees = 12f;
+            _towerRole.SequentialIntervalSeconds = 0.1f;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.ProjectileCount, 3f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 0.01f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var primary = new EnemyRuntime();
+            primary.Init(_enemyDef, new[] { new Vector3(8f, 0f, 0f) });
+            var living = new List<EnemyRuntime> { primary };
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.IsTrue(director.HasActiveVolley);
+
+            director.TickInFlight(0.1f, living);
+            Assert.AreEqual(2, director.Projectiles.Count);
+
+            director.TickInFlight(0.1f, living);
+            Assert.AreEqual(3, director.Projectiles.Count);
+            Assert.AreEqual(3, director.Projectiles.Count);
+        }
+
         static RoleStatModifier Modifier(RoleStat stat, float value)
         {
             return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);

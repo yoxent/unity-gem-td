@@ -145,11 +145,11 @@ namespace GemTD.Editor
                 categoryFile: "poe_skill_gems_attack.json",
                 folder: "Attack",
                 dialogTitle: "Attack Proof Set Two",
-                "Double_Strike",
-                "Dual_Strike",
-                "Holy_Hammers",
-                "Ice_Crash",
-                "Kinetic_Blast");
+                "Split_Arrow",
+                "Barrage",
+                "Ice_Shot",
+                "Cobra_Lash",
+                "Cleave");
         }
 
         [MenuItem("Gem TD/Import Spell Proof Set One")]
@@ -399,6 +399,8 @@ namespace GemTD.Editor
                 damage.AimMode = aim;
                 damage.DeliveryPattern = delivery;
                 damage.Mix = SkillGemTowerMap.ResolveProofMix(slug);
+                damage.SpreadDegrees = SkillGemTowerMap.ResolveSpreadDegrees(slug);
+                damage.SequentialIntervalSeconds = SkillGemTowerMap.ResolveSequentialIntervalSeconds(slug);
             }
         }
 

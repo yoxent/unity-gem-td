@@ -12,28 +12,199 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90380bed116b50b4cbbe7a067d12fab8, type: 3}
   m_Name: Role_Attack_Cobra_Lash
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AttackRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 0
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 1
+    Operation: 0
+    ValueKind: 0
+    Value: 120
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 10
+    Min: 0
+    Max: 0
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 9
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.376
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.545
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.713
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
+    Effects: []
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 1.882
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.05
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.218
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.387
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 6
+      Min: 0
+      Max: 0
+    Effects: []
   - SourceLevel: 8
-    Modifiers: []
-  - SourceLevel: 12
-    Modifiers: []
-  - SourceLevel: 16
-    Modifiers: []
-  - SourceLevel: 20
-    Modifiers: []
-  - SourceLevel: 24
-    Modifiers: []
-  - SourceLevel: 28
-    Modifiers: []
-  - SourceLevel: 32
-    Modifiers: []
-  - SourceLevel: 36
-    Modifiers: []
-  - SourceLevel: 40
-    Modifiers: []
-  AttackTime: 1
-  AttackSpeed: 120
-  TowerRadius: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.513
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 6
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.5970001
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 7
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 2
+      ValueKind: 0
+      Value: 2.6820002
+      Min: 0
+      Max: 0
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 7
+      Min: 0
+      Max: 0
+    Effects: []
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
+  Mix: []

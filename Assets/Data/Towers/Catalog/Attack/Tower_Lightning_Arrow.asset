@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Lightning_Arrow
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Lightning Arrow
+  Description: Fires a charged arrow which damages enemies by causing them to be
+    struck by a bolt of lightning, which also damages a number of surrounding enemies.
   Cost: 20
   BuildIncrement: 15
   Damage: 10
@@ -20,4 +22,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b9532160d88baad1cd5acadaa5e9db85, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 11
+  tags: 67112971

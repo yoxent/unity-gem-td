@@ -112,6 +112,42 @@ namespace GemTD.Gameplay.Towers
             return (int)value;
         }
 
+        public int GetForkCount(int sourceLevel)
+        {
+            if (!ValidateWholeCountModifiers(Modifiers, RoleStat.ForkCount, "ForkCount", "Modifiers"))
+                return 0;
+
+            if (Levels != null)
+            {
+                for (var i = 0; i < Levels.Length; i++)
+                {
+                    var level = Levels[i];
+                    if (level != null
+                        && !ValidateWholeCountModifiers(
+                            level.Modifiers,
+                            RoleStat.ForkCount,
+                            "ForkCount",
+                            $"Levels[{level.SourceLevel}].Modifiers"))
+                    {
+                        return 0;
+                    }
+                }
+            }
+
+            var value = ResolveStat(RoleStat.ForkCount, sourceLevel);
+            if (value <= 0f)
+                return 0;
+
+            if (!IsWholeNumber(value))
+            {
+                Debug.LogError(
+                    $"Role '{name}' resolved ForkCount to {value}, but fork count must be a whole number.");
+                return 0;
+            }
+
+            return (int)value;
+        }
+
         public RoleStatValue ResolveStatValue(RoleStat stat, int sourceLevel)
         {
             var value = RoleStatValue.FromSingle(GetBaseStat(stat));
@@ -307,7 +343,9 @@ namespace GemTD.Gameplay.Towers
 
             ApplyStatOperation(ref value, stat, modifiers, RoleModifierOperation.Set);
             ApplyStatOperation(ref value, stat, modifiers, RoleModifierOperation.Add);
-            if (stat != RoleStat.ProjectileCount && stat != RoleStat.ChainCount)
+            if (stat != RoleStat.ProjectileCount
+                && stat != RoleStat.ChainCount
+                && stat != RoleStat.ForkCount)
                 ApplyStatOperation(ref value, stat, modifiers, RoleModifierOperation.Multiply);
         }
 

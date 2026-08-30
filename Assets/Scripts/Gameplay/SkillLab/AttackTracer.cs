@@ -649,8 +649,12 @@ namespace GemTD.Gameplay.SkillLab
         {
             var inbound = parent.Direction.sqrMagnitude > 1e-8f ? parent.Direction.normalized : Vector3.forward;
             var spawnAt = hit.WorldPosition + inbound * ProjectileRuntime.ForkSpawnForwardPad;
-            EnqueueFork(parent, spawnAt, Quaternion.Euler(0f, ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound);
-            EnqueueFork(parent, spawnAt, Quaternion.Euler(0f, -ProjectileRuntime.ForkHalfAngleDegrees, 0f) * inbound);
+            var count = parent.ForkRemaining;
+            for (var i = 0; i < count; i++)
+            {
+                var yaw = ProjectileRuntime.ForkChildYawDegrees(i, count);
+                EnqueueFork(parent, spawnAt, Quaternion.Euler(0f, yaw, 0f) * inbound);
+            }
         }
 
         void EnqueueFork(SimShot parent, Vector3 origin, Vector3 dir)
@@ -664,7 +668,7 @@ namespace GemTD.Gameplay.SkillLab
                 RemainingFlight = parent.ProjectileSpeed * ProjectileRuntime.MaxLifetimeSeconds,
                 ChainRemaining = parent.ChainRemaining,
                 PierceRemaining = parent.PierceRemaining,
-                ForkRemaining = parent.ForkRemaining - 1,
+                ForkRemaining = 0,
                 AoeRadius = parent.AoeRadius,
                 ChainRange = parent.ChainRange,
                 ChainHopFalloff = parent.ChainHopFalloff,

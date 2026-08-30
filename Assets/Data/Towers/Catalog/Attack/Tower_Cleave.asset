@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Tower_Cleave
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Cleave
+  Description: The character swings their weapon (or both weapons if dual wielding)
+    in an arc, damaging monsters in an area in front of them. Only works with Axes
+    and Swords.
   Cost: 20
   BuildIncrement: 15
   Damage: 10
@@ -20,4 +23,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0c25eabb253f450d1843ee367f675587, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 74
+  tags: 74

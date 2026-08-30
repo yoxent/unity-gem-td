@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Heavy_Strike
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Heavy Strike
+  Description: Attacks enemies with a forceful blow. Requires a Mace, Sceptre, Axe,
+    Sword or Staff.
   Cost: 20
   BuildIncrement: 15
   Damage: 10
@@ -20,4 +22,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e81afbd74be71910037cbd9f22f77cae, type: 2}
   SocketCount: 3
   AllowsHydraEvolution: 0
-  Tags: 584
+  tags: 584

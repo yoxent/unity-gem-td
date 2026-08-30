@@ -135,12 +135,12 @@ MonoBehaviour:
     TravelPattern: 3
     ScatterPattern: 0
     HitPolicy: 0
-    Tags: 2
+    tags: 2
     Count: 10
     DamageMultiplier: 1
-    AoeRadius: 1
+    AoeRadius: 1.3
     MinDistance: 0
-    MaxDistance: 3
+    MaxDistance: 2.5
     ArcHeight: 3
     DelaySeconds: 0
     IntervalSeconds: 0.15
@@ -148,3 +148,6 @@ MonoBehaviour:
   PierceBehavior: 0
   AimMode: 1
   DeliveryPattern: 6
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
+  Mix: []

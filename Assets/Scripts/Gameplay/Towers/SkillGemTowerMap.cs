@@ -54,6 +54,11 @@ namespace GemTD.Gameplay.Towers
         public const float FirestormStormRadius = 2.5f;
         public const float FirestormExplosionRadius = 1.3f;
         public const float FirestormDropHeight = 3f;
+        public const int BarrageProjectileCount = 6;
+        public const float BarrageSpreadDegrees = 10f;
+        public const float BarrageSequentialIntervalSeconds = 0.08f;
+        public const float SplitArrowSpreadDegrees = 28f;
+        public const float IceShotSplashRadius = 2.4f;
 
         public static void ResolveFireBehavior(
             GemTag tags,
@@ -80,6 +85,13 @@ namespace GemTD.Gameplay.Towers
             {
                 aim = AimMode.Ground;
                 delivery = DeliveryPattern.Rain;
+                return;
+            }
+
+            if (string.Equals(slug, "Cleave", StringComparison.OrdinalIgnoreCase))
+            {
+                aim = AimMode.Direct;
+                delivery = DeliveryPattern.WarpStrike;
                 return;
             }
 
@@ -430,7 +442,12 @@ namespace GemTD.Gameplay.Towers
             {
                 AddSet(modifiers, RoleStat.ProjectileSpeed, DefaultProjectileSpeed);
                 if (kind == RoleKind.Attack || kind == RoleKind.Spell)
-                    AddSet(modifiers, RoleStat.ProjectileCount, 1);
+                {
+                    if (IsBarrage(slug))
+                        AddSet(modifiers, RoleStat.ProjectileCount, BarrageProjectileCount);
+                    else
+                        AddSet(modifiers, RoleStat.ProjectileCount, 1);
+                }
             }
             else if ((tags & GemTag.Projectile) != 0)
             {
@@ -439,6 +456,9 @@ namespace GemTD.Gameplay.Towers
 
             if (kind == RoleKind.Attack && IsLightningArrow(slug))
                 AddSet(modifiers, RoleStat.SplashRadius, LightningArrowSplashRadius);
+
+            if (kind == RoleKind.Attack && IsIceShot(slug))
+                AddSet(modifiers, RoleStat.SplashRadius, IceShotSplashRadius);
 
             if (kind == RoleKind.Attack && IsEarthquake(slug))
                 AddSet(modifiers, RoleStat.SplashRadius, EarthquakeSlamRadius);
@@ -548,6 +568,7 @@ namespace GemTD.Gameplay.Towers
                     sourceLevel);
                 AddLevelDamage(modifiers, values, kind);
                 AddLevelChain(modifiers, values, result.Slug);
+                AddLevelProjectileCount(modifiers, values, result.Slug);
                 AddLevelRadiusBonus(modifiers, values, result.Slug);
                 AddCurseLevelRadius(modifiers, kind, sourceLevel);
                 AddLevelEffects(effects, values, kind, result.Slug, sourceLevel);
@@ -636,13 +657,78 @@ namespace GemTD.Gameplay.Towers
 
         static bool IsClassifiedChainSource(string slug)
         {
-            return IsArcSpell(slug);
+            return IsArcSpell(slug) || IsCobraLash(slug);
         }
 
         static bool IsChainTimesHeader(string header)
         {
             return ContainsIgnoreCase(header, "Chains")
                 && ContainsIgnoreCase(header, "Times");
+        }
+
+        static void AddLevelProjectileCount(List<RoleStatModifier> modifiers, JObject values, string slug)
+        {
+            if (!IsSplitArrow(slug) || values == null)
+                return;
+
+            foreach (var effect in values.Properties())
+            {
+                if (!IsFiresArrowsHeader(effect.Name))
+                    continue;
+
+                var count = ReadWholeCount(effect.Value);
+                if (count.HasValue)
+                {
+                    AddSet(modifiers, RoleStat.ProjectileCount, count.Value);
+                    return;
+                }
+            }
+        }
+
+        static bool IsFiresArrowsHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Fires")
+                && ContainsIgnoreCase(header, "Arrow");
+        }
+
+        static float? ReadWholeCount(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+
+            var value = token;
+            if (token.Type == JTokenType.Object)
+            {
+                var wrapped = token["value"];
+                if (wrapped != null)
+                    value = wrapped;
+            }
+
+            if (value.Type == JTokenType.Array)
+            {
+                var array = (JArray)value;
+                if (array.Count == 0)
+                    return null;
+                return ReadNumber(array[0]);
+            }
+
+            return ReadNumber(value);
+        }
+
+        public static float ResolveSpreadDegrees(string slug)
+        {
+            if (IsSplitArrow(slug))
+                return SplitArrowSpreadDegrees;
+            if (IsBarrage(slug))
+                return BarrageSpreadDegrees;
+            return 0f;
+        }
+
+        public static float ResolveSequentialIntervalSeconds(string slug)
+        {
+            if (IsBarrage(slug))
+                return BarrageSequentialIntervalSeconds;
+            return 0f;
         }
 
         static bool IsArcSpell(string slug)
@@ -653,6 +739,26 @@ namespace GemTD.Gameplay.Towers
         static bool IsLightningArrow(string slug)
         {
             return string.Equals(slug, "Lightning_Arrow", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsIceShot(string slug)
+        {
+            return string.Equals(slug, "Ice_Shot", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsBarrage(string slug)
+        {
+            return string.Equals(slug, "Barrage", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsSplitArrow(string slug)
+        {
+            return string.Equals(slug, "Split_Arrow", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsCobraLash(string slug)
+        {
+            return string.Equals(slug, "Cobra_Lash", StringComparison.OrdinalIgnoreCase);
         }
 
         static bool IsEarthquake(string slug)

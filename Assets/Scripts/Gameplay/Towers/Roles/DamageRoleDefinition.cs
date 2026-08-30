@@ -17,6 +17,12 @@ namespace GemTD.Gameplay.Towers
         [Tooltip("Straight fires the skill volley. PayloadNova fires one payload, then a radial burst on land. CasterNova is an instant circle around the caster (Ice Nova damages; curse presence applies a hex). Rain falls from above onto a ground aim patch.")]
         public DeliveryPattern DeliveryPattern;
 
+        [Tooltip("Fan width for simultaneous extra bolts. Zero = no fan.")]
+        public float SpreadDegrees;
+
+        [Tooltip("When > 0 and ProjectileCount > 1, Straight bolts spawn one after another instead of all at once.")]
+        public float SequentialIntervalSeconds;
+
         [Tooltip("Sparse damage-type shares. Empty = untyped. Non-empty percents must sum to 100.")]
         public DamageTypeShare[] Mix;
     }
