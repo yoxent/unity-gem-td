@@ -27,6 +27,42 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TenSampledLevels_UsesCatalogRaritySampleLevels()
+        {
+            var result = SupportGemMap.FromCatalogJson(
+                "{\"rarity_sample_levels\":{\"lesser\":3,\"normal\":5,\"greater\":7},\"gems\":[{\"name\":\"Test Support\",\"tags\":[\"Cold\",\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% more Damage\",\"values\":{\"1\":10,\"2\":20,\"3\":30,\"4\":40,\"5\":50,\"6\":60,\"7\":70,\"8\":80,\"9\":90,\"10\":100}}]}]}");
+
+            Assert.AreEqual(1, result.Length);
+            Assert.IsTrue(result[0].CanIngest);
+            Assert.AreEqual(GemTag.Cold | GemTag.Support, result[0].Tags);
+            Assert.AreEqual(1.3f, result[0].Modifiers[0].Lesser, 1e-4f);
+            Assert.AreEqual(1.5f, result[0].Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(1.7f, result[0].Modifiers[0].Greater, 1e-4f);
+        }
+
+        [Test]
+        public void TenSampledLevels_HonorsOverriddenRaritySampleLevels()
+        {
+            var result = SupportGemMap.FromCatalogJson(
+                "{\"rarity_sample_levels\":{\"lesser\":2,\"normal\":4,\"greater\":6},\"gems\":[{\"name\":\"Test Support\",\"tags\":[\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% more Damage\",\"values\":{\"1\":10,\"2\":20,\"3\":30,\"4\":40,\"5\":50,\"6\":60,\"7\":70,\"8\":80,\"9\":90,\"10\":100}}]}]}");
+
+            Assert.AreEqual(1.2f, result[0].Modifiers[0].Lesser, 1e-4f);
+            Assert.AreEqual(1.4f, result[0].Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(1.6f, result[0].Modifiers[0].Greater, 1e-4f);
+        }
+
+        [Test]
+        public void MissingGreaterSample_FallsBackToHighestAtOrBelow()
+        {
+            var result = SupportGemMap.FromCatalogJson(
+                "{\"rarity_sample_levels\":{\"lesser\":3,\"normal\":5,\"greater\":7},\"gems\":[{\"name\":\"Test Support\",\"tags\":[\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% more Damage\",\"values\":{\"1\":10,\"2\":20,\"3\":30,\"4\":40,\"5\":50}}]}]}");
+
+            Assert.AreEqual(1.3f, result[0].Modifiers[0].Lesser, 1e-4f);
+            Assert.AreEqual(1.5f, result[0].Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(1.5f, result[0].Modifiers[0].Greater, 1e-4f);
+        }
+
+        [Test]
         public void ChainSupport_AddsWikiChainCountWhenJsonCountIsNull()
         {
             var result = SupportGemMap.FromGemJson(
@@ -100,6 +136,28 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0.25f, result.Modifiers[1].Lesser, 0.001f);
             Assert.AreEqual(0.25f, result.Modifiers[1].Normal, 0.001f);
             Assert.AreEqual(0.25f, result.Modifiers[1].Greater, 0.001f);
+        }
+
+        [Test]
+        public void ChanceToBleed_AddsWikiChanceWhenJsonChanceHasNoValues()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Chance to Bleed Support\",\"tags\":[\"Attack\",\"Physical\",\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Attacks deal #% more Damage with Bleeding\",\"values\":{\"1\":13,\"2\":17,\"3\":21,\"4\":25,\"5\":29,\"6\":33,\"7\":37,\"8\":40,\"9\":42,\"10\":44}},{\"text\":\"Supported Attacks have 25% chance to cause Bleeding\"}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(GemTag.Attack | GemTag.Physical | GemTag.Support, result.Tags);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.AilmentDamage, result.Modifiers[0].Stat);
+            Assert.AreEqual(1.21f, result.Modifiers[0].Lesser, 0.001f);
+            Assert.AreEqual(1.29f, result.Modifiers[0].Normal, 0.001f);
+            Assert.AreEqual(1.37f, result.Modifiers[0].Greater, 0.001f);
+            Assert.AreEqual(GemStat.BleedChance, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[1].Operation);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Value, 0.001f);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Lesser, 0.001f);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Normal, 0.001f);
+            Assert.AreEqual(0.25f, result.Modifiers[1].Greater, 0.001f);
+            Assert.AreEqual(0, result.FlavorTexts.Length);
         }
 
         [Test]

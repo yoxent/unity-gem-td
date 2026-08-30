@@ -16,16 +16,28 @@ MonoBehaviour:
   DisplayName: Added Fire Damage
   Description: Adds fire damage. Other scaling is diluted by the added damage type.
   DraftWeight: 1
-  Tags: 256
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 34361835776
   Modifiers:
   - Stat: 37
     Operation: 0
     ValueKind: 0
-    Value: 0.31
+    Value: 0.39
     Min: 0
     Max: 0
-    Lesser: 0.25
-    Normal: 0.31
-    Greater: 0.39
+    Lesser: 0.33
+    Normal: 0.39
+    Greater: 0.45
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

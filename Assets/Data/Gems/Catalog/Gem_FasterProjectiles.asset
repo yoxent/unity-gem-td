@@ -17,26 +17,47 @@ MonoBehaviour:
   Description: Projectiles travel faster and gain effective reach. Projectile damage
     is reduced.
   DraftWeight: 1
-  Tags: 257
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 257
   Modifiers:
   - Stat: 10
     Operation: 2
     ValueKind: 0
-    Value: 1.59
+    Value: 1.69
     Min: 0
     Max: 0
-    Lesser: 1.5
-    Normal: 1.59
-    Greater: 1.69
+    Lesser: 1.61
+    Normal: 1.69
+    Greater: 1.77
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 1.24
+    Value: 1.29
     Min: 0
     Max: 0
-    Lesser: 1.2
-    Normal: 1.24
-    Greater: 1.29
+    Lesser: 1.25
+    Normal: 1.29
+    Greater: 1.33
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

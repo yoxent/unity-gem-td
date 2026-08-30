@@ -18,7 +18,10 @@ MonoBehaviour:
     or restricts part of the tower's original behavior and introduces a meaningful
     tradeoff.
   DraftWeight: 1
-  Tags: 328
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 34361835848
   Modifiers:
   - Stat: 47
     Operation: 0
@@ -30,6 +33,15 @@ MonoBehaviour:
     Normal: 1
     Greater: 1
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 37
     Operation: 0
     ValueKind: 0
@@ -40,14 +52,32 @@ MonoBehaviour:
     Normal: 0.25
     Greater: 0.25
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 37
     Operation: 2
     ValueKind: 0
-    Value: 1.16
+    Value: 1.36
     Min: 0
     Max: 0
-    Lesser: 1
-    Normal: 1.16
-    Greater: 1.36
+    Lesser: 1.2
+    Normal: 1.36
+    Greater: 1.52
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

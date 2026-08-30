@@ -17,26 +17,47 @@ MonoBehaviour:
   Description: Strengthens chill and damage against chilled enemies. Requires chilled
     targets and reduces direct damage.
   DraftWeight: 1
-  Tags: 256
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 65792
   Modifiers:
   - Stat: 25
     Operation: 2
     ValueKind: 0
-    Value: 1.34
+    Value: 1.44
     Min: 0
     Max: 0
-    Lesser: 1.25
-    Normal: 1.34
-    Greater: 1.44
+    Lesser: 1.36
+    Normal: 1.44
+    Greater: 1.52
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 1.09
+    Value: 1.14
     Min: 0
     Max: 0
-    Lesser: 1.05
-    Normal: 1.09
-    Greater: 1.14
+    Lesser: 1.1
+    Normal: 1.14
+    Greater: 1.18
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

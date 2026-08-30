@@ -14,6 +14,28 @@ namespace GemTD.Gameplay.Gems
     {
         public const int ExpectedGemCount = 212;
         public const float ExceptionalNormalMultiplier = 1.4f;
+        public const int DefaultLesserSampleLevel = 3;
+        public const int DefaultNormalSampleLevel = 5;
+        public const int DefaultGreaterSampleLevel = 7;
+
+        public readonly struct RaritySampleLevels
+        {
+            public readonly int Lesser;
+            public readonly int Normal;
+            public readonly int Greater;
+
+            public static readonly RaritySampleLevels Default = new RaritySampleLevels(
+                DefaultLesserSampleLevel,
+                DefaultNormalSampleLevel,
+                DefaultGreaterSampleLevel);
+
+            public RaritySampleLevels(int lesser, int normal, int greater)
+            {
+                Lesser = lesser;
+                Normal = normal;
+                Greater = greater;
+            }
+        }
 
         struct TierValues
         {
@@ -54,10 +76,11 @@ namespace GemTD.Gameplay.Gems
         public static Result[] FromCatalogJson(string fileJson)
         {
             var root = JObject.Parse(fileJson);
+            var rarityLevels = ReadRaritySampleLevels(root);
             var gems = (JArray)root["gems"];
             var results = new Result[gems.Count];
             for (var i = 0; i < gems.Count; i++)
-                results[i] = FromObject((JObject)gems[i]);
+                results[i] = FromObject((JObject)gems[i], rarityLevels);
             return results;
         }
 
@@ -67,6 +90,11 @@ namespace GemTD.Gameplay.Gems
         }
 
         public static Result FromObject(JObject gem)
+        {
+            return FromObject(gem, RaritySampleLevels.Default);
+        }
+
+        public static Result FromObject(JObject gem, RaritySampleLevels rarityLevels)
         {
             var name = gem["name"]?.Value<string>() ?? "";
             var upside = gem["upside"]?.Value<string>() ?? "";
@@ -89,7 +117,7 @@ namespace GemTD.Gameplay.Gems
             else if (mods != null)
             {
                 for (var i = 0; i < mods.Count; i++)
-                    ClassifyMod((JObject)mods[i], modifiers, flavor, unmapped);
+                    ClassifyMod((JObject)mods[i], rarityLevels, modifiers, flavor, unmapped);
             }
 
             if (string.IsNullOrEmpty(skipReason))
@@ -119,6 +147,7 @@ namespace GemTD.Gameplay.Gems
 
         static void ClassifyMod(
             JObject mod,
+            RaritySampleLevels rarityLevels,
             List<GemStatModifier> modifiers,
             List<string> flavor,
             List<UnmappedMod> unmapped)
@@ -131,7 +160,7 @@ namespace GemTD.Gameplay.Gems
                 return;
             }
 
-            var values = ReadValues(valuesObject as JObject);
+            var values = ReadValues(valuesObject as JObject, rarityLevels);
             if (TryMapNumbered(text, values, modifiers))
                 return;
 
@@ -144,23 +173,91 @@ namespace GemTD.Gameplay.Gems
             });
         }
 
-        static TierValues ReadValues(JObject values)
+        static RaritySampleLevels ReadRaritySampleLevels(JObject root)
+        {
+            var obj = root["rarity_sample_levels"] as JObject;
+            if (obj == null)
+                return RaritySampleLevels.Default;
+            return new RaritySampleLevels(
+                ReadInt(obj, "lesser", DefaultLesserSampleLevel),
+                ReadInt(obj, "normal", DefaultNormalSampleLevel),
+                ReadInt(obj, "greater", DefaultGreaterSampleLevel));
+        }
+
+        static int ReadInt(JObject obj, string key, int fallback)
+        {
+            var token = obj[key];
+            if (token == null || token.Type == JTokenType.Null)
+                return fallback;
+            return token.Value<int>();
+        }
+
+        static TierValues ReadValues(JObject values, RaritySampleLevels rarityLevels)
         {
             if (values == null)
                 return default;
 
-            var normal = ReadValue(values, "normal", 0f);
-            var lesser = ReadValue(values, "lesser", normal);
-            var greater = ReadValue(values, "greater", normal);
-            return new TierValues(lesser, normal, greater);
+            if (HasNamedRarityKeys(values))
+            {
+                var normal = ReadValue(values, "normal", 0f);
+                var lesser = ReadValue(values, "lesser", normal);
+                var greater = ReadValue(values, "greater", normal);
+                return new TierValues(lesser, normal, greater);
+            }
+
+            return new TierValues(
+                ReadSampledLevel(values, rarityLevels.Lesser),
+                ReadSampledLevel(values, rarityLevels.Normal),
+                ReadSampledLevel(values, rarityLevels.Greater));
+        }
+
+        static bool HasNamedRarityKeys(JObject values)
+        {
+            return values["lesser"] != null
+                || values["normal"] != null
+                || values["greater"] != null;
+        }
+
+        static float ReadSampledLevel(JObject values, int level)
+        {
+            for (var l = level; l >= 1; l--)
+            {
+                if (TryReadValue(values, l.ToString(), out var found))
+                    return found;
+            }
+
+            for (var l = level + 1; l <= 10; l++)
+            {
+                if (TryReadValue(values, l.ToString(), out var found))
+                    return found;
+            }
+
+            return 0f;
         }
 
         static float ReadValue(JObject values, string key, float fallback)
         {
+            if (TryReadValue(values, key, out var found))
+                return found;
+            return fallback;
+        }
+
+        static bool TryReadValue(JObject values, string key, out float found)
+        {
+            found = 0f;
             var token = values[key];
             if (token == null || token.Type == JTokenType.Null)
-                return fallback;
-            return token.Value<float>();
+                return false;
+            if (token.Type == JTokenType.Array)
+            {
+                if (token.First == null || token.First.Type == JTokenType.Null)
+                    return false;
+                found = token.First.Value<float>();
+                return true;
+            }
+
+            found = token.Value<float>();
+            return true;
         }
 
         static GemStatModifier Tiered(
@@ -755,6 +852,16 @@ namespace GemTD.Gameplay.Gems
                 RemoveFlavorContaining(flavor, "chance to Poison");
             }
 
+            if (name == "Chance to Bleed Support"
+                && FlavorContains(flavor, "chance to cause Bleeding"))
+            {
+                modifiers.Add(GemStatModifier.Single(
+                    GemStat.BleedChance,
+                    RoleModifierOperation.Set,
+                    0.25f));
+                RemoveFlavorContaining(flavor, "chance to cause Bleeding");
+            }
+
             if (name == "Deadly Ailments Support")
             {
                 modifiers.Add(GemStatModifier.Single(
@@ -787,6 +894,17 @@ namespace GemTD.Gameplay.Gems
                     1.4f));
                 RemoveFlavorContaining(flavor, "Splash Damage to surrounding");
             }
+        }
+
+        static bool FlavorContains(List<string> flavor, string fragment)
+        {
+            for (var i = 0; i < flavor.Count; i++)
+            {
+                if (flavor[i].IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+
+            return false;
         }
 
         static void RemoveFlavorContaining(List<string> flavor, string fragment)

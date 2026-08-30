@@ -17,18 +17,30 @@ MonoBehaviour:
   Description: Increases the tower's offensive output in a specialized way. Reduces
     another aspect of offensive performance, consistency, or flexibility.
   DraftWeight: 1
-  Tags: 256
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 33024
   Modifiers:
   - Stat: 0
     Operation: 1
     ValueKind: 0
-    Value: 11
+    Value: 94
     Min: 0
     Max: 0
-    Lesser: 1
-    Normal: 11
-    Greater: 94
+    Lesser: 18
+    Normal: 94
+    Greater: 212
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 32
     Operation: 0
     ValueKind: 0
@@ -39,4 +51,13 @@ MonoBehaviour:
     Normal: 0.4
     Greater: 0.4
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

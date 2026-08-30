@@ -17,7 +17,10 @@ MonoBehaviour:
   Description: Attacks damage nearby enemies around the primary target. Primary-hit
     damage is reduced.
   DraftWeight: 1
-  Tags: 330
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 842
   Modifiers:
   - Stat: 5
     Operation: 0
@@ -29,14 +32,32 @@ MonoBehaviour:
     Normal: 1.4
     Greater: 1.4
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 5
     Operation: 2
     ValueKind: 0
-    Value: 1.27
+    Value: 1.57
     Min: 0
     Max: 0
-    Lesser: 1
-    Normal: 1.27
-    Greater: 1.57
+    Lesser: 1.33
+    Normal: 1.57
+    Greater: 1.81
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

@@ -20,21 +20,27 @@ MonoBehaviour:
   LesserRarityWeight: 0
   NormalRarityWeight: 0
   GreaterRarityWeight: 0
-  Tags: 385
+  tags: 385
   Modifiers:
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 0.79
+    Value: 0.89
     Min: 0
     Max: 0
-    Lesser: 0.7
-    Normal: 0.79
-    Greater: 0.89
+    Lesser: 0.81
+    Normal: 0.89
+    Greater: 0.97
     Falloff: 0
     LesserFalloff: 0
     NormalFalloff: 0
     GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   - Stat: 3
     Operation: 1
     ValueKind: 0
@@ -42,10 +48,16 @@ MonoBehaviour:
     Min: 0
     Max: 0
     Lesser: 1
-    Normal: 2
-    Greater: 3
+    Normal: 1
+    Greater: 1
     Falloff: 0.6
     LesserFalloff: 0.5
     NormalFalloff: 0.6
     GreaterFalloff: 0.7
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

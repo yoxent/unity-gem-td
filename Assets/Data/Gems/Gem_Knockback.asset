@@ -17,16 +17,28 @@ MonoBehaviour:
   Description: Pushes enemies away from the tower. Can push enemies out of favorable
     kill zones or other tower ranges.
   DraftWeight: 1
-  Tags: 256
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 256
   Modifiers:
   - Stat: 18
     Operation: 0
     ValueKind: 0
-    Value: 0.34
+    Value: 0.44
     Min: 0
     Max: 0
-    Lesser: 0.25
-    Normal: 0.34
-    Greater: 0.44
+    Lesser: 0.36
+    Normal: 0.44
+    Greater: 0.52
     Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []

@@ -16,26 +16,28 @@ MonoBehaviour:
   DisplayName: Multiple Projectiles
   Description: Fires additional projectiles. Each projectile deals reduced damage.
   DraftWeight: 2
-  Tags: 257
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 257
   Modifiers:
   - Stat: 0
     Operation: 2
     ValueKind: 0
-    Value: 0.89
+    Value: 0.94
     Min: 0
     Max: 0
-    Lesser: 0.85
-    Normal: 0.89
-    Greater: 0.94
+    Lesser: 0.9
+    Normal: 0.94
+    Greater: 0.98
     Falloff: 0
-  - Stat: 1
-    Operation: 1
-    ValueKind: 0
-    Value: 2
-    Min: 0
-    Max: 0
-    Lesser: 1
-    Normal: 2
-    Greater: 3
-    Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
   EffectPayloads: []
