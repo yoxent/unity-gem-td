@@ -167,13 +167,24 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void ResolveProofMix_HexProofSlugs_AreSingleType()
+        public void ResolveProofMix_CompletedProofSlugs_MatchCrawl()
         {
             AssertHundred(SkillGemTowerMap.ResolveProofMix("Fireball"), DamageType.Fire);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Firestorm"), DamageType.Fire);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Burning_Arrow"), DamageType.Fire);
             AssertHundred(SkillGemTowerMap.ResolveProofMix("Frostbolt"), DamageType.Cold);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Ice_Nova"), DamageType.Cold);
             AssertHundred(SkillGemTowerMap.ResolveProofMix("Arc"), DamageType.Lightning);
             AssertHundred(SkillGemTowerMap.ResolveProofMix("Heavy_Strike"), DamageType.Physical);
-            Assert.IsTrue(DamageMix.IsEmpty(SkillGemTowerMap.ResolveProofMix("Cleave")));
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Earthquake"), DamageType.Physical);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Cleave"), DamageType.Physical);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Split_Arrow"), DamageType.Physical);
+            AssertHundred(SkillGemTowerMap.ResolveProofMix("Barrage"), DamageType.Physical);
+            AssertConverted(SkillGemTowerMap.ResolveProofMix("Molten_Strike"), DamageType.Fire, 60);
+            AssertConverted(SkillGemTowerMap.ResolveProofMix("Lightning_Arrow"), DamageType.Lightning, 50);
+            AssertConverted(SkillGemTowerMap.ResolveProofMix("Ice_Shot"), DamageType.Cold, 60);
+            AssertConverted(SkillGemTowerMap.ResolveProofMix("Cobra_Lash"), DamageType.Chaos, 60);
+            Assert.IsTrue(DamageMix.IsEmpty(SkillGemTowerMap.ResolveProofMix("Smite")));
         }
 
         static void AssertHundred(DamageTypeShare[] mix, DamageType type)
@@ -182,6 +193,16 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1, mix.Length);
             Assert.AreEqual(type, mix[0].Type);
             Assert.AreEqual(100, mix[0].Percent);
+        }
+
+        static void AssertConverted(DamageTypeShare[] mix, DamageType toType, int convertedPercent)
+        {
+            Assert.IsTrue(DamageMix.TryValidate(mix, out _));
+            Assert.AreEqual(2, mix.Length);
+            Assert.AreEqual(DamageType.Physical, mix[0].Type);
+            Assert.AreEqual(100 - convertedPercent, mix[0].Percent);
+            Assert.AreEqual(toType, mix[1].Type);
+            Assert.AreEqual(convertedPercent, mix[1].Percent);
         }
 
         [Test]

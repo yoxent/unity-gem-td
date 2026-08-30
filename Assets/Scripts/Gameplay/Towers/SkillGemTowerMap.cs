@@ -130,22 +130,55 @@ namespace GemTD.Gameplay.Towers
             ResolveFireBehavior(tags, slug, out aim, out delivery);
         }
 
+        /// <summary>
+        /// Completed Attack/Spell proof Mix. Slug-authored from crawl, not from
+        /// <see cref="GemTag"/> flags. Typed "Deals # to # X Damage" lines are
+        /// 100% that type. Weapon attacks with no type tag are Physical 100.
+        /// Conversion percents are baked as Mix until the conversion layer exists.
+        /// </summary>
         public static DamageTypeShare[] ResolveProofMix(string slug)
         {
-            if (string.Equals(slug, "Fireball", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(slug, "Fireball", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Firestorm", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Burning_Arrow", StringComparison.OrdinalIgnoreCase))
                 return SingleShare(DamageType.Fire);
-            if (string.Equals(slug, "Frostbolt", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(slug, "Frostbolt", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Ice_Nova", StringComparison.OrdinalIgnoreCase))
                 return SingleShare(DamageType.Cold);
             if (IsArcSpell(slug))
                 return SingleShare(DamageType.Lightning);
-            if (string.Equals(slug, "Heavy_Strike", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(slug, "Heavy_Strike", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Earthquake", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Cleave", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Split_Arrow", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(slug, "Barrage", StringComparison.OrdinalIgnoreCase))
                 return SingleShare(DamageType.Physical);
+            if (string.Equals(slug, "Molten_Strike", StringComparison.OrdinalIgnoreCase))
+                return ConvertedFromPhysical(DamageType.Fire, 60);
+            if (string.Equals(slug, "Lightning_Arrow", StringComparison.OrdinalIgnoreCase))
+                return ConvertedFromPhysical(DamageType.Lightning, 50);
+            if (string.Equals(slug, "Ice_Shot", StringComparison.OrdinalIgnoreCase))
+                return ConvertedFromPhysical(DamageType.Cold, 60);
+            if (string.Equals(slug, "Cobra_Lash", StringComparison.OrdinalIgnoreCase))
+                return ConvertedFromPhysical(DamageType.Chaos, 60);
             return null;
         }
 
         static DamageTypeShare[] SingleShare(DamageType type)
         {
             return new[] { new DamageTypeShare { Type = type, Percent = 100 } };
+        }
+
+        static DamageTypeShare[] ConvertedFromPhysical(DamageType toType, int convertedPercent)
+        {
+            var leftover = 100 - convertedPercent;
+            if (leftover <= 0)
+                return SingleShare(toType);
+            return new[]
+            {
+                new DamageTypeShare { Type = DamageType.Physical, Percent = leftover },
+                new DamageTypeShare { Type = toType, Percent = convertedPercent },
+            };
         }
 
         public sealed class Result
