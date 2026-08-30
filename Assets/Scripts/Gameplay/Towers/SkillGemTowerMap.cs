@@ -45,6 +45,10 @@ namespace GemTD.Gameplay.Towers
         public const float MoltenStrikeMagmaMinDistance = 1.5f;
         public const float MoltenStrikeMagmaMaxDistance = 2.5f;
         public const float LightningArrowSplashRadius = 2f;
+        public const float EarthquakeSlamRadius = 1.8f;
+        public const float EarthquakeAftershockRadius = 2.8f;
+        public const float EarthquakeAftershockDelaySeconds = 1f;
+        public const float EarthquakeAftershockDamageMultiplier = 2.5f;
         public const int FirestormImpactCount = 10;
         public const float FirestormIntervalSeconds = 0.15f;
         public const float FirestormStormRadius = 2.5f;
@@ -436,6 +440,9 @@ namespace GemTD.Gameplay.Towers
             if (kind == RoleKind.Attack && IsLightningArrow(slug))
                 AddSet(modifiers, RoleStat.SplashRadius, LightningArrowSplashRadius);
 
+            if (kind == RoleKind.Attack && IsEarthquake(slug))
+                AddSet(modifiers, RoleStat.SplashRadius, EarthquakeSlamRadius);
+
             return modifiers.ToArray();
         }
 
@@ -485,6 +492,26 @@ namespace GemTD.Gameplay.Towers
                         ArcHeight = FirestormDropHeight,
                         DelaySeconds = 0f,
                         IntervalSeconds = FirestormIntervalSeconds
+                    }
+                };
+            }
+
+            if (kind == RoleKind.Attack && IsEarthquake(slug))
+            {
+                return new[]
+                {
+                    new EffectPayloadDefinition
+                    {
+                        Trigger = EffectPayloadTrigger.AfterDelay,
+                        Anchor = EffectPayloadAnchor.GroundTarget,
+                        TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                        ScatterPattern = EffectPayloadScatterPattern.None,
+                        HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                        Tags = GemTag.Aoe,
+                        Count = 1,
+                        DamageMultiplier = EarthquakeAftershockDamageMultiplier,
+                        AoeRadius = EarthquakeAftershockRadius,
+                        DelaySeconds = EarthquakeAftershockDelaySeconds
                     }
                 };
             }
@@ -626,6 +653,11 @@ namespace GemTD.Gameplay.Towers
         static bool IsLightningArrow(string slug)
         {
             return string.Equals(slug, "Lightning_Arrow", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsEarthquake(string slug)
+        {
+            return string.Equals(slug, "Earthquake", StringComparison.OrdinalIgnoreCase);
         }
 
         static void AddLevelDamage(

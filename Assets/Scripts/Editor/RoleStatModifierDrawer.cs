@@ -87,8 +87,28 @@ namespace GemTD.Editor
             float line,
             float gap)
         {
+            Draw(property, field, null, ref y, x, width, line, gap);
+        }
+
+        public static void Draw(
+            SerializedProperty property,
+            string field,
+            GUIContent label,
+            ref float y,
+            float x,
+            float width,
+            float line,
+            float gap)
+        {
+            var relative = property.FindPropertyRelative(field);
+            if (relative == null)
+                return;
+
             var rect = new Rect(x, y, width, line);
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative(field));
+            if (label != null)
+                EditorGUI.PropertyField(rect, relative, label);
+            else
+                EditorGUI.PropertyField(rect, relative);
             y += line + gap;
         }
     }

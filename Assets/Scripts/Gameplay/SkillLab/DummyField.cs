@@ -41,6 +41,7 @@ namespace GemTD.Gameplay.SkillLab
                 _dummies[i] = new EnemyRuntime();
                 var home = _homes[i];
                 _dummies[i].Init(def, new[] { home });
+                _dummies[i].Invulnerable = true;
             }
         }
 

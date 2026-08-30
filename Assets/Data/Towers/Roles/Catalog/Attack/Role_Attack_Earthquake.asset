@@ -37,6 +37,12 @@ MonoBehaviour:
     Value: 10
     Min: 0
     Max: 0
+  - Stat: 5
+    Operation: 0
+    ValueKind: 0
+    Value: 1.8
+    Min: 0
+    Max: 0
   Effects: []
   Levels:
   - SourceLevel: 1
@@ -129,7 +135,23 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects: []
-  EffectPayloads: []
+  EffectPayloads:
+  - Trigger: 1
+    Anchor: 3
+    TravelPattern: 2
+    ScatterPattern: 0
+    HitPolicy: 0
+    tags: 2
+    Count: 1
+    DamageMultiplier: 2.5
+    AoeRadius: 2.8
+    MinDistance: 0
+    MaxDistance: 0
+    ArcHeight: 0
+    DelaySeconds: 1
+    IntervalSeconds: 0
+    RepeatCount: 0
   PierceBehavior: 0
   AimMode: 1
   DeliveryPattern: 3
+  Mix: []

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
@@ -17,11 +18,15 @@ namespace GemTD.Gameplay.SkillLab
 
         readonly AttackTracer _tracer = new AttackTracer();
         readonly GemModifierPipeline _pipeline = new GemModifierPipeline();
+        readonly CombatDirector _combat = new CombatDirector();
+        readonly StatusRuntime _statuses = new StatusRuntime();
         readonly List<ISkillModifier> _scratch = new List<ISkillModifier>(8);
         readonly List<EnemyRuntime> _living = new List<EnemyRuntime>(DummyField.PinCount);
         GemDefinition[] _catalog;
         GemId[] _draftGemIds = EmptyDraftIds;
         TowerDefinition[] _towers = EmptyTowers;
+        int _stampedPayloadCount;
+        bool _curseFieldActive;
 
         public DummyField Dummies { get; } = new DummyField();
         public TowerInstance Tower { get; private set; }
@@ -30,6 +35,10 @@ namespace GemTD.Gameplay.SkillLab
         public Vector3 TowerPosition { get; set; } = DummyField.DefaultTowerPosition;
         public AttackTrace LastTrace { get; private set; } = new AttackTrace();
         public string Status { get; private set; } = StatusIdle;
+        public IReadOnlyList<ProjectileRuntime> Projectiles => _combat.Projectiles;
+        public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _combat.EffectPayloads;
+        public StatusRuntime Statuses => _statuses;
+        public bool HasActiveVolley => _combat.HasActiveVolley;
 
         public bool IsHydra => EvolutionEvaluator.IsHydraTower(Tower);
 
@@ -62,7 +71,7 @@ namespace GemTD.Gameplay.SkillLab
             var count = 0;
             for (var i = 0; i < towers.Length; i++)
             {
-                if (towers[i] != null)
+                if (IsSkillLabTower(towers[i]))
                     count++;
             }
 
@@ -76,7 +85,7 @@ namespace GemTD.Gameplay.SkillLab
             var n = 0;
             for (var i = 0; i < towers.Length; i++)
             {
-                if (towers[i] != null)
+                if (IsSkillLabTower(towers[i]))
                     compact[n++] = towers[i];
             }
 
@@ -111,6 +120,8 @@ namespace GemTD.Gameplay.SkillLab
 
         public void SetTowerDef(TowerDefinition def)
         {
+            if (!IsSkillLabTower(def))
+                return;
             Tower = new TowerInstance(Vector2Int.zero, def);
             SelectedTowerIndex = IndexOfDef(def);
             ClearOverlay();
@@ -165,26 +176,96 @@ namespace GemTD.Gameplay.SkillLab
 
         public void Fire()
         {
+            _combat.ClearProjectiles(keepDelayedStationaryPulses: true);
+            _stampedPayloadCount = 0;
+            _curseFieldActive = false;
+            _statuses.Clear();
             _living.Clear();
             Dummies.CopyLiving(_living);
-            LastTrace = _tracer.Trace(Tower, TowerPosition, _living);
+            LastTrace = _tracer.Trace(
+                Tower,
+                TowerPosition,
+                _living,
+                payloadRng: null,
+                includeRandomPayloads: false);
             if (!LastTrace.HasTarget)
+            {
                 Status = StatusNoTarget;
-            else if (LastTrace.Truncated)
+                return;
+            }
+
+            if (!_combat.TryFireOnce(Tower, TowerPosition, _living, _pipeline, _statuses))
+            {
+                LastTrace = new AttackTrace();
+                Status = StatusNoTarget;
+                return;
+            }
+
+            if (Tower != null && Tower.Def != null && Tower.Def.HasRole<CurseRoleDefinition>())
+                _curseFieldActive = true;
+
+            StampNewPayloads();
+            if (LastTrace.Truncated)
                 Status = StatusTruncated;
             else
                 Status = StatusIdle;
         }
 
+        public void TickVolley(float dt)
+        {
+            _living.Clear();
+            Dummies.CopyLiving(_living);
+            if (_curseFieldActive)
+            {
+                _statuses.ClearCurseHexes(_living);
+                _combat.TryFireOnce(Tower, TowerPosition, _living, _pipeline, _statuses);
+            }
+
+            if (!_combat.HasActiveVolley)
+                return;
+
+            _combat.TickInFlight(dt, _living);
+            StampNewPayloads();
+        }
+
+        public void StopVolley()
+        {
+            _combat.ClearProjectiles();
+            _stampedPayloadCount = 0;
+        }
+
         public void ClearOverlay()
         {
+            StopVolley();
+            _curseFieldActive = false;
+            _statuses.Clear();
             LastTrace = new AttackTrace();
             Status = StatusIdle;
         }
 
         public void ResetPins()
         {
+            StopVolley();
             Dummies.ResetPins();
+        }
+
+        void StampNewPayloads()
+        {
+            var payloads = _combat.EffectPayloads;
+            if (payloads == null || LastTrace == null)
+                return;
+
+            _living.Clear();
+            Dummies.CopyLiving(_living);
+            for (var i = _stampedPayloadCount; i < payloads.Count; i++)
+            {
+                var payload = payloads[i];
+                if (payload == null)
+                    continue;
+                _tracer.AppendPayload(LastTrace, payload.Plan, _living);
+            }
+
+            _stampedPayloadCount = payloads.Count;
         }
 
         void RebuildDraftGemIds()
@@ -264,6 +345,11 @@ namespace GemTD.Gameplay.SkillLab
             if (cmp != 0)
                 return cmp;
             return string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsSkillLabTower(TowerDefinition tower)
+        {
+            return tower != null && tower.HasDamageRole;
         }
 
         bool HasOtherSocket(int exceptIndex, GemId id)

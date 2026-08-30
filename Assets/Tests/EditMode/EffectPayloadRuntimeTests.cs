@@ -41,6 +41,20 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Fountain_ExposesTravelTangent()
+        {
+            var runtime = MakeFountainRuntime(
+                origin: Vector3.zero,
+                landing: new Vector3(2f, 0f, 0f),
+                aoe: 1f,
+                damage: 5f);
+
+            Assert.Greater(runtime.Direction.y, 0f);
+            runtime.Tick(0.15f, Living());
+            Assert.Less(runtime.Direction.y, 0f);
+        }
+
+        [Test]
         public void Fountain_DetonatesAtEndpointWithoutExactCollision()
         {
             var enemy = MakeEnemy(new Vector3(2.5f, 0f, 0f));
@@ -117,6 +131,7 @@ namespace GemTD.Tests.EditMode
             runtime.Tick(0.05f, living);
             Assert.AreEqual(100f, enemy.Hp, 1e-4f);
             Assert.IsTrue(runtime.IsActive);
+            Assert.AreEqual(Vector3.down, runtime.Direction);
         }
 
         [Test]
@@ -140,6 +155,35 @@ namespace GemTD.Tests.EditMode
             while (runtime.IsActive)
                 runtime.Tick(0.05f, living);
             Assert.Less(enemy.Hp, 100f);
+        }
+
+        [Test]
+        public void StationaryPulse_WaitsDelayThenHits()
+        {
+            var enemy = MakeEnemy(Vector3.zero);
+            var living = Living(enemy);
+            var plan = new EffectPayloadPlan
+            {
+                Trigger = EffectPayloadTrigger.AfterDelay,
+                TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = Vector3.zero,
+                LandingPoint = Vector3.zero,
+                DamageMin = 10f,
+                DamageMax = 10f,
+                AoeRadius = 2f,
+                DelaySeconds = 1f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.08f, statuses: null, sourceTower: null, recordDamage: null);
+
+            runtime.Tick(1f, living);
+            Assert.AreEqual(100f, enemy.Hp, 1e-4f);
+            Assert.IsTrue(runtime.IsActive);
+
+            runtime.Tick(0.016f, living);
+            Assert.Less(enemy.Hp, 100f);
+            Assert.IsFalse(runtime.IsActive);
         }
 
         static EffectPayloadRuntime MakeFountainRuntime(

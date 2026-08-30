@@ -64,7 +64,7 @@ namespace GemTD.UI
             }
 
             if (legendLabel != null)
-                legendLabel.text = "White primary  Yellow pierce  Magenta fork  Orange chain  Red AoE  Cyan warp rise  Gold warp drop  Red-orange magma  Amber rain";
+                legendLabel.text = "White primary  Blue nova payload  Yellow pierce  Magenta fork  Orange chain  Red AoE  Cyan warp rise  Gold warp drop  Red-orange magma  Amber rain  Orange aftershock";
         }
 
         void LateUpdate()

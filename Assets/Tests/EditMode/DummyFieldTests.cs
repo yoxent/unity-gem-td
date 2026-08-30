@@ -56,6 +56,21 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Init_MarksDummiesInvulnerable()
+        {
+            var field = new DummyField();
+            field.Init(_def);
+            for (var i = 0; i < DummyField.PinCount; i++)
+            {
+                var dummy = field.GetDummy(i);
+                Assert.IsTrue(dummy.Invulnerable);
+                dummy.ApplyDamage(999f);
+                Assert.IsTrue(dummy.IsAlive);
+                Assert.AreEqual(100f, dummy.Hp, 1e-4f);
+            }
+        }
+
+        [Test]
         public void CopyLiving_ReturnsAllTen()
         {
             var field = new DummyField();

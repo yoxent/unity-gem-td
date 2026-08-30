@@ -55,6 +55,17 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ApplyDamage_Invulnerable_StaysAliveAtFullHp()
+        {
+            _def.MaxHealth = 10f;
+            var enemy = CreateEnemy();
+            enemy.Invulnerable = true;
+            enemy.ApplyDamage(999f);
+            Assert.IsTrue(enemy.IsAlive);
+            Assert.AreEqual(10f, enemy.Hp, 1e-4f);
+        }
+
+        [Test]
         public void Init_HealthScale_SetsHpAndMaxHealthWithoutMutatingDefinition()
         {
             _def.MaxHealth = 20f;

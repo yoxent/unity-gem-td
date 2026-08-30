@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using GemTD.Gameplay.CameraControl;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.SkillLab;
@@ -24,6 +25,7 @@ namespace GemTD.Editor
         {
             var catalog = Load<TowerCatalog>("Assets/Data/Towers/TowerCatalog.asset");
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
+            var projectilePrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Projectile_Bolt.prefab");
             var gems = LoadDraftGems();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
@@ -89,6 +91,7 @@ namespace GemTD.Editor
             ctrlSo.FindProperty("overlay").objectReferenceValue = overlay;
             ctrlSo.FindProperty("worldCamera").objectReferenceValue = cam;
             ctrlSo.FindProperty("towerView").objectReferenceValue = towerGo.transform;
+            ctrlSo.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             var gemsProp = ctrlSo.FindProperty("draftGems");
             gemsProp.arraySize = gems.Length;
             for (var i = 0; i < gems.Length; i++)
@@ -99,7 +102,7 @@ namespace GemTD.Editor
                 viewsProp.GetArrayElementAtIndex(i).objectReferenceValue = dummyViews[i];
             ctrlSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(controller);
-            if (catalog == null || dummyDef == null || gems[0] == null)
+            if (catalog == null || dummyDef == null || gems[0] == null || projectilePrefab == null)
                 Debug.LogError("[Gem TD] Skill Lab bootstrap: one or more data assets failed to load — Fire/gems will not work.");
 
             BuildHud(controller);
@@ -154,7 +157,7 @@ namespace GemTD.Editor
             var back = CreateButton(panel.transform, "BackButton", "Back");
             var hydra = CreateLabel(panel.transform, "HydraLabel", "Hydra");
             var status = CreateLabel(panel.transform, "StatusLabel", "");
-            var legend = CreateLabel(panel.transform, "LegendLabel", "White primary  Cyan hydra  Yellow pierce  Magenta fork  Orange chain  Red AoE  Amber rain");
+            var legend = CreateLabel(panel.transform, "LegendLabel", "White primary  Blue nova payload  Cyan hydra  Yellow pierce  Magenta fork  Orange chain  Red AoE  Amber rain");
             legend.fontSize = 16f;
             hydra.gameObject.SetActive(false);
 

@@ -411,6 +411,35 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_WarpStrike_DirectionTurnsDownAfterApex()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.WarpStrike;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            director.TickInFlight(0.75f, living);
+            Assert.Greater(director.Projectiles[0].Direction.y, 0f);
+
+            director.TickInFlight(0.75f, living);
+            Assert.Less(director.Projectiles[0].Direction.y, -0.9f);
+        }
+
+        [Test]
         public void Tick_WarpStrike_SpawnsPayloadsThatCanAoE()
         {
             _towerRole.AimMode = AimMode.Direct;
@@ -609,6 +638,42 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(10, director.EffectPayloads.Count);
             director.Tick(1f, new List<TowerInstance> { tower }, registry, _pipeline);
             Assert.AreEqual(10, director.EffectPayloads.Count);
+        }
+
+        [Test]
+        public void Tick_Rain_EchoKeepsEachEchoVolley()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.Rain;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _towerRole.EffectPayloads = new[] { FirestormCombatPayload() };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var echo = ScriptableObject.CreateInstance<GemDefinition>();
+            echo.Id = GemId.SpellEcho;
+            CatalogGemModifiers.Bind(echo);
+            try
+            {
+                var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+                var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+                Assert.IsTrue(tower.TrySocket(echo, 0, allowSocket: true));
+                var enemy = CreateEnemyNearTower();
+                var registry = new EnemyRegistry();
+                registry.Register(enemy);
+
+                director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+                Assert.AreEqual(20, director.EffectPayloads.Count);
+            }
+            finally
+            {
+                Object.DestroyImmediate(echo);
+            }
         }
 
         static EffectPayloadDefinition FirestormCombatPayload()
@@ -981,6 +1046,155 @@ namespace GemTD.Tests.EditMode
 
             Object.DestroyImmediate(curseRole);
             Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
+        public void TryFireOnce_UsesWorldMuzzle_NotCellCenter()
+        {
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(12f, 0f, 0f) });
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, new Vector3(10f, 0f, 0f), living, _pipeline));
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            var missed = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            missed.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            Assert.AreEqual(0, missed.Projectiles.Count);
+        }
+
+        [Test]
+        public void TryFireOnce_GroundPulse_SpawnsDelayedAftershockOnce()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 1.8f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _towerRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    Anchor = EffectPayloadAnchor.GroundTarget,
+                    TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                    ScatterPattern = EffectPayloadScatterPattern.None,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Tags = GemTag.Aoe,
+                    Count = 1,
+                    DamageMultiplier = 2.5f,
+                    AoeRadius = 2.8f,
+                    DelaySeconds = 1f
+                }
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+            _towerDef.Damage = 10f;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var primary = new EnemyRuntime();
+            primary.Init(_enemyDef, new[] { new Vector3(4f, 0f, 0f) });
+            var fringe = new EnemyRuntime();
+            fringe.Init(_enemyDef, new[] { new Vector3(6.2f, 0f, 0f) });
+            var living = new List<EnemyRuntime> { primary, fringe };
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(1, director.EffectPayloads.Count);
+            Assert.AreEqual(EffectPayloadTravelPattern.StationaryPulse, director.EffectPayloads[0].Plan.TravelPattern);
+            Assert.Less(primary.Hp, 100f);
+            Assert.AreEqual(100f, fringe.Hp, 1e-4f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(1, director.EffectPayloads.Count);
+
+            director.TickInFlight(1f, living);
+            Assert.AreEqual(1, director.EffectPayloads.Count);
+            director.TickInFlight(0.02f, living);
+            Assert.AreEqual(0, director.EffectPayloads.Count);
+            Assert.Less(fringe.Hp, 100f);
+        }
+
+        [Test]
+        public void TryFireOnce_Curse_UsesWorldMuzzle_NotCellCenter()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyColdResistance,
+                            RoleModifierOperation.Set,
+                            -30f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+            curseDef.Damage = 0f;
+
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var nearMuzzle = new EnemyRuntime();
+            nearMuzzle.Init(_enemyDef, new[] { new Vector3(10f, 0f, 0f) });
+            var nearCell = new EnemyRuntime();
+            nearCell.Init(_enemyDef, new[] { new Vector3(0.5f, 0f, 0.5f) });
+            var living = new List<EnemyRuntime> { nearMuzzle, nearCell };
+            var statuses = new StatusRuntime();
+
+            Assert.IsTrue(director.TryFireOnce(
+                tower,
+                new Vector3(10f, 0f, 0f),
+                living,
+                _pipeline,
+                statuses));
+            Assert.IsTrue(statuses.Has(nearMuzzle, StatusId.CurseFrostbite));
+            Assert.IsFalse(statuses.Has(nearCell, StatusId.CurseFrostbite));
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
+        public void TickInFlight_AdvancesExistingBolt_DoesNotRefire()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            var origin = director.Projectiles[0].Position;
+
+            director.TickInFlight(0.05f, living);
+
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.Greater((director.Projectiles[0].Position - origin).sqrMagnitude, 0f);
+            Assert.IsTrue(director.HasActiveVolley);
         }
 
         static RoleStatModifier Modifier(RoleStat stat, float value)

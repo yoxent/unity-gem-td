@@ -24,6 +24,8 @@ namespace GemTD.Gameplay.SkillLab
                 case AttackTraceKind.WarpDrop: return new Color(1f, 0.8f, 0.1f);
                 case AttackTraceKind.Magma: return new Color(1f, 0.2f, 0.05f);
                 case AttackTraceKind.Rain: return new Color(1f, 0.55f, 0.1f);
+                case AttackTraceKind.PayloadNova: return new Color(0.35f, 0.8f, 1f);
+                case AttackTraceKind.Aftershock: return new Color(0.95f, 0.55f, 0.15f);
                 default: return Color.white;
             }
         }

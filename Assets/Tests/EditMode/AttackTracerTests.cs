@@ -221,6 +221,38 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Curse_TracesCasterNovaWithoutPrimaryInTargetRange()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            var curseTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseTower.Roles = new TowerRoleDefinition[] { curseRole };
+
+            try
+            {
+                var dummy = MakeEnemy(new Vector3(20f, 0f, 0f));
+                var trace = new AttackTracer().Trace(
+                    new TowerInstance(Vector2Int.zero, curseTower),
+                    Vector3.zero,
+                    Living(dummy),
+                    payloadRng: null,
+                    includeRandomPayloads: false);
+
+                Assert.IsTrue(trace.HasTarget);
+                Assert.AreEqual(1, trace.Discs.Count);
+                Assert.AreEqual(3f, trace.Discs[0].Radius, 0.001f);
+                Assert.AreEqual(0, trace.HitTargets.Count);
+            }
+            finally
+            {
+                Object.DestroyImmediate(curseRole);
+                Object.DestroyImmediate(curseTower);
+            }
+        }
+
+        [Test]
         public void GroundPulse_SplashUsesAimPointNotOrigin()
         {
             _projectileRole.AimMode = AimMode.Ground;
@@ -244,6 +276,87 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(trace.HasTarget);
             Assert.AreEqual(1, trace.HitTargets.Count);
             Assert.AreSame(primary, trace.HitTargets[0]);
+        }
+
+        [Test]
+        public void GroundPulse_RecordsSlamDiscAndAftershockDisc()
+        {
+            _projectileRole.AimMode = AimMode.Ground;
+            _projectileRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, SkillGemTowerMap.EarthquakeSlamRadius)
+            };
+            _projectileRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    Anchor = EffectPayloadAnchor.GroundTarget,
+                    TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                    ScatterPattern = EffectPayloadScatterPattern.None,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Tags = GemTag.Aoe,
+                    Count = 1,
+                    DamageMultiplier = SkillGemTowerMap.EarthquakeAftershockDamageMultiplier,
+                    AoeRadius = SkillGemTowerMap.EarthquakeAftershockRadius,
+                    DelaySeconds = SkillGemTowerMap.EarthquakeAftershockDelaySeconds
+                }
+            };
+            _projectileTower.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+
+            var primary = MakeEnemy(new Vector3(4f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(primary),
+                payloadRng: null,
+                includeRandomPayloads: false);
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.GreaterOrEqual(trace.Discs.Count, 2);
+            Assert.AreEqual(SkillGemTowerMap.EarthquakeSlamRadius, trace.Discs[0].Radius, 0.001f);
+            Assert.AreEqual(AttackTraceKind.Aoe, trace.Discs[0].Kind);
+            Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockRadius, trace.Discs[1].Radius, 0.001f);
+            Assert.AreEqual(AttackTraceKind.Aftershock, trace.Discs[1].Kind);
+        }
+
+        [Test]
+        public void GroundAim_UsesPredictedAimPointForProjectileDirection()
+        {
+            _enemyDef.MoveSpeed = 4f;
+            _projectileRole.AimMode = AimMode.Ground;
+            _projectileRole.DeliveryPattern = DeliveryPattern.Straight;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
+
+            var enemy = new EnemyRuntime();
+            enemy.Init(
+                _enemyDef,
+                new[]
+                {
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(8f, 0f, 4f)
+                });
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(enemy));
+
+            var intercept = PathIntercept.Predict(Vector3.zero, ProjectileRuntime.DefaultProjectileSpeed, enemy);
+            Assert.IsTrue(trace.HasTarget);
+            Assert.Greater(trace.Segments.Count, 0);
+            var direction = trace.Segments[0].To.normalized;
+            Assert.AreEqual(intercept.normalized.x, direction.x, 1e-3f);
+            Assert.AreEqual(intercept.normalized.z, direction.z, 1e-3f);
         }
 
         [Test]
@@ -302,6 +415,30 @@ namespace GemTD.Tests.EditMode
             Assert.Greater(fall.From.y, fall.To.y);
             Assert.AreEqual(fall.From.x, fall.To.x, 1e-4f);
             Assert.AreEqual(fall.From.z, fall.To.z, 1e-4f);
+        }
+
+        [Test]
+        public void PayloadNova_RecordsPayloadTravelAndRadialVolley()
+        {
+            _projectileRole.AimMode = AimMode.Direct;
+            _projectileRole.DeliveryPattern = DeliveryPattern.PayloadNova;
+            _projectileRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.Damage, 10f),
+                Modifier(RoleStat.ProjectileCount, 4f)
+            };
+
+            var primary = MakeEnemy(new Vector3(4f, 0f, 0f));
+            var trace = new AttackTracer().Trace(
+                new TowerInstance(Vector2Int.zero, _projectileTower),
+                Vector3.zero,
+                Living(primary));
+
+            Assert.IsTrue(trace.HasTarget);
+            Assert.AreEqual(5, trace.Segments.Count);
+            Assert.AreEqual(Vector3.zero, trace.Segments[0].From);
+            Assert.AreEqual(primary.WorldPosition, trace.Segments[0].To);
         }
 
         [Test]

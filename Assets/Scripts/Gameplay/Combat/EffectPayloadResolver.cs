@@ -20,13 +20,62 @@ namespace GemTD.Gameplay.Combat
             System.Random rng,
             List<EffectPayloadPlan> into)
         {
+            BuildTriggered(
+                definitions,
+                EffectPayloadTrigger.OnImpact,
+                EffectPayloadTravelPattern.Fountain,
+                allowAnyTravel: true,
+                spec,
+                baseline,
+                anchorPosition,
+                rng,
+                into);
+        }
+
+        public static void BuildDelayedStationaryPulse(
+            IReadOnlyList<EffectPayloadDefinition> definitions,
+            in SkillSpec spec,
+            in SkillSpec baseline,
+            Vector3 anchorPosition,
+            System.Random rng,
+            List<EffectPayloadPlan> into)
+        {
+            BuildTriggered(
+                definitions,
+                EffectPayloadTrigger.AfterDelay,
+                EffectPayloadTravelPattern.StationaryPulse,
+                allowAnyTravel: false,
+                spec,
+                baseline,
+                anchorPosition,
+                rng,
+                into);
+        }
+
+        static void BuildTriggered(
+            IReadOnlyList<EffectPayloadDefinition> definitions,
+            EffectPayloadTrigger trigger,
+            EffectPayloadTravelPattern travel,
+            bool allowAnyTravel,
+            in SkillSpec spec,
+            in SkillSpec baseline,
+            Vector3 anchorPosition,
+            System.Random rng,
+            List<EffectPayloadPlan> into)
+        {
             if (definitions == null || definitions.Count == 0 || into == null)
                 return;
 
             for (var d = 0; d < definitions.Count; d++)
             {
                 var def = definitions[d];
-                if (def == null || def.Trigger != EffectPayloadTrigger.OnImpact || !def.IsValid)
+                if (def == null || def.Trigger != trigger || !def.IsValid)
+                    continue;
+                if (!allowAnyTravel && def.TravelPattern != travel)
+                    continue;
+                if (allowAnyTravel && def.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+                    continue;
+                if (allowAnyTravel && def.TravelPattern == EffectPayloadTravelPattern.StationaryPulse)
                     continue;
 
                 AppendPlans(def, spec, baseline, anchorPosition, rng, into);

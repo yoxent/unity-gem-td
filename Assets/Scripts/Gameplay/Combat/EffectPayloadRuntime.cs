@@ -26,6 +26,10 @@ namespace GemTD.Gameplay.Combat
 
         public bool IsActive { get; private set; }
         public Vector3 Position { get; private set; }
+        public Vector3 Direction { get; private set; }
+        public Vector3 Origin => _plan.Origin;
+        public Vector3 LandingPoint => _plan.LandingPoint;
+        public EffectPayloadPlan Plan => _plan;
         public TowerInstance Owner => _owner;
 
         public void Init(
@@ -46,6 +50,7 @@ namespace GemTD.Gameplay.Combat
             _recordDamage = recordDamage;
             _owner = owner;
             Position = plan.Origin;
+            Direction = ResolveDirection(0f);
             IsActive = true;
         }
 
@@ -88,7 +93,44 @@ namespace GemTD.Gameplay.Combat
                     _plan.LandingPoint,
                     _plan.ArcHeight,
                     _progress);
+            Direction = ResolveDirection(_progress);
             return true;
+        }
+
+        Vector3 ResolveDirection(float progress)
+        {
+            if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+            {
+                var toLanding = _plan.LandingPoint - Position;
+                return toLanding.sqrMagnitude > 1e-8f
+                    ? toLanding.normalized
+                    : Vector3.down;
+            }
+
+            if (_plan.TravelPattern != EffectPayloadTravelPattern.Fountain)
+                return Vector3.down;
+
+            var nextProgress = Mathf.Min(progress + 0.01f, 1f);
+            var next = FountainTrajectory.Evaluate(
+                _plan.Origin,
+                _plan.LandingPoint,
+                _plan.ArcHeight,
+                nextProgress);
+            var delta = next - Position;
+            if (delta.sqrMagnitude <= 1e-8f && progress > 0f)
+            {
+                var previousProgress = Mathf.Max(progress - 0.01f, 0f);
+                var previous = FountainTrajectory.Evaluate(
+                    _plan.Origin,
+                    _plan.LandingPoint,
+                    _plan.ArcHeight,
+                    previousProgress);
+                delta = Position - previous;
+            }
+
+            return delta.sqrMagnitude > 1e-8f
+                ? delta.normalized
+                : Vector3.down;
         }
 
         void ResolveImpact(List<EnemyRuntime> livingCandidates)

@@ -46,6 +46,7 @@ namespace GemTD.Gameplay.Enemies
             }
         }
         public float MoveSpeedMultiplier { get; set; }
+        public bool Invulnerable { get; set; }
         public bool IsAlive => _alive;
         public Vector3 WorldPosition { get; private set; }
 
@@ -74,6 +75,7 @@ namespace GemTD.Gameplay.Enemies
         {
             _def = def;
             _alive = true;
+            Invulnerable = false;
             if (healthScale < 0f)
                 healthScale = 0f;
             _maxHealth = def != null ? def.MaxHealth * healthScale : 0f;
@@ -230,7 +232,7 @@ namespace GemTD.Gameplay.Enemies
 
         public void ApplyDamage(float dmg, SkillSpec spec, StatusRuntime statuses)
         {
-            if (!_alive || dmg <= 0f)
+            if (!_alive || dmg <= 0f || Invulnerable)
                 return;
 
             var remaining = IncomingHit.Mitigate(dmg, spec, this, statuses);

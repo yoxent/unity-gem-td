@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 using GemTD.Core;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
@@ -19,8 +21,11 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] Camera worldCamera;
         [SerializeField] Transform towerView;
         [SerializeField] SkillLabDummyView[] dummyViews;
+        [SerializeField] ProjectileView projectilePrefab;
 
         readonly SkillLabSession _session = new SkillLabSession();
+        readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
+        ViewObjectPool<ProjectileView> _projectilePool;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -37,6 +42,10 @@ namespace GemTD.Gameplay.SkillLab
             if (towerView == null) Debug.LogError("SkillLabController: towerView is not assigned.", this);
             if (dummyViews == null || dummyViews.Length < DummyField.PinCount)
                 Debug.LogError("SkillLabController: dummyViews must have 10 entries.", this);
+            if (projectilePrefab == null)
+                Debug.LogError("SkillLabController: projectilePrefab is not assigned.", this);
+            else
+                _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, transform);
 
             _session.BindCatalog(draftGems);
             if (towerCatalog != null)
@@ -64,6 +73,8 @@ namespace GemTD.Gameplay.SkillLab
             _escape?.Disable();
             _escape?.Dispose();
             _escape = null;
+            _session.ClearOverlay();
+            SyncProjectileViews();
         }
 
         void Update()
@@ -75,6 +86,8 @@ namespace GemTD.Gameplay.SkillLab
             }
 
             TickDrag();
+            _session.TickVolley(Time.deltaTime);
+            FlashHitsFromDamage();
         }
 
         void LateUpdate()
@@ -99,6 +112,8 @@ namespace GemTD.Gameplay.SkillLab
                 overlay.SetTrace(_session.LastTrace);
                 overlay.SetRangeRing(_session.TowerPosition, _session.Range);
             }
+
+            SyncProjectileViews();
         }
 
         public void SelectTower(int index)
@@ -115,21 +130,8 @@ namespace GemTD.Gameplay.SkillLab
         {
             ClearHitFlashes();
             _session.Fire();
-            var hits = _session.LastTrace.HitTargets;
-            for (var h = 0; h < hits.Count; h++)
-            {
-                var hit = hits[h];
-                for (var i = 0; i < DummyField.PinCount; i++)
-                {
-                    if (dummyViews == null || i >= dummyViews.Length || dummyViews[i] == null)
-                        continue;
-                    if (!ReferenceEquals(_session.Dummies.GetDummy(i), hit))
-                        continue;
-
-                    dummyViews[i].FlashHit();
-                    break;
-                }
-            }
+            FlashHitsFromDamage();
+            FlashHitsFromHex();
         }
 
         public void ClearOverlay()
@@ -149,6 +151,82 @@ namespace GemTD.Gameplay.SkillLab
             SceneManager.LoadScene(SceneNames.MainMenu);
         }
 
+        void FlashHitsFromDamage()
+        {
+            if (dummyViews == null)
+                return;
+
+            for (var i = 0; i < DummyField.PinCount; i++)
+            {
+                if (i >= dummyViews.Length || dummyViews[i] == null)
+                    continue;
+                var dummy = _session.Dummies.GetDummy(i);
+                if (dummy == null || dummy.LastDamageSource == null)
+                    continue;
+
+                dummyViews[i].FlashHit();
+                dummy.LastDamageSource = null;
+            }
+        }
+
+        void FlashHitsFromHex()
+        {
+            if (dummyViews == null || _session.Statuses == null)
+                return;
+
+            for (var i = 0; i < DummyField.PinCount; i++)
+            {
+                if (i >= dummyViews.Length || dummyViews[i] == null)
+                    continue;
+                var dummy = _session.Dummies.GetDummy(i);
+                if (dummy == null || !_session.Statuses.HasAnyCurse(dummy))
+                    continue;
+
+                dummyViews[i].FlashHit();
+            }
+        }
+
+        void SyncProjectileViews()
+        {
+            var bolts = _session.Projectiles;
+            var payloads = _session.EffectPayloads;
+            var total = bolts.Count + payloads.Count;
+
+            while (_projectileViews.Count > total)
+            {
+                var last = _projectileViews[_projectileViews.Count - 1];
+                _projectileViews.RemoveAt(_projectileViews.Count - 1);
+                if (last == null)
+                    continue;
+                last.Clear();
+                if (_projectilePool != null)
+                    _projectilePool.Release(last);
+                else
+                    Destroy(last.gameObject);
+            }
+
+            for (var i = 0; i < total; i++)
+            {
+                ProjectileView view;
+                if (i >= _projectileViews.Count)
+                {
+                    if (_projectilePool == null)
+                        break;
+                    view = _projectilePool.Get();
+                    _projectileViews.Add(view);
+                }
+                else
+                {
+                    view = _projectileViews[i];
+                }
+
+                if (i < bolts.Count)
+                    view.Bind(bolts[i]);
+                else
+                    view.Bind(payloads[i - bolts.Count]);
+            }
+        }
+
         void TickDrag()
         {
             if (Mouse.current == null)
@@ -160,6 +238,7 @@ namespace GemTD.Gameplay.SkillLab
                     return;
                 if (SkillLabWorldDrag.TryPick(worldCamera, towerView, dummyViews, out var tower, out var dummyIndex))
                 {
+                    _session.StopVolley();
                     _draggingTower = tower;
                     _draggingDummy = dummyIndex;
                 }

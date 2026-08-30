@@ -24,12 +24,13 @@ namespace GemTD.Gameplay.Combat
             new List<EffectPayloadDefinition>(8);
         readonly List<EffectPayloadPlan> _payloadPlanScratch = new List<EffectPayloadPlan>(8);
         readonly List<EnemyRuntime> _casterNovaScratch = new List<EnemyRuntime>(16);
-        readonly System.Random _payloadRng;
+        System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
         readonly TileHeightMap _heights;
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
         public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _effectPayloads;
+        public bool HasActiveVolley => _projectiles.Count > 0 || _effectPayloads.Count > 0;
 
         public CombatDirector(
             float cellSize = 1f,
@@ -50,15 +51,40 @@ namespace GemTD.Gameplay.Combat
         /// <summary>Despawn all in-flight bolts (wave end / leave combat). Views pool via sync.</summary>
         public void ClearProjectiles()
         {
+            ClearProjectiles(keepDelayedStationaryPulses: false);
+        }
+
+        public void ClearProjectiles(bool keepDelayedStationaryPulses)
+        {
             for (var i = 0; i < _projectiles.Count; i++)
                 _projectiles[i].Deactivate();
             _projectiles.Clear();
             _spawnBuffer.Clear();
-            for (var i = 0; i < _effectPayloads.Count; i++)
-                _effectPayloads[i].Deactivate();
-            _effectPayloads.Clear();
+            for (var i = _effectPayloads.Count - 1; i >= 0; i--)
+            {
+                var payload = _effectPayloads[i];
+                if (keepDelayedStationaryPulses && IsPendingAftershock(payload))
+                    continue;
+                payload.Deactivate();
+                _effectPayloads.RemoveAt(i);
+            }
+
             _payloadDefinitionsScratch.Clear();
             _payloadPlanScratch.Clear();
+        }
+
+        static bool IsPendingAftershock(EffectPayloadRuntime payload)
+        {
+            return payload != null
+                && payload.IsActive
+                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
+                && payload.Plan.Trigger == EffectPayloadTrigger.AfterDelay;
+        }
+
+        /// <summary>Reset deterministic payload scatter before replaying a preview volley.</summary>
+        public void ResetPayloadRng(int seed)
+        {
+            _payloadRng = new System.Random(seed);
         }
 
         public void Tick(
@@ -73,20 +99,7 @@ namespace GemTD.Gameplay.Combat
 
             var living = ListPool<EnemyRuntime>.Get();
             enemies.CopyAlive(living);
-
-            for (var p = _effectPayloads.Count - 1; p >= 0; p--)
-            {
-                if (!_effectPayloads[p].Tick(dt, living))
-                    _effectPayloads.RemoveAt(p);
-            }
-
-            for (var i = _projectiles.Count - 1; i >= 0; i--)
-            {
-                if (!_projectiles[i].Tick(dt, living))
-                    _projectiles.RemoveAt(i);
-            }
-
-            MergeSpawnBuffer();
+            TickInFlight(dt, living);
 
             // Refresh after projectile kills so tower targeting sees current alive set.
             enemies.CopyAlive(living);
@@ -136,106 +149,187 @@ namespace GemTD.Gameplay.Combat
                         continue;
 
                     tower.Cooldown = tower.Def.FireInterval(spec, tower.Level);
-                    var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
-                    var speed = _projectileSpeed * speedMul;
-                    var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
-                    var echoFactor = volleys > 1 ? spec.EchoDamageFactor : 1f;
-                    if (echoFactor <= 0f)
-                        echoFactor = 1f;
-                    var volleyMin = spec.DamageMin * echoFactor;
-                    var volleyMax = spec.DamageMax * echoFactor;
-                    var hydra = EvolutionEvaluator.IsHydraTower(tower);
-                    var aimPoint = spec.AimMode == AimMode.Ground
-                        ? PathIntercept.Predict(towerPos, speed, primary)
-                        : primary.WorldPosition;
-                    for (var v = 0; v < volleys; v++)
-                    {
-                        if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
-                        {
-                            SpawnWarpStrike(
-                                muzzle,
-                                primary,
-                                spec,
-                                baseline,
-                                volleyMin,
-                                volleyMax,
-                                speed,
-                                statuses,
-                                tower);
-                            continue;
-                        }
-
-                        if (spec.DeliveryPattern == DeliveryPattern.CasterNova)
-                        {
-                            ApplyCasterNova(
-                                muzzle,
-                                range,
-                                spec,
-                                volleyMin,
-                                volleyMax,
-                                living,
-                                statuses,
-                                tower.Def);
-                            continue;
-                        }
-
-                        if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
-                        {
-                            ApplyGroundPulse(
-                                aimPoint,
-                                primary,
-                                spec,
-                                volleyMin,
-                                volleyMax,
-                                living,
-                                statuses,
-                                tower.Def);
-                            continue;
-                        }
-
-                        if (spec.DeliveryPattern == DeliveryPattern.Rain)
-                        {
-                            SpawnRain(
-                                aimPoint,
-                                spec,
-                                baseline,
-                                speed,
-                                statuses,
-                                tower);
-                            continue;
-                        }
-
-                        if (spec.DeliveryPattern == DeliveryPattern.PayloadNova)
-                        {
-                            SpawnPayloadNova(
-                                muzzle,
-                                aimPoint,
-                                spec,
-                                ProjectileRuntime.DefaultChainRange,
-                                volleyMin,
-                                volleyMax,
-                                speed,
-                                statuses,
-                                tower.Def);
-                            continue;
-                        }
-
-                        if (hydra)
-                        {
-                            var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
-                            var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
-                            for (var h = 0; h < laterals.Length; h++)
-                                SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h]);
-                        }
-                        else
-                        {
-                            SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f);
-                        }
-                    }
+                    SpawnResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
                 }
             }
 
             ListPool<EnemyRuntime>.Release(living);
+        }
+
+        /// <summary>Advance in-flight bolts/payloads only. Does not fire towers.</summary>
+        public void TickInFlight(float dt, List<EnemyRuntime> living)
+        {
+            if (living == null)
+                return;
+
+            for (var p = _effectPayloads.Count - 1; p >= 0; p--)
+            {
+                if (!_effectPayloads[p].Tick(dt, living))
+                    _effectPayloads.RemoveAt(p);
+            }
+
+            for (var i = _projectiles.Count - 1; i >= 0; i--)
+            {
+                if (!_projectiles[i].Tick(dt, living))
+                    _projectiles.RemoveAt(i);
+            }
+
+            MergeSpawnBuffer();
+        }
+
+        /// <summary>
+        /// Fire one volley from a world-space muzzle. Ignores grid cell, cooldown, and tile height.
+        /// </summary>
+        public bool TryFireOnce(
+            TowerInstance tower,
+            Vector3 muzzle,
+            List<EnemyRuntime> living,
+            GemModifierPipeline pipeline,
+            StatusRuntime statuses = null)
+        {
+            if (tower == null || tower.Def == null || pipeline == null || living == null)
+                return false;
+
+            if (tower.Def.HasRole<CurseRoleDefinition>())
+            {
+                ApplyCursePresence(tower, living, pipeline, statuses, muzzle, 1f);
+                return true;
+            }
+
+            if (!tower.Def.IsFireable)
+                return false;
+
+            var modifiers = ListPool<ISkillModifier>.Get();
+            var baseline = pipeline.ResolveBaseline(tower);
+            var spec = pipeline.Resolve(tower, modifiers);
+            ListPool<ISkillModifier>.Release(modifiers);
+
+            var gemMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
+            var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul;
+            if (!_selector.TrySelect(tower.Targeting, muzzle, range, living, out var primary))
+                return false;
+
+            SpawnResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
+            return true;
+        }
+
+        void SpawnResolvedVolley(
+            Vector3 muzzle,
+            float range,
+            EnemyRuntime primary,
+            SkillSpec spec,
+            SkillSpec baseline,
+            List<EnemyRuntime> living,
+            StatusRuntime statuses,
+            TowerInstance tower)
+        {
+            var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
+            var speed = _projectileSpeed * speedMul;
+            var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
+            var echoFactor = volleys > 1 ? spec.EchoDamageFactor : 1f;
+            if (echoFactor <= 0f)
+                echoFactor = 1f;
+            var volleyMin = spec.DamageMin * echoFactor;
+            var volleyMax = spec.DamageMax * echoFactor;
+            var hydra = EvolutionEvaluator.IsHydraTower(tower);
+            var predictFrom = new Vector3(muzzle.x, 0f, muzzle.z);
+            var aimPoint = spec.AimMode == AimMode.Ground
+                ? PathIntercept.Predict(predictFrom, speed, primary)
+                : primary.WorldPosition;
+            if (spec.DeliveryPattern == DeliveryPattern.Rain)
+                CancelRainFrom(tower);
+
+            for (var v = 0; v < volleys; v++)
+            {
+                if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
+                {
+                    SpawnWarpStrike(
+                        muzzle,
+                        primary,
+                        spec,
+                        baseline,
+                        volleyMin,
+                        volleyMax,
+                        speed,
+                        statuses,
+                        tower);
+                    continue;
+                }
+
+                if (spec.DeliveryPattern == DeliveryPattern.CasterNova)
+                {
+                    ApplyCasterNova(
+                        muzzle,
+                        range,
+                        spec,
+                        volleyMin,
+                        volleyMax,
+                        living,
+                        statuses,
+                        tower.Def);
+                    continue;
+                }
+
+                if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
+                {
+                    ApplyGroundPulse(
+                        aimPoint,
+                        primary,
+                        spec,
+                        volleyMin,
+                        volleyMax,
+                        living,
+                        statuses,
+                        tower.Def);
+                    SpawnDelayedStationaryPulses(
+                        aimPoint,
+                        spec,
+                        baseline,
+                        speed,
+                        statuses,
+                        tower);
+                    continue;
+                }
+
+                if (spec.DeliveryPattern == DeliveryPattern.Rain)
+                {
+                    SpawnRain(
+                        aimPoint,
+                        spec,
+                        baseline,
+                        speed,
+                        statuses,
+                        tower);
+                    continue;
+                }
+
+                if (spec.DeliveryPattern == DeliveryPattern.PayloadNova)
+                {
+                    SpawnPayloadNova(
+                        muzzle,
+                        aimPoint,
+                        spec,
+                        ProjectileRuntime.DefaultChainRange,
+                        volleyMin,
+                        volleyMax,
+                        speed,
+                        statuses,
+                        tower.Def);
+                    continue;
+                }
+
+                if (hydra)
+                {
+                    var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
+                    var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
+                    for (var h = 0; h < laterals.Length; h++)
+                        SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h]);
+                }
+                else
+                {
+                    SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f);
+                }
+            }
         }
 
         void MergeSpawnBuffer()
@@ -309,9 +403,62 @@ namespace GemTD.Gameplay.Combat
                 var plan = _payloadPlanScratch[i];
                 var flight = ResolvePayloadFlightSeconds(plan, speed);
                 var runtime = new EffectPayloadRuntime();
-                runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage);
+                runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
                 _effectPayloads.Add(runtime);
             }
+        }
+
+        void SpawnDelayedStationaryPulses(
+            Vector3 anchor,
+            SkillSpec spec,
+            SkillSpec baseline,
+            float speed,
+            StatusRuntime statuses,
+            TowerInstance sourceTower)
+        {
+            if (sourceTower == null || sourceTower.Def == null)
+                return;
+            if (HasPendingAftershock(sourceTower))
+                return;
+
+            GemModifierPipeline.CollectEffectPayloads(
+                sourceTower,
+                _payloadDefinitionsScratch);
+            if (_payloadDefinitionsScratch.Count == 0)
+                return;
+
+            _payloadPlanScratch.Clear();
+            EffectPayloadResolver.BuildDelayedStationaryPulse(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                anchor,
+                _payloadRng,
+                _payloadPlanScratch);
+
+            for (var i = 0; i < _payloadPlanScratch.Count; i++)
+            {
+                var plan = _payloadPlanScratch[i];
+                var flight = ResolvePayloadFlightSeconds(plan, speed);
+                var runtime = new EffectPayloadRuntime();
+                runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
+                _effectPayloads.Add(runtime);
+            }
+        }
+
+        bool HasPendingAftershock(TowerInstance tower)
+        {
+            for (var i = 0; i < _effectPayloads.Count; i++)
+            {
+                var payload = _effectPayloads[i];
+                if (!IsPendingAftershock(payload))
+                    continue;
+                if (tower != null && payload.Owner != null && !ReferenceEquals(payload.Owner, tower))
+                    continue;
+                return true;
+            }
+
+            return false;
         }
 
         static float ResolvePayloadFlightSeconds(in EffectPayloadPlan plan, float speed)
@@ -339,7 +486,6 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses,
             TowerInstance sourceTower)
         {
-            CancelRainFrom(sourceTower);
             if (sourceTower == null || sourceTower.Def == null)
                 return;
 
@@ -388,7 +534,31 @@ namespace GemTD.Gameplay.Combat
             GemModifierPipeline pipeline,
             StatusRuntime statuses)
         {
-            if (statuses == null || living == null)
+            if (tower == null || tower.Def == null)
+                return;
+
+            var towerPos = CellToWorld(tower.Cell);
+            var muzzle = towerPos;
+            var heightMul = 1f;
+            if (_heights != null)
+            {
+                var layer = _heights.Get(tower.Cell.x, tower.Cell.y);
+                muzzle.y = TileHeightVisual.TopY(layer);
+                heightMul = TileHeightRules.RangeMultiplier(layer);
+            }
+
+            ApplyCursePresence(tower, living, pipeline, statuses, muzzle, heightMul);
+        }
+
+        void ApplyCursePresence(
+            TowerInstance tower,
+            List<EnemyRuntime> living,
+            GemModifierPipeline pipeline,
+            StatusRuntime statuses,
+            Vector3 muzzle,
+            float heightMul)
+        {
+            if (statuses == null || living == null || tower == null || tower.Def == null)
                 return;
 
             var role = tower.Def.GetRole<CurseRoleDefinition>();
@@ -399,16 +569,9 @@ namespace GemTD.Gameplay.Combat
             var spec = pipeline.Resolve(tower, modifiers);
             ListPool<ISkillModifier>.Release(modifiers);
 
-            var towerPos = CellToWorld(tower.Cell);
-            var muzzle = towerPos;
             var gemMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
-            var heightMul = 1f;
-            if (_heights != null)
-            {
-                var layer = _heights.Get(tower.Cell.x, tower.Cell.y);
-                muzzle.y = TileHeightVisual.TopY(layer);
-                heightMul = TileHeightRules.RangeMultiplier(layer);
-            }
+            if (heightMul <= 0f)
+                heightMul = 1f;
 
             var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul * heightMul;
             _casterNovaScratch.Clear();

@@ -62,6 +62,8 @@ namespace GemTD.Tests.EditMode
             "{\"name\":\"Molten Strike\",\"slug\":\"Molten_Strike\",\"tags\":[\"Attack\",\"Projectile\",\"AoE\",\"Melee\",\"Strike\",\"Fire\"],\"category\":\"attack\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":146,\"poedb_column\":\"Base Damage\"}},\"5\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":329.2,\"poedb_column\":\"Base Damage\"}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":700.3,\"poedb_column\":\"Base Damage\"}}}}";
         const string FirestormJson =
             "{\"name\":\"Firestorm\",\"slug\":\"Firestorm\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Fire\"],\"category\":\"spell\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.75}},\"levels\":{\"1\":{\"Deals # to # Fire Damage\":{\"kind\":\"flat\",\"value\":[44,66]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}}}";
+        const string EarthquakeJson =
+            "{\"name\":\"Earthquake\",\"slug\":\"Earthquake\",\"description\":\"Smashes the ground, dealing damage in an area and cracking the earth. The crack will erupt in a powerful aftershock after a duration. Cracks created before the first one has erupted will not generate their own aftershocks.\",\"tags\":[\"Attack\",\"AoE\",\"Melee\",\"Duration\",\"Slam\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":75}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":155.5,\"poedb_column\":\"Base Damage\"}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":335.5,\"poedb_column\":\"Base Damage\"}}}}";
 
 
 
@@ -578,6 +580,29 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(SkillGemTowerMap.FirestormDropHeight, rain.ArcHeight, 0.001f);
             Assert.AreEqual(0f, rain.DelaySeconds, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.FirestormIntervalSeconds, rain.IntervalSeconds, 0.001f);
+        }
+
+        [Test]
+        public void Earthquake_MapsSlamSplashAndAftershockPayload()
+        {
+            var r = SkillGemTowerMap.FromJson(EarthquakeJson);
+            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
+            Assert.AreEqual("Earthquake", r.DisplayName);
+            Assert.AreEqual(SkillGemTowerMap.EarthquakeSlamRadius, FindModifier(attack.Modifiers, RoleStat.SplashRadius).Value, 0.001f);
+            SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
+            Assert.AreEqual(AimMode.Ground, aim);
+            Assert.AreEqual(DeliveryPattern.GroundPulse, delivery);
+            Assert.AreEqual(1, attack.EffectPayloads.Length);
+            var aftershock = attack.EffectPayloads[0];
+            Assert.AreEqual(EffectPayloadTrigger.AfterDelay, aftershock.Trigger);
+            Assert.AreEqual(EffectPayloadAnchor.GroundTarget, aftershock.Anchor);
+            Assert.AreEqual(EffectPayloadTravelPattern.StationaryPulse, aftershock.TravelPattern);
+            Assert.AreEqual(EffectPayloadScatterPattern.None, aftershock.ScatterPattern);
+            Assert.AreEqual(GemTag.Aoe, aftershock.Tags);
+            Assert.AreEqual(1, aftershock.Count);
+            Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockDamageMultiplier, aftershock.DamageMultiplier, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockRadius, aftershock.AoeRadius, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.EarthquakeAftershockDelaySeconds, aftershock.DelaySeconds, 0.001f);
         }
 
         [Test]

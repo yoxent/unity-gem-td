@@ -42,7 +42,7 @@ namespace GemTD.Gameplay.Combat
         public const float WarpRiseHeight = 1.5f;
         public const float WarpDropHeight = 1.5f;
         public const float MoltenMagmaDamageFactor = 0.4f;
-        const float PierceLookAheadPad = 0.05f;
+        public const float PierceLookAheadPad = 0.05f;
         const float ProlifRadius = 1.5f;
 
         public Vector3 Position { get; private set; }
@@ -423,6 +423,7 @@ namespace GemTD.Gameplay.Combat
 
                 _landPoint = target.WorldPosition;
                 Position = _landPoint + Vector3.up * WarpDropHeight;
+                Direction = (_landPoint - Position).normalized;
                 _warpDropping = true;
                 _age = 0f;
             }
@@ -433,11 +434,13 @@ namespace GemTD.Gameplay.Combat
             if (remaining <= HitRadius || stepDist >= remaining)
             {
                 Position = _landPoint;
+                Direction = Vector3.down;
                 LandWarpStrike(livingCandidates);
                 return false;
             }
 
             Position += toLand / remaining * stepDist;
+            Direction = (_landPoint - Position).normalized;
             return true;
         }
 

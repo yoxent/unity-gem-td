@@ -9,12 +9,11 @@ namespace GemTD.Gameplay.SkillLab
 {
     /// <summary>
     /// Mode B snapshot of a volley tree. Duplicates ProjectileRuntime hop order (Pierce → Fork → Chain)
-    /// without applying damage. Mode C must converge on a shared path.
+    /// without applying damage. Chain tie-break must match ProjectileRuntime (first equal-distance wins).
     /// </summary>
     public sealed class AttackTracer
     {
-        const float HitRadius = 0.15f;
-        const float PierceLookAheadPad = 0.05f;
+        public const int DefaultPayloadSeed = 12345;
 
         readonly float _baseProjectileSpeed;
         readonly TargetSelector _selector = new TargetSelector();
@@ -26,7 +25,6 @@ namespace GemTD.Gameplay.SkillLab
         readonly List<EffectPayloadPlan> _payloadPlans = new List<EffectPayloadPlan>(8);
         readonly List<Vector3> _polylineScratch = new List<Vector3>(16);
         readonly List<EnemyRuntime> _impactScratch = new List<EnemyRuntime>(8);
-        readonly System.Random _previewRng = new System.Random(12345);
 
         public AttackTracer(float baseProjectileSpeed = ProjectileRuntime.DefaultProjectileSpeed)
         {
@@ -54,16 +52,54 @@ namespace GemTD.Gameplay.SkillLab
 
         public AttackTrace Trace(TowerInstance tower, Vector3 origin, List<EnemyRuntime> dummies)
         {
+            return Trace(tower, origin, dummies, new System.Random(DefaultPayloadSeed));
+        }
+
+        public AttackTrace Trace(
+            TowerInstance tower,
+            Vector3 origin,
+            List<EnemyRuntime> dummies,
+            System.Random payloadRng)
+        {
+            return Trace(tower, origin, dummies, payloadRng, includeRandomPayloads: true);
+        }
+
+        public AttackTrace Trace(
+            TowerInstance tower,
+            Vector3 origin,
+            List<EnemyRuntime> dummies,
+            System.Random payloadRng,
+            bool includeRandomPayloads)
+        {
             var trace = new AttackTrace();
-            if (tower == null || tower.Def == null || !tower.Def.IsFireable)
+            if (tower == null
+                || tower.Def == null
+                || !tower.Def.IsFireable)
                 return trace;
-            if (dummies == null || dummies.Count == 0)
+            if (dummies == null)
                 return trace;
+
+            var isCurse = tower.Def.HasRole<CurseRoleDefinition>();
+            if (!isCurse && dummies.Count == 0)
+                return trace;
+            if (includeRandomPayloads && payloadRng == null)
+                payloadRng = new System.Random(DefaultPayloadSeed);
 
             var baseline = _pipeline.ResolveBaseline(tower);
             var spec = _pipeline.Resolve(tower, _scratch);
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.GetFireTowerRadius(tower.Level) * rangeMul;
+            if (isCurse)
+            {
+                if (range <= 0f)
+                    return trace;
+                trace.HasTarget = true;
+                TraceCasterNova(trace, origin, range, dummies);
+                return trace;
+            }
+
+            if (dummies.Count == 0)
+                return trace;
             if (!_selector.TrySelect(tower.Targeting, origin, range, dummies, out var primary) || primary == null)
                 return trace;
 
@@ -78,47 +114,139 @@ namespace GemTD.Gameplay.SkillLab
                 ? PathIntercept.Predict(origin, speed, primary)
                 : primary.WorldPosition;
 
-            if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
-            {
-                TraceWarpStrike(trace, origin, primary, spec, baseline, damage, dummies, tower);
-            }
-            else if (spec.DeliveryPattern == DeliveryPattern.CasterNova)
+            var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
+            var echoFactor = volleys > 1 ? spec.EchoDamageFactor : 1f;
+            if (echoFactor <= 0f)
+                echoFactor = 1f;
+
+            if (spec.DeliveryPattern == DeliveryPattern.CasterNova)
             {
                 TraceCasterNova(trace, origin, range, dummies);
             }
-            else if (spec.DeliveryPattern == DeliveryPattern.Rain)
-            {
-                TraceRain(trace, aimPoint, spec, baseline, dummies, tower);
-            }
             else if (spec.DeliveryPattern == DeliveryPattern.GroundPulse)
             {
-                TraceGroundPulse(trace, aimPoint, primary, spec, dummies);
+                TraceGroundPulse(trace, aimPoint, primary, spec, dummies, tower);
+            }
+            else if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
+            {
+                for (var v = 0; v < volleys; v++)
+                {
+                    TraceWarpStrike(
+                        trace,
+                        origin,
+                        primary,
+                        spec,
+                        baseline,
+                        damage * echoFactor,
+                        dummies,
+                        tower,
+                        payloadRng,
+                        includeRandomPayloads);
+                }
+            }
+            else if (spec.DeliveryPattern == DeliveryPattern.PayloadNova)
+            {
+                for (var v = 0; v < volleys; v++)
+                    TracePayloadNova(trace, origin, aimPoint, spec, damage * echoFactor);
+            }
+            else if (spec.DeliveryPattern == DeliveryPattern.Rain)
+            {
+                for (var v = 0; v < volleys; v++)
+                {
+                    TraceRain(
+                        trace,
+                        aimPoint,
+                        spec,
+                        baseline,
+                        dummies,
+                        tower,
+                        payloadRng,
+                        includeRandomPayloads);
+                }
             }
             else if (EvolutionEvaluator.IsHydraTower(tower))
             {
                 var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                 var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
-                for (var h = 0; h < laterals.Length; h++)
+                for (var v = 0; v < volleys; v++)
                 {
-                    var isCenter = Mathf.Abs(yaws[h]) < 1e-4f && Mathf.Abs(laterals[h]) < 1e-4f;
-                    EnqueueVolley(
-                        origin,
-                        primary,
-                        spec,
-                        damage,
-                        pierceRemaining,
-                        yaws[h],
-                        laterals[h],
-                        isCenter ? AttackTraceKind.Primary : AttackTraceKind.HydraHead);
+                    var volleyDamage = damage * echoFactor;
+                    for (var h = 0; h < laterals.Length; h++)
+                    {
+                        var isCenter = Mathf.Abs(yaws[h]) < 1e-4f && Mathf.Abs(laterals[h]) < 1e-4f;
+                        EnqueueVolley(
+                            origin,
+                            aimPoint,
+                            spec,
+                            volleyDamage,
+                            pierceRemaining,
+                            yaws[h],
+                            laterals[h],
+                            isCenter ? AttackTraceKind.Primary : AttackTraceKind.HydraHead);
+                    }
                 }
             }
             else
             {
-                EnqueueVolley(origin, primary, spec, damage, pierceRemaining, 0f, 0f, AttackTraceKind.Primary);
+                for (var v = 0; v < volleys; v++)
+                {
+                    EnqueueVolley(
+                        origin,
+                        aimPoint,
+                        spec,
+                        damage * echoFactor,
+                        pierceRemaining,
+                        0f,
+                        0f,
+                        AttackTraceKind.Primary);
+                }
             }
 
             Simulate(trace, dummies);
             return trace;
+        }
+
+        void TracePayloadNova(
+            AttackTrace trace,
+            Vector3 origin,
+            Vector3 aimPoint,
+            SkillSpec spec,
+            float damage)
+        {
+            var count = spec.ProjectileCount;
+            if (count <= 0)
+                return;
+
+            AddSegment(trace, origin, aimPoint, AttackTraceKind.PayloadNova, damage);
+
+            var speed = _baseProjectileSpeed
+                * (spec.ProjectileSpeedMultiplier > 0.01f
+                    ? spec.ProjectileSpeedMultiplier
+                    : 1f);
+            var step = 360f / count;
+            var pierceRemaining = spec.GetPierceRemaining();
+            for (var i = 0; i < count; i++)
+            {
+                var direction = Quaternion.Euler(0f, i * step, 0f) * Vector3.forward;
+                _queue.Add(new SimShot
+                {
+                    Position = aimPoint,
+                    Direction = direction.sqrMagnitude > 1e-8f
+                        ? direction.normalized
+                        : Vector3.forward,
+                    Damage = damage,
+                    ProjectileSpeed = speed,
+                    RemainingFlight = speed * ProjectileRuntime.MaxLifetimeSeconds,
+                    ChainRemaining = spec.ChainCount,
+                    PierceRemaining = pierceRemaining,
+                    ForkRemaining = spec.ForkCount,
+                    AoeRadius = spec.AoeRadius,
+                    ChainRange = ProjectileRuntime.DefaultChainRange,
+                    ChainHopFalloff = spec.ChainHopFalloff == 0f ? 1f : spec.ChainHopFalloff,
+                    Kind = AttackTraceKind.PayloadNova,
+                    LastHit = null
+                });
+            }
         }
 
         void TraceWarpStrike(
@@ -129,7 +257,9 @@ namespace GemTD.Gameplay.SkillLab
             SkillSpec baseline,
             float damage,
             List<EnemyRuntime> dummies,
-            TowerInstance tower)
+            TowerInstance tower,
+            System.Random payloadRng,
+            bool includeRandomPayloads)
         {
             var riseTop = origin + Vector3.up * ProjectileRuntime.WarpRiseHeight;
             AddSegment(trace, origin, riseTop, AttackTraceKind.WarpRise, 0f);
@@ -146,7 +276,7 @@ namespace GemTD.Gameplay.SkillLab
             AddHitTarget(trace, primary);
             RecordAoeTargets(trace, landPoint, primary, spec.AoeRadius, dummies);
 
-            if (tower == null || tower.Def == null)
+            if (!includeRandomPayloads || tower == null || tower.Def == null)
                 return;
 
             GemModifierPipeline.CollectEffectPayloads(
@@ -161,53 +291,11 @@ namespace GemTD.Gameplay.SkillLab
                 spec,
                 baseline,
                 landPoint,
-                _previewRng,
+                payloadRng,
                 _payloadPlans);
 
             for (var i = 0; i < _payloadPlans.Count; i++)
-            {
-                var plan = _payloadPlans[i];
-                var payloadDamage = (plan.DamageMin + plan.DamageMax) * 0.5f;
-                _polylineScratch.Clear();
-                FountainTrajectory.SamplePolyline(
-                    plan.Origin,
-                    plan.LandingPoint,
-                    plan.ArcHeight,
-                    FountainTrajectory.DefaultSampleCount,
-                    _polylineScratch);
-
-                for (var s = 1; s < _polylineScratch.Count; s++)
-                {
-                    AddSegment(
-                        trace,
-                        _polylineScratch[s - 1],
-                        _polylineScratch[s],
-                        AttackTraceKind.Magma,
-                        payloadDamage);
-                }
-
-                trace.Discs.Add(new AttackTraceDisc
-                {
-                    Center = plan.LandingPoint,
-                    Radius = plan.AoeRadius,
-                    Kind = AttackTraceKind.Magma
-                });
-
-                _impactScratch.Clear();
-                AreaEffectResolver.CollectCircle(
-                    plan.LandingPoint,
-                    plan.AoeRadius,
-                    dummies,
-                    _impactScratch,
-                    plan.HitPolicy);
-
-                for (var t = 0; t < _impactScratch.Count; t++)
-                {
-                    var victim = _impactScratch[t];
-                    AddHitTarget(trace, victim);
-                    trace.PayloadHitRecords.Add(victim);
-                }
-            }
+                AppendPayloadPlan(trace, _payloadPlans[i], dummies, AttackTraceKind.Magma);
         }
 
         void TraceCasterNova(
@@ -243,7 +331,9 @@ namespace GemTD.Gameplay.SkillLab
             SkillSpec spec,
             SkillSpec baseline,
             List<EnemyRuntime> dummies,
-            TowerInstance tower)
+            TowerInstance tower,
+            System.Random payloadRng,
+            bool includeRandomPayloads)
         {
             if (tower == null || tower.Def == null)
                 return;
@@ -251,15 +341,6 @@ namespace GemTD.Gameplay.SkillLab
             GemModifierPipeline.CollectEffectPayloads(tower, _payloadDefinitionsScratch);
             if (_payloadDefinitionsScratch.Count == 0)
                 return;
-
-            _payloadPlans.Clear();
-            EffectPayloadResolver.BuildFallingRain(
-                _payloadDefinitionsScratch,
-                spec,
-                baseline,
-                aimPoint,
-                _previewRng,
-                _payloadPlans);
 
             var stormRadius = 0f;
             for (var d = 0; d < _payloadDefinitionsScratch.Count; d++)
@@ -283,48 +364,126 @@ namespace GemTD.Gameplay.SkillLab
                 });
             }
 
-            for (var i = 0; i < _payloadPlans.Count; i++)
-            {
-                var plan = _payloadPlans[i];
-                var payloadDamage = (plan.DamageMin + plan.DamageMax) * 0.5f;
-                AddSegment(trace, plan.Origin, plan.LandingPoint, AttackTraceKind.Rain, payloadDamage);
-                trace.Discs.Add(new AttackTraceDisc
-                {
-                    Center = plan.LandingPoint,
-                    Radius = plan.AoeRadius,
-                    Kind = AttackTraceKind.Rain
-                });
+            if (!includeRandomPayloads)
+                return;
 
-                _impactScratch.Clear();
-                AreaEffectResolver.CollectCircle(
+            _payloadPlans.Clear();
+            EffectPayloadResolver.BuildFallingRain(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                aimPoint,
+                payloadRng,
+                _payloadPlans);
+
+            for (var i = 0; i < _payloadPlans.Count; i++)
+                AppendPayloadPlan(trace, _payloadPlans[i], dummies, AttackTraceKind.Rain);
+        }
+
+        public void AppendPayload(
+            AttackTrace trace,
+            in EffectPayloadPlan plan,
+            List<EnemyRuntime> dummies)
+        {
+            if (trace == null)
+                return;
+
+            var kind = AttackTraceKind.Magma;
+            if (plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+                kind = AttackTraceKind.Rain;
+            else if (plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse)
+                kind = AttackTraceKind.Aftershock;
+            AppendPayloadPlan(trace, plan, dummies, kind);
+        }
+
+        void AppendPayloadPlan(
+            AttackTrace trace,
+            in EffectPayloadPlan plan,
+            List<EnemyRuntime> dummies,
+            AttackTraceKind kind)
+        {
+            var payloadDamage = (plan.DamageMin + plan.DamageMax) * 0.5f;
+            if (plan.TravelPattern == EffectPayloadTravelPattern.Fountain)
+            {
+                _polylineScratch.Clear();
+                FountainTrajectory.SamplePolyline(
+                    plan.Origin,
                     plan.LandingPoint,
-                    plan.AoeRadius,
-                    dummies,
-                    _impactScratch,
-                    plan.HitPolicy);
-                for (var t = 0; t < _impactScratch.Count; t++)
+                    plan.ArcHeight,
+                    FountainTrajectory.DefaultSampleCount,
+                    _polylineScratch);
+
+                for (var s = 1; s < _polylineScratch.Count; s++)
                 {
-                    var victim = _impactScratch[t];
-                    AddHitTarget(trace, victim);
-                    trace.PayloadHitRecords.Add(victim);
+                    AddSegment(
+                        trace,
+                        _polylineScratch[s - 1],
+                        _polylineScratch[s],
+                        kind,
+                        payloadDamage);
                 }
+            }
+            else
+            {
+                AddSegment(trace, plan.Origin, plan.LandingPoint, kind, payloadDamage);
+            }
+
+            trace.Discs.Add(new AttackTraceDisc
+            {
+                Center = plan.LandingPoint,
+                Radius = plan.AoeRadius,
+                Kind = kind
+            });
+
+            _impactScratch.Clear();
+            AreaEffectResolver.CollectCircle(
+                plan.LandingPoint,
+                plan.AoeRadius,
+                dummies,
+                _impactScratch,
+                plan.HitPolicy);
+            for (var t = 0; t < _impactScratch.Count; t++)
+            {
+                var victim = _impactScratch[t];
+                AddHitTarget(trace, victim);
+                trace.PayloadHitRecords.Add(victim);
             }
         }
 
-        static void TraceGroundPulse(
+        void TraceGroundPulse(
             AttackTrace trace,
             Vector3 pulseOrigin,
             EnemyRuntime primary,
             SkillSpec spec,
-            List<EnemyRuntime> dummies)
+            List<EnemyRuntime> dummies,
+            TowerInstance tower)
         {
             AddHitTarget(trace, primary);
             RecordAoeTargets(trace, pulseOrigin, primary, spec.AoeRadius, dummies);
+
+            if (tower == null || tower.Def == null)
+                return;
+
+            GemModifierPipeline.CollectEffectPayloads(tower, _payloadDefinitionsScratch);
+            if (_payloadDefinitionsScratch.Count == 0)
+                return;
+
+            var baseline = _pipeline.ResolveBaseline(tower);
+            _payloadPlans.Clear();
+            EffectPayloadResolver.BuildDelayedStationaryPulse(
+                _payloadDefinitionsScratch,
+                spec,
+                baseline,
+                pulseOrigin,
+                new System.Random(DefaultPayloadSeed),
+                _payloadPlans);
+            for (var i = 0; i < _payloadPlans.Count; i++)
+                AppendPayloadPlan(trace, _payloadPlans[i], dummies, AttackTraceKind.Aftershock);
         }
 
         void EnqueueVolley(
             Vector3 origin,
-            EnemyRuntime primary,
+            Vector3 aimPoint,
             SkillSpec spec,
             float damage,
             int pierceRemaining,
@@ -332,7 +491,7 @@ namespace GemTD.Gameplay.SkillLab
             float headLateral,
             AttackTraceKind firstKind)
         {
-            var aim = primary.WorldPosition - origin;
+            var aim = aimPoint - origin;
             if (aim.sqrMagnitude < 1e-8f)
                 aim = Vector3.forward;
             else
@@ -342,7 +501,7 @@ namespace GemTD.Gameplay.SkillLab
             {
                 var headSide = Quaternion.Euler(0f, 90f, 0f) * aim;
                 origin += headSide * headLateral;
-                aim = primary.WorldPosition - origin;
+                aim = aimPoint - origin;
                 if (aim.sqrMagnitude > 1e-8f)
                     aim.Normalize();
             }
@@ -587,7 +746,8 @@ namespace GemTD.Gameplay.SkillLab
                 return null;
 
             var moveDir = direction.normalized;
-            var hitRadiusSq = (HitRadius + PierceLookAheadPad) * (HitRadius + PierceLookAheadPad);
+            var collisionRadius = ProjectileRuntime.HitRadius + ProjectileRuntime.PierceLookAheadPad;
+            var hitRadiusSq = collisionRadius * collisionRadius;
             EnemyRuntime best = null;
             var bestT = float.PositiveInfinity;
 
@@ -599,10 +759,11 @@ namespace GemTD.Gameplay.SkillLab
 
                 var rel = enemy.WorldPosition - from;
                 var t = Vector3.Dot(rel, moveDir);
-                if (t < 0f || t > maxDist)
+                if (t < -ProjectileRuntime.HitRadius
+                    || t > maxDist + ProjectileRuntime.HitRadius)
                     continue;
 
-                var closest = from + moveDir * t;
+                var closest = from + moveDir * Mathf.Clamp(t, 0f, maxDist);
                 if ((enemy.WorldPosition - closest).sqrMagnitude > hitRadiusSq)
                     continue;
 
@@ -618,23 +779,29 @@ namespace GemTD.Gameplay.SkillLab
 
         static EnemyRuntime FindNearestOther(
             Vector3 from,
-            EnemyRuntime exclude,
+            EnemyRuntime current,
             float range,
             List<EnemyRuntime> candidates)
         {
+            if (candidates == null || range <= 0f)
+                return null;
+
+            var rangeSq = range * range;
             EnemyRuntime best = null;
-            var bestSq = range * range;
+            var bestDistSq = float.PositiveInfinity;
+
             for (var i = 0; i < candidates.Count; i++)
             {
                 var enemy = candidates[i];
-                if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, exclude))
+                if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, current))
                     continue;
-                var sq = (enemy.WorldPosition - from).sqrMagnitude;
-                if (sq <= bestSq)
-                {
-                    bestSq = sq;
-                    best = enemy;
-                }
+
+                var distSq = (enemy.WorldPosition - from).sqrMagnitude;
+                if (distSq > rangeSq || distSq >= bestDistSq)
+                    continue;
+
+                bestDistSq = distSq;
+                best = enemy;
             }
 
             return best;

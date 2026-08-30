@@ -112,6 +112,12 @@ namespace GemTD.Tests.EditMode
                         Set(GemStat.AimMode, (float)AimMode.Ground),
                         Set(GemStat.DeliveryPattern, (float)DeliveryPattern.PayloadNova)
                     };
+                case GemId.SpellEcho:
+                    return new[]
+                    {
+                        Set(GemStat.EchoVolleyCount, 2f),
+                        Set(GemStat.EchoDamageFactor, 0.6f)
+                    };
                 default:
                     return null;
             }

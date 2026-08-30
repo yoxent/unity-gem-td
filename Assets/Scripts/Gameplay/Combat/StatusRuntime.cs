@@ -118,6 +118,25 @@ namespace GemTD.Gameplay.Combat
             return false;
         }
 
+        public bool HasAnyCurse(EnemyRuntime enemy)
+        {
+            if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
+                return false;
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].Duration > 0f && CurseHex.IsCurseStatus(list[i].Id))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public void Clear()
+        {
+            _byEnemy.Clear();
+        }
+
         public bool TryConsumeHallowingFlame(EnemyRuntime enemy, object attacker, out float magnitude)
         {
             magnitude = 0f;
