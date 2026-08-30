@@ -63,7 +63,7 @@ namespace GemTD.Tests.EditMode
             var result = SupportGemMap.FromGemJson(ChanceToBleedJson);
             Assert.AreEqual("Chance to Bleed", result.DisplayName);
             Assert.AreEqual("chance_to_bleed", result.Slug);
-            Assert.AreEqual(GemTag.Attack | GemTag.Support, result.Tags);
+            Assert.AreEqual(GemTag.Attack | GemTag.Physical | GemTag.Support, result.Tags);
             Assert.IsTrue(result.CanIngest);
             Assert.AreEqual(0, result.Unmapped.Length);
             Assert.AreEqual(0, result.FlavorTexts.Length);
@@ -176,7 +176,7 @@ namespace GemTD.Tests.EditMode
             var result = SupportGemMap.FromGemJson(
                 "{\"name\":\"Hallow Support\",\"tags\":[\"Physical\",\"Fire\",\"Support\",\"Melee\",\"Attack\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"#% increased magnitude of Hallowing Flame inflicted by Supported Skills\",\"values\":{\"normal\":16}},{\"text\":\"Supported Skills inflict Hallowing Flame on Melee Hit\",\"values\":null}]}");
             Assert.IsTrue(result.CanIngest);
-            Assert.AreEqual(GemTag.Attack | GemTag.Melee | GemTag.Support, result.Tags);
+            Assert.AreEqual(GemTag.Physical | GemTag.Fire | GemTag.Support | GemTag.Melee | GemTag.Attack, result.Tags);
             Assert.AreEqual(3, result.Modifiers.Length);
             Assert.AreEqual(GemStat.HallowingFlame, result.Modifiers[0].Stat);
             Assert.AreEqual(1f, result.Modifiers[0].Value, 0.001f);

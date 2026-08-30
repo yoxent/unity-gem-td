@@ -952,24 +952,7 @@ namespace GemTD.Gameplay.Gems
             return result;
         }
 
-        static GemTag MapTag(string poe)
-        {
-            if (string.IsNullOrEmpty(poe))
-                return GemTag.None;
-            switch (poe)
-            {
-                case "Attack": return GemTag.Attack;
-                case "Spell": return GemTag.Spell;
-                case "Aura": return GemTag.Aura;
-                case "AoE": return GemTag.Aoe;
-                case "Melee": return GemTag.Melee;
-                case "Projectile": return GemTag.Projectile;
-                case "Slam": return GemTag.Slam;
-                case "Chaining": return GemTag.Chaining;
-                case "Support": return GemTag.Support;
-                default: return GemTag.None;
-            }
-        }
+        static GemTag MapTag(string poe) => GemTags.FromPoe(poe);
 
         public static string TrimSupportSuffix(string name)
         {

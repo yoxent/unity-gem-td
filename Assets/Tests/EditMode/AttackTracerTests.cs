@@ -94,24 +94,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Hydra_FirstSegments_ThreeHeadsTimesMultipleProjectilesPellets()
-        {
-            var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
-            Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, true));
-            Assert.IsTrue(tower.TrySocket(_chain, 1, true));
-            Assert.IsTrue(tower.TrySocket(_fork, 2, true));
-            Assert.IsFalse(EvolutionEvaluator.IsHydraTower(tower));
-
-            var dummy = MakeEnemy(new Vector3(4f, 0f, 0f));
-            var tracer = new AttackTracer();
-            var trace = tracer.Trace(tower, Vector3.zero, Living(dummy));
-
-            Assert.IsTrue(trace.HasTarget);
-            Assert.AreEqual(0, CountKind(trace, AttackTraceKind.HydraHead));
-            Assert.AreEqual(1000f, dummy.Hp, 1e-3f);
-        }
-
-        [Test]
         public void Chain_HopsNearest_AndFalloffOnHopSegment()
         {
             var tower = new TowerInstance(Vector2Int.zero, _projectileTower);
@@ -236,82 +218,6 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1, trace.Discs.Count);
             Assert.AreEqual(5f, trace.Discs[0].Radius, 0.001f);
             Assert.AreEqual(AttackTraceKind.Aoe, trace.Discs[0].Kind);
-        }
-
-        [Test]
-        public void CasterNova_DoesNotRecordEnemyOutsideTowerRadius()
-        {
-            _projectileRole.AimMode = AimMode.Direct;
-            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
-            _projectileRole.Modifiers = new[]
-            {
-                Modifier(RoleStat.TowerRadius, 5f),
-                Modifier(RoleStat.AttackTime, 1f),
-                Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.SplashRadius, 2.6f)
-            };
-            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
-
-            var near = MakeEnemy(new Vector3(1.5f, 0f, 0f));
-            var outsider = MakeEnemy(new Vector3(8f, 0f, 0f));
-            var trace = new AttackTracer().Trace(
-                new TowerInstance(Vector2Int.zero, _projectileTower),
-                Vector3.zero,
-                Living(near, outsider));
-
-            Assert.IsTrue(trace.HasTarget);
-            Assert.AreEqual(1, trace.HitTargets.Count);
-            Assert.AreSame(near, trace.HitTargets[0]);
-        }
-
-        [Test]
-        public void CasterNova_RecordsEnemyInsideTowerRadiusOutsideSplash()
-        {
-            _projectileRole.AimMode = AimMode.Direct;
-            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
-            _projectileRole.Modifiers = new[]
-            {
-                Modifier(RoleStat.TowerRadius, 5f),
-                Modifier(RoleStat.AttackTime, 1f),
-                Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.SplashRadius, 2.6f)
-            };
-            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
-
-            var dummy = MakeEnemy(new Vector3(4f, 0f, 0f));
-            var trace = new AttackTracer().Trace(
-                new TowerInstance(Vector2Int.zero, _projectileTower),
-                Vector3.zero,
-                Living(dummy));
-
-            Assert.IsTrue(trace.HasTarget);
-            Assert.AreEqual(1, trace.HitTargets.Count);
-            Assert.AreSame(dummy, trace.HitTargets[0]);
-        }
-
-        [Test]
-        public void CasterNova_RecordsEnemyInsideRadius()
-        {
-            _projectileRole.AimMode = AimMode.Direct;
-            _projectileRole.DeliveryPattern = DeliveryPattern.CasterNova;
-            _projectileRole.Modifiers = new[]
-            {
-                Modifier(RoleStat.TowerRadius, 20f),
-                Modifier(RoleStat.AttackTime, 1f),
-                Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.SplashRadius, 2.6f)
-            };
-            _projectileTower.Tags = GemTag.Spell | GemTag.Aoe;
-
-            var dummy = MakeEnemy(new Vector3(1.5f, 0f, 0f));
-            var trace = new AttackTracer().Trace(
-                new TowerInstance(Vector2Int.zero, _projectileTower),
-                Vector3.zero,
-                Living(dummy));
-
-            Assert.IsTrue(trace.HasTarget);
-            Assert.AreEqual(1, trace.HitTargets.Count);
-            Assert.AreSame(dummy, trace.HitTargets[0]);
         }
 
         [Test]

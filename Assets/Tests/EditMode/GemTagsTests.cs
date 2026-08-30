@@ -166,6 +166,133 @@ namespace GemTD.Tests.EditMode
         {
             Assert.AreEqual("—", GemTags.Format(GemTag.None));
             Assert.AreEqual("Attack, Projectile, AoE", GemTags.Format(GemTag.Attack | GemTag.Projectile | GemTag.Aoe));
+            Assert.AreEqual("Fire, Lightning", GemTags.Format(GemTag.Fire | GemTag.Lightning));
+        }
+
+        [Test]
+        public void ExistingFlagBits_StayStable()
+        {
+            Assert.AreEqual(1L << 0, (long)GemTag.Projectile);
+            Assert.AreEqual(1L << 1, (long)GemTag.Aoe);
+            Assert.AreEqual(1L << 2, (long)GemTag.Slam);
+            Assert.AreEqual(1L << 3, (long)GemTag.Attack);
+            Assert.AreEqual(1L << 4, (long)GemTag.Spell);
+            Assert.AreEqual(1L << 5, (long)GemTag.Aura);
+            Assert.AreEqual(1L << 6, (long)GemTag.Melee);
+            Assert.AreEqual(1L << 7, (long)GemTag.Chaining);
+            Assert.AreEqual(1L << 8, (long)GemTag.Support);
+            Assert.AreEqual(1L << 9, (long)GemTag.Strike);
+        }
+
+        [Test]
+        public void HighBits_FitInLongNotInt()
+        {
+            Assert.AreEqual(1L << 32, (long)GemTag.Nova);
+            Assert.AreEqual(1L << 35, (long)GemTag.Physical);
+            Assert.AreEqual(1L << 40, (long)GemTag.Trap);
+            Assert.AreNotEqual(GemTag.Spell, GemTag.Spell | GemTag.Nova);
+            Assert.AreNotEqual(GemTag.None, GemTag.Physical);
+        }
+
+        [Test]
+        public void FromPoe_MapsCatalogStrings()
+        {
+            Assert.AreEqual(GemTag.Aoe, GemTags.FromPoe("AoE"));
+            Assert.AreEqual(GemTag.Arcane, GemTags.FromPoe("Arcane"));
+            Assert.AreEqual(GemTag.Attack, GemTags.FromPoe("Attack"));
+            Assert.AreEqual(GemTag.Aura, GemTags.FromPoe("Aura"));
+            Assert.AreEqual(GemTag.Blink, GemTags.FromPoe("Blink"));
+            Assert.AreEqual(GemTag.Bow, GemTags.FromPoe("Bow"));
+            Assert.AreEqual(GemTag.Brand, GemTags.FromPoe("Brand"));
+            Assert.AreEqual(GemTag.Chaining, GemTags.FromPoe("Chaining"));
+            Assert.AreEqual(GemTag.Channeling, GemTags.FromPoe("Channelling"));
+            Assert.AreEqual(GemTag.Channeling, GemTags.FromPoe("Channeling"));
+            Assert.AreEqual(GemTag.Chaos, GemTags.FromPoe("Chaos"));
+            Assert.AreEqual(GemTag.Cold, GemTags.FromPoe("Cold"));
+            Assert.AreEqual(GemTag.Critical, GemTags.FromPoe("Critical"));
+            Assert.AreEqual(GemTag.Curse, GemTags.FromPoe("Curse"));
+            Assert.AreEqual(GemTag.Duration, GemTags.FromPoe("Duration"));
+            Assert.AreEqual(GemTag.Exceptional, GemTags.FromPoe("Exceptional"));
+            Assert.AreEqual(GemTag.Fire, GemTags.FromPoe("Fire"));
+            Assert.AreEqual(GemTag.Golem, GemTags.FromPoe("Golem"));
+            Assert.AreEqual(GemTag.Guard, GemTags.FromPoe("Guard"));
+            Assert.AreEqual(GemTag.Herald, GemTags.FromPoe("Herald"));
+            Assert.AreEqual(GemTag.Hex, GemTags.FromPoe("Hex"));
+            Assert.AreEqual(GemTag.Lightning, GemTags.FromPoe("Lightning"));
+            Assert.AreEqual(GemTag.Link, GemTags.FromPoe("Link"));
+            Assert.AreEqual(GemTag.Mark, GemTags.FromPoe("Mark"));
+            Assert.AreEqual(GemTag.Melee, GemTags.FromPoe("Melee"));
+            Assert.AreEqual(GemTag.Mine, GemTags.FromPoe("Mine"));
+            Assert.AreEqual(GemTag.Minion, GemTags.FromPoe("Minion"));
+            Assert.AreEqual(GemTag.Movement, GemTags.FromPoe("Movement"));
+            Assert.AreEqual(GemTag.Nova, GemTags.FromPoe("Nova"));
+            Assert.AreEqual(GemTag.Orb, GemTags.FromPoe("Orb"));
+            Assert.AreEqual(GemTag.Pact, GemTags.FromPoe("Pact"));
+            Assert.AreEqual(GemTag.Physical, GemTags.FromPoe("Physical"));
+            Assert.AreEqual(GemTag.Prismatic, GemTags.FromPoe("Prismatic"));
+            Assert.AreEqual(GemTag.Projectile, GemTags.FromPoe("Projectile"));
+            Assert.AreEqual(GemTag.Retaliation, GemTags.FromPoe("Retaliation"));
+            Assert.AreEqual(GemTag.Slam, GemTags.FromPoe("Slam"));
+            Assert.AreEqual(GemTag.Spell, GemTags.FromPoe("Spell"));
+            Assert.AreEqual(GemTag.Stance, GemTags.FromPoe("Stance"));
+            Assert.AreEqual(GemTag.Strike, GemTags.FromPoe("Strike"));
+            Assert.AreEqual(GemTag.Support, GemTags.FromPoe("Support"));
+            Assert.AreEqual(GemTag.Totem, GemTags.FromPoe("Totem"));
+            Assert.AreEqual(GemTag.Trap, GemTags.FromPoe("Trap"));
+            Assert.AreEqual(GemTag.Travel, GemTags.FromPoe("Travel"));
+            Assert.AreEqual(GemTag.Trigger, GemTags.FromPoe("Trigger"));
+            Assert.AreEqual(GemTag.Vaal, GemTags.FromPoe("Vaal"));
+            Assert.AreEqual(GemTag.Warcry, GemTags.FromPoe("Warcry"));
+            Assert.AreEqual(GemTag.None, GemTags.FromPoe("Bow?"));
+            Assert.AreEqual(GemTag.None, GemTags.FromPoe(""));
+            Assert.AreEqual(GemTag.None, GemTags.FromPoe(null));
+        }
+
+        [Test]
+        public void RestrictionMask_ExcludesDamageTypeAndUnusedCatalogTags()
+        {
+            var unused =
+                GemTag.Fire
+                | GemTag.Cold
+                | GemTag.Lightning
+                | GemTag.Physical
+                | GemTag.Chaos
+                | GemTag.Duration
+                | GemTag.Bow
+                | GemTag.Curse
+                | GemTag.Hex
+                | GemTag.Mark
+                | GemTag.Nova
+                | GemTag.Trap
+                | GemTag.Mine
+                | GemTag.Support
+                | GemTag.Chaining;
+            Assert.AreEqual(GemTag.None, unused & GemTags.RestrictionMask);
+        }
+
+        [Test]
+        public void DamageTypeTags_DoNotGateSockets()
+        {
+            var physTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            physTower.Tags = GemTag.Attack | GemTag.Projectile;
+            physTower.SocketCount = 1;
+            var fireTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            fireTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Fire;
+            fireTower.SocketCount = 1;
+            var addedFire = ScriptableObject.CreateInstance<GemDefinition>();
+            addedFire.Tags = GemTag.Support | GemTag.Fire | GemTag.Physical;
+            try
+            {
+                Assert.AreEqual(GemTag.None, GemTags.EffectiveRequiredTags(addedFire));
+                Assert.IsTrue(GemTags.CanSocket(physTower, addedFire));
+                Assert.IsTrue(GemTags.CanSocket(fireTower, addedFire));
+            }
+            finally
+            {
+                Object.DestroyImmediate(physTower);
+                Object.DestroyImmediate(fireTower);
+                Object.DestroyImmediate(addedFire);
+            }
         }
     }
 }

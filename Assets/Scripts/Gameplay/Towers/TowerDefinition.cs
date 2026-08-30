@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 
@@ -17,7 +18,14 @@ namespace GemTD.Gameplay.Towers
         public int SocketCount = 3;
         public bool AllowsHydraEvolution;
         [Tooltip("PoE-style tags. None = infer from the assigned role types.")]
-        public GemTag Tags = GemTag.None;
+        [SerializeField, FormerlySerializedAs("Tags"), GemTagMask]
+        long tags;
+
+        public GemTag Tags
+        {
+            get => (GemTag)tags;
+            set => tags = (long)value;
+        }
 
         public T GetRole<T>() where T : TowerRoleDefinition
         {

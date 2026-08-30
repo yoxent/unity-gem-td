@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 using GemTD.Gameplay.Gems;
 
 namespace GemTD.Gameplay.Towers
@@ -54,7 +55,14 @@ namespace GemTD.Gameplay.Towers
         public EffectPayloadHitPolicy HitPolicy = EffectPayloadHitPolicy.PerImpact;
 
         [Tooltip("Support gems apply only when their restriction tags overlap these payload tags.")]
-        public GemTag Tags = GemTag.None;
+        [SerializeField, FormerlySerializedAs("Tags"), GemTagMask]
+        long tags;
+
+        public GemTag Tags
+        {
+            get => (GemTag)tags;
+            set => tags = (long)value;
+        }
 
         [Min(0)]
         public int Count = 1;

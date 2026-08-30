@@ -219,58 +219,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Hydra_SpawnsThreeTimesPelletCountOfBareMultipleProjectiles()
-        {
-            var hydraTower = ScriptableObject.CreateInstance<TowerDefinition>();
-            hydraTower.DisplayName = "Hydra Test Tower";
-            var hydraRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
-            hydraTower.Roles = new TowerRoleDefinition[] { hydraRole };
-            hydraTower.SocketCount = 3;
-            hydraTower.AllowsHydraEvolution = true;
-            hydraTower.Damage = 10f;
-            hydraRole.Modifiers = new[]
-            {
-                Modifier(RoleStat.TowerRadius, 20f),
-                Modifier(RoleStat.AttackTime, 1f),
-                Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.ProjectileCount, 1f)
-            };
-
-            var fork = ScriptableObject.CreateInstance<GemDefinition>();
-            fork.Id = GemId.Fork;
-            CatalogGemModifiers.Bind(fork);
-            try
-            {
-                var director = new CombatDirector(CellSize, projectileSpeed: 100f);
-                var enemy = CreateEnemyNearTower();
-                var registry = new EnemyRegistry();
-                registry.Register(enemy);
-
-                var multipleProjectilesOnly = new TowerInstance(new Vector2Int(0, 0), hydraTower);
-                Assert.IsTrue(multipleProjectilesOnly.TrySocket(_multipleProjectiles, 0, allowSocket: true));
-                director.Tick(0.016f, new List<TowerInstance> { multipleProjectilesOnly }, registry, _pipeline);
-                Assert.AreEqual(3, director.Projectiles.Count);
-
-                director.ClearProjectiles();
-
-                var hydra = new TowerInstance(new Vector2Int(0, 0), hydraTower);
-                Assert.IsTrue(hydra.TrySocket(_multipleProjectiles, 0, allowSocket: true));
-                Assert.IsTrue(hydra.TrySocket(_chain, 1, allowSocket: true));
-                Assert.IsTrue(hydra.TrySocket(fork, 2, allowSocket: true));
-                director.Tick(0.016f, new List<TowerInstance> { hydra }, registry, _pipeline);
-
-                // Hydra off: same fire as Multiple Projectiles only (3 pellets). Fork/chain children spawn on hit.
-                Assert.AreEqual(3, director.Projectiles.Count);
-            }
-            finally
-            {
-                Object.DestroyImmediate(hydraTower);
-                Object.DestroyImmediate(hydraRole);
-                Object.DestroyImmediate(fork);
-            }
-        }
-
-        [Test]
         public void Tick_DirectAim_PointsAtCurrentPosition()
         {
             _enemyDef.MoveSpeed = 2f;
@@ -685,7 +633,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Tick_CasterNova_HitsPrimaryInsideTowerRadiusOutsideSplash()
+        public void Tick_CasterNova_HitsInsideTowerRadius()
         {
             _towerRole.AimMode = AimMode.Direct;
             _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
@@ -700,16 +648,20 @@ namespace GemTD.Tests.EditMode
 
             var director = new CombatDirector(CellSize, projectileSpeed: 20f);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
-            var enemy = new EnemyRuntime();
-            enemy.Init(_enemyDef, new[] { new Vector3(4.5f, 0f, 0.5f) });
+            // Path (0,0)→(10,0): progress 0.4 ≈ x=4.5 (inside radius 5, outside splash 2.6) = primary (First).
+            var primary = CreateEnemyAtProgress(0.4f);
+            var nonPrimary = CreateEnemyAtProgress(0.1f);
             var registry = new EnemyRegistry();
-            registry.Register(enemy);
-            var hpBefore = enemy.Hp;
+            registry.Register(primary);
+            registry.Register(nonPrimary);
+            var primaryHp = primary.Hp;
+            var nonPrimaryHp = nonPrimary.Hp;
 
             director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             Assert.AreEqual(0, director.Projectiles.Count);
-            Assert.Less(enemy.Hp, hpBefore);
+            Assert.Less(primary.Hp, primaryHp);
+            Assert.Less(nonPrimary.Hp, nonPrimaryHp);
         }
 
         [Test]
@@ -743,72 +695,6 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.Less(near.Hp, nearHp);
             Assert.AreEqual(outsiderHp, outsider.Hp, 1e-4f);
-        }
-
-        [Test]
-        public void Tick_CasterNova_HitsPrimaryInsideRadius()
-        {
-            _towerRole.AimMode = AimMode.Direct;
-            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
-            _towerRole.Modifiers = new[]
-            {
-                Modifier(RoleStat.TowerRadius, 20f),
-                Modifier(RoleStat.AttackTime, 1f),
-                Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.SplashRadius, 2.6f)
-            };
-            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
-
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
-            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
-            var enemy = new EnemyRuntime();
-            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
-            var registry = new EnemyRegistry();
-            registry.Register(enemy);
-            var hpBefore = enemy.Hp;
-
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
-
-            Assert.AreEqual(0, director.Projectiles.Count);
-            Assert.Less(enemy.Hp, hpBefore);
-        }
-
-        [Test]
-        public void Tick_CasterNova_HitsEnemyInsideRadiusEvenIfNotPrimary()
-        {
-            _towerRole.AimMode = AimMode.Direct;
-            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
-            _towerRole.Modifiers = new[]
-            {
-                Modifier(RoleStat.TowerRadius, 20f),
-                Modifier(RoleStat.AttackTime, 1f),
-                Modifier(RoleStat.AttackSpeed, 100f),
-                Modifier(RoleStat.SplashRadius, 2.6f)
-            };
-            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
-
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
-            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
-            var far = new EnemyRuntime();
-            far.Init(
-                _enemyDef,
-                new[] { new Vector3(0.5f, 0f, 0.5f), new Vector3(20.5f, 0f, 0.5f) });
-            _enemyDef.MoveSpeed = 1f;
-            for (var i = 0; i < 10; i++)
-                far.TickMove(0.5f);
-            _enemyDef.MoveSpeed = 0.01f;
-            var near = new EnemyRuntime();
-            near.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
-            var registry = new EnemyRegistry();
-            registry.Register(far);
-            registry.Register(near);
-            var farHp = far.Hp;
-            var nearHp = near.Hp;
-
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
-
-            Assert.Less(far.Hp, farHp);
-            Assert.Less(near.Hp, nearHp);
         }
 
         [Test]

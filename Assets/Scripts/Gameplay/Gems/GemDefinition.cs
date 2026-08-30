@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Gems
@@ -25,7 +26,14 @@ namespace GemTD.Gameplay.Gems
 
         [Header("Combat")]
         [Tooltip("PoE-style tags. Socketing: tower must have every restriction tag (Attack/Projectile/AoE/…). Support and Chaining do not gate.")]
-        public GemTag Tags = GemTag.None;
+        [SerializeField, FormerlySerializedAs("Tags"), GemTagMask]
+        long tags;
+
+        public GemTag Tags
+        {
+            get => (GemTag)tags;
+            set => tags = (long)value;
+        }
         [Tooltip("Combat rows applied onto SkillSpec when this gem is socketed. Same Set / Add / Multiply order as tower roles.")]
         public GemStatModifier[] Modifiers;
         [Tooltip("Secondary payloads authored by this support gem. Rarity changes modifier scalars, not payload shape.")]

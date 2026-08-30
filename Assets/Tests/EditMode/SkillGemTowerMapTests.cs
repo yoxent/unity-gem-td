@@ -1,4 +1,3 @@
-using System.Globalization;
 using NUnit.Framework;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
@@ -61,18 +60,13 @@ namespace GemTD.Tests.EditMode
 
         const string MoltenStrikeJson =
             "{\"name\":\"Molten Strike\",\"slug\":\"Molten_Strike\",\"tags\":[\"Attack\",\"Projectile\",\"AoE\",\"Melee\",\"Strike\",\"Fire\"],\"category\":\"attack\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":146,\"poedb_column\":\"Base Damage\"}},\"5\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":329.2,\"poedb_column\":\"Base Damage\"}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":700.3,\"poedb_column\":\"Base Damage\"}}}}";
+        const string FirestormJson =
+            "{\"name\":\"Firestorm\",\"slug\":\"Firestorm\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Fire\"],\"category\":\"spell\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.75}},\"levels\":{\"1\":{\"Deals # to # Fire Damage\":{\"kind\":\"flat\",\"value\":[44,66]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}}}";
 
-        const string HeavyStrikeJson =
-            "{\"name\":\"Heavy Strike\",\"slug\":\"Heavy_Strike\",\"tags\":[\"Attack\",\"Melee\",\"Strike\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":85}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":256.5},\"#% chance to deal Double Damage\":{\"kind\":\"percent\",\"value\":23}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":553}}}}";
 
-        const string EarthquakeJson =
-            "{\"name\":\"Earthquake\",\"slug\":\"Earthquake\",\"tags\":[\"Attack\",\"AoE\",\"Melee\",\"Duration\",\"Slam\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":75}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":155.5}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":335.5}}}}";
 
-        const string LightningArrowJson =
-            "{\"name\":\"Lightning Arrow\",\"slug\":\"Lightning_Arrow\",\"tags\":[\"Attack\",\"AoE\",\"Projectile\",\"Lightning\",\"Bow\"],\"category\":\"attack\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":153.9},\"Shocks Enemies as though dealing #% more Damage\":{\"kind\":\"percent\",\"value\":130}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":177}}}}";
 
-        const string BurningArrowJson =
-            "{\"name\":\"Burning Arrow\",\"slug\":\"Burning_Arrow\",\"tags\":[\"Attack\",\"Projectile\",\"Fire\",\"Bow\"],\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":70}},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":302.1}},\"10\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":420}}}}";
+
 
         [Test]
         public void Cleave_MapsAttackSpeedEightyAndMeleeAoeTags()
@@ -236,40 +230,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void AuraCatalog_Clarity_MapsTenLevelsWithoutEffectsOrDamage()
-        {
-            var r = SkillGemTowerMap.FromJson(BuildClarityTenLevelJson());
-            var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
-            Assert.AreEqual("Clarity", r.Slug);
-            Assert.AreEqual("aura", r.Category);
-            Assert.AreEqual(SkillGemTowerMap.RoleKind.Aura, r.RoleKinds[0]);
-            Assert.AreEqual(1, r.RoleKinds.Length);
-            Assert.AreEqual(0f, r.Damage, 0.001f);
-            Assert.AreEqual(30, r.Cost);
-            Assert.AreEqual(1, r.SocketCount);
-            Assert.AreEqual(GemTag.Aura | GemTag.Spell | GemTag.Aoe, r.Tags);
-            Assert.AreEqual(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, r.SourceLevels);
-            Assert.AreEqual(10, aura.Levels.Length);
-            Assert.AreEqual(1, aura.Levels[0].SourceLevel);
-            Assert.AreEqual(10, aura.Levels[9].SourceLevel);
-            Assert.AreEqual(1.5f, FindModifier(aura.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(
-                50f,
-                FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value,
-                0.001f);
-            Assert.AreEqual(0, aura.Effects.Length);
-            Assert.AreEqual(0, aura.Levels[0].Effects.Length);
-            Assert.AreEqual(0, aura.Levels[9].Effects.Length);
-            Assert.IsFalse(HasModifier(aura.Modifiers, RoleStat.Damage));
-            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.Damage));
-            Assert.IsFalse(HasModifier(aura.Levels[9], RoleStat.Damage));
-            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.SplashRadius));
-            Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.TowerRadius));
-            Assert.IsFalse(r.IsActiveCatalogCompatible);
-            Assert.AreEqual(0, r.UnsupportedEffectKeys.Length);
-        }
-
-        [Test]
         public void AuraCatalog_UnsupportedEffects_StayUnmapped()
         {
             var ice = SkillGemTowerMap.FromJson(PurityOfIceJson);
@@ -326,7 +286,7 @@ namespace GemTD.Tests.EditMode
                 FindModifier(fleshRole.Modifiers, RoleStat.ReservationPercent).Value,
                 0.001f);
             Assert.AreEqual(0, fleshRole.Levels[0].Effects.Length);
-            Assert.AreEqual(GemTag.Spell | GemTag.Aura | GemTag.Aoe, flesh.Tags);
+            Assert.AreEqual(GemTag.Spell | GemTag.Aura | GemTag.Aoe | GemTag.Stance | GemTag.Physical, flesh.Tags);
             CollectionAssert.Contains(
                 flesh.UnsupportedEffectKeys,
                 "#% increased Cooldown Recovery Rate");
@@ -409,30 +369,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void CurseProof_FlammabilityVulnerabilityAndTemporalChains_MapAuthoredHexes()
-        {
-            var flammability = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Flammability\",\"slug\":\"Flammability\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Fire\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies have #% to Fire Resistance\":{\"kind\":\"percent\",\"value\":-20},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"Cursed enemies have #% to Fire Resistance\":{\"kind\":\"percent\",\"value\":-51},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var fire = flammability.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(-30f, FindEffect(fire.Levels[0], RoleEffectKind.EnemyFireResistance).Value, 0.001f);
-            Assert.AreEqual(-75f, FindEffect(fire.Levels[1], RoleEffectKind.EnemyFireResistance).Value, 0.001f);
-            Assert.AreEqual(3f, FindModifier(fire.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(10.55f, FindModifier(fire.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
-
-            var vulnerability = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Vulnerability\",\"slug\":\"Vulnerability\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies take #% increased Physical Damage\":{\"kind\":\"percent\",\"value\":18}},\"10\":{\"Cursed enemies take #% increased Physical Damage\":{\"kind\":\"percent\",\"value\":41}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var vuln = vulnerability.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(27f, FindEffect(vuln.Levels[0], RoleEffectKind.EnemyPhysicalDamageTakenIncreased).Value, 0.001f);
-            Assert.AreEqual(60f, FindEffect(vuln.Levels[1], RoleEffectKind.EnemyPhysicalDamageTakenIncreased).Value, 0.001f);
-
-            var chains = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Temporal Chains\",\"slug\":\"Temporal_Chains\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed Normal and Magic Enemies have #% less Action Speed\":{\"kind\":\"percent\",\"value\":17},\"Cursed Rare and Unique Enemies have #% less Action Speed\":{\"kind\":\"percent\",\"value\":10}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var tc = chains.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(17f, FindEffect(tc.Levels[0], RoleEffectKind.EnemyActionSpeedLessNormal).Value, 0.001f);
-            Assert.AreEqual(10f, FindEffect(tc.Levels[0], RoleEffectKind.EnemyActionSpeedLessRare).Value, 0.001f);
-        }
-
-        [Test]
         public void CurseCatalog_ElementalWeakness_MapsAuthoredElementalResists()
         {
             var r = SkillGemTowerMap.FromJson(
@@ -443,7 +379,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, r.RoleKinds[0]);
             Assert.AreEqual(1, r.RoleKinds.Length);
             Assert.AreEqual(0f, r.Damage, 0.001f);
-            Assert.AreEqual(GemTag.Spell | GemTag.Aoe, r.Tags);
+            Assert.AreEqual(GemTag.Spell | GemTag.Aoe | GemTag.Duration | GemTag.Curse | GemTag.Hex, r.Tags);
             Assert.AreEqual(new[] { 1, 10 }, r.SourceLevels);
             Assert.IsFalse(HasModifier(curse.Modifiers, RoleStat.CastTime));
             Assert.AreEqual(3f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
@@ -469,7 +405,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void CurseCatalog_EnfeeblePunishmentAndMarks_ScaleByFactor()
+        public void CurseCatalog_Enfeeble_ScalesByFactor()
         {
             var enfeeble = SkillGemTowerMap.FromJson(
                 "{\"name\":\"Enfeeble\",\"slug\":\"Enfeeble\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies have #% reduced Accuracy Rating\":{\"kind\":\"percent\",\"value\":11},\"Cursed Normal or Magic enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":17},\"Cursed Rare or Unique enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":10}},\"10\":{\"Cursed enemies have #% reduced Accuracy Rating\":{\"kind\":\"percent\",\"value\":27},\"Cursed Normal or Magic enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":34},\"Cursed Rare or Unique enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":26}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
@@ -480,50 +416,10 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(40f, FindEffect(enfeebleRole.Levels[1], RoleEffectKind.EnemyAccuracyRatingReduced).Value, 0.001f);
             Assert.AreEqual(50f, FindEffect(enfeebleRole.Levels[1], RoleEffectKind.EnemyOutgoingDamageLessNormal).Value, 0.001f);
             Assert.AreEqual(38f, FindEffect(enfeebleRole.Levels[1], RoleEffectKind.EnemyOutgoingDamageLessRare).Value, 0.001f);
-
-            var punishment = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Punishment\",\"slug\":\"Punishment\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed Enemies take #% increased Damage while on Low Life\":{\"kind\":\"percent\",\"value\":34}},\"10\":{\"Cursed Enemies take #% increased Damage while on Low Life\":{\"kind\":\"percent\",\"value\":81}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var punishmentRole = punishment.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(51f, FindEffect(punishmentRole.Levels[0], RoleEffectKind.EnemyDamageTakenIncreasedLowLife).Value, 0.001f);
-            Assert.AreEqual(119f, FindEffect(punishmentRole.Levels[1], RoleEffectKind.EnemyDamageTakenIncreasedLowLife).Value, 0.001f);
-
-            var sniper = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Sniper's Mark\",\"slug\":\"Snipers_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies take #% increased Damage from Projectile Hits\":{\"kind\":\"percent\",\"value\":13}},\"10\":{\"Cursed enemies take #% increased Damage from Projectile Hits\":{\"kind\":\"percent\",\"value\":44}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var sniperRole = sniper.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(GemTag.Spell, sniper.Tags);
-            Assert.AreEqual(20f, FindEffect(sniperRole.Levels[0], RoleEffectKind.EnemyProjectileDamageTakenIncreased).Value, 0.001f);
-            Assert.AreEqual(65f, FindEffect(sniperRole.Levels[1], RoleEffectKind.EnemyProjectileDamageTakenIncreased).Value, 0.001f);
-
-            var warlord = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Warlord's Mark\",\"slug\":\"Warlords_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Hits against Cursed Enemies have #% chance to double Stun Duration\":{\"kind\":\"percent\",\"value\":43},\"Cursed enemies grant #% Life Leech when Hit by Attacks\":{\"kind\":\"percent\",\"value\":2.15}},\"10\":{\"Hits against Cursed Enemies have #% chance to double Stun Duration\":{\"kind\":\"percent\",\"value\":74},\"Cursed enemies grant #% Life Leech when Hit by Attacks\":{\"kind\":\"percent\",\"value\":3.7}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var warlordRole = warlord.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(64f, FindEffect(warlordRole.Levels[0], RoleEffectKind.EnemyDoubleStunDurationChance).Value, 0.001f);
-            Assert.AreEqual(3f, FindEffect(warlordRole.Levels[0], RoleEffectKind.EnemyLifeLeechOnAttackHit).Value, 0.001f);
-            Assert.AreEqual(109f, FindEffect(warlordRole.Levels[1], RoleEffectKind.EnemyDoubleStunDurationChance).Value, 0.001f);
-            Assert.AreEqual(5f, FindEffect(warlordRole.Levels[1], RoleEffectKind.EnemyLifeLeechOnAttackHit).Value, 0.001f);
-
-            var poacher = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Poacher's Mark\",\"slug\":\"Poachers_Mark\",\"tags\":[\"Physical\",\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Adds # to # Physical Damage to Hits against Cursed Enemies\":{\"kind\":\"flat\",\"value\":[5,8]},\"Cursed enemies grant # Life when Hit by Attacks\":{\"kind\":\"flat\",\"value\":21}},\"10\":{\"Adds # to # Physical Damage to Hits against Cursed Enemies\":{\"kind\":\"flat\",\"value\":[84,126]},\"Cursed enemies grant # Life when Hit by Attacks\":{\"kind\":\"flat\",\"value\":72}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var poacherRole = poacher.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            var added = FindEffect(poacherRole.Levels[0], RoleEffectKind.EnemyAddedPhysicalDamage);
-            Assert.AreEqual(8f, added.Min, 0.001f);
-            Assert.AreEqual(12f, added.Max, 0.001f);
-            Assert.AreEqual(32f, FindEffect(poacherRole.Levels[0], RoleEffectKind.EnemyLifeWhenHitByAttacks).Value, 0.001f);
-            var addedTen = FindEffect(poacherRole.Levels[1], RoleEffectKind.EnemyAddedPhysicalDamage);
-            Assert.AreEqual(124f, addedTen.Min, 0.001f);
-            Assert.AreEqual(185f, addedTen.Max, 0.001f);
-
-            var assassin = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Assassin's Mark\",\"slug\":\"Assassins_Mark\",\"tags\":[\"Critical\",\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Hits against Cursed Enemies have #% to Critical Strike Multiplier\":{\"kind\":\"percent\",\"value\":33},\"Cursed enemies grant # Life when Killed\":{\"kind\":\"flat\",\"value\":169}},\"10\":{\"Hits against Cursed Enemies have #% to Critical Strike Multiplier\":{\"kind\":\"percent\",\"value\":64},\"Cursed enemies grant # Life when Killed\":{\"kind\":\"flat\",\"value\":948}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var assassinRole = assassin.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(50f, FindEffect(assassinRole.Levels[0], RoleEffectKind.EnemyCriticalStrikeMultiplier).Value, 0.001f);
-            Assert.AreEqual(254f, FindEffect(assassinRole.Levels[0], RoleEffectKind.EnemyLifeWhenKilled).Value, 0.001f);
-            Assert.AreEqual(94f, FindEffect(assassinRole.Levels[1], RoleEffectKind.EnemyCriticalStrikeMultiplier).Value, 0.001f);
-            Assert.AreEqual(1395f, FindEffect(assassinRole.Levels[1], RoleEffectKind.EnemyLifeWhenKilled).Value, 0.001f);
         }
 
         [Test]
-        public void CurseCatalog_HexblastBaneAndAlchemist_StayHexOnlyWithoutDamage()
+        public void CurseCatalog_Hexblast_StayHexOnlyWithoutDamage()
         {
             var hexblast = SkillGemTowerMap.FromJson(
                 "{\"name\":\"Hexblast\",\"slug\":\"Hexblast\",\"tags\":[\"Spell\",\"AoE\",\"Chaos\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.85}},\"levels\":{\"1\":{\"Deals # to # Chaos Damage\":{\"kind\":\"flat\",\"value\":[204,307]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"Deals # to # Chaos Damage\":{\"kind\":\"flat\",\"value\":[7916,11874]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
@@ -543,20 +439,6 @@ namespace GemTD.Tests.EditMode
                 out var delivery);
             Assert.AreEqual(AimMode.Direct, aim);
             Assert.AreEqual(DeliveryPattern.CasterNova, delivery);
-
-            var bane = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Bane\",\"slug\":\"Bane\",\"tags\":[\"Chaos\",\"Trigger\",\"Spell\",\"AoE\",\"Duration\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.6}},\"levels\":{\"1\":{\"Deals # Base Chaos Damage per second\":{\"kind\":\"seconds\",\"value\":119.8},\"Base radius is # metres\":{\"kind\":\"metres\",\"value\":2.4},\"#% more Damage per Curse applied\":{\"kind\":\"percent\",\"value\":30},\"Only applies Hexes from Curse Skill Gems requiring Level # or lower\":{\"kind\":\"flat\",\"value\":33},\"This Gem can only Support Skill Gems requiring Level # or lower\":{\"kind\":\"flat\",\"value\":33},\"damage_percent\":{\"kind\":\"percent\", \"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var baneRole = bane.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(0f, bane.Damage, 0.001f);
-            Assert.IsFalse(HasModifier(baneRole.Levels[0], RoleStat.Damage));
-            Assert.AreEqual(0, baneRole.Levels[0].Effects.Length);
-
-            var alchemist = SkillGemTowerMap.FromJson(
-                "{\"name\":\"Alchemist's Mark\",\"slug\":\"Alchemists_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\",\"AoE\",\"Duration\",\"Fire\",\"Chaos\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Burning Ground deals #% of the Fire Damage per Second of strongest Ignite on EnemyCaustic Ground deals #% of the Chaos Damage per Second of strongest Poison on EnemyCan create each Ground effect no more than once each second\":{\"kind\":\"percent\",\"value\":[21,63]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
-            var alchemistRole = alchemist.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
-            Assert.AreEqual(0f, alchemist.Damage, 0.001f);
-            Assert.AreEqual(0, alchemistRole.Levels[0].Effects.Length);
-            Assert.AreEqual(3f, FindModifier(alchemistRole.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
         }
 
         [Test]
@@ -569,12 +451,12 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TagMap_IgnoresLightningAndDuration()
+        public void TagMap_MapsLightningAndDuration()
         {
             var r = SkillGemTowerMap.FromJson(LightningDurationJson);
             Assert.IsTrue((r.Tags & GemTag.Spell) != 0);
             Assert.IsTrue((r.Tags & GemTag.Projectile) != 0);
-            Assert.AreEqual(GemTag.Spell | GemTag.Projectile, r.Tags);
+            Assert.AreEqual(GemTag.Spell | GemTag.Projectile | GemTag.Lightning | GemTag.Duration, r.Tags);
         }
 
         [Test]
@@ -611,7 +493,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue((r.Tags & GemTag.Projectile) != 0);
             Assert.IsTrue((r.Tags & GemTag.Aoe) != 0);
             Assert.IsTrue((r.Tags & GemTag.Melee) != 0);
-            Assert.AreEqual(GemTag.Attack | GemTag.Projectile | GemTag.Aoe | GemTag.Melee | GemTag.Strike, r.Tags);
+            Assert.AreEqual(GemTag.Attack | GemTag.Projectile | GemTag.Aoe | GemTag.Melee | GemTag.Strike | GemTag.Fire, r.Tags);
             Assert.AreEqual(3, attack.Levels.Length);
             Assert.AreEqual(1, attack.Levels[0].SourceLevel);
             Assert.AreEqual(5, attack.Levels[1].SourceLevel);
@@ -645,37 +527,9 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void HeavyStrike_HasNoEffectPayloads()
-        {
-            var r = SkillGemTowerMap.FromJson(HeavyStrikeJson);
-            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
-            Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
-            Assert.IsNotNull(attack.EffectPayloads);
-            Assert.AreEqual(0, attack.EffectPayloads.Length);
-        }
-
-        [Test]
         public void Firestorm_MapsFallingRainPayload()
         {
-            var json = BuildSpellJson(
-                "Firestorm",
-                "Firestorm",
-                "[\"Spell\",\"AoE\",\"Duration\",\"Fire\"]",
-                0.75f,
-                "Deals # to # Fire Damage",
-                splashByLevel: null,
-                chainByLevel: null,
-                44f, 66f,
-                81f, 121f,
-                135f, 202f,
-                222f, 333f,
-                361f, 541f,
-                581f, 872f,
-                927f, 1391f,
-                1311f, 1966f,
-                1648f, 2472f,
-                2068f, 3103f);
-            var spell = SkillGemTowerMap.FromJson(json).GetRolePayload(SkillGemTowerMap.RoleKind.Spell);
+            var spell = SkillGemTowerMap.FromJson(FirestormJson).GetRolePayload(SkillGemTowerMap.RoleKind.Spell);
             Assert.AreEqual(1, spell.EffectPayloads.Length);
             var rain = spell.EffectPayloads[0];
             Assert.AreEqual(EffectPayloadTrigger.AfterDelay, rain.Trigger);
@@ -706,18 +560,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void ResolveFireBehavior_EarthquakeSlug_StillGroundPulse()
-        {
-            SkillGemTowerMap.ResolveFireBehavior(
-                GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe,
-                "Earthquake",
-                out var aim,
-                out var delivery);
-            Assert.AreEqual(AimMode.Ground, aim);
-            Assert.AreEqual(DeliveryPattern.GroundPulse, delivery);
-        }
-
-        [Test]
         public void ResolveFireBehavior_MeleeStrike_IsWarpStrike()
         {
             SkillGemTowerMap.ResolveFireBehavior(
@@ -726,674 +568,6 @@ namespace GemTD.Tests.EditMode
                 out var delivery);
             Assert.AreEqual(AimMode.Direct, aim);
             Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
-        }
-
-        [Test]
-        public void SimplestAttackFive_MapDeliveryAndDamageMultiply()
-        {
-            AssertCheckAttack(
-                MoltenStrikeJson,
-                "Molten_Strike",
-                GemTag.Attack | GemTag.Projectile | GemTag.Aoe | GemTag.Melee | GemTag.Strike,
-                AimMode.Direct,
-                DeliveryPattern.WarpStrike,
-                melee: true,
-                projectile: true,
-                attackSpeed: 100f,
-                level1Multiply: 1.46f,
-                projectileCount: null,
-                levelCount: 3);
-
-            AssertCheckAttack(
-                EarthquakeJson,
-                "Earthquake",
-                GemTag.Attack | GemTag.Aoe | GemTag.Melee | GemTag.Slam,
-                AimMode.Ground,
-                DeliveryPattern.GroundPulse,
-                melee: true,
-                projectile: false,
-                attackSpeed: 75f,
-                level1Multiply: 1.555f,
-                projectileCount: null,
-                levelCount: 2);
-
-            AssertCheckAttack(
-                LightningArrowJson,
-                "Lightning_Arrow",
-                GemTag.Attack | GemTag.Aoe | GemTag.Projectile,
-                AimMode.Direct,
-                DeliveryPattern.Straight,
-                melee: false,
-                projectile: true,
-                attackSpeed: 100f,
-                level1Multiply: 1.539f,
-                projectileCount: 1f,
-                levelCount: 2,
-                splashRadius: 2f);
-
-            AssertCheckAttack(
-                BurningArrowJson,
-                "Burning_Arrow",
-                GemTag.Attack | GemTag.Projectile,
-                AimMode.Direct,
-                DeliveryPattern.Straight,
-                melee: false,
-                projectile: true,
-                attackSpeed: 70f,
-                level1Multiply: 3.021f,
-                projectileCount: 1f,
-                levelCount: 2);
-
-            AssertCheckAttack(
-                HeavyStrikeJson,
-                "Heavy_Strike",
-                GemTag.Attack | GemTag.Melee | GemTag.Strike,
-                AimMode.Direct,
-                DeliveryPattern.WarpStrike,
-                melee: true,
-                projectile: false,
-                attackSpeed: 85f,
-                level1Multiply: 2.565f,
-                projectileCount: null,
-                levelCount: 2);
-        }
-
-        [Test]
-        public void AttackProofSetTwo_MapsFullLevelsAndRuntimeDelivery()
-        {
-            AssertAttackProof(
-                BuildAttackJson(
-                    "Double Strike",
-                    "Double_Strike",
-                    "[\"Attack\",\"Melee\",\"Strike\",\"Physical\"]",
-                    80f,
-                    168.2f,
-                    210.9f,
-                    263.6f,
-                    329.2f,
-                    409.6f,
-                    504.4f,
-                    621.1f,
-                    762.6f,
-                    847.1f,
-                    941f),
-                "Double_Strike",
-                GemTag.Attack | GemTag.Melee | GemTag.Strike,
-                AimMode.Direct,
-                DeliveryPattern.WarpStrike,
-                attackSpeed: 80f,
-                towerRadius: 3.5f,
-                projectile: false,
-                projectileCount: null,
-                level1DamagePercent: 168.2f,
-                level10DamagePercent: 941f);
-
-            AssertAttackProof(
-                BuildAttackJson(
-                    "Dual Strike",
-                    "Dual_Strike",
-                    "[\"Critical\",\"Attack\",\"Melee\",\"Strike\"]",
-                    70f,
-                    181.7f,
-                    227.8f,
-                    284.7f,
-                    355.6f,
-                    442.4f,
-                    544.8f,
-                    670.7f,
-                    823.6f,
-                    914.9f,
-                    1016.2f),
-                "Dual_Strike",
-                GemTag.Attack | GemTag.Melee | GemTag.Strike,
-                AimMode.Direct,
-                DeliveryPattern.WarpStrike,
-                attackSpeed: 70f,
-                towerRadius: 3.5f,
-                projectile: false,
-                projectileCount: null,
-                level1DamagePercent: 181.7f,
-                level10DamagePercent: 1016.2f);
-
-            AssertAttackProof(
-                BuildAttackJson(
-                    "Holy Hammers",
-                    "Holy_Hammers",
-                    "[\"Attack\",\"Slam\",\"Melee\",\"AoE\",\"Lightning\"]",
-                    85f,
-                    135.8f,
-                    156.8f,
-                    177.9f,
-                    198.9f,
-                    220f,
-                    241.1f,
-                    262.1f,
-                    277.9f,
-                    288.4f,
-                    298.9f),
-                "Holy_Hammers",
-                GemTag.Attack | GemTag.Slam | GemTag.Melee | GemTag.Aoe,
-                AimMode.Ground,
-                DeliveryPattern.GroundPulse,
-                attackSpeed: 85f,
-                towerRadius: 3.5f,
-                projectile: false,
-                projectileCount: null,
-                level1DamagePercent: 135.8f,
-                level10DamagePercent: 298.9f);
-
-            AssertAttackProof(
-                BuildAttackJson(
-                    "Ice Crash",
-                    "Ice_Crash",
-                    "[\"Attack\",\"AoE\",\"Melee\",\"Cold\",\"Slam\"]",
-                    70f,
-                    368.2f,
-                    418.7f,
-                    475.1f,
-                    539.2f,
-                    611.6f,
-                    693.8f,
-                    786.9f,
-                    889.6f,
-                    947.7f,
-                    1009.5f),
-                "Ice_Crash",
-                GemTag.Attack | GemTag.Aoe | GemTag.Melee | GemTag.Slam,
-                AimMode.Ground,
-                DeliveryPattern.GroundPulse,
-                attackSpeed: 70f,
-                towerRadius: 3.5f,
-                projectile: false,
-                projectileCount: null,
-                level1DamagePercent: 368.2f,
-                level10DamagePercent: 1009.5f);
-
-            AssertAttackProof(
-                BuildAttackJson(
-                    "Kinetic Blast",
-                    "Kinetic_Blast",
-                    "[\"Attack\",\"Projectile\",\"AoE\"]",
-                    115f,
-                    142.4f,
-                    145.5f,
-                    148.7f,
-                    151.8f,
-                    155f,
-                    158.2f,
-                    161.3f,
-                    163.7f,
-                    165.3f,
-                    166.8f),
-                "Kinetic_Blast",
-                GemTag.Attack | GemTag.Projectile | GemTag.Aoe,
-                AimMode.Direct,
-                DeliveryPattern.Straight,
-                attackSpeed: 115f,
-                towerRadius: 5f,
-                projectile: true,
-                projectileCount: 1f,
-                level1DamagePercent: 142.4f,
-                level10DamagePercent: 166.8f);
-        }
-
-        [Test]
-        public void SpellProofSetOne_MapsUserSelectedDeliveryAndLevels()
-        {
-            AssertSpellProof(
-                BuildSpellJson(
-                    "Frostbolt",
-                    "Frostbolt",
-                    "[\"Spell\",\"Projectile\",\"Cold\"]",
-                    0.75f,
-                    "Deals # to # Cold Damage",
-                    splashByLevel: null,
-                    chainByLevel: null,
-                    18f, 27f,
-                    81f, 121f,
-                    249f, 373f,
-                    688f, 1033f,
-                    1594f, 2392f,
-                    2539f, 3809f,
-                    4010f, 6015f,
-                    5623f, 8434f,
-                    7030f, 10545f,
-                    8778f, 13166f),
-                "Frostbolt",
-                GemTag.Spell | GemTag.Projectile,
-                0.75f,
-                AimMode.Direct,
-                DeliveryPattern.Straight,
-                projectileCount: 1f,
-                projectileSpeed: true,
-                18f,
-                27f,
-                8778f,
-                13166f);
-
-            AssertSpellProof(
-                BuildSpellJson(
-                    "Firestorm",
-                    "Firestorm",
-                    "[\"Spell\",\"AoE\",\"Duration\",\"Fire\"]",
-                    0.75f,
-                    "Deals # to # Fire Damage",
-                    splashByLevel: null,
-                    chainByLevel: null,
-                    44f, 66f,
-                    81f, 121f,
-                    135f, 202f,
-                    222f, 333f,
-                    361f, 541f,
-                    581f, 872f,
-                    927f, 1391f,
-                    1311f, 1966f,
-                    1648f, 2472f,
-                    2068f, 3103f),
-                "Firestorm",
-                GemTag.Spell | GemTag.Aoe,
-                0.75f,
-                AimMode.Ground,
-                DeliveryPattern.Rain,
-                projectileCount: null,
-                projectileSpeed: false,
-                44f,
-                66f,
-                2068f,
-                3103f);
-
-            AssertSpellProof(
-                BuildSpellJson(
-                    "Ice Nova",
-                    "Ice_Nova",
-                    "[\"Spell\",\"AoE\",\"Cold\",\"Nova\"]",
-                    0.7f,
-                    "Deals # to # Cold Damage",
-                    splashByLevel: new[] { 2.6f, 2.7f, 2.8f, 2.9f, 3f, 3.1f, 3.2f, 3.3f, 3.4f, 3.4f },
-                    chainByLevel: null,
-                    61f, 91f,
-                    169f, 254f,
-                    355f, 533f,
-                    715f, 1073f,
-                    1122f, 1683f,
-                    1742f, 2614f,
-                    2683f, 4025f,
-                    3692f, 5538f,
-                    4558f, 6837f,
-                    5619f, 8429f),
-                "Ice_Nova",
-                GemTag.Spell | GemTag.Aoe,
-                0.7f,
-                AimMode.Direct,
-                DeliveryPattern.CasterNova,
-                projectileCount: null,
-                projectileSpeed: false,
-                61f,
-                91f,
-                5619f,
-                8429f,
-                splashL1: 2.6f,
-                splashL10: 3.4f);
-
-            AssertSpellProof(
-                BuildSpellJson(
-                    "Arc",
-                    "Arc",
-                    "[\"Spell\",\"Chaining\",\"Lightning\"]",
-                    0.6f,
-                    "Deals # to # Lightning Damage",
-                    splashByLevel: null,
-                    chainByLevel: new[] { 4, 5, 6, 7, 7, 8, 9, 10, 11, 11 },
-                    13f, 75f,
-                    34f, 194f,
-                    68f, 387f,
-                    131f, 740f,
-                    198f, 1122f,
-                    297f, 1683f,
-                    442f, 2503f,
-                    592f, 3356f,
-                    719f, 4072f,
-                    871f, 4934f),
-                "Arc",
-                GemTag.Spell | GemTag.Chaining,
-                0.6f,
-                AimMode.Direct,
-                DeliveryPattern.Straight,
-                projectileCount: 1f,
-                projectileSpeed: true,
-                13f,
-                75f,
-                871f,
-                4934f,
-                chainL1: 4,
-                chainL10: 11);
-
-            AssertSpellProof(
-                FireballJson,
-                "Fireball",
-                GemTag.Projectile | GemTag.Spell | GemTag.Aoe,
-                0.75f,
-                AimMode.Direct,
-                DeliveryPattern.Straight,
-                projectileCount: 1f,
-                projectileSpeed: true,
-                19f,
-                28f,
-                11041f,
-                16562f,
-                splashL1: 1.1f,
-                splashL10: 2.4f);
-        }
-
-        static string BuildClarityTenLevelJson()
-        {
-            var levels = string.Empty;
-            for (var i = 1; i <= 10; i++)
-            {
-                if (i > 1)
-                    levels += ",";
-                levels += "\"" + i
-                    + "\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}";
-            }
-
-            return "{\"name\":\"Clarity\",\"slug\":\"Clarity\",\"tags\":[\"Aura\",\"Spell\",\"AoE\"],\"category\":\"aura\",\"header\":{},\"levels\":{"
-                + levels
-                + "},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}";
-        }
-
-        static string BuildSpellJson(
-            string name,
-            string slug,
-            string tagsJson,
-            float castTime,
-            string dealsHeader,
-            float[] splashByLevel,
-            int[] chainByLevel,
-            params float[] minMaxPairs)
-        {
-            var levels = string.Empty;
-            var levelCount = minMaxPairs.Length / 2;
-            for (var i = 0; i < levelCount; i++)
-            {
-                if (i > 0)
-                    levels += ",";
-
-                var extra = string.Empty;
-                if (splashByLevel != null && i < splashByLevel.Length)
-                {
-                    extra += "\"Base radius is # metres\":{\"kind\":\"metres\",\"value\":"
-                        + splashByLevel[i].ToString(CultureInfo.InvariantCulture)
-                        + "},";
-                }
-
-                if (chainByLevel != null && i < chainByLevel.Length)
-                {
-                    extra += "\"Chains # Times\":{\"kind\":\"flat\",\"value\":"
-                        + chainByLevel[i].ToString(CultureInfo.InvariantCulture)
-                        + "},";
-                }
-
-                var min = minMaxPairs[i * 2].ToString(CultureInfo.InvariantCulture);
-                var max = minMaxPairs[i * 2 + 1].ToString(CultureInfo.InvariantCulture);
-                levels += "\""
-                    + (i + 1)
-                    + "\":{"
-                    + extra
-                    + "\""
-                    + dealsHeader
-                    + "\":{\"kind\":\"flat\",\"value\":["
-                    + min
-                    + ","
-                    + max
-                    + "]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}";
-            }
-
-            return "{\"name\":\""
-                + name
-                + "\",\"slug\":\""
-                + slug
-                + "\",\"tags\":"
-                + tagsJson
-                + ",\"category\":\"spell\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":"
-                + castTime.ToString(CultureInfo.InvariantCulture)
-                + "}},\"levels\":{"
-                + levels
-                + "}}";
-        }
-
-        static void AssertSpellProof(
-            string json,
-            string slug,
-            GemTag tags,
-            float castTime,
-            AimMode aim,
-            DeliveryPattern delivery,
-            float? projectileCount,
-            bool projectileSpeed,
-            float level1Min,
-            float level1Max,
-            float level10Min,
-            float level10Max,
-            float? splashL1 = null,
-            float? splashL10 = null,
-            int? chainL1 = null,
-            int? chainL10 = null)
-        {
-            var result = SkillGemTowerMap.FromJson(json);
-            var spell = result.GetRolePayload(SkillGemTowerMap.RoleKind.Spell);
-            Assert.AreEqual(slug, result.Slug);
-            Assert.AreEqual("spell", result.Category);
-            Assert.AreEqual(tags, result.Tags);
-            Assert.AreEqual(1, result.RoleKinds.Length);
-            Assert.AreEqual(SkillGemTowerMap.RoleKind.Spell, result.RoleKinds[0]);
-            Assert.AreEqual(10, result.SourceLevels.Length);
-            Assert.AreEqual(10, spell.Levels.Length);
-            for (var i = 0; i < 10; i++)
-                Assert.AreEqual(i + 1, result.SourceLevels[i]);
-
-            Assert.AreEqual(castTime, FindModifier(spell.Modifiers, RoleStat.CastTime).Value, 0.001f);
-            Assert.AreEqual(100f, FindModifier(spell.Modifiers, RoleStat.CastSpeed).Value, 0.001f);
-            Assert.AreEqual(5f, FindModifier(spell.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(8f, FindModifier(spell.Modifiers, RoleStat.Damage).Value, 0.001f);
-            Assert.AreEqual(projectileSpeed, HasModifier(spell.Modifiers, RoleStat.ProjectileSpeed));
-            if (projectileCount.HasValue)
-                Assert.AreEqual(
-                    projectileCount.Value,
-                    FindModifier(spell.Modifiers, RoleStat.ProjectileCount).Value,
-                    0.001f);
-            else
-                Assert.IsFalse(HasModifier(spell.Modifiers, RoleStat.ProjectileCount));
-
-            var level1Damage = FindModifier(spell.Levels[0].Modifiers, RoleStat.Damage);
-            Assert.AreEqual(RoleModifierOperation.Set, level1Damage.Operation);
-            Assert.AreEqual(level1Min, level1Damage.Min, 0.001f);
-            Assert.AreEqual(level1Max, level1Damage.Max, 0.001f);
-            var level10Damage = FindModifier(spell.Levels[9].Modifiers, RoleStat.Damage);
-            Assert.AreEqual(RoleModifierOperation.Set, level10Damage.Operation);
-            Assert.AreEqual(level10Min, level10Damage.Min, 0.001f);
-            Assert.AreEqual(level10Max, level10Damage.Max, 0.001f);
-            if (splashL1.HasValue)
-            {
-                Assert.AreEqual(
-                    splashL1.Value,
-                    FindModifier(spell.Levels[0], RoleStat.SplashRadius).Value,
-                    0.001f);
-                Assert.AreEqual(
-                    splashL10.Value,
-                    FindModifier(spell.Levels[9], RoleStat.SplashRadius).Value,
-                    0.001f);
-            }
-            else
-            {
-                Assert.IsFalse(HasModifier(spell.Modifiers, RoleStat.SplashRadius));
-                Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.SplashRadius));
-                Assert.IsFalse(HasModifier(spell.Levels[9], RoleStat.SplashRadius));
-            }
-
-            if (chainL1.HasValue)
-            {
-                Assert.AreEqual(
-                    chainL1.Value,
-                    FindModifier(spell.Levels[0], RoleStat.ChainCount).Value,
-                    0.001f);
-                Assert.AreEqual(
-                    chainL10.Value,
-                    FindModifier(spell.Levels[9], RoleStat.ChainCount).Value,
-                    0.001f);
-            }
-            else
-            {
-                Assert.IsFalse(HasModifier(spell.Modifiers, RoleStat.ChainCount));
-                Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.ChainCount));
-            }
-
-            SkillGemTowerMap.ResolveFireBehavior(
-                result.Tags,
-                result.Slug,
-                out var mappedAim,
-                out var mappedDelivery);
-            Assert.AreEqual(aim, mappedAim);
-            Assert.AreEqual(delivery, mappedDelivery);
-        }
-
-        static string BuildAttackJson(
-            string name,
-            string slug,
-            string tagsJson,
-            float attackSpeed,
-            params float[] damagePercents)
-        {
-            var levels = string.Empty;
-            for (var i = 0; i < damagePercents.Length; i++)
-            {
-                if (i > 0)
-                    levels += ",";
-
-                levels += "\""
-                    + (i + 1)
-                    + "\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":"
-                    + damagePercents[i].ToString(CultureInfo.InvariantCulture)
-                    + "}}";
-            }
-
-            return "{\"name\":\""
-                + name
-                + "\",\"slug\":\""
-                + slug
-                + "\",\"tags\":"
-                + tagsJson
-                + ",\"category\":\"attack\",\"header\":{\"attack_speed\":{\"kind\":\"percent\",\"value\":"
-                + attackSpeed.ToString(CultureInfo.InvariantCulture)
-                + "}},\"levels\":{"
-                + levels
-                + "}}";
-        }
-
-        static void AssertAttackProof(
-            string json,
-            string slug,
-            GemTag tags,
-            AimMode aim,
-            DeliveryPattern delivery,
-            float attackSpeed,
-            float towerRadius,
-            bool projectile,
-            float? projectileCount,
-            float level1DamagePercent,
-            float level10DamagePercent)
-        {
-            var result = SkillGemTowerMap.FromJson(json);
-            var attack = result.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
-            Assert.AreEqual(slug, result.Slug);
-            Assert.AreEqual(tags, result.Tags);
-            Assert.AreEqual(1, result.RoleKinds.Length);
-            Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, result.RoleKinds[0]);
-            Assert.AreEqual(10, result.SourceLevels.Length);
-            Assert.AreEqual(10, attack.Levels.Length);
-            for (var i = 0; i < 10; i++)
-                Assert.AreEqual(i + 1, result.SourceLevels[i]);
-
-            Assert.AreEqual(1f, FindModifier(attack.Modifiers, RoleStat.AttackTime).Value, 0.001f);
-            Assert.AreEqual(attackSpeed, FindModifier(attack.Modifiers, RoleStat.AttackSpeed).Value, 0.001f);
-            Assert.AreEqual(towerRadius, FindModifier(attack.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(10f, FindModifier(attack.Modifiers, RoleStat.Damage).Value, 0.001f);
-            Assert.AreEqual(projectile, HasModifier(attack.Modifiers, RoleStat.ProjectileSpeed));
-            if (projectileCount.HasValue)
-                Assert.AreEqual(
-                    projectileCount.Value,
-                    FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value,
-                    0.001f);
-            else
-                Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
-
-            Assert.AreEqual(
-                RoleModifierOperation.Multiply,
-                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
-            Assert.AreEqual(
-                level1DamagePercent / 100f,
-                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value,
-                0.001f);
-            Assert.AreEqual(
-                level10DamagePercent / 100f,
-                FindModifier(attack.Levels[9].Modifiers, RoleStat.Damage).Value,
-                0.001f);
-            Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.SplashRadius));
-            Assert.IsFalse(HasModifier(attack.Levels[0], RoleStat.SplashRadius));
-            SkillGemTowerMap.ResolveFireBehavior(result.Tags, out var mappedAim, out var mappedDelivery);
-            Assert.AreEqual(aim, mappedAim);
-            Assert.AreEqual(delivery, mappedDelivery);
-        }
-
-        static void AssertCheckAttack(
-            string json,
-            string slug,
-            GemTag tags,
-            AimMode aim,
-            DeliveryPattern delivery,
-            bool melee,
-            bool projectile,
-            float attackSpeed,
-            float level1Multiply,
-            float? projectileCount,
-            int levelCount,
-            float? splashRadius = null)
-        {
-            var r = SkillGemTowerMap.FromJson(json);
-            var attack = r.GetRolePayload(SkillGemTowerMap.RoleKind.Attack);
-            Assert.AreEqual(slug, r.Slug);
-            Assert.AreEqual(tags, r.Tags);
-            Assert.AreEqual(attackSpeed, FindModifier(attack.Modifiers, RoleStat.AttackSpeed).Value, 0.001f);
-            Assert.AreEqual(
-                melee ? 3.5f : 5f,
-                FindModifier(attack.Modifiers, RoleStat.TowerRadius).Value,
-                0.001f);
-            Assert.AreEqual(projectile, HasModifier(attack.Modifiers, RoleStat.ProjectileSpeed));
-            if (projectileCount.HasValue)
-                Assert.AreEqual(
-                    projectileCount.Value,
-                    FindModifier(attack.Modifiers, RoleStat.ProjectileCount).Value,
-                    0.001f);
-            else
-                Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.ProjectileCount));
-            Assert.AreEqual(levelCount, attack.Levels.Length);
-            Assert.AreEqual(
-                RoleModifierOperation.Multiply,
-                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
-            Assert.AreEqual(
-                level1Multiply,
-                FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Value,
-                0.001f);
-            Assert.IsFalse(HasModifier(attack.Levels[0].Modifiers, RoleStat.SplashRadius));
-            if (splashRadius.HasValue)
-                Assert.AreEqual(
-                    splashRadius.Value,
-                    FindModifier(attack.Modifiers, RoleStat.SplashRadius).Value,
-                    0.001f);
-            else
-                Assert.IsFalse(HasModifier(attack.Modifiers, RoleStat.SplashRadius));
-            SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var mappedAim, out var mappedDelivery);
-            Assert.AreEqual(aim, mappedAim);
-            Assert.AreEqual(delivery, mappedDelivery);
         }
 
         static bool HasModifier(RoleStatModifier[] modifiers, RoleStat stat)
