@@ -81,15 +81,16 @@ namespace GemTD.Gameplay.Towers
 
         public static string FormatOfferLabel(DraftOfferCard card, TowerRoster roster)
         {
-            if (card.IsGem)
-                return card.DisplayName;
+            return card.DisplayName ?? "";
+        }
+
+        public static string FormatOfferStatus(DraftOfferCard card, TowerRoster roster)
+        {
             if (!card.IsTower)
                 return "";
-
-            var name = card.DisplayName;
             if (roster != null && roster.Contains(card.Tower))
-                return name + "\nUpgrade to level " + (roster.GetDisplayLevel(card.Tower) + 1);
-            return name + "\nUnlock";
+                return "Upgrade";
+            return "New";
         }
 
         public static string FormatBarLabel(TowerDefinition def, TowerRoster roster)

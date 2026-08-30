@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 
@@ -188,15 +189,43 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void FormatOfferLabel_UnlockThenUpgrade()
+        public void FormatOfferLabel_IsNameOnly_StatusIsNewOrUpgrade()
         {
             var roster = new TowerRoster();
             var card = DraftOfferCard.FromTower(_a);
 
-            Assert.AreEqual("Alpha\nUnlock", TowerRoster.FormatOfferLabel(card, roster));
+            Assert.AreEqual("Alpha", TowerRoster.FormatOfferLabel(card, roster));
+            Assert.AreEqual("New", TowerRoster.FormatOfferStatus(card, roster));
 
             roster.ApplyPick(_a);
-            Assert.AreEqual("Alpha\nUpgrade to level 2", TowerRoster.FormatOfferLabel(card, roster));
+            Assert.AreEqual("Alpha", TowerRoster.FormatOfferLabel(card, roster));
+            Assert.AreEqual("Upgrade", TowerRoster.FormatOfferStatus(card, roster));
+        }
+
+        [Test]
+        public void FormatOfferStatus_GemHasNoStatus()
+        {
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.DisplayName = "Chain";
+            var card = DraftOfferCard.FromGem(GemInstance.FromDefinition(gem));
+            Assert.AreEqual("Chain", TowerRoster.FormatOfferLabel(card, null));
+            Assert.AreEqual("", TowerRoster.FormatOfferStatus(card, null));
+            Object.DestroyImmediate(gem);
+        }
+
+        [Test]
+        public void DraftOfferCard_ExposesTowerAndGemDescription()
+        {
+            _a.Description = "Swings in an arc.";
+            Assert.AreEqual("Swings in an arc.", DraftOfferCard.FromTower(_a).Description);
+
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.DisplayName = "Chain";
+            gem.Description = "Projectiles chain to nearby enemies.";
+            Assert.AreEqual(
+                "Projectiles chain to nearby enemies.",
+                DraftOfferCard.FromGem(GemInstance.FromDefinition(gem)).Description);
+            Object.DestroyImmediate(gem);
         }
     }
 }

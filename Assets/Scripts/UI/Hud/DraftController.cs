@@ -120,7 +120,11 @@ namespace GemTD.UI
                 if (i < draft.CurrentOffer.Count && draft.CurrentOffer[i].IsFilled)
                 {
                     var card = draft.CurrentOffer[i];
-                    picks[i].UpdateLabel(TowerRoster.FormatOfferLabel(card, _root.Draft != null ? _root.Draft.Roster : null));
+                    var roster = _root.Draft != null ? _root.Draft.Roster : null;
+                    picks[i].UpdateLabel(
+                        TowerRoster.FormatOfferLabel(card, roster),
+                        card.Description,
+                        TowerRoster.FormatOfferStatus(card, roster));
                     picks[i].SetSelected(i == draft.SelectedIndex);
                     var btn = picks[i].GetButton();
                     if (btn != null)

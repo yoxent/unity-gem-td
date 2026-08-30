@@ -26,5 +26,17 @@ namespace GemTD.Gameplay.Run
 
         public string DisplayName =>
             IsGem ? Gem.DisplayName : IsTower ? Tower.DisplayName : "";
+
+        public string Description
+        {
+            get
+            {
+                if (IsGem)
+                    return Gem.Def != null ? Gem.Def.Description ?? "" : "";
+                if (IsTower)
+                    return Tower.Description ?? "";
+                return "";
+            }
+        }
     }
 }
