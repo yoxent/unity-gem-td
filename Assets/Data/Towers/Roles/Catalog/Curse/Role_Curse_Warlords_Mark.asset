@@ -12,28 +12,227 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 024b306d332beef4883c87fa3148e60f, type: 3}
   m_Name: Role_Curse_Warlords_Mark
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.CurseRoleDefinition
-  Modifiers: []
+  Modifiers:
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3
+    Min: 0
+    Max: 0
+  Effects: []
   Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 64
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 3.45
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 69
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 3.97
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 73
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
   - SourceLevel: 4
-    Modifiers: []
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 4.56
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 77
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 5.25
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 82
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 6.03
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 87
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 6.94
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 91
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
   - SourceLevel: 8
-    Modifiers: []
-  - SourceLevel: 12
-    Modifiers: []
-  - SourceLevel: 16
-    Modifiers: []
-  - SourceLevel: 20
-    Modifiers: []
-  - SourceLevel: 24
-    Modifiers: []
-  - SourceLevel: 28
-    Modifiers: []
-  - SourceLevel: 32
-    Modifiers: []
-  - SourceLevel: 36
-    Modifiers: []
-  - SourceLevel: 40
-    Modifiers: []
-  CastTime: 0.5
-  CastSpeed: 100
-  TowerRadius: 4.5
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 7.98
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 97
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 9.18
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 103
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 10.55
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 17
+      Operation: 0
+      ValueKind: 0
+      Value: 109
+      Min: 0
+      Max: 0
+    - Kind: 16
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 5
+  Mix: []

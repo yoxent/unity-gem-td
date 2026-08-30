@@ -744,6 +744,29 @@ namespace GemTD.Gameplay.Towers
                 return;
             }
 
+            if (CurseProofNumbers.IsElementalWeakness(slug))
+            {
+                var resist = CurseProofNumbers.Resist(sourceLevel);
+                if (values != null)
+                {
+                    foreach (var effect in values.Properties())
+                    {
+                        if (!IsElementalResistanceHeader(effect.Name))
+                            continue;
+                        var poe = ReadNumber(effect.Value) ?? ReadNumber(effect.Value?["value"]);
+                        if (!poe.HasValue)
+                            continue;
+                        resist = CurseProofNumbers.ScalePoE(poe.Value, sourceLevel);
+                        break;
+                    }
+                }
+
+                AddEffectSet(effects, RoleEffectKind.EnemyFireResistance, resist);
+                AddEffectSet(effects, RoleEffectKind.EnemyColdResistance, resist);
+                AddEffectSet(effects, RoleEffectKind.EnemyLightningResistance, resist);
+                return;
+            }
+
             if (CurseProofNumbers.IsVulnerability(slug))
             {
                 AddEffectSet(
@@ -753,20 +776,120 @@ namespace GemTD.Gameplay.Towers
                 return;
             }
 
-            if (!CurseProofNumbers.IsTemporalChains(slug) || values == null)
+            if (CurseProofNumbers.IsTemporalChains(slug))
+            {
+                if (values == null)
+                    return;
+
+                foreach (var effect in values.Properties())
+                {
+                    var amount = ReadNumber(effect.Value) ?? ReadNumber(effect.Value?["value"]);
+                    if (!amount.HasValue)
+                        continue;
+
+                    if (IsTemporalChainsNormalHeader(effect.Name))
+                        AddEffectSet(effects, RoleEffectKind.EnemyActionSpeedLessNormal, amount.Value);
+                    else if (IsTemporalChainsRareHeader(effect.Name))
+                        AddEffectSet(effects, RoleEffectKind.EnemyActionSpeedLessRare, amount.Value);
+                }
+
+                return;
+            }
+
+            AddCatalogRetuneCurseEffects(effects, values, sourceLevel);
+        }
+
+        static void AddCatalogRetuneCurseEffects(
+            List<RoleEffectModifier> effects,
+            JObject values,
+            int sourceLevel)
+        {
+            if (values == null)
                 return;
 
             foreach (var effect in values.Properties())
             {
+                if (IsSkippedCurseCatalogHeader(effect.Name))
+                    continue;
+
+                if (IsAddedPhysicalToHitsHeader(effect.Name)
+                    && TryReadRange(effect.Value, out var addedMin, out var addedMax))
+                {
+                    AddEffectRange(
+                        effects,
+                        RoleEffectKind.EnemyAddedPhysicalDamage,
+                        CurseProofNumbers.ScalePoE(addedMin, sourceLevel),
+                        CurseProofNumbers.ScalePoE(addedMax, sourceLevel));
+                    continue;
+                }
+
                 var amount = ReadNumber(effect.Value) ?? ReadNumber(effect.Value?["value"]);
                 if (!amount.HasValue)
                     continue;
 
-                if (IsTemporalChainsNormalHeader(effect.Name))
-                    AddEffectSet(effects, RoleEffectKind.EnemyActionSpeedLessNormal, amount.Value);
-                else if (IsTemporalChainsRareHeader(effect.Name))
-                    AddEffectSet(effects, RoleEffectKind.EnemyActionSpeedLessRare, amount.Value);
+                var kind = MapCatalogRetuneEffectKind(effect.Name);
+                if (!kind.HasValue)
+                    continue;
+
+                AddEffectSet(effects, kind.Value, CurseProofNumbers.ScalePoE(amount.Value, sourceLevel));
             }
+        }
+
+        static bool IsSkippedCurseCatalogHeader(string header)
+        {
+            if (string.IsNullOrEmpty(header))
+                return true;
+
+            return string.Equals(header, "damage_percent", StringComparison.OrdinalIgnoreCase)
+                || ContainsIgnoreCase(header, "Base duration is")
+                || ContainsIgnoreCase(header, "metres to radius")
+                || ContainsIgnoreCase(header, "Base radius is")
+                || IsFlatDamageHeader(header)
+                || ContainsIgnoreCase(header, "Damage per second")
+                || ContainsIgnoreCase(header, "more Damage per Curse")
+                || ContainsIgnoreCase(header, "Only applies Hexes")
+                || ContainsIgnoreCase(header, "can only Support")
+                || ContainsIgnoreCase(header, "Burning Ground")
+                || ContainsIgnoreCase(header, "Caustic Ground");
+        }
+
+        static bool IsAddedPhysicalToHitsHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Adds")
+                && ContainsIgnoreCase(header, "Physical Damage")
+                && ContainsIgnoreCase(header, "Hits against Cursed");
+        }
+
+        static RoleEffectKind? MapCatalogRetuneEffectKind(string header)
+        {
+            if (ContainsIgnoreCase(header, "increased Damage while on Low Life"))
+                return RoleEffectKind.EnemyDamageTakenIncreasedLowLife;
+            if (ContainsIgnoreCase(header, "Damage from Projectile Hits"))
+                return RoleEffectKind.EnemyProjectileDamageTakenIncreased;
+            if (ContainsIgnoreCase(header, "Life Leech when Hit by Attacks"))
+                return RoleEffectKind.EnemyLifeLeechOnAttackHit;
+            if (ContainsIgnoreCase(header, "double Stun Duration"))
+                return RoleEffectKind.EnemyDoubleStunDurationChance;
+            if (ContainsIgnoreCase(header, "Life when Hit by Attacks"))
+                return RoleEffectKind.EnemyLifeWhenHitByAttacks;
+            if (ContainsIgnoreCase(header, "Life when Killed"))
+                return RoleEffectKind.EnemyLifeWhenKilled;
+            if (ContainsIgnoreCase(header, "Critical Strike Multiplier"))
+                return RoleEffectKind.EnemyCriticalStrikeMultiplier;
+            if (ContainsIgnoreCase(header, "Normal or Magic")
+                && ContainsIgnoreCase(header, "less Damage"))
+                return RoleEffectKind.EnemyOutgoingDamageLessNormal;
+            if (ContainsIgnoreCase(header, "Rare or Unique")
+                && ContainsIgnoreCase(header, "less Damage"))
+                return RoleEffectKind.EnemyOutgoingDamageLessRare;
+            if (ContainsIgnoreCase(header, "reduced Accuracy Rating"))
+                return RoleEffectKind.EnemyAccuracyRatingReduced;
+            return null;
+        }
+
+        static bool IsElementalResistanceHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "Elemental Resistances");
         }
 
         static bool IsTemporalChainsNormalHeader(string header)

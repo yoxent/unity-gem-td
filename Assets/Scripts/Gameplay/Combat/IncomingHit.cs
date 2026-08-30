@@ -38,25 +38,29 @@ namespace GemTD.Gameplay.Combat
                 enemy.FireResistance,
                 enemy,
                 statuses,
-                StatusId.CurseFlammability);
+                StatusId.CurseFlammability,
+                elemental: true);
             var cold = ApplyResist(
                 damage * spec.MixCold,
                 enemy.ColdResistance,
                 enemy,
                 statuses,
-                StatusId.CurseFrostbite);
+                StatusId.CurseFrostbite,
+                elemental: true);
             var lightning = ApplyResist(
                 damage * spec.MixLightning,
                 enemy.LightningResistance,
                 enemy,
                 statuses,
-                StatusId.CurseConductivity);
+                StatusId.CurseConductivity,
+                elemental: true);
             var chaos = ApplyResist(
                 damage * spec.MixChaos,
                 enemy.ChaosResistance,
                 enemy,
                 statuses,
-                StatusId.CurseDespair);
+                StatusId.CurseDespair,
+                elemental: false);
 
             if (enemy.ShieldHp > 0f)
                 chaos *= DamageTypeCombat.ChaosVsShieldMultiplier;
@@ -91,7 +95,8 @@ namespace GemTD.Gameplay.Combat
             int baseResist,
             EnemyRuntime enemy,
             StatusRuntime statuses,
-            StatusId curseId)
+            StatusId curseId,
+            bool elemental)
         {
             if (amount <= 0f)
                 return 0f;
@@ -99,6 +104,10 @@ namespace GemTD.Gameplay.Combat
             var percent = (float)baseResist;
             if (statuses != null && statuses.TryGetMagnitude(enemy, curseId, out var mag))
                 percent += mag;
+            if (elemental
+                && statuses != null
+                && statuses.TryGetMagnitude(enemy, StatusId.CurseElementalWeakness, out var elementalMag))
+                percent += elementalMag;
 
             var fraction = percent / 100f;
             if (fraction < ResistFloor)

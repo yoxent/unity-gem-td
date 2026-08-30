@@ -310,6 +310,133 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void CurseCatalog_ElementalWeakness_MapsAuthoredElementalResists()
+        {
+            var r = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Elemental Weakness\",\"slug\":\"Elemental_Weakness\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Base duration is # seconds\":{\"kind\":\"seconds\",\"value\":8.6},\"# metres to radius\":{\"kind\":\"metres\",\"value\":0.2},\"Cursed enemies have #% to Elemental Resistances\":{\"kind\":\"percent\",\"value\":-18},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"Base duration is # seconds\":{\"kind\":\"seconds\",\"value\":13.8},\"# metres to radius\":{\"kind\":\"metres\",\"value\":1.9},\"Cursed enemies have #% to Elemental Resistances\":{\"kind\":\"percent\",\"value\":-41},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var curse = r.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual("Elemental_Weakness", r.Slug);
+            Assert.AreEqual("curse", r.Category);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, r.RoleKinds[0]);
+            Assert.AreEqual(1, r.RoleKinds.Length);
+            Assert.AreEqual(0f, r.Damage, 0.001f);
+            Assert.AreEqual(GemTag.Spell | GemTag.Aoe, r.Tags);
+            Assert.AreEqual(new[] { 1, 10 }, r.SourceLevels);
+            Assert.IsFalse(HasModifier(curse.Modifiers, RoleStat.CastTime));
+            Assert.AreEqual(3f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(3f, FindModifier(curse.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(10.55f, FindModifier(curse.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.IsFalse(HasEffect(curse.Levels[0], RoleEffectKind.SkillDuration));
+            Assert.IsFalse(HasModifier(curse.Levels[0], RoleStat.Damage));
+            Assert.AreEqual(-27f, FindEffect(curse.Levels[0], RoleEffectKind.EnemyFireResistance).Value, 0.001f);
+            Assert.AreEqual(-27f, FindEffect(curse.Levels[0], RoleEffectKind.EnemyColdResistance).Value, 0.001f);
+            Assert.AreEqual(-27f, FindEffect(curse.Levels[0], RoleEffectKind.EnemyLightningResistance).Value, 0.001f);
+            Assert.IsFalse(HasEffect(curse.Levels[0], RoleEffectKind.EnemyChaosResistance));
+            Assert.AreEqual(-60f, FindEffect(curse.Levels[1], RoleEffectKind.EnemyFireResistance).Value, 0.001f);
+            Assert.AreEqual(-60f, FindEffect(curse.Levels[1], RoleEffectKind.EnemyColdResistance).Value, 0.001f);
+            Assert.AreEqual(-60f, FindEffect(curse.Levels[1], RoleEffectKind.EnemyLightningResistance).Value, 0.001f);
+            SkillGemTowerMap.ResolveFireBehavior(
+                r.Tags,
+                r.Slug,
+                SkillGemTowerMap.RoleKind.Curse,
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.CasterNova, delivery);
+        }
+
+        [Test]
+        public void CurseCatalog_EnfeeblePunishmentAndMarks_ScaleByFactor()
+        {
+            var enfeeble = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Enfeeble\",\"slug\":\"Enfeeble\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies have #% reduced Accuracy Rating\":{\"kind\":\"percent\",\"value\":11},\"Cursed Normal or Magic enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":17},\"Cursed Rare or Unique enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":10}},\"10\":{\"Cursed enemies have #% reduced Accuracy Rating\":{\"kind\":\"percent\",\"value\":27},\"Cursed Normal or Magic enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":34},\"Cursed Rare or Unique enemies deal #% less Damage\":{\"kind\":\"percent\",\"value\":26}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var enfeebleRole = enfeeble.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(16f, FindEffect(enfeebleRole.Levels[0], RoleEffectKind.EnemyAccuracyRatingReduced).Value, 0.001f);
+            Assert.AreEqual(26f, FindEffect(enfeebleRole.Levels[0], RoleEffectKind.EnemyOutgoingDamageLessNormal).Value, 0.001f);
+            Assert.AreEqual(15f, FindEffect(enfeebleRole.Levels[0], RoleEffectKind.EnemyOutgoingDamageLessRare).Value, 0.001f);
+            Assert.AreEqual(40f, FindEffect(enfeebleRole.Levels[1], RoleEffectKind.EnemyAccuracyRatingReduced).Value, 0.001f);
+            Assert.AreEqual(50f, FindEffect(enfeebleRole.Levels[1], RoleEffectKind.EnemyOutgoingDamageLessNormal).Value, 0.001f);
+            Assert.AreEqual(38f, FindEffect(enfeebleRole.Levels[1], RoleEffectKind.EnemyOutgoingDamageLessRare).Value, 0.001f);
+
+            var punishment = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Punishment\",\"slug\":\"Punishment\",\"tags\":[\"Spell\",\"AoE\",\"Duration\",\"Curse\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed Enemies take #% increased Damage while on Low Life\":{\"kind\":\"percent\",\"value\":34}},\"10\":{\"Cursed Enemies take #% increased Damage while on Low Life\":{\"kind\":\"percent\",\"value\":81}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var punishmentRole = punishment.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(51f, FindEffect(punishmentRole.Levels[0], RoleEffectKind.EnemyDamageTakenIncreasedLowLife).Value, 0.001f);
+            Assert.AreEqual(119f, FindEffect(punishmentRole.Levels[1], RoleEffectKind.EnemyDamageTakenIncreasedLowLife).Value, 0.001f);
+
+            var sniper = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Sniper's Mark\",\"slug\":\"Snipers_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Cursed enemies take #% increased Damage from Projectile Hits\":{\"kind\":\"percent\",\"value\":13}},\"10\":{\"Cursed enemies take #% increased Damage from Projectile Hits\":{\"kind\":\"percent\",\"value\":44}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var sniperRole = sniper.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(GemTag.Spell, sniper.Tags);
+            Assert.AreEqual(20f, FindEffect(sniperRole.Levels[0], RoleEffectKind.EnemyProjectileDamageTakenIncreased).Value, 0.001f);
+            Assert.AreEqual(65f, FindEffect(sniperRole.Levels[1], RoleEffectKind.EnemyProjectileDamageTakenIncreased).Value, 0.001f);
+
+            var warlord = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Warlord's Mark\",\"slug\":\"Warlords_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Hits against Cursed Enemies have #% chance to double Stun Duration\":{\"kind\":\"percent\",\"value\":43},\"Cursed enemies grant #% Life Leech when Hit by Attacks\":{\"kind\":\"percent\",\"value\":2.15}},\"10\":{\"Hits against Cursed Enemies have #% chance to double Stun Duration\":{\"kind\":\"percent\",\"value\":74},\"Cursed enemies grant #% Life Leech when Hit by Attacks\":{\"kind\":\"percent\",\"value\":3.7}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var warlordRole = warlord.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(64f, FindEffect(warlordRole.Levels[0], RoleEffectKind.EnemyDoubleStunDurationChance).Value, 0.001f);
+            Assert.AreEqual(3f, FindEffect(warlordRole.Levels[0], RoleEffectKind.EnemyLifeLeechOnAttackHit).Value, 0.001f);
+            Assert.AreEqual(109f, FindEffect(warlordRole.Levels[1], RoleEffectKind.EnemyDoubleStunDurationChance).Value, 0.001f);
+            Assert.AreEqual(5f, FindEffect(warlordRole.Levels[1], RoleEffectKind.EnemyLifeLeechOnAttackHit).Value, 0.001f);
+
+            var poacher = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Poacher's Mark\",\"slug\":\"Poachers_Mark\",\"tags\":[\"Physical\",\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Adds # to # Physical Damage to Hits against Cursed Enemies\":{\"kind\":\"flat\",\"value\":[5,8]},\"Cursed enemies grant # Life when Hit by Attacks\":{\"kind\":\"flat\",\"value\":21}},\"10\":{\"Adds # to # Physical Damage to Hits against Cursed Enemies\":{\"kind\":\"flat\",\"value\":[84,126]},\"Cursed enemies grant # Life when Hit by Attacks\":{\"kind\":\"flat\",\"value\":72}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var poacherRole = poacher.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            var added = FindEffect(poacherRole.Levels[0], RoleEffectKind.EnemyAddedPhysicalDamage);
+            Assert.AreEqual(8f, added.Min, 0.001f);
+            Assert.AreEqual(12f, added.Max, 0.001f);
+            Assert.AreEqual(32f, FindEffect(poacherRole.Levels[0], RoleEffectKind.EnemyLifeWhenHitByAttacks).Value, 0.001f);
+            var addedTen = FindEffect(poacherRole.Levels[1], RoleEffectKind.EnemyAddedPhysicalDamage);
+            Assert.AreEqual(124f, addedTen.Min, 0.001f);
+            Assert.AreEqual(185f, addedTen.Max, 0.001f);
+
+            var assassin = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Assassin's Mark\",\"slug\":\"Assassins_Mark\",\"tags\":[\"Critical\",\"Spell\",\"Curse\",\"Mark\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Hits against Cursed Enemies have #% to Critical Strike Multiplier\":{\"kind\":\"percent\",\"value\":33},\"Cursed enemies grant # Life when Killed\":{\"kind\":\"flat\",\"value\":169}},\"10\":{\"Hits against Cursed Enemies have #% to Critical Strike Multiplier\":{\"kind\":\"percent\",\"value\":64},\"Cursed enemies grant # Life when Killed\":{\"kind\":\"flat\",\"value\":948}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var assassinRole = assassin.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(50f, FindEffect(assassinRole.Levels[0], RoleEffectKind.EnemyCriticalStrikeMultiplier).Value, 0.001f);
+            Assert.AreEqual(254f, FindEffect(assassinRole.Levels[0], RoleEffectKind.EnemyLifeWhenKilled).Value, 0.001f);
+            Assert.AreEqual(94f, FindEffect(assassinRole.Levels[1], RoleEffectKind.EnemyCriticalStrikeMultiplier).Value, 0.001f);
+            Assert.AreEqual(1395f, FindEffect(assassinRole.Levels[1], RoleEffectKind.EnemyLifeWhenKilled).Value, 0.001f);
+        }
+
+        [Test]
+        public void CurseCatalog_HexblastBaneAndAlchemist_StayHexOnlyWithoutDamage()
+        {
+            var hexblast = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Hexblast\",\"slug\":\"Hexblast\",\"tags\":[\"Spell\",\"AoE\",\"Chaos\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.85}},\"levels\":{\"1\":{\"Deals # to # Chaos Damage\":{\"kind\":\"flat\",\"value\":[204,307]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"Deals # to # Chaos Damage\":{\"kind\":\"flat\",\"value\":[7916,11874]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var hexblastRole = hexblast.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(0f, hexblast.Damage, 0.001f);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, hexblast.RoleKinds[0]);
+            Assert.IsFalse(HasModifier(hexblastRole.Modifiers, RoleStat.CastTime));
+            Assert.IsFalse(HasModifier(hexblastRole.Levels[0], RoleStat.Damage));
+            Assert.AreEqual(0, hexblastRole.Levels[0].Effects.Length);
+            Assert.AreEqual(3f, FindModifier(hexblastRole.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
+            Assert.AreEqual(10.55f, FindModifier(hexblastRole.Levels[1], RoleStat.TowerRadius).Value, 0.001f);
+            SkillGemTowerMap.ResolveFireBehavior(
+                hexblast.Tags,
+                hexblast.Slug,
+                SkillGemTowerMap.RoleKind.Curse,
+                out var aim,
+                out var delivery);
+            Assert.AreEqual(AimMode.Direct, aim);
+            Assert.AreEqual(DeliveryPattern.CasterNova, delivery);
+
+            var bane = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Bane\",\"slug\":\"Bane\",\"tags\":[\"Chaos\",\"Trigger\",\"Spell\",\"AoE\",\"Duration\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.6}},\"levels\":{\"1\":{\"Deals # Base Chaos Damage per second\":{\"kind\":\"seconds\",\"value\":119.8},\"Base radius is # metres\":{\"kind\":\"metres\",\"value\":2.4},\"#% more Damage per Curse applied\":{\"kind\":\"percent\",\"value\":30},\"Only applies Hexes from Curse Skill Gems requiring Level # or lower\":{\"kind\":\"flat\",\"value\":33},\"This Gem can only Support Skill Gems requiring Level # or lower\":{\"kind\":\"flat\",\"value\":33},\"damage_percent\":{\"kind\":\"percent\", \"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var baneRole = bane.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(0f, bane.Damage, 0.001f);
+            Assert.IsFalse(HasModifier(baneRole.Levels[0], RoleStat.Damage));
+            Assert.AreEqual(0, baneRole.Levels[0].Effects.Length);
+
+            var alchemist = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Alchemist's Mark\",\"slug\":\"Alchemists_Mark\",\"tags\":[\"Spell\",\"Curse\",\"Mark\",\"AoE\",\"Duration\",\"Fire\",\"Chaos\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.5}},\"levels\":{\"1\":{\"Burning Ground deals #% of the Fire Damage per Second of strongest Ignite on EnemyCaustic Ground deals #% of the Chaos Damage per Second of strongest Poison on EnemyCan create each Ground effect no more than once each second\":{\"kind\":\"percent\",\"value\":[21,63]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
+            var alchemistRole = alchemist.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(0f, alchemist.Damage, 0.001f);
+            Assert.AreEqual(0, alchemistRole.Levels[0].Effects.Length);
+            Assert.AreEqual(3f, FindModifier(alchemistRole.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
+        }
+
+        [Test]
         public void MissingAttackSpeed_UsesDefaultAttackSpeedModifier()
         {
             var r = SkillGemTowerMap.FromJson(MissingAttackSpeedJson);

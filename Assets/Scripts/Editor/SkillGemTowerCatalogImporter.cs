@@ -181,6 +181,25 @@ namespace GemTD.Editor
                 "Despair");
         }
 
+        [MenuItem("Gem TD/Import Remaining Curse Catalog")]
+        public static void ImportRemainingCurseCatalog()
+        {
+            ImportProofs(
+                categoryFile: "poe_skill_gems_curse.json",
+                folder: "Curse",
+                dialogTitle: "Remaining Curse Catalog",
+                "Elemental_Weakness",
+                "Enfeeble",
+                "Punishment",
+                "Warlords_Mark",
+                "Snipers_Mark",
+                "Poachers_Mark",
+                "Assassins_Mark",
+                "Alchemists_Mark",
+                "Bane",
+                "Hexblast");
+        }
+
         static void ImportProofs(
             string categoryFile,
             string folder,

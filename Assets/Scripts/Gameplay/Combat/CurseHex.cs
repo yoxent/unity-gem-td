@@ -20,7 +20,8 @@ namespace GemTD.Gameplay.Combat
                 || id == StatusId.CurseConductivity
                 || id == StatusId.CurseDespair
                 || id == StatusId.CurseVulnerability
-                || id == StatusId.CurseTemporalChains;
+                || id == StatusId.CurseTemporalChains
+                || id == StatusId.CurseElementalWeakness;
         }
 
         public static bool TryResolve(
@@ -43,6 +44,15 @@ namespace GemTD.Gameplay.Combat
             }
 
             var fire = role.ResolveEffect(RoleEffectKind.EnemyFireResistance, sourceLevel);
+            var cold = role.ResolveEffect(RoleEffectKind.EnemyColdResistance, sourceLevel);
+            var lightning = role.ResolveEffect(RoleEffectKind.EnemyLightningResistance, sourceLevel);
+            if (fire < -0.01f && cold < -0.01f && lightning < -0.01f)
+            {
+                id = StatusId.CurseElementalWeakness;
+                magnitude = fire;
+                return true;
+            }
+
             if (fire < -0.01f)
             {
                 id = StatusId.CurseFlammability;
@@ -50,7 +60,6 @@ namespace GemTD.Gameplay.Combat
                 return true;
             }
 
-            var cold = role.ResolveEffect(RoleEffectKind.EnemyColdResistance, sourceLevel);
             if (cold < -0.01f)
             {
                 id = StatusId.CurseFrostbite;
@@ -58,7 +67,6 @@ namespace GemTD.Gameplay.Combat
                 return true;
             }
 
-            var lightning = role.ResolveEffect(RoleEffectKind.EnemyLightningResistance, sourceLevel);
             if (lightning < -0.01f)
             {
                 id = StatusId.CurseConductivity;

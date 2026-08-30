@@ -16,5 +16,6 @@ namespace GemTD.Gameplay.Combat
         CurseDespair,
         CurseVulnerability,
         CurseTemporalChains,
+        CurseElementalWeakness,
     }
 }

@@ -18,6 +18,12 @@ namespace GemTD.Gameplay.Towers
             27f, 31f, 34f, 38f, 42f, 45f, 49f, 53f, 56f, 60f
         };
 
+        static readonly float[] CatalogFactor =
+        {
+            1.500f, 1.458f, 1.429f, 1.406f, 1.389f,
+            1.375f, 1.364f, 1.383f, 1.429f, 1.471f
+        };
+
         public static float Radius(int sourceLevel)
         {
             var level = Mathf.Clamp(sourceLevel, TowerInstance.DefaultLevel, TowerInstance.MaxLevel);
@@ -36,6 +42,12 @@ namespace GemTD.Gameplay.Towers
             return VulnerabilityTaken[level - 1];
         }
 
+        public static float ScalePoE(float poe, int sourceLevel)
+        {
+            var level = Mathf.Clamp(sourceLevel, TowerInstance.DefaultLevel, TowerInstance.MaxLevel);
+            return Mathf.Round(poe * CatalogFactor[level - 1]);
+        }
+
         public static bool IsProofSlug(string slug)
         {
             return IsResistSlug(slug)
@@ -50,6 +62,9 @@ namespace GemTD.Gameplay.Towers
                 || IsConductivity(slug)
                 || IsDespair(slug);
         }
+
+        public static bool IsElementalWeakness(string slug) =>
+            string.Equals(slug, "Elemental_Weakness", System.StringComparison.OrdinalIgnoreCase);
 
         public static bool IsFlammability(string slug) =>
             string.Equals(slug, "Flammability", System.StringComparison.OrdinalIgnoreCase);

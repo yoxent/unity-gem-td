@@ -858,6 +858,61 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_CursePresence_ElementalWeakness_AppliesElementalHexWithoutDamage()
+        {
+            var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            curseRole.AimMode = AimMode.Direct;
+            curseRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            curseRole.Modifiers = new[] { Modifier(RoleStat.TowerRadius, 3f) };
+            curseRole.Levels = new[]
+            {
+                new RoleLevelDefinition
+                {
+                    SourceLevel = 1,
+                    Effects = new[]
+                    {
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyFireResistance,
+                            RoleModifierOperation.Set,
+                            -30f),
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyColdResistance,
+                            RoleModifierOperation.Set,
+                            -30f),
+                        RoleEffectModifier.Single(
+                            RoleEffectKind.EnemyLightningResistance,
+                            RoleModifierOperation.Set,
+                            -30f)
+                    }
+                }
+            };
+            var curseDef = ScriptableObject.CreateInstance<TowerDefinition>();
+            curseDef.Roles = new TowerRoleDefinition[] { curseRole };
+            curseDef.Damage = 0f;
+
+            var director = new CombatDirector(CellSize);
+            var tower = new TowerInstance(new Vector2Int(0, 0), curseDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(1.5f, 0f, 0.5f) });
+            var hp = enemy.Hp;
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var statuses = new StatusRuntime();
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(hp, enemy.Hp, 1e-4f);
+            Assert.IsTrue(statuses.Has(enemy, StatusId.CurseElementalWeakness));
+            Assert.IsFalse(statuses.Has(enemy, StatusId.CurseFlammability));
+            Assert.IsTrue(statuses.TryGetMagnitude(enemy, StatusId.CurseElementalWeakness, out var mag));
+            Assert.AreEqual(-30f, mag, 0.001f);
+
+            Object.DestroyImmediate(curseRole);
+            Object.DestroyImmediate(curseDef);
+        }
+
+        [Test]
         public void Tick_CursePresence_Hexproof_DoesNotApplyHex()
         {
             var curseRole = ScriptableObject.CreateInstance<CurseRoleDefinition>();

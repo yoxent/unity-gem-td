@@ -240,6 +240,17 @@ namespace GemTD.Gameplay.Towers
                 case RoleEffectKind.EnemyPhysicalDamageTakenIncreased:
                 case RoleEffectKind.EnemyActionSpeedLessNormal:
                 case RoleEffectKind.EnemyActionSpeedLessRare:
+                case RoleEffectKind.EnemyDamageTakenIncreasedLowLife:
+                case RoleEffectKind.EnemyProjectileDamageTakenIncreased:
+                case RoleEffectKind.EnemyAddedPhysicalDamage:
+                case RoleEffectKind.EnemyLifeWhenHitByAttacks:
+                case RoleEffectKind.EnemyLifeLeechOnAttackHit:
+                case RoleEffectKind.EnemyDoubleStunDurationChance:
+                case RoleEffectKind.EnemyLifeWhenKilled:
+                case RoleEffectKind.EnemyCriticalStrikeMultiplier:
+                case RoleEffectKind.EnemyOutgoingDamageLessNormal:
+                case RoleEffectKind.EnemyOutgoingDamageLessRare:
+                case RoleEffectKind.EnemyAccuracyRatingReduced:
                     return Mathf.Max(0f, value);
                 case RoleEffectKind.EnemyColdResistance:
                 case RoleEffectKind.EnemyFireResistance:

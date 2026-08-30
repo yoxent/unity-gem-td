@@ -131,7 +131,18 @@ namespace GemTD.Gameplay.Towers
         EnemyChaosResistance,
         EnemyPhysicalDamageTakenIncreased,
         EnemyActionSpeedLessNormal,
-        EnemyActionSpeedLessRare
+        EnemyActionSpeedLessRare,
+        EnemyDamageTakenIncreasedLowLife,
+        EnemyProjectileDamageTakenIncreased,
+        EnemyAddedPhysicalDamage,
+        EnemyLifeWhenHitByAttacks,
+        EnemyLifeLeechOnAttackHit,
+        EnemyDoubleStunDurationChance,
+        EnemyLifeWhenKilled,
+        EnemyCriticalStrikeMultiplier,
+        EnemyOutgoingDamageLessNormal,
+        EnemyOutgoingDamageLessRare,
+        EnemyAccuracyRatingReduced
     }
 
     [Serializable]

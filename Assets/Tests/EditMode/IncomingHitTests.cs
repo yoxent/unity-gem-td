@@ -55,6 +55,16 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ElementalWeakness_LowersFireColdLightning_NotChaos()
+        {
+            _statuses.Apply(_enemy, StatusId.CurseElementalWeakness, 10f, -30f);
+            Assert.AreEqual(13f, IncomingHit.Mitigate(10f, Mix(DamageType.Fire, 100), _enemy, _statuses), 1e-4f);
+            Assert.AreEqual(13f, IncomingHit.Mitigate(10f, Mix(DamageType.Cold, 100), _enemy, _statuses), 1e-4f);
+            Assert.AreEqual(13f, IncomingHit.Mitigate(10f, Mix(DamageType.Lightning, 100), _enemy, _statuses), 1e-4f);
+            Assert.AreEqual(10f, IncomingHit.Mitigate(10f, Mix(DamageType.Chaos, 100), _enemy, _statuses), 1e-4f);
+        }
+
+        [Test]
         public void HundredFire_AuthoredResistTwenty_TakesLess()
         {
             _def.FireResistance = 20;
