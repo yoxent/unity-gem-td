@@ -135,6 +135,7 @@ namespace GemTD.Gameplay.Towers
         public sealed class Result
         {
             public string DisplayName;
+            public string Description;
             public string Slug;
             public string Category;
             public GemTag Tags;
@@ -227,6 +228,7 @@ namespace GemTD.Gameplay.Towers
             var result = new Result
             {
                 DisplayName = name,
+                Description = gem.Value<string>("description") ?? "",
                 Slug = slug,
                 Category = category,
                 Tags = tags,

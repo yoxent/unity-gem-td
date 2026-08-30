@@ -90,6 +90,7 @@ namespace GemTD.Tests.EditMode
                 FindModifier(attack.Levels[0].Modifiers, RoleStat.Damage).Operation);
             Assert.AreEqual(1, r.RoleKinds.Length);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, r.RoleKinds[0]);
+            Assert.AreEqual("", r.Description);
             SkillGemTowerMap.ResolveFireBehavior(r.Tags, out var aim, out var delivery);
             Assert.AreEqual(AimMode.Direct, aim);
             Assert.AreEqual(DeliveryPattern.Straight, delivery);
@@ -348,6 +349,37 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(HasModifier(mine.Levels[0], RoleStat.CastSpeed));
             Assert.IsFalse(HasModifier(mine.Levels[0], RoleStat.TowerRadius));
             Assert.IsFalse(HasModifier(mine.Levels[0], RoleStat.ProjectileSpeed));
+        }
+
+        [Test]
+        public void SpectralThrow_MapsDescriptionWhenLevelsAreOnlyDamagePercent()
+        {
+            var r = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Spectral Throw\",\"slug\":\"Spectral_Throw\",\"tags\":[\"Attack\",\"Projectile\"],\"category\":\"attack\",\"description\":\"Throws a spectral copy of your melee weapon. It flies out and then returns to you, in a spinning attack that damages enemies in its path.\",\"header\":{},\"levels\":{\"1\":{\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}}}");
+            Assert.AreEqual(
+                "Throws a spectral copy of your melee weapon. It flies out and then returns to you, in a spinning attack that damages enemies in its path.",
+                r.Description);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Attack, r.RoleKinds[0]);
+            Assert.AreEqual(10f, r.Damage, 0.001f);
+        }
+
+        [Test]
+        public void SummonSkitterbots_MapsAsAuraNotMine()
+        {
+            var r = SkillGemTowerMap.FromJson(
+                "{\"name\":\"Summon Skitterbots\",\"slug\":\"Summon_Skitterbots\",\"tags\":[\"Trap\",\"Mine\",\"Spell\",\"Minion\",\"Cold\",\"Lightning\",\"AoE\",\"Aura\"],\"category\":\"aura\",\"description\":\"Summon a Chilling Skitterbot and a Shocking Skitterbot, which will trigger your traps and detonate your mines.\",\"header\":{\"reservation\":{\"kind\":\"percent\",\"value\":{\"amount\":35,\"resource\":\"mana\"}}},\"radius\":{\"kind\":\"metres\",\"value\":1.5}}");
+            Assert.AreEqual("aura", r.Category);
+            Assert.AreEqual(1, r.RoleKinds.Length);
+            Assert.AreEqual(SkillGemTowerMap.RoleKind.Aura, r.RoleKinds[0]);
+            Assert.IsNull(r.GetRolePayload(SkillGemTowerMap.RoleKind.Mine));
+            Assert.IsFalse(r.IsActiveCatalogCompatible);
+            Assert.AreEqual(0f, r.Damage, 0.001f);
+            Assert.AreEqual(1, r.SocketCount);
+            Assert.AreEqual(30, r.Cost);
+            var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
+            Assert.AreEqual(35f, FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value, 0.001f);
+            Assert.AreEqual(1.5f, FindModifier(aura.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
+            StringAssert.StartsWith("Summon a Chilling Skitterbot", r.Description);
         }
 
         [Test]

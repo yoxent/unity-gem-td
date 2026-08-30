@@ -9,6 +9,7 @@ namespace GemTD.Gameplay.Towers
     public sealed class TowerDefinition : ScriptableObject
     {
         public string DisplayName = "Tower";
+        [TextArea] public string Description;
         public int Cost = 50;
         [Tooltip("Added per same-type tower already on map. placeCost = Cost + BuildIncrement × countOnMap")]
         public int BuildIncrement = 25;

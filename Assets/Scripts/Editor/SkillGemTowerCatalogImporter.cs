@@ -224,7 +224,8 @@ namespace GemTD.Editor
                 "Purity_of_Elements",
                 "Purity_of_Lightning",
                 "Wrath",
-                "Zealotry");
+                "Zealotry",
+                "Summon_Skitterbots");
         }
 
         static void ImportProofs(
@@ -407,6 +408,7 @@ namespace GemTD.Editor
             var path = TowerRoot + "/" + folder + "/Tower_" + result.Slug + ".asset";
             var tower = LoadOrCreate<TowerDefinition>(path);
             tower.DisplayName = result.DisplayName;
+            tower.Description = result.Description ?? "";
             tower.Cost = result.Cost;
             tower.BuildIncrement = result.BuildIncrement;
             tower.Damage = result.Damage;
