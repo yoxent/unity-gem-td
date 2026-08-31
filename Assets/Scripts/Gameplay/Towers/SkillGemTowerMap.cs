@@ -226,8 +226,9 @@ namespace GemTD.Gameplay.Towers
         }
 
         /// <summary>
-        /// Character prefab family from crawled PoE tags. Matches catalog split:
-        /// Spell vs Attack, then Attack into Slam / Strike / Bow.
+        /// Character prefab family from roles, then crawled PoE tags.
+        /// Spell vs Attack, then Attack into Slam / Strike / Bow / Attack.
+        /// Standalone Aura and Curse use their own views.
         /// </summary>
         public enum TowerVisualFamily
         {
@@ -236,16 +237,58 @@ namespace GemTD.Gameplay.Towers
             Slam,
             Strike,
             Bow,
+            Aura,
+            Curse,
+            Attack,
         }
 
         /// <summary>
-        /// Spell (no Attack) → mage. Slam → barbarian. Strike → knight.
-        /// Bow tag, or Attack+Projectile without Melee → ranger.
+        /// Catalog bucket first (handoff): Aura, Curse, then Attack splits,
+        /// then Spell. Spell is last because curses/auras also have that tag.
+        /// Aura-first even with Mine/Trap tags, except Attack+Aura hybrids (Smite)
+        /// and mine/trap roles (Pyroclast Mine stays mine).
         /// </summary>
+        public static TowerVisualFamily ResolveVisualFamily(TowerDefinition def)
+        {
+            if (def == null)
+                return TowerVisualFamily.Default;
+            if (def.HasRole<AuraRoleDefinition>()
+                && !def.HasRole<AttackRoleDefinition>()
+                && !def.HasRole<TrapRoleDefinition>()
+                && !def.HasRole<MineRoleDefinition>())
+                return TowerVisualFamily.Aura;
+            if (def.HasRole<CurseRoleDefinition>() && !def.HasRole<AttackRoleDefinition>())
+                return TowerVisualFamily.Curse;
+            return ResolveVisualFamily(def.Tags);
+        }
+
+        public static TowerVisualFamily ResolveVisualFamily(Result result)
+        {
+            if (result == null)
+                return TowerVisualFamily.Default;
+            if (result.RoleKinds != null && result.RoleKinds.Length > 0)
+            {
+                switch (result.RoleKinds[0])
+                {
+                    case RoleKind.Aura:
+                        return TowerVisualFamily.Aura;
+                    case RoleKind.Curse:
+                        return TowerVisualFamily.Curse;
+                }
+            }
+
+            return ResolveVisualFamily(result.Tags);
+        }
+
         public static TowerVisualFamily ResolveVisualFamily(GemTag tags)
         {
-            if ((tags & GemTag.Spell) != 0 && (tags & GemTag.Attack) == 0)
-                return TowerVisualFamily.Spell;
+            if ((tags & GemTag.Aura) != 0
+                && (tags & GemTag.Attack) == 0
+                && (tags & GemTag.Trap) == 0
+                && (tags & GemTag.Mine) == 0)
+                return TowerVisualFamily.Aura;
+            if ((tags & GemTag.Curse) != 0 && (tags & GemTag.Attack) == 0)
+                return TowerVisualFamily.Curse;
             if ((tags & GemTag.Slam) != 0)
                 return TowerVisualFamily.Slam;
             if ((tags & GemTag.Strike) != 0)
@@ -256,6 +299,10 @@ namespace GemTD.Gameplay.Towers
                 && (tags & GemTag.Projectile) != 0
                 && (tags & GemTag.Melee) == 0)
                 return TowerVisualFamily.Bow;
+            if ((tags & GemTag.Attack) != 0)
+                return TowerVisualFamily.Attack;
+            if ((tags & GemTag.Spell) != 0)
+                return TowerVisualFamily.Spell;
 
             return TowerVisualFamily.Default;
         }

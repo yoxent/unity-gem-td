@@ -46,6 +46,9 @@ namespace GemTD.Gameplay
         [SerializeField] TowerView slamTowerPrefab;
         [SerializeField] TowerView strikeTowerPrefab;
         [SerializeField] TowerView bowTowerPrefab;
+        [SerializeField] TowerView attackTowerPrefab;
+        [SerializeField] TowerView auraTowerPrefab;
+        [SerializeField] TowerView curseTowerPrefab;
         [SerializeField] ExpandMarkerView expandMarkerPrefab;
         [SerializeField] GameObject towerRangeIndicatorPrefab;
 
@@ -390,19 +393,24 @@ namespace GemTD.Gameplay
             if (def != null && def.ViewPrefab != null)
                 return def.ViewPrefab;
 
-            var family = def != null
-                ? SkillGemTowerMap.ResolveVisualFamily(def.Tags)
-                : SkillGemTowerMap.TowerVisualFamily.Default;
-            switch (family)
+            // Category/role before Spell tag. PoE curses and auras also carry
+            // Spell; handoff classifies by bucket (Aura-first, Curse not Aura).
+            switch (SkillGemTowerMap.ResolveVisualFamily(def))
             {
-                case SkillGemTowerMap.TowerVisualFamily.Spell:
-                    return spellTowerPrefab != null ? spellTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Aura:
+                    return auraTowerPrefab != null ? auraTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Curse:
+                    return curseTowerPrefab != null ? curseTowerPrefab : towerPrefab;
                 case SkillGemTowerMap.TowerVisualFamily.Slam:
                     return slamTowerPrefab != null ? slamTowerPrefab : towerPrefab;
                 case SkillGemTowerMap.TowerVisualFamily.Strike:
                     return strikeTowerPrefab != null ? strikeTowerPrefab : towerPrefab;
                 case SkillGemTowerMap.TowerVisualFamily.Bow:
                     return bowTowerPrefab != null ? bowTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Attack:
+                    return attackTowerPrefab != null ? attackTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Spell:
+                    return spellTowerPrefab != null ? spellTowerPrefab : towerPrefab;
                 default:
                     return towerPrefab;
             }

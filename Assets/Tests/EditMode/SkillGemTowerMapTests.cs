@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
@@ -777,10 +778,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void ResolveVisualFamily_MeleeWithoutSlamOrStrike_IsDefault()
+        public void ResolveVisualFamily_MeleeWithoutSlamOrStrike_IsAttack()
         {
             Assert.AreEqual(
-                SkillGemTowerMap.TowerVisualFamily.Default,
+                SkillGemTowerMap.TowerVisualFamily.Attack,
                 SkillGemTowerMap.ResolveVisualFamily(GemTag.Attack | GemTag.Melee | GemTag.Aoe));
         }
 
@@ -791,6 +792,117 @@ namespace GemTD.Tests.EditMode
                 SkillGemTowerMap.TowerVisualFamily.Slam,
                 SkillGemTowerMap.ResolveVisualFamily(
                     GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Strike));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_AuraTagsWithoutAttack_IsAura()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Aura,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Aura | GemTag.Spell | GemTag.Aoe));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_CurseTagsWithoutAttack_IsCurse()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Curse,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Spell | GemTag.Curse | GemTag.Hex));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_CrawledAuraGem_IsAura()
+        {
+            var r = SkillGemTowerMap.FromJson(VitalityJson);
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Aura,
+                SkillGemTowerMap.ResolveVisualFamily(r));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_CrawledCurseGem_IsCurse()
+        {
+            var r = SkillGemTowerMap.FromJson(FrostbiteJson);
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Curse,
+                SkillGemTowerMap.ResolveVisualFamily(r));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_CrawledSmite_KeepsStrikeNotAura()
+        {
+            var r = SkillGemTowerMap.FromJson(SmiteJson);
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Strike,
+                SkillGemTowerMap.ResolveVisualFamily(r));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_MineWithAuraTag_IsNotAura()
+        {
+            var r = SkillGemTowerMap.FromJson(PyroclastMineJson);
+            Assert.AreNotEqual(
+                SkillGemTowerMap.TowerVisualFamily.Aura,
+                SkillGemTowerMap.ResolveVisualFamily(r));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_AuraOnlyRole_IsAura()
+        {
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            var aura = ScriptableObject.CreateInstance<AuraRoleDefinition>();
+            def.Roles = new TowerRoleDefinition[] { aura };
+            try
+            {
+                Assert.AreEqual(
+                    SkillGemTowerMap.TowerVisualFamily.Aura,
+                    SkillGemTowerMap.ResolveVisualFamily(def));
+            }
+            finally
+            {
+                Object.DestroyImmediate(aura);
+                Object.DestroyImmediate(def);
+            }
+        }
+
+        [Test]
+        public void ResolveVisualFamily_AuraRoleWithSpellOnlyTags_IsAura()
+        {
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            var aura = ScriptableObject.CreateInstance<AuraRoleDefinition>();
+            def.Roles = new TowerRoleDefinition[] { aura };
+            def.Tags = GemTag.Spell | GemTag.Aoe;
+            try
+            {
+                Assert.AreEqual(
+                    SkillGemTowerMap.TowerVisualFamily.Aura,
+                    SkillGemTowerMap.ResolveVisualFamily(def));
+            }
+            finally
+            {
+                Object.DestroyImmediate(aura);
+                Object.DestroyImmediate(def);
+            }
+        }
+
+        [Test]
+        public void ResolveVisualFamily_CurseRole_IsCurse()
+        {
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            var curse = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            def.Roles = new TowerRoleDefinition[] { curse };
+            def.Tags = GemTag.Spell;
+            try
+            {
+                Assert.AreEqual(
+                    SkillGemTowerMap.TowerVisualFamily.Curse,
+                    SkillGemTowerMap.ResolveVisualFamily(def));
+            }
+            finally
+            {
+                Object.DestroyImmediate(curse);
+                Object.DestroyImmediate(def);
+            }
         }
 
         static bool HasModifier(RoleStatModifier[] modifiers, RoleStat stat)
