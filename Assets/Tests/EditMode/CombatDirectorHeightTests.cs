@@ -60,6 +60,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
 
             director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            director.Tick(2f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.AreEqual(TileHeightVisual.TopY(2), director.Projectiles[0].Position.y, 1e-4f);
@@ -78,6 +79,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
 
             director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            director.Tick(2f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             Assert.AreEqual(1, director.Projectiles.Count);
         }

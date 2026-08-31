@@ -110,6 +110,7 @@ namespace GemTD.Tests.EditMode
             session.TowerPosition = Vector3.zero;
             session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
             session.Fire();
+            session.TickVolley(2f);
             Assert.IsTrue(session.LastTrace.HasTarget);
             Assert.AreEqual(1, session.Projectiles.Count);
             Assert.IsTrue(session.HasActiveVolley);
@@ -126,6 +127,7 @@ namespace GemTD.Tests.EditMode
             session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
 
             session.Fire();
+            session.TickVolley(2f);
 
             var primarySegments = 0;
             for (var i = 0; i < session.LastTrace.Segments.Count; i++)
@@ -242,6 +244,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void Fire_RainRandomLandingsMatchActualPayloads()
         {
+            // Cast wait: Fire queues the storm; TickVolley completes FireInterval then rain exists.
             _fireball.Tags = GemTag.Spell | GemTag.Aoe;
             _fireballRole.AimMode = AimMode.Ground;
             _fireballRole.DeliveryPattern = DeliveryPattern.Rain;
@@ -276,6 +279,8 @@ namespace GemTD.Tests.EditMode
             session.TowerPosition = Vector3.zero;
             session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
             session.Fire();
+            Assert.IsTrue(session.HasActiveVolley);
+            session.TickVolley(1.1f);
 
             var expectedLandings = new List<Vector3>(4);
             var segments = session.LastTrace.Segments;
@@ -312,6 +317,7 @@ namespace GemTD.Tests.EditMode
             session.TowerPosition = Vector3.zero;
             session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
             session.Fire();
+            session.TickVolley(2f);
             var origin = session.Projectiles[0].Position;
             session.TickVolley(0.05f);
             Assert.AreEqual(1, session.Projectiles.Count);
@@ -338,6 +344,7 @@ namespace GemTD.Tests.EditMode
             session.SetSocket(0, GemId.Chain);
             session.TowerPosition = DummyField.DefaultTowerPosition;
             session.Fire();
+            session.TickVolley(2f);
 
             Assert.IsTrue(session.LastTrace.HasTarget);
             Assert.AreEqual(1, session.Projectiles.Count);
@@ -548,14 +555,12 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(SkillLabSession.StatusIdle, session.Status);
             Assert.GreaterOrEqual(session.LastTrace.Discs.Count, 1);
             Assert.AreEqual(SkillGemTowerMap.EarthquakeSlamRadius, session.LastTrace.Discs[0].Radius, 0.001f);
+
+            session.TickVolley(1.1f);
             Assert.AreSame(_fireball, dummy.LastDamageSource);
             Assert.AreEqual(1, session.EffectPayloads.Count);
 
-            session.Fire();
-            Assert.AreEqual(1, session.EffectPayloads.Count);
-
-            session.TickVolley(1f);
-            Assert.AreEqual(1, session.EffectPayloads.Count);
+            session.TickVolley(1.02f);
             session.TickVolley(0.02f);
             Assert.AreEqual(0, session.EffectPayloads.Count);
         }

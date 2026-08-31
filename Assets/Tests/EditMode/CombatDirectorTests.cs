@@ -11,6 +11,7 @@ namespace GemTD.Tests.EditMode
     public sealed class CombatDirectorTests
     {
         const float CellSize = 1f;
+        const float CastCompleteDt = 2f;
 
         EnemyDefinition _enemyDef;
         TowerDefinition _towerDef;
@@ -70,12 +71,261 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.AreSame(enemy, director.Projectiles[0].Target);
             Assert.AreEqual(10f, director.Projectiles[0].Damage, 1e-4f);
-            Assert.Greater(tower.Cooldown, 0f);
+        }
+
+        [Test]
+        public void Tick_Fires_IncrementsFireGenerationOnce()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            Assert.AreEqual(0, tower.FireGeneration);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            Assert.AreEqual(1, tower.FireGeneration);
+            Assert.AreEqual(enemy.WorldPosition, tower.LastAimPoint);
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void Tick_NoTargetInRange_DoesNotIncrementFireGeneration()
+        {
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 0.5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_enemyDef, new[] { new Vector3(50f, 0f, 0f) });
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            TickThroughCast(director, tower, registry);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(0, tower.FireGeneration);
+        }
+
+        [Test]
+        public void Tick_MultipleProjectiles_IncrementsFireGenerationOnce()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            TickThroughCast(director, tower, registry);
+
+            Assert.AreEqual(3, director.Projectiles.Count);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void TryFireOnce_IncrementsFireGeneration_AndStoresAim()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(1, tower.FireGeneration);
+            Assert.AreEqual(enemy.WorldPosition, tower.LastAimPoint);
+        }
+
+        [Test]
+        public void Tick_StartsCast_IncrementsFireGenerationWithoutProjectile()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+            Assert.AreEqual(1, tower.FireGeneration);
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.IsTrue(director.HasActiveVolley);
+            Assert.AreEqual(1f, tower.CurrentFireInterval, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_SpawnsProjectileAfterFireInterval()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.IsTrue(director.HasActiveVolley);
+
+            director.TickInFlight(0.5f, living);
+            Assert.AreEqual(0, director.Projectiles.Count);
+
+            director.TickInFlight(0.6f, living);
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void Tick_SpawnsProjectileAtStrikeNormalized()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef)
+            {
+                StrikeNormalized = 0.5f
+            };
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            Assert.AreEqual(0, director.Projectiles.Count);
+
+            director.TickInFlight(0.4f, living);
+            Assert.AreEqual(0, director.Projectiles.Count);
+
+            director.TickInFlight(0.2f, living);
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void Tick_DoesNotRecastDuringRecoveryAfterStrike()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef)
+            {
+                StrikeNormalized = 0.5f
+            };
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var towers = new List<TowerInstance> { tower };
+
+            director.Tick(0.016f, towers, registry, _pipeline);
+            director.Tick(0.6f, towers, registry, _pipeline);
+
+            Assert.AreEqual(1, tower.FireGeneration);
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            director.Tick(0.3f, towers, registry, _pipeline);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void Tick_DoesNotRecastOnTheTickThatResolves()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var towers = new List<TowerInstance> { tower };
+
+            director.Tick(0.016f, towers, registry, _pipeline);
+            director.Tick(1.1f, towers, registry, _pipeline);
+
+            Assert.AreEqual(1, tower.FireGeneration);
+            Assert.AreEqual(1, director.Projectiles.Count);
+        }
+
+        [Test]
+        public void Tick_FasterAttacks_ShortensCastWait()
+        {
+            var faster = ScriptableObject.CreateInstance<GemDefinition>();
+            faster.Id = GemId.FasterAttacks;
+            CatalogGemModifiers.Bind(faster);
+            try
+            {
+                var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+                var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+                Assert.IsTrue(tower.TrySocket(faster, 0, allowSocket: true));
+                var enemy = CreateEnemyNearTower();
+                var living = new List<EnemyRuntime> { enemy };
+
+                Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+                Assert.AreEqual(0.8f, tower.CurrentFireInterval, 1e-4f);
+                Assert.AreEqual(0, director.Projectiles.Count);
+
+                director.TickInFlight(0.5f, living);
+                Assert.AreEqual(0, director.Projectiles.Count);
+
+                director.TickInFlight(0.4f, living);
+                Assert.AreEqual(1, director.Projectiles.Count);
+            }
+            finally
+            {
+                Object.DestroyImmediate(faster);
+            }
+        }
+
+        [Test]
+        public void Tick_GroundPulse_DelaysDamageUntilFireInterval()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+            var towers = new List<TowerInstance> { tower };
+            var hpBefore = enemy.Hp;
+
+            director.Tick(0.016f, towers, registry, _pipeline);
+            Assert.AreEqual(hpBefore, enemy.Hp, 1e-4f);
+            Assert.AreEqual(1, tower.FireGeneration);
+
+            director.Tick(0.5f, towers, registry, _pipeline);
+            Assert.AreEqual(hpBefore, enemy.Hp, 1e-4f);
+
+            director.Tick(0.6f, towers, registry, _pipeline);
+            Assert.Less(enemy.Hp, hpBefore);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void TryFireOnce_DoesNotStartSecondPendingStrike()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            Assert.AreEqual(1, tower.FireGeneration);
+
+            director.TickInFlight(1.1f, living);
+            Assert.AreEqual(1, director.Projectiles.Count);
         }
 
         [Test]
@@ -89,7 +339,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(3, director.Projectiles.Count);
             for (var i = 0; i < director.Projectiles.Count; i++)
@@ -109,7 +359,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(primary);
             registry.Register(secondary);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.Greater(director.Projectiles[0].ChainRemaining, 0);
 
@@ -132,7 +382,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(only);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             for (var i = 0; i < 60; i++)
                 director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
@@ -150,7 +400,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
             Assert.Greater(director.Projectiles.Count, 0);
 
             director.ClearProjectiles();
@@ -175,7 +425,7 @@ namespace GemTD.Tests.EditMode
                 var registry = new EnemyRegistry();
                 registry.Register(enemy);
 
-                director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+                TickThroughCast(director, tower, registry);
 
                 Assert.AreEqual(1, director.Projectiles.Count);
                 Assert.AreEqual(baseSpeed * 0.6f, director.Projectiles[0].Speed, 1e-4f);
@@ -212,7 +462,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.AreEqual(baseSpeed * 0.5f, director.Projectiles[0].Speed, 1e-4f);
@@ -230,7 +480,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             var shot = director.Projectiles[0];
@@ -255,7 +505,7 @@ namespace GemTD.Tests.EditMode
             var origin = new Vector3(CellSize * 0.5f, 0f, CellSize * 0.5f);
             var intercept = PathIntercept.Predict(origin, 4f, enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             var shot = director.Projectiles[0];
@@ -282,7 +532,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.IsTrue(director.Projectiles[0].IsPayload);
             Assert.AreEqual(0f, director.Projectiles[0].Damage, 1e-4f);
@@ -330,7 +580,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
             Assert.AreEqual(0, director.Projectiles.Count);
         }
 
@@ -356,7 +606,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
             Assert.AreEqual(2, director.Projectiles.Count);
             Assert.IsFalse(director.Projectiles[0].IsPayload);
             Assert.IsFalse(director.Projectiles[1].IsPayload);
@@ -398,7 +648,7 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.01f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.IsTrue(director.Projectiles[0].IsWarpStrike);
@@ -430,6 +680,7 @@ namespace GemTD.Tests.EditMode
             var living = new List<EnemyRuntime> { enemy };
 
             Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            CompleteCast(director, living);
             Assert.AreEqual(1, director.Projectiles.Count);
 
             director.TickInFlight(0.75f, living);
@@ -503,7 +754,7 @@ namespace GemTD.Tests.EditMode
                 var hpPrimary = primary.Hp;
                 var hpBystander = bystander.Hp;
 
-                director.Tick(0.01f, new List<TowerInstance> { tower }, registry, _pipeline);
+                TickThroughCast(director, tower, registry);
 
                 var observedPayloads = false;
                 for (var i = 0; i < 80; i++)
@@ -549,7 +800,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var hpBefore = enemy.Hp;
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.Less(enemy.Hp, hpBefore);
@@ -579,7 +830,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(atMuzzle);
             var muzzleHp = atMuzzle.Hp;
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.Less(primary.Hp, 100f);
             Assert.AreEqual(muzzleHp, atMuzzle.Hp, 1e-4f);
@@ -607,7 +858,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var hpBefore = enemy.Hp;
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.AreEqual(10, director.EffectPayloads.Count);
@@ -634,9 +885,12 @@ namespace GemTD.Tests.EditMode
             var registry = new EnemyRegistry();
             registry.Register(enemy);
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            var towers = new List<TowerInstance> { tower };
+            director.Tick(0.016f, towers, registry, _pipeline);
+            director.Tick(0.1f, towers, registry, _pipeline);
             Assert.AreEqual(10, director.EffectPayloads.Count);
-            director.Tick(1f, new List<TowerInstance> { tower }, registry, _pipeline);
+            director.Tick(0.016f, towers, registry, _pipeline);
+            director.Tick(0.1f, towers, registry, _pipeline);
             Assert.AreEqual(10, director.EffectPayloads.Count);
         }
 
@@ -666,7 +920,7 @@ namespace GemTD.Tests.EditMode
                 var registry = new EnemyRegistry();
                 registry.Register(enemy);
 
-                director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+                TickThroughCast(director, tower, registry);
 
                 Assert.AreEqual(20, director.EffectPayloads.Count);
             }
@@ -722,7 +976,7 @@ namespace GemTD.Tests.EditMode
             var primaryHp = primary.Hp;
             var nonPrimaryHp = nonPrimary.Hp;
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.Less(primary.Hp, primaryHp);
@@ -755,7 +1009,7 @@ namespace GemTD.Tests.EditMode
             var nearHp = near.Hp;
             var outsiderHp = outsider.Hp;
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            TickThroughCast(director, tower, registry);
 
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.Less(near.Hp, nearHp);
@@ -796,7 +1050,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var statuses = new StatusRuntime();
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
 
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.AreEqual(hp, enemy.Hp, 1e-4f);
@@ -850,7 +1104,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var statuses = new StatusRuntime();
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
 
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.AreEqual(hp, enemy.Hp, 1e-4f);
@@ -897,7 +1151,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var statuses = new StatusRuntime();
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
 
             Assert.IsFalse(statuses.Has(enemy, StatusId.CurseFrostbite));
 
@@ -939,7 +1193,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var statuses = new StatusRuntime();
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
 
             Assert.IsTrue(statuses.TryGetMagnitude(enemy, StatusId.CurseFrostbite, out var mag));
             Assert.AreEqual(-18f, mag, 0.001f);
@@ -997,11 +1251,11 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var statuses = new StatusRuntime();
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
             Assert.IsTrue(statuses.Has(enemy, StatusId.CurseFrostbite));
 
             enemy.SetWorldPosition(new Vector3(20f, 0f, 0.5f));
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
             Assert.IsFalse(statuses.Has(enemy, StatusId.CurseFrostbite));
 
             Object.DestroyImmediate(curseRole);
@@ -1040,7 +1294,7 @@ namespace GemTD.Tests.EditMode
             registry.Register(enemy);
             var statuses = new StatusRuntime();
 
-            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline, statuses);
+            TickThroughCast(director, tower, registry, statuses);
             statuses.Tick(0f, new List<EnemyRuntime> { enemy });
             Assert.AreEqual(0.83f, enemy.MoveSpeedMultiplier, 0.001f);
 
@@ -1065,6 +1319,7 @@ namespace GemTD.Tests.EditMode
             var living = new List<EnemyRuntime> { enemy };
 
             Assert.IsTrue(director.TryFireOnce(tower, new Vector3(10f, 0f, 0f), living, _pipeline));
+            CompleteCast(director, living);
             Assert.AreEqual(1, director.Projectiles.Count);
 
             var missed = new CombatDirector(CellSize, projectileSpeed: 100f);
@@ -1082,7 +1337,7 @@ namespace GemTD.Tests.EditMode
             _towerRole.Modifiers = new[]
             {
                 Modifier(RoleStat.TowerRadius, 20f),
-                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackTime, 0.2f),
                 Modifier(RoleStat.AttackSpeed, 100f),
                 Modifier(RoleStat.SplashRadius, 1.8f),
                 Modifier(RoleStat.Damage, 10f)
@@ -1117,16 +1372,16 @@ namespace GemTD.Tests.EditMode
 
             Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
             Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(0, director.EffectPayloads.Count);
+            Assert.IsTrue(director.HasActiveVolley);
+
+            director.TickInFlight(0.25f, living);
             Assert.AreEqual(1, director.EffectPayloads.Count);
             Assert.AreEqual(EffectPayloadTravelPattern.StationaryPulse, director.EffectPayloads[0].Plan.TravelPattern);
             Assert.Less(primary.Hp, 100f);
             Assert.AreEqual(100f, fringe.Hp, 1e-4f);
 
-            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
-            Assert.AreEqual(1, director.EffectPayloads.Count);
-
-            director.TickInFlight(1f, living);
-            Assert.AreEqual(1, director.EffectPayloads.Count);
+            director.TickInFlight(1.02f, living);
             director.TickInFlight(0.02f, living);
             Assert.AreEqual(0, director.EffectPayloads.Count);
             Assert.Less(fringe.Hp, 100f);
@@ -1188,6 +1443,7 @@ namespace GemTD.Tests.EditMode
             var living = new List<EnemyRuntime> { enemy };
 
             Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            CompleteCast(director, living);
             var origin = director.Projectiles[0].Position;
 
             director.TickInFlight(0.05f, living);
@@ -1219,6 +1475,7 @@ namespace GemTD.Tests.EditMode
             var muzzle = new Vector3(0.5f, 0f, 0.5f);
 
             Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            CompleteCast(director, living);
             Assert.AreEqual(1, director.Projectiles.Count);
             Assert.IsTrue(director.HasActiveVolley);
 
@@ -1228,6 +1485,22 @@ namespace GemTD.Tests.EditMode
             director.TickInFlight(0.1f, living);
             Assert.AreEqual(3, director.Projectiles.Count);
             Assert.AreEqual(3, director.Projectiles.Count);
+        }
+
+        void TickThroughCast(
+            CombatDirector director,
+            TowerInstance tower,
+            EnemyRegistry registry,
+            StatusRuntime statuses = null)
+        {
+            var towers = new List<TowerInstance> { tower };
+            director.Tick(0.016f, towers, registry, _pipeline, statuses);
+            director.Tick(CastCompleteDt, towers, registry, _pipeline, statuses);
+        }
+
+        static void CompleteCast(CombatDirector director, List<EnemyRuntime> living)
+        {
+            director.TickInFlight(CastCompleteDt, living);
         }
 
         static RoleStatModifier Modifier(RoleStat stat, float value)

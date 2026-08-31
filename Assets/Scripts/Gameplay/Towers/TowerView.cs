@@ -8,6 +8,8 @@ namespace GemTD.Gameplay.Towers
         static readonly Color IdleColor = new Color(0.45f, 0.5f, 0.55f);
         static readonly Color SelectedColor = new Color(0.95f, 0.75f, 0.25f);
 
+        [SerializeField] TowerAnimatorView animatorView;
+
         MeshRenderer _renderer;
         MaterialPropertyBlock _block;
 
@@ -20,6 +22,8 @@ namespace GemTD.Gameplay.Towers
             if (_renderer == null)
                 _renderer = GetComponentInChildren<MeshRenderer>();
             SetSelected(false);
+            if (animatorView != null)
+                animatorView.Bind(runtime);
         }
 
         public void SetSelected(bool selected)

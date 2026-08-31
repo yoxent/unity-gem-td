@@ -1,4 +1,5 @@
 using UnityEngine;
+using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Combat
@@ -6,8 +7,18 @@ namespace GemTD.Gameplay.Combat
     /// <summary>Pooled bolt/payload view bound to a <see cref="ProjectileRuntime"/> or effect payload.</summary>
     public sealed class ProjectileView : MonoBehaviour
     {
+        [SerializeField] bool slamEffect;
+
         Vector3 _defaultScale = Vector3.one;
         bool _capturedScale;
+
+        public bool IsSlamEffect => slamEffect;
+
+        public static bool WantsSlamEffect(EffectPayloadRuntime payload)
+        {
+            return payload != null
+                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse;
+        }
 
         public ProjectileRuntime Runtime { get; private set; }
         public EffectPayloadRuntime Payload { get; private set; }
@@ -62,8 +73,13 @@ namespace GemTD.Gameplay.Combat
             switch (Payload.Plan.TravelPattern)
             {
                 case EffectPayloadTravelPattern.StationaryPulse:
-                    var radius = Payload.Plan.AoeRadius > 0.4f ? Payload.Plan.AoeRadius : 0.4f;
-                    transform.localScale = new Vector3(radius * 2f, 0.12f, radius * 2f);
+                    if (slamEffect)
+                        transform.localScale = SlamEffectVisual.ScaleXz(_defaultScale, Payload.Plan.AoeRadius);
+                    else
+                    {
+                        var radius = Payload.Plan.AoeRadius > 0.4f ? Payload.Plan.AoeRadius : 0.4f;
+                        transform.localScale = new Vector3(radius * 2f, 0.12f, radius * 2f);
+                    }
                     break;
                 case EffectPayloadTravelPattern.Fountain:
                     transform.localScale = _defaultScale * 0.65f;
@@ -76,10 +92,21 @@ namespace GemTD.Gameplay.Combat
 
         void ApplyTransform(Vector3 position, Vector3 direction)
         {
-            var lift = Payload != null
-                && Payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
-                ? 0.08f
-                : 0.5f;
+            var stationary = Payload != null
+                && Payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse;
+            if (slamEffect && stationary)
+            {
+                var ground = new Vector3(position.x, position.y, position.z);
+                ground.y += TileHeightVisual.PathScaleY * 0.5f;
+                transform.position = SlamEffectVisual.SitOnGround(
+                    ground,
+                    1f,
+                    transform.localScale.y);
+                transform.rotation = Quaternion.identity;
+                return;
+            }
+
+            var lift = stationary ? 0.08f : 0.5f;
             transform.position = position + Vector3.up * lift;
             if (direction.sqrMagnitude > 1e-6f)
                 transform.rotation = Quaternion.LookRotation(direction, Vector3.up);

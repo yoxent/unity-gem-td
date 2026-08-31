@@ -24,6 +24,7 @@ namespace GemTD.Gameplay.Towers
         MaterialPropertyBlock _block;
         Transform _rangeDisc;
         Transform _towerVisual;
+        TowerView _sourcePrefab;
         float _rangeWorld = 3f;
         float _rangeHeightScale = 0.02f;
         bool _rangeUsesAuthoredMaterial;
@@ -32,8 +33,22 @@ namespace GemTD.Gameplay.Towers
 
         public void EnsureBuilt(TowerView towerPrefab, GameObject rangeIndicatorPrefab = null)
         {
-            if (_towerRenderers != null && _towerRenderers.Length > 0)
+            if (_rangeDisc == null)
+                BuildRangeIndicator(rangeIndicatorPrefab);
+
+            if (_towerVisual != null && _sourcePrefab == towerPrefab)
+            {
+                if (_block == null)
+                    _block = new MaterialPropertyBlock();
                 return;
+            }
+
+            if (_towerVisual != null)
+                Destroy(_towerVisual.gameObject);
+
+            _sourcePrefab = towerPrefab;
+            _towerRenderers = null;
+            _towerVisual = null;
 
             if (towerPrefab != null)
             {
@@ -47,6 +62,13 @@ namespace GemTD.Gameplay.Towers
                 var towerView = visual.GetComponent<TowerView>();
                 if (towerView != null)
                     Destroy(towerView);
+
+                var animators = visual.GetComponentsInChildren<Animator>(true);
+                for (var i = 0; i < animators.Length; i++)
+                {
+                    if (animators[i] != null)
+                        animators[i].enabled = false;
+                }
 
                 StripColliders(visual);
                 _towerRenderers = visual.GetComponentsInChildren<MeshRenderer>(true);
@@ -62,8 +84,6 @@ namespace GemTD.Gameplay.Towers
                 _towerVisual = cube.transform;
                 _towerRenderers = cube.GetComponentsInChildren<MeshRenderer>(true);
             }
-
-            BuildRangeIndicator(rangeIndicatorPrefab);
 
             _block = new MaterialPropertyBlock();
             ApplyTransparentMaterials();

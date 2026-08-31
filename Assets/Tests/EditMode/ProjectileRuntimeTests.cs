@@ -149,6 +149,7 @@ namespace GemTD.Tests.EditMode
                 var pipeline = new GemModifierPipeline();
 
                 director.Tick(0.016f, new List<TowerInstance> { tower }, registry, pipeline);
+                director.Tick(2f, new List<TowerInstance> { tower }, registry, pipeline);
 
                 Assert.AreEqual(3, director.Projectiles.Count);
                 // Multiple Projectiles post-mod damage is base*0.8; each pellet deals that full amount (not split).

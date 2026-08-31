@@ -10,7 +10,8 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain combat tick: cooldown → gem pipeline → targeting mode → projectiles (Multiple Projectiles/Chain/Hydra).
+    /// Domain combat tick: cooldown ready starts a cast (NotifyFired). FireInterval is the whole action.
+    /// The volley spawns at strikeNormalized of that interval; cooldown still covers the full interval.
     /// </summary>
     public sealed class CombatDirector
     {
@@ -25,6 +26,8 @@ namespace GemTD.Gameplay.Combat
         readonly List<EffectPayloadPlan> _payloadPlanScratch = new List<EffectPayloadPlan>(8);
         readonly List<EnemyRuntime> _casterNovaScratch = new List<EnemyRuntime>(16);
         readonly List<PendingSequentialVolley> _pendingSequential = new List<PendingSequentialVolley>(8);
+        readonly List<PendingStrike> _pendingStrikes = new List<PendingStrike>(8);
+        readonly List<TowerInstance> _resolvedCasts = new List<TowerInstance>(8);
         System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
         readonly TileHeightMap _heights;
@@ -32,7 +35,10 @@ namespace GemTD.Gameplay.Combat
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
         public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _effectPayloads;
         public bool HasActiveVolley =>
-            _projectiles.Count > 0 || _effectPayloads.Count > 0 || _pendingSequential.Count > 0;
+            _projectiles.Count > 0
+            || _effectPayloads.Count > 0
+            || _pendingSequential.Count > 0
+            || _pendingStrikes.Count > 0;
 
         public CombatDirector(
             float cellSize = 1f,
@@ -74,6 +80,8 @@ namespace GemTD.Gameplay.Combat
             _payloadDefinitionsScratch.Clear();
             _payloadPlanScratch.Clear();
             _pendingSequential.Clear();
+            _pendingStrikes.Clear();
+            _resolvedCasts.Clear();
         }
 
         static bool IsPendingAftershock(EffectPayloadRuntime payload)
@@ -100,6 +108,7 @@ namespace GemTD.Gameplay.Combat
             if (enemies == null || pipeline == null)
                 return;
 
+            _resolvedCasts.Clear();
             var living = ListPool<EnemyRuntime>.Get();
             enemies.CopyAlive(living);
             TickInFlight(dt, living);
@@ -129,6 +138,8 @@ namespace GemTD.Gameplay.Combat
                         continue;
 
                     tower.Cooldown -= dt;
+                    if (HasPendingStrike(tower) || ResolvedThisTick(tower))
+                        continue;
                     if (tower.Cooldown > 0f)
                         continue;
 
@@ -152,7 +163,7 @@ namespace GemTD.Gameplay.Combat
                         continue;
 
                     tower.Cooldown = tower.Def.FireInterval(spec, tower.Level);
-                    SpawnResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
+                    BeginResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
                 }
             }
 
@@ -179,6 +190,7 @@ namespace GemTD.Gameplay.Combat
                     _projectiles.RemoveAt(i);
             }
 
+            TickPendingStrikes(dt, living);
             MergeSpawnBuffer();
         }
 
@@ -204,6 +216,9 @@ namespace GemTD.Gameplay.Combat
             if (!tower.Def.IsFireable)
                 return false;
 
+            if (HasPendingStrike(tower))
+                return true;
+
             var modifiers = ListPool<ISkillModifier>.Get();
             var baseline = pipeline.ResolveBaseline(tower);
             var spec = pipeline.Resolve(tower, modifiers);
@@ -214,8 +229,108 @@ namespace GemTD.Gameplay.Combat
             if (!_selector.TrySelect(tower.Targeting, muzzle, range, living, out var primary))
                 return false;
 
-            SpawnResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
+            BeginResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
             return true;
+        }
+
+        void BeginResolvedVolley(
+            Vector3 muzzle,
+            float range,
+            EnemyRuntime primary,
+            SkillSpec spec,
+            SkillSpec baseline,
+            List<EnemyRuntime> living,
+            StatusRuntime statuses,
+            TowerInstance tower)
+        {
+            var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
+            var speed = _projectileSpeed * speedMul;
+            var predictFrom = new Vector3(muzzle.x, 0f, muzzle.z);
+            var aimPoint = spec.AimMode == AimMode.Ground
+                ? PathIntercept.Predict(predictFrom, speed, primary)
+                : primary.WorldPosition;
+            var interval = 0f;
+            if (tower != null && tower.Def != null)
+                interval = tower.Def.FireInterval(spec, tower.Level);
+            if (tower != null)
+            {
+                tower.CurrentFireInterval = interval;
+                tower.NotifyFired(aimPoint);
+            }
+
+            var contact = tower != null
+                ? TowerAttackPlayback.ContactDelay(interval, tower.StrikeNormalized)
+                : interval;
+            if (tower != null && contact > 0.0001f)
+            {
+                _pendingStrikes.Add(new PendingStrike
+                {
+                    Tower = tower,
+                    Muzzle = muzzle,
+                    Range = range,
+                    Primary = primary,
+                    Spec = spec,
+                    Baseline = baseline,
+                    Statuses = statuses,
+                    Remaining = contact
+                });
+                return;
+            }
+
+            SpawnResolvedVolley(muzzle, range, primary, spec, baseline, living, statuses, tower);
+        }
+
+        bool HasPendingStrike(TowerInstance tower)
+        {
+            if (tower == null)
+                return false;
+            for (var i = 0; i < _pendingStrikes.Count; i++)
+            {
+                if (_pendingStrikes[i].Tower == tower)
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool ResolvedThisTick(TowerInstance tower)
+        {
+            if (tower == null)
+                return false;
+            for (var i = 0; i < _resolvedCasts.Count; i++)
+            {
+                if (_resolvedCasts[i] == tower)
+                    return true;
+            }
+
+            return false;
+        }
+
+        void TickPendingStrikes(float dt, List<EnemyRuntime> living)
+        {
+            for (var i = _pendingStrikes.Count - 1; i >= 0; i--)
+            {
+                var pending = _pendingStrikes[i];
+                pending.Remaining -= dt;
+                if (pending.Remaining > 0f)
+                    continue;
+
+                _pendingStrikes.RemoveAt(i);
+                if (pending.Tower != null)
+                    _resolvedCasts.Add(pending.Tower);
+                if (pending.Primary == null || !pending.Primary.IsAlive)
+                    continue;
+
+                SpawnResolvedVolley(
+                    pending.Muzzle,
+                    pending.Range,
+                    pending.Primary,
+                    pending.Spec,
+                    pending.Baseline,
+                    living,
+                    pending.Statuses,
+                    pending.Tower);
+            }
         }
 
         void SpawnResolvedVolley(
@@ -880,6 +995,18 @@ namespace GemTD.Gameplay.Combat
             public TowerDefinition SourceTower;
             public int NextIndex;
             public float Wait;
+        }
+
+        sealed class PendingStrike
+        {
+            public TowerInstance Tower;
+            public Vector3 Muzzle;
+            public float Range;
+            public EnemyRuntime Primary;
+            public SkillSpec Spec;
+            public SkillSpec Baseline;
+            public StatusRuntime Statuses;
+            public float Remaining;
         }
 
         Vector3 CellToWorld(Vector2Int cell)

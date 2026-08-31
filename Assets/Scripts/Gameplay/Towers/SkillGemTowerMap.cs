@@ -225,6 +225,41 @@ namespace GemTD.Gameplay.Towers
             Mine,
         }
 
+        /// <summary>
+        /// Character prefab family from crawled PoE tags. Matches catalog split:
+        /// Spell vs Attack, then Attack into Slam / Strike / Bow.
+        /// </summary>
+        public enum TowerVisualFamily
+        {
+            Default = 0,
+            Spell,
+            Slam,
+            Strike,
+            Bow,
+        }
+
+        /// <summary>
+        /// Spell (no Attack) → mage. Slam → barbarian. Strike → knight.
+        /// Bow tag, or Attack+Projectile without Melee → ranger.
+        /// </summary>
+        public static TowerVisualFamily ResolveVisualFamily(GemTag tags)
+        {
+            if ((tags & GemTag.Spell) != 0 && (tags & GemTag.Attack) == 0)
+                return TowerVisualFamily.Spell;
+            if ((tags & GemTag.Slam) != 0)
+                return TowerVisualFamily.Slam;
+            if ((tags & GemTag.Strike) != 0)
+                return TowerVisualFamily.Strike;
+            if ((tags & GemTag.Bow) != 0)
+                return TowerVisualFamily.Bow;
+            if ((tags & GemTag.Attack) != 0
+                && (tags & GemTag.Projectile) != 0
+                && (tags & GemTag.Melee) == 0)
+                return TowerVisualFamily.Bow;
+
+            return TowerVisualFamily.Default;
+        }
+
         public sealed class RolePayload
         {
             public RoleKind Kind;

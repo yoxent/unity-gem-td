@@ -561,6 +561,7 @@ GameObject:
   - component: {fileID: 88730596}
   - component: {fileID: 88730598}
   - component: {fileID: 88730597}
+  - component: {fileID: 88730600}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -637,8 +638,8 @@ MonoBehaviour:
   distance: 20
   panSpeed: 40
   mousePanSpeed: 0.02
-  zoomSpeed: 4
-  minOrthoSize: 4
+  zoomSpeed: 100
+  minOrthoSize: 3
   focus: {x: -1, y: 0, z: 0}
   maxOrthoSize: 18
 --- !u!81 &88730598
@@ -664,6 +665,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &88730600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88730595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &92218916
 GameObject:
   m_ObjectHideFlags: 0
@@ -1164,6 +1209,7 @@ MonoBehaviour:
   - {fileID: 1966783908}
   - {fileID: 1915267286}
   projectilePrefab: {fileID: 6558561485013009353, guid: ee4ea4938fb83aa499bb230b52583eb0, type: 3}
+  slamEffectPrefab: {fileID: 9096340638476635872, guid: b276e5db65afe1042af59e7387af536c, type: 3}
 --- !u!114 &270559725
 MonoBehaviour:
   m_ObjectHideFlags: 0

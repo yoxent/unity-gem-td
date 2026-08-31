@@ -736,6 +736,63 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(DeliveryPattern.WarpStrike, delivery);
         }
 
+        [Test]
+        public void ResolveVisualFamily_SpellTagWithoutAttack_IsSpell()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Spell,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Spell | GemTag.Projectile | GemTag.Aoe | GemTag.Fire));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_Slam_IsSlam()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Slam,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_MeleeStrike_IsStrike()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Strike,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Attack | GemTag.Melee | GemTag.Strike));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_BowTag_IsBow()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Bow,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Attack | GemTag.Projectile | GemTag.Bow));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_RangedAttackWithoutBowTag_IsBow()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Bow,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Attack | GemTag.Projectile));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_MeleeWithoutSlamOrStrike_IsDefault()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Default,
+                SkillGemTowerMap.ResolveVisualFamily(GemTag.Attack | GemTag.Melee | GemTag.Aoe));
+        }
+
+        [Test]
+        public void ResolveVisualFamily_SlamWinsOverStrike()
+        {
+            Assert.AreEqual(
+                SkillGemTowerMap.TowerVisualFamily.Slam,
+                SkillGemTowerMap.ResolveVisualFamily(
+                    GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Strike));
+        }
+
         static bool HasModifier(RoleStatModifier[] modifiers, RoleStat stat)
         {
             for (var i = 0; i < modifiers.Length; i++)

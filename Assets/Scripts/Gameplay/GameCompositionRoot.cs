@@ -39,7 +39,12 @@ namespace GemTD.Gameplay
         [Header("Prefabs")]
         [SerializeField] EnemyView enemyPrefab;
         [SerializeField] ProjectileView projectilePrefab;
+        [SerializeField] ProjectileView slamEffectPrefab;
         [SerializeField] TowerView towerPrefab;
+        [SerializeField] TowerView spellTowerPrefab;
+        [SerializeField] TowerView slamTowerPrefab;
+        [SerializeField] TowerView strikeTowerPrefab;
+        [SerializeField] TowerView bowTowerPrefab;
         [SerializeField] ExpandMarkerView expandMarkerPrefab;
         [SerializeField] GameObject towerRangeIndicatorPrefab;
 
@@ -241,6 +246,7 @@ namespace GemTD.Gameplay
         ViewObjectPool<EnemyView> _enemyPool;
         ManualMotionDispatcher _enemyHopDispatcher;
         ViewObjectPool<ProjectileView> _projectilePool;
+        ViewObjectPool<ProjectileView> _slamEffectPool;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
@@ -312,6 +318,7 @@ namespace GemTD.Gameplay
             _debugMap?.Dispose();
             _enemyPool?.Clear();
             _projectilePool?.Clear();
+            _slamEffectPool?.Clear();
         }
 
         void Update()
@@ -362,14 +369,38 @@ namespace GemTD.Gameplay
 
         void EnsurePlacementGhost()
         {
-            if (_placementGhost != null)
-                return;
+            if (_placementGhost == null)
+            {
+                var go = new GameObject("PlacementGhost");
+                go.transform.SetParent(transform, false);
+                _placementGhost = go.AddComponent<PlacementGhostView>();
+                _placementGhost.Hide();
+            }
 
-            var go = new GameObject("PlacementGhost");
-            go.transform.SetParent(transform, false);
-            _placementGhost = go.AddComponent<PlacementGhostView>();
-            _placementGhost.EnsureBuilt(towerPrefab, towerRangeIndicatorPrefab);
-            _placementGhost.Hide();
+            _placementGhost.EnsureBuilt(ResolveTowerViewPrefab(_placeDef), towerRangeIndicatorPrefab);
+        }
+
+        TowerView ResolveTowerViewPrefab(TowerDefinition def)
+        {
+            if (def != null && def.ViewPrefab != null)
+                return def.ViewPrefab;
+
+            var family = def != null
+                ? SkillGemTowerMap.ResolveVisualFamily(def.Tags)
+                : SkillGemTowerMap.TowerVisualFamily.Default;
+            switch (family)
+            {
+                case SkillGemTowerMap.TowerVisualFamily.Spell:
+                    return spellTowerPrefab != null ? spellTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Slam:
+                    return slamTowerPrefab != null ? slamTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Strike:
+                    return strikeTowerPrefab != null ? strikeTowerPrefab : towerPrefab;
+                case SkillGemTowerMap.TowerVisualFamily.Bow:
+                    return bowTowerPrefab != null ? bowTowerPrefab : towerPrefab;
+                default:
+                    return towerPrefab;
+            }
         }
 
         float EffectiveAttackRange(TowerInstance tower)
@@ -571,6 +602,8 @@ namespace GemTD.Gameplay
                 _enemyPool = new ViewObjectPool<EnemyView>(enemyPrefab, parent);
             if (projectilePrefab != null)
                 _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, parent);
+            if (slamEffectPrefab != null)
+                _slamEffectPool = new ViewObjectPool<ProjectileView>(slamEffectPrefab, parent);
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
         }
@@ -848,9 +881,10 @@ namespace GemTD.Gameplay
 
             _towers.Add(tower);
             _runStats.RecordTowerPlaced(tower.Def);
-            if (towerPrefab != null)
+            var viewPrefab = ResolveTowerViewPrefab(tower.Def);
+            if (viewPrefab != null)
             {
-                var view = Instantiate(towerPrefab, transform);
+                var view = Instantiate(viewPrefab, transform);
                 view.Bind(tower, chunkBoardView.TowerCellWorld(cell));
                 _towerViews.Add(view);
             }
@@ -1555,30 +1589,21 @@ namespace GemTD.Gameplay
             {
                 var last = _projectileViews[_projectileViews.Count - 1];
                 _projectileViews.RemoveAt(_projectileViews.Count - 1);
-                if (last != null)
-                {
-                    last.Clear();
-                    if (_projectilePool != null)
-                        _projectilePool.Release(last);
-                    else
-                        Destroy(last.gameObject);
-                }
+                ProjectileViewBinder.Release(last, _projectilePool, _slamEffectPool);
             }
 
             for (var i = 0; i < total; i++)
             {
-                ProjectileView view;
-                if (i >= _projectileViews.Count)
-                {
-                    if (_projectilePool == null)
-                        break;
-                    view = _projectilePool.Get();
-                    _projectileViews.Add(view);
-                }
-                else
-                {
-                    view = _projectileViews[i];
-                }
+                var slam = i >= projectiles.Count
+                    && ProjectileView.WantsSlamEffect(payloads[i - projectiles.Count]);
+                var view = ProjectileViewBinder.Ensure(
+                    _projectileViews,
+                    i,
+                    slam,
+                    _projectilePool,
+                    _slamEffectPool);
+                if (view == null)
+                    break;
 
                 if (i < projectiles.Count)
                 {

@@ -22,10 +22,12 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] Transform towerView;
         [SerializeField] SkillLabDummyView[] dummyViews;
         [SerializeField] ProjectileView projectilePrefab;
+        [SerializeField] ProjectileView slamEffectPrefab;
 
         readonly SkillLabSession _session = new SkillLabSession();
         readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
         ViewObjectPool<ProjectileView> _projectilePool;
+        ViewObjectPool<ProjectileView> _slamEffectPool;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -46,6 +48,8 @@ namespace GemTD.Gameplay.SkillLab
                 Debug.LogError("SkillLabController: projectilePrefab is not assigned.", this);
             else
                 _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, transform);
+            if (slamEffectPrefab != null)
+                _slamEffectPool = new ViewObjectPool<ProjectileView>(slamEffectPrefab, transform);
 
             _session.BindCatalog(draftGems);
             if (towerCatalog != null)
@@ -196,29 +200,21 @@ namespace GemTD.Gameplay.SkillLab
             {
                 var last = _projectileViews[_projectileViews.Count - 1];
                 _projectileViews.RemoveAt(_projectileViews.Count - 1);
-                if (last == null)
-                    continue;
-                last.Clear();
-                if (_projectilePool != null)
-                    _projectilePool.Release(last);
-                else
-                    Destroy(last.gameObject);
+                ProjectileViewBinder.Release(last, _projectilePool, _slamEffectPool);
             }
 
             for (var i = 0; i < total; i++)
             {
-                ProjectileView view;
-                if (i >= _projectileViews.Count)
-                {
-                    if (_projectilePool == null)
-                        break;
-                    view = _projectilePool.Get();
-                    _projectileViews.Add(view);
-                }
-                else
-                {
-                    view = _projectileViews[i];
-                }
+                var slam = i >= bolts.Count
+                    && ProjectileView.WantsSlamEffect(payloads[i - bolts.Count]);
+                var view = ProjectileViewBinder.Ensure(
+                    _projectileViews,
+                    i,
+                    slam,
+                    _projectilePool,
+                    _slamEffectPool);
+                if (view == null)
+                    break;
 
                 if (i < bolts.Count)
                     view.Bind(bolts[i]);

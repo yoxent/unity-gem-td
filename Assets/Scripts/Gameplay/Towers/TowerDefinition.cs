@@ -18,9 +18,13 @@ namespace GemTD.Gameplay.Towers
         public TowerRoleDefinition[] Roles;
         public int SocketCount = 3;
         public bool AllowsHydraEvolution;
+        [Tooltip("Optional character prefab. Empty uses the composition-root greybox tower.")]
+        [SerializeField] TowerView viewPrefab;
         [Tooltip("PoE-style tags. None = infer from the assigned role types.")]
         [SerializeField, FormerlySerializedAs("Tags"), GemTagMask]
         long tags;
+
+        public TowerView ViewPrefab => viewPrefab;
 
         public GemTag Tags
         {

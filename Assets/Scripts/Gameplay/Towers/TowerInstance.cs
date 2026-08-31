@@ -16,6 +16,12 @@ namespace GemTD.Gameplay.Towers
         public TargetingRecipe Targeting { get; set; }
         public int PurchaseCost { get; }
         public int UpgradeSpend { get; set; }
+        public int FireGeneration { get; private set; }
+        public Vector3 LastAimPoint { get; private set; }
+        /// <summary>Resolved attack/cast interval for the current volley. Animation stretches clips to fill this window.</summary>
+        public float CurrentFireInterval { get; set; }
+        /// <summary>0–1 contact pose in the current FireInterval. Spawn and bow Draw→Release use the same value. Default 1 (end of interval).</summary>
+        public float StrikeNormalized { get; set; } = 1f;
         int _levelIndex;
 
         /// <summary>0-based draft progression. Combat uses Level, which is this index + 1 clamped to 1–10 (role Levels[] snapshot).</summary>
@@ -111,6 +117,12 @@ namespace GemTD.Gameplay.Towers
 
             Sockets[index] = default;
             return true;
+        }
+
+        public void NotifyFired(Vector3 aimPoint)
+        {
+            FireGeneration++;
+            LastAimPoint = aimPoint;
         }
     }
 }
