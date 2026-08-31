@@ -4,7 +4,8 @@ namespace GemTD.Gameplay.Towers
 {
     /// <summary>
     /// Plays per-prefab idle + 1..N fire states when the bound tower fires.
-    /// FireInterval is the whole action. Clips stretch to fill their window. Idle stays at speed 1.
+    /// FireInterval is the whole action. Clips stretch to fill their window.
+    /// Animator speed also follows RunClock (SpeedControl 1/2/4, 0 while paused).
     /// Spawn and bow Draw→Release both use strikeNormalized of that interval.
     /// </summary>
     public sealed class TowerAnimatorView : MonoBehaviour
@@ -22,6 +23,7 @@ namespace GemTD.Gameplay.Towers
         int _seenGeneration;
         TowerAttackPlayback _playback;
         string _playingState;
+        float _simSpeed = 1f;
 
         public void Bind(TowerInstance runtime)
         {
@@ -33,11 +35,12 @@ namespace GemTD.Gameplay.Towers
             PlayIdle();
         }
 
-        void LateUpdate()
+        public void Tick(float dt, float simSpeed)
         {
             if (_runtime == null || animator == null || !animator.isActiveAndEnabled)
                 return;
 
+            _simSpeed = simSpeed < 0f ? 0f : simSpeed;
             if (_runtime.FireGeneration != _seenGeneration)
             {
                 _seenGeneration = _runtime.FireGeneration;
@@ -45,7 +48,8 @@ namespace GemTD.Gameplay.Towers
                 PlayAttack();
             }
 
-            TickSequence();
+            TickSequence(dt);
+            ApplyAnimatorSpeed();
         }
 
         void PlayAttack()
@@ -57,7 +61,7 @@ namespace GemTD.Gameplay.Towers
             PlayFireStep(playIndex);
         }
 
-        void TickSequence()
+        void TickSequence(float dt)
         {
             if (!_playback.IsPlaying)
                 return;
@@ -66,7 +70,7 @@ namespace GemTD.Gameplay.Towers
             var strikeDelay = TowerAttackPlayback.ContactDelay(
                 _runtime.CurrentFireInterval,
                 strikeNormalized);
-            if (_playback.TryTickWindup(Time.deltaTime, strikeDelay, count, out var windupIndex))
+            if (_playback.TryTickWindup(dt, strikeDelay, count, out var windupIndex))
             {
                 PlayFireStep(windupIndex);
                 return;
@@ -93,7 +97,6 @@ namespace GemTD.Gameplay.Towers
 
         void PlayFireStep(int playIndex)
         {
-            SetClipSpeed(SpeedForStep(playIndex));
             PlayState(fireStates[playIndex]);
         }
 
@@ -102,7 +105,6 @@ namespace GemTD.Gameplay.Towers
             if (string.IsNullOrEmpty(idleState))
                 return;
 
-            SetClipSpeed(1f);
             PlayState(idleState);
         }
 
@@ -118,11 +120,13 @@ namespace GemTD.Gameplay.Towers
                 animator.Play(stateName, 0, 0f);
         }
 
-        void SetClipSpeed(float speed)
+        void ApplyAnimatorSpeed()
         {
             if (animator == null)
                 return;
-            animator.speed = speed;
+
+            var clipSpeed = _playback.IsPlaying ? SpeedForStep(_playback.StepIndex) : 1f;
+            animator.speed = TowerAttackPlayback.SimAnimatorSpeed(clipSpeed, _simSpeed);
         }
 
         float SpeedForStep(int stepIndex)

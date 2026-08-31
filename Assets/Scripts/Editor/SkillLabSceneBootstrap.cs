@@ -27,6 +27,7 @@ namespace GemTD.Editor
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
             var projectilePrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Projectile_Bolt.prefab");
             var slamEffectPrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Effect_Slam.prefab");
+            var aftershockEffectPrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Effect_Aftershock.prefab");
             var gems = LoadDraftGems();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
@@ -94,6 +95,7 @@ namespace GemTD.Editor
             ctrlSo.FindProperty("towerView").objectReferenceValue = towerGo.transform;
             ctrlSo.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             ctrlSo.FindProperty("slamEffectPrefab").objectReferenceValue = slamEffectPrefab;
+            ctrlSo.FindProperty("aftershockEffectPrefab").objectReferenceValue = aftershockEffectPrefab;
             var gemsProp = ctrlSo.FindProperty("draftGems");
             gemsProp.arraySize = gems.Length;
             for (var i = 0; i < gems.Length; i++)

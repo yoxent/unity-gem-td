@@ -11,7 +11,7 @@ namespace GemTD.Core
     {
         readonly UnityEngine.Pool.ObjectPool<T> _pool;
 
-        public ViewObjectPool(T prefab, Transform parent, int defaultCapacity = 16, int maxSize = 256)
+        public ViewObjectPool(T prefab, Transform parent, int defaultCapacity = 16, int maxSize = 512)
         {
             if (prefab == null) throw new ArgumentNullException(nameof(prefab));
 
@@ -29,7 +29,11 @@ namespace GemTD.Core
                     if (item != null)
                         UnityEngine.Object.Destroy(item.gameObject);
                 },
+#if UNITY_EDITOR
+                collectionCheck: true,
+#else
                 collectionCheck: false,
+#endif
                 defaultCapacity: defaultCapacity,
                 maxSize: maxSize);
         }
@@ -37,6 +41,18 @@ namespace GemTD.Core
         public T Get() => _pool.Get();
 
         public void Release(T item) => _pool.Release(item);
+
+        public void Prewarm(int count)
+        {
+            if (count <= 0)
+                return;
+
+            var batch = new T[count];
+            for (var i = 0; i < count; i++)
+                batch[i] = _pool.Get();
+            for (var i = 0; i < count; i++)
+                _pool.Release(batch[i]);
+        }
 
         public void Clear() => _pool.Clear();
     }

@@ -40,6 +40,7 @@ namespace GemTD.Gameplay
         [SerializeField] EnemyView enemyPrefab;
         [SerializeField] ProjectileView projectilePrefab;
         [SerializeField] ProjectileView slamEffectPrefab;
+        [SerializeField] ProjectileView aftershockEffectPrefab;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] TowerView spellTowerPrefab;
         [SerializeField] TowerView slamTowerPrefab;
@@ -247,6 +248,7 @@ namespace GemTD.Gameplay
         ManualMotionDispatcher _enemyHopDispatcher;
         ViewObjectPool<ProjectileView> _projectilePool;
         ViewObjectPool<ProjectileView> _slamEffectPool;
+        ViewObjectPool<ProjectileView> _aftershockEffectPool;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
@@ -319,6 +321,7 @@ namespace GemTD.Gameplay
             _enemyPool?.Clear();
             _projectilePool?.Clear();
             _slamEffectPool?.Clear();
+            _aftershockEffectPool?.Clear();
         }
 
         void Update()
@@ -361,6 +364,8 @@ namespace GemTD.Gameplay
             ApplyEnemyHopPlaybackSpeeds();
             if (_enemyHopDispatcher != null)
                 _enemyHopDispatcher.Update(dt);
+
+            TickTowerAnimators(dt);
 
             SyncProjectileViews();
             SyncEnemyViews();
@@ -601,9 +606,23 @@ namespace GemTD.Gameplay
             if (enemyPrefab != null)
                 _enemyPool = new ViewObjectPool<EnemyView>(enemyPrefab, parent);
             if (projectilePrefab != null)
-                _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, parent);
+            {
+                _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, parent, ProjectileViewBinder.BoltPrewarm);
+                _projectilePool.Prewarm(ProjectileViewBinder.BoltPrewarm);
+            }
             if (slamEffectPrefab != null)
-                _slamEffectPool = new ViewObjectPool<ProjectileView>(slamEffectPrefab, parent);
+            {
+                _slamEffectPool = new ViewObjectPool<ProjectileView>(slamEffectPrefab, parent, ProjectileViewBinder.SlamPrewarm);
+                _slamEffectPool.Prewarm(ProjectileViewBinder.SlamPrewarm);
+            }
+            if (aftershockEffectPrefab != null)
+            {
+                _aftershockEffectPool = new ViewObjectPool<ProjectileView>(
+                    aftershockEffectPrefab,
+                    parent,
+                    ProjectileViewBinder.AftershockPrewarm);
+                _aftershockEffectPool.Prewarm(ProjectileViewBinder.AftershockPrewarm);
+            }
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
         }
@@ -1570,6 +1589,13 @@ namespace GemTD.Gameplay
                 _enemyViews[i]?.ApplyHopPlaybackSpeed();
         }
 
+        void TickTowerAnimators(float dt)
+        {
+            var simSpeed = Clock != null && !Clock.IsPaused ? Clock.TimeScale : 0f;
+            for (var i = 0; i < _towerViews.Count; i++)
+                _towerViews[i]?.TickAnimator(dt, simSpeed);
+        }
+
         void SyncEnemyViews()
         {
             for (var i = 0; i < _enemyViews.Count; i++)
@@ -1581,46 +1607,13 @@ namespace GemTD.Gameplay
             if (_combat == null)
                 return;
 
-            var projectiles = _combat.Projectiles;
-            var payloads = _combat.EffectPayloads;
-            var total = projectiles.Count + payloads.Count;
-
-            while (_projectileViews.Count > total)
-            {
-                var last = _projectileViews[_projectileViews.Count - 1];
-                _projectileViews.RemoveAt(_projectileViews.Count - 1);
-                ProjectileViewBinder.Release(last, _projectilePool, _slamEffectPool);
-            }
-
-            for (var i = 0; i < total; i++)
-            {
-                var slam = i >= projectiles.Count
-                    && ProjectileView.WantsSlamEffect(payloads[i - projectiles.Count]);
-                var view = ProjectileViewBinder.Ensure(
-                    _projectileViews,
-                    i,
-                    slam,
-                    _projectilePool,
-                    _slamEffectPool);
-                if (view == null)
-                    break;
-
-                if (i < projectiles.Count)
-                {
-                    if (view.Runtime != projectiles[i])
-                        view.Bind(projectiles[i]);
-                    else
-                        view.SyncTransform();
-                }
-                else
-                {
-                    var payload = payloads[i - projectiles.Count];
-                    if (view.Payload != payload)
-                        view.Bind(payload);
-                    else
-                        view.SyncTransform();
-                }
-            }
+            ProjectileViewBinder.SyncLive(
+                _projectileViews,
+                _combat.Projectiles,
+                _combat.EffectPayloads,
+                _projectilePool,
+                _slamEffectPool,
+                _aftershockEffectPool);
         }
 
         void EnsureHomeMarker()

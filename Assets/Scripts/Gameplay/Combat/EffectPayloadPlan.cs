@@ -25,8 +25,16 @@ namespace GemTD.Gameplay.Combat
         public float KnockbackChance;
         public float KnockbackDistance;
         public SkillSpec HitSpec;
+        public EffectPayloadVisual Visual;
 
         public float HorizontalDistance =>
             new Vector3(LandingPoint.x - Origin.x, 0f, LandingPoint.z - Origin.z).magnitude;
+    }
+
+    public enum EffectPayloadVisual
+    {
+        None = 0,
+        Slam = 1,
+        Aftershock = 2
     }
 }

@@ -23,11 +23,13 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] SkillLabDummyView[] dummyViews;
         [SerializeField] ProjectileView projectilePrefab;
         [SerializeField] ProjectileView slamEffectPrefab;
+        [SerializeField] ProjectileView aftershockEffectPrefab;
 
         readonly SkillLabSession _session = new SkillLabSession();
         readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
         ViewObjectPool<ProjectileView> _projectilePool;
         ViewObjectPool<ProjectileView> _slamEffectPool;
+        ViewObjectPool<ProjectileView> _aftershockEffectPool;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -47,9 +49,29 @@ namespace GemTD.Gameplay.SkillLab
             if (projectilePrefab == null)
                 Debug.LogError("SkillLabController: projectilePrefab is not assigned.", this);
             else
-                _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, transform);
+            {
+                _projectilePool = new ViewObjectPool<ProjectileView>(
+                    projectilePrefab,
+                    transform,
+                    ProjectileViewBinder.BoltPrewarm);
+                _projectilePool.Prewarm(ProjectileViewBinder.BoltPrewarm);
+            }
             if (slamEffectPrefab != null)
-                _slamEffectPool = new ViewObjectPool<ProjectileView>(slamEffectPrefab, transform);
+            {
+                _slamEffectPool = new ViewObjectPool<ProjectileView>(
+                    slamEffectPrefab,
+                    transform,
+                    ProjectileViewBinder.SlamPrewarm);
+                _slamEffectPool.Prewarm(ProjectileViewBinder.SlamPrewarm);
+            }
+            if (aftershockEffectPrefab != null)
+            {
+                _aftershockEffectPool = new ViewObjectPool<ProjectileView>(
+                    aftershockEffectPrefab,
+                    transform,
+                    ProjectileViewBinder.AftershockPrewarm);
+                _aftershockEffectPool.Prewarm(ProjectileViewBinder.AftershockPrewarm);
+            }
 
             _session.BindCatalog(draftGems);
             if (towerCatalog != null)
@@ -192,35 +214,13 @@ namespace GemTD.Gameplay.SkillLab
 
         void SyncProjectileViews()
         {
-            var bolts = _session.Projectiles;
-            var payloads = _session.EffectPayloads;
-            var total = bolts.Count + payloads.Count;
-
-            while (_projectileViews.Count > total)
-            {
-                var last = _projectileViews[_projectileViews.Count - 1];
-                _projectileViews.RemoveAt(_projectileViews.Count - 1);
-                ProjectileViewBinder.Release(last, _projectilePool, _slamEffectPool);
-            }
-
-            for (var i = 0; i < total; i++)
-            {
-                var slam = i >= bolts.Count
-                    && ProjectileView.WantsSlamEffect(payloads[i - bolts.Count]);
-                var view = ProjectileViewBinder.Ensure(
-                    _projectileViews,
-                    i,
-                    slam,
-                    _projectilePool,
-                    _slamEffectPool);
-                if (view == null)
-                    break;
-
-                if (i < bolts.Count)
-                    view.Bind(bolts[i]);
-                else
-                    view.Bind(payloads[i - bolts.Count]);
-            }
+            ProjectileViewBinder.SyncLive(
+                _projectileViews,
+                _session.Projectiles,
+                _session.EffectPayloads,
+                _projectilePool,
+                _slamEffectPool,
+                _aftershockEffectPool);
         }
 
         void TickDrag()

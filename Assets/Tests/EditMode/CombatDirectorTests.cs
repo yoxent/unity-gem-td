@@ -233,6 +233,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_Miss_ExpiresAtTowerRange()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            director.TickInFlight(CastCompleteDt, living);
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            var empty = new List<EnemyRuntime>();
+            director.TickInFlight(0.9f, empty);
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            director.TickInFlight(0.2f, empty);
+            Assert.AreEqual(0, director.Projectiles.Count);
+        }
+
+        [Test]
         public void Tick_DoesNotRecastOnTheTickThatResolves()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 100f);
@@ -1330,7 +1350,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void TryFireOnce_GroundPulse_SpawnsDelayedAftershockOnce()
+        public void TryFireOnce_GroundPulse_SpawnsSlamVisualAndAftershock()
         {
             _towerRole.AimMode = AimMode.Ground;
             _towerRole.DeliveryPattern = DeliveryPattern.GroundPulse;
@@ -1376,15 +1396,80 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(director.HasActiveVolley);
 
             director.TickInFlight(0.25f, living);
-            Assert.AreEqual(1, director.EffectPayloads.Count);
-            Assert.AreEqual(EffectPayloadTravelPattern.StationaryPulse, director.EffectPayloads[0].Plan.TravelPattern);
+            Assert.AreEqual(2, director.EffectPayloads.Count);
+            Assert.AreEqual(EffectPayloadVisual.Slam, director.EffectPayloads[0].Plan.Visual);
+            Assert.AreEqual(EffectPayloadVisual.Aftershock, director.EffectPayloads[1].Plan.Visual);
+            Assert.IsTrue(director.EffectPayloads[0].ShowsSlamVisual);
+            Assert.IsFalse(director.EffectPayloads[1].ShowsAftershockVisual);
             Assert.Less(primary.Hp, 100f);
             Assert.AreEqual(100f, fringe.Hp, 1e-4f);
 
             director.TickInFlight(1.02f, living);
             director.TickInFlight(0.02f, living);
-            Assert.AreEqual(0, director.EffectPayloads.Count);
             Assert.Less(fringe.Hp, 100f);
+            Assert.GreaterOrEqual(director.EffectPayloads.Count, 1);
+
+            director.TickInFlight(EffectPayloadRuntime.StationaryPulseVisualSeconds, living);
+            Assert.AreEqual(0, director.EffectPayloads.Count);
+        }
+
+        [Test]
+        public void TryFireOnce_GroundPulse_SecondSlamSpawnsSecondAftershock()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 0.2f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 1.8f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _towerRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    Anchor = EffectPayloadAnchor.GroundTarget,
+                    TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                    ScatterPattern = EffectPayloadScatterPattern.None,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Tags = GemTag.Aoe,
+                    Count = 1,
+                    DamageMultiplier = 2.5f,
+                    AoeRadius = 2.8f,
+                    DelaySeconds = 1f
+                }
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+            _towerDef.Damage = 10f;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var primary = new EnemyRuntime();
+            primary.Init(_enemyDef, new[] { new Vector3(4f, 0f, 0f) });
+            var living = new List<EnemyRuntime> { primary };
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            director.TickInFlight(0.1f, living);
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            director.TickInFlight(0.1f, living);
+
+            var aftershocks = 0;
+            var slams = 0;
+            for (var i = 0; i < director.EffectPayloads.Count; i++)
+            {
+                var visual = director.EffectPayloads[i].Plan.Visual;
+                if (visual == EffectPayloadVisual.Aftershock)
+                    aftershocks++;
+                else if (visual == EffectPayloadVisual.Slam)
+                    slams++;
+            }
+
+            Assert.AreEqual(2, slams);
+            Assert.AreEqual(2, aftershocks);
         }
 
         [Test]

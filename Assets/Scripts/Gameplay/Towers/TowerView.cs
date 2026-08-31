@@ -9,9 +9,13 @@ namespace GemTD.Gameplay.Towers
         static readonly Color SelectedColor = new Color(0.95f, 0.75f, 0.25f);
 
         [SerializeField] TowerAnimatorView animatorView;
+        [Tooltip("World Y above pad top where bolts, warp, and caster nova originate.")]
+        [SerializeField] [Min(0f)] float muzzleLocalY = DefaultMuzzleLocalY;
 
         MeshRenderer _renderer;
         MaterialPropertyBlock _block;
+
+        public const float DefaultMuzzleLocalY = 1.2f;
 
         public TowerInstance Runtime { get; private set; }
 
@@ -19,11 +23,19 @@ namespace GemTD.Gameplay.Towers
         {
             Runtime = runtime;
             transform.position = worldPosition + Vector3.up * 0.55f;
+            if (runtime != null)
+                runtime.MuzzleLocalY = muzzleLocalY < 0f ? 0f : muzzleLocalY;
             if (_renderer == null)
                 _renderer = GetComponentInChildren<MeshRenderer>();
             SetSelected(false);
             if (animatorView != null)
                 animatorView.Bind(runtime);
+        }
+
+        public void TickAnimator(float dt, float simSpeed)
+        {
+            if (animatorView != null)
+                animatorView.Tick(dt, simSpeed);
         }
 
         public void SetSelected(bool selected)

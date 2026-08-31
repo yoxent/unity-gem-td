@@ -513,7 +513,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Fire_Earthquake_ShowsSlamDiscAndKeepsOneAftershock()
+        public void Fire_Earthquake_ShowsSlamAndAftershockPayloads()
         {
             _fireball.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
             _fireballRole.AimMode = AimMode.Ground;
@@ -558,11 +558,74 @@ namespace GemTD.Tests.EditMode
 
             session.TickVolley(1.1f);
             Assert.AreSame(_fireball, dummy.LastDamageSource);
-            Assert.AreEqual(1, session.EffectPayloads.Count);
+            Assert.AreEqual(2, session.EffectPayloads.Count);
+            Assert.AreEqual(EffectPayloadVisual.Slam, session.EffectPayloads[0].Plan.Visual);
+            Assert.AreEqual(EffectPayloadVisual.Aftershock, session.EffectPayloads[1].Plan.Visual);
 
             session.TickVolley(1.02f);
             session.TickVolley(0.02f);
+            Assert.GreaterOrEqual(session.EffectPayloads.Count, 1);
+
+            session.TickVolley(EffectPayloadRuntime.StationaryPulseVisualSeconds);
             Assert.AreEqual(0, session.EffectPayloads.Count);
+        }
+
+        [Test]
+        public void Fire_Earthquake_SecondFireKeepsSlamAndAddsAnother()
+        {
+            _fireball.Tags = GemTag.Attack | GemTag.Melee | GemTag.Slam | GemTag.Aoe;
+            _fireballRole.AimMode = AimMode.Ground;
+            _fireballRole.DeliveryPattern = DeliveryPattern.GroundPulse;
+            _fireballRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.CastTime, 1f),
+                Modifier(RoleStat.CastSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, SkillGemTowerMap.EarthquakeSlamRadius),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _fireballRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    Anchor = EffectPayloadAnchor.GroundTarget,
+                    TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                    ScatterPattern = EffectPayloadScatterPattern.None,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Tags = GemTag.Aoe,
+                    Count = 1,
+                    DamageMultiplier = SkillGemTowerMap.EarthquakeAftershockDamageMultiplier,
+                    AoeRadius = SkillGemTowerMap.EarthquakeAftershockRadius,
+                    DelaySeconds = SkillGemTowerMap.EarthquakeAftershockDelaySeconds
+                }
+            };
+
+            var session = MakeSession();
+            session.Tower.StrikeNormalized = 0.1f;
+            session.TowerPosition = Vector3.zero;
+            session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
+
+            session.Fire();
+            session.TickVolley(0.2f);
+            session.Fire();
+            session.TickVolley(0.2f);
+
+            var slams = 0;
+            var aftershocks = 0;
+            for (var i = 0; i < session.EffectPayloads.Count; i++)
+            {
+                var visual = session.EffectPayloads[i].Plan.Visual;
+                if (visual == EffectPayloadVisual.Slam)
+                    slams++;
+                else if (visual == EffectPayloadVisual.Aftershock)
+                    aftershocks++;
+            }
+
+            Assert.AreEqual(2, slams);
+            Assert.AreEqual(2, aftershocks);
         }
 
         [Test]

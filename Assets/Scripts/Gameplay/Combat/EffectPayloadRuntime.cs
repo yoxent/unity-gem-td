@@ -12,11 +12,13 @@ namespace GemTD.Gameplay.Combat
     public sealed class EffectPayloadRuntime
     {
         public const float MinFlightSeconds = 0.08f;
+        public const float StationaryPulseVisualSeconds = 1f;
 
         EffectPayloadPlan _plan;
         float _progress;
         float _flightSeconds;
         float _delayRemaining;
+        float _visualRemaining;
         bool _resolved;
         StatusRuntime _statuses;
         TowerDefinition _sourceTower;
@@ -25,6 +27,18 @@ namespace GemTD.Gameplay.Combat
         readonly List<EnemyRuntime> _impactScratch = new List<EnemyRuntime>(8);
 
         public bool IsActive { get; private set; }
+        public bool ShowsPulseVisual =>
+            IsActive
+            && _plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
+            && _resolved;
+        public bool ShowsSlamVisual =>
+            ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Slam;
+        public bool ShowsAftershockVisual =>
+            ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Aftershock;
+        public bool IsAwaitingImpact =>
+            IsActive
+            && _plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
+            && !_resolved;
         public Vector3 Position { get; private set; }
         public Vector3 Direction { get; private set; }
         public Vector3 Origin => _plan.Origin;
@@ -44,6 +58,7 @@ namespace GemTD.Gameplay.Combat
             _progress = 0f;
             _flightSeconds = flightSeconds > MinFlightSeconds ? flightSeconds : MinFlightSeconds;
             _delayRemaining = plan.DelaySeconds;
+            _visualRemaining = 0f;
             _resolved = false;
             _statuses = statuses;
             _sourceTower = sourceTower;
@@ -52,6 +67,15 @@ namespace GemTD.Gameplay.Combat
             Position = plan.Origin;
             Direction = ResolveDirection(0f);
             IsActive = true;
+            if (_plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
+                && _delayRemaining <= 0f
+                && _plan.DamageMin <= 0f
+                && _plan.DamageMax <= 0f)
+            {
+                _resolved = true;
+                _visualRemaining = StationaryPulseVisualSeconds;
+                Position = _plan.LandingPoint;
+            }
         }
 
         public void Deactivate() => IsActive = false;
@@ -70,8 +94,16 @@ namespace GemTD.Gameplay.Combat
 
             if (_plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse)
             {
-                ResolveImpact(livingCandidates);
-                return false;
+                if (!_resolved)
+                    ResolveImpact(livingCandidates);
+                _visualRemaining -= dt;
+                if (_visualRemaining <= 0f)
+                {
+                    IsActive = false;
+                    return false;
+                }
+
+                return true;
             }
 
             if (dt <= 0f)
@@ -82,6 +114,7 @@ namespace GemTD.Gameplay.Combat
             {
                 Position = _plan.LandingPoint;
                 ResolveImpact(livingCandidates);
+                IsActive = false;
                 return false;
             }
 
@@ -139,10 +172,15 @@ namespace GemTD.Gameplay.Combat
                 return;
 
             _resolved = true;
-            IsActive = false;
             Position = _plan.LandingPoint;
+            if (_plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse)
+                _visualRemaining = StationaryPulseVisualSeconds;
 
             if (livingCandidates == null || _plan.AoeRadius <= 0f)
+                return;
+
+            var damage = RoleStatValue.SampleHitDamage(_plan.DamageMin, _plan.DamageMax);
+            if (damage <= 0f)
                 return;
 
             _impactScratch.Clear();
@@ -153,14 +191,13 @@ namespace GemTD.Gameplay.Combat
                 _impactScratch,
                 _plan.HitPolicy);
 
-            var damage = RoleStatValue.SampleHitDamage(_plan.DamageMin, _plan.DamageMax);
             for (var i = 0; i < _impactScratch.Count; i++)
                 ApplyDamage(_impactScratch[i], damage);
         }
 
         void ApplyDamage(EnemyRuntime enemy, float damage)
         {
-            if (enemy == null || !enemy.IsAlive)
+            if (enemy == null || !enemy.IsAlive || damage <= 0f)
                 return;
 
             if (_sourceTower != null)

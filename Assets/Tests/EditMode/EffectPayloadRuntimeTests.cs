@@ -172,7 +172,8 @@ namespace GemTD.Tests.EditMode
                 DamageMin = 10f,
                 DamageMax = 10f,
                 AoeRadius = 2f,
-                DelaySeconds = 1f
+                DelaySeconds = 1f,
+                Visual = EffectPayloadVisual.Aftershock
             };
             var runtime = new EffectPayloadRuntime();
             runtime.Init(plan, flightSeconds: 0.08f, statuses: null, sourceTower: null, recordDamage: null);
@@ -180,9 +181,44 @@ namespace GemTD.Tests.EditMode
             runtime.Tick(1f, living);
             Assert.AreEqual(100f, enemy.Hp, 1e-4f);
             Assert.IsTrue(runtime.IsActive);
+            Assert.IsFalse(runtime.ShowsSlamVisual);
+            Assert.IsFalse(runtime.ShowsAftershockVisual);
 
             runtime.Tick(0.016f, living);
             Assert.Less(enemy.Hp, 100f);
+            Assert.IsTrue(runtime.IsActive);
+            Assert.IsFalse(runtime.ShowsSlamVisual);
+            Assert.IsTrue(runtime.ShowsAftershockVisual);
+
+            runtime.Tick(EffectPayloadRuntime.StationaryPulseVisualSeconds, living);
+            Assert.IsFalse(runtime.IsActive);
+            Assert.IsFalse(runtime.ShowsAftershockVisual);
+        }
+
+        [Test]
+        public void StationaryPulse_ImmediatePulse_ShowsSlamThenExpires()
+        {
+            var plan = new EffectPayloadPlan
+            {
+                Trigger = EffectPayloadTrigger.AfterDelay,
+                TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = Vector3.zero,
+                LandingPoint = Vector3.zero,
+                DamageMin = 0f,
+                DamageMax = 0f,
+                AoeRadius = 1.8f,
+                DelaySeconds = 0f,
+                Visual = EffectPayloadVisual.Slam
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.08f, statuses: null, sourceTower: null, recordDamage: null);
+
+            Assert.IsTrue(runtime.ShowsSlamVisual);
+            Assert.IsFalse(runtime.ShowsAftershockVisual);
+            Assert.IsTrue(runtime.IsActive);
+
+            runtime.Tick(EffectPayloadRuntime.StationaryPulseVisualSeconds, null);
             Assert.IsFalse(runtime.IsActive);
         }
 

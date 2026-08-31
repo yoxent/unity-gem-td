@@ -312,7 +312,11 @@ namespace GemTD.Gameplay.Combat
                 Proliferate = spec.Proliferate,
                 KnockbackChance = spec.KnockbackChance,
                 KnockbackDistance = spec.KnockbackDistance,
-                HitSpec = spec
+                HitSpec = spec,
+                Visual = def.Trigger == EffectPayloadTrigger.AfterDelay
+                    && def.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
+                    ? EffectPayloadVisual.Aftershock
+                    : EffectPayloadVisual.None
             });
         }
 

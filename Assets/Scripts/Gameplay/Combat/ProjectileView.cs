@@ -8,16 +8,23 @@ namespace GemTD.Gameplay.Combat
     public sealed class ProjectileView : MonoBehaviour
     {
         [SerializeField] bool slamEffect;
+        [SerializeField] bool aftershockEffect;
 
         Vector3 _defaultScale = Vector3.one;
         bool _capturedScale;
 
         public bool IsSlamEffect => slamEffect;
+        public bool IsAftershockEffect => aftershockEffect;
+        bool SitsOnGround => slamEffect || aftershockEffect;
 
         public static bool WantsSlamEffect(EffectPayloadRuntime payload)
         {
-            return payload != null
-                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse;
+            return payload != null && payload.ShowsSlamVisual;
+        }
+
+        public static bool WantsAftershockEffect(EffectPayloadRuntime payload)
+        {
+            return payload != null && payload.ShowsAftershockVisual;
         }
 
         public ProjectileRuntime Runtime { get; private set; }
@@ -73,7 +80,7 @@ namespace GemTD.Gameplay.Combat
             switch (Payload.Plan.TravelPattern)
             {
                 case EffectPayloadTravelPattern.StationaryPulse:
-                    if (slamEffect)
+                    if (SitsOnGround)
                         transform.localScale = SlamEffectVisual.ScaleXz(_defaultScale, Payload.Plan.AoeRadius);
                     else
                     {
@@ -94,7 +101,7 @@ namespace GemTD.Gameplay.Combat
         {
             var stationary = Payload != null
                 && Payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse;
-            if (slamEffect && stationary)
+            if (SitsOnGround && stationary)
             {
                 var ground = new Vector3(position.x, position.y, position.z);
                 ground.y += TileHeightVisual.PathScaleY * 0.5f;
@@ -106,7 +113,7 @@ namespace GemTD.Gameplay.Combat
                 return;
             }
 
-            var lift = stationary ? 0.08f : 0.5f;
+            var lift = stationary ? 0.08f : 0f;
             transform.position = position + Vector3.up * lift;
             if (direction.sqrMagnitude > 1e-6f)
                 transform.rotation = Quaternion.LookRotation(direction, Vector3.up);

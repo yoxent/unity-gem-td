@@ -83,6 +83,8 @@ namespace GemTD.Gameplay.Combat
         TowerDefinition _sourceTower;
         Action<TowerDefinition, float> _recordDamage;
         float _age;
+        float _maxTravel;
+        float _travelled;
         Vector3 _landPoint;
         SkillSpec _payloadSpec;
         SkillSpec _hitSpec;
@@ -121,10 +123,11 @@ namespace GemTD.Gameplay.Combat
             float bleedChance = 0f,
             float bleedDamageMultiplier = 0f,
             AilmentTune ailments = default,
-            SkillSpec hitSpec = default)
+            SkillSpec hitSpec = default,
+            float maxTravel = 0f)
         {
             Position = origin;
-            Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
+            Direction = FlattenHorizontal(direction);
             Target = target;
             Damage = damage;
             ChainRemaining = chainCount;
@@ -162,6 +165,8 @@ namespace GemTD.Gameplay.Combat
             _knockbackChance = knockbackChance > 0f ? knockbackChance : 0f;
             _knockbackDistance = knockbackDistance > 0f ? knockbackDistance : 0f;
             _age = 0f;
+            _travelled = 0f;
+            _maxTravel = maxTravel > 0f ? maxTravel : 0f;
             IsActive = true;
             IsPayload = false;
             IsWarpStrike = false;
@@ -363,13 +368,20 @@ namespace GemTD.Gameplay.Combat
             var hit = FindPierceCandidate(from, to, livingCandidates);
             if (hit != null)
             {
-                Position = hit.WorldPosition;
+                Position = new Vector3(hit.WorldPosition.x, from.y, hit.WorldPosition.z);
                 Target = hit;
                 OnHit(livingCandidates);
                 return IsActive;
             }
 
             Position = to;
+            _travelled += stepDist;
+            if (_maxTravel > 0.01f && _travelled >= _maxTravel)
+            {
+                IsActive = false;
+                return false;
+            }
+
             return true;
         }
 
@@ -528,7 +540,7 @@ namespace GemTD.Gameplay.Combat
                     // Snap-aim once toward the nearest in-range enemy, then resume ballistic flight.
                     var aim = next.WorldPosition - Position;
                     if (aim.sqrMagnitude > 1e-8f)
-                        Direction = aim.normalized;
+                        Direction = FlattenHorizontal(aim);
                     return;
                 }
             }
@@ -759,6 +771,8 @@ namespace GemTD.Gameplay.Combat
                 ailments: _ailments,
                 hitSpec: _hitSpec);
             child._lastHit = _lastHit;
+            child._maxTravel = _maxTravel;
+            child._travelled = 0f;
             _spawnBuffer.Add(child);
         }
 
@@ -770,7 +784,7 @@ namespace GemTD.Gameplay.Combat
             if (candidates == null || Direction.sqrMagnitude < 1e-8f)
                 return null;
 
-            var move = to - from;
+            var move = Flat(to) - Flat(from);
             var moveLen = move.magnitude;
             if (moveLen < 1e-8f)
                 return null;
@@ -783,16 +797,18 @@ namespace GemTD.Gameplay.Combat
             for (var i = 0; i < candidates.Count; i++)
             {
                 var enemy = candidates[i];
-                if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, _lastHit))
+                if (enemy == null || !enemy.IsAlive)
+                    continue;
+                if (ReferenceEquals(enemy, _lastHit))
                     continue;
 
-                var toEnemy = enemy.WorldPosition - from;
+                var toEnemy = Flat(enemy.WorldPosition) - Flat(from);
                 var t = Vector3.Dot(toEnemy, moveDir);
                 if (t < -HitRadius || t > moveLen + HitRadius)
                     continue;
 
-                var closest = from + moveDir * Mathf.Clamp(t, 0f, moveLen);
-                if ((enemy.WorldPosition - closest).sqrMagnitude > hitRadiusSq)
+                var closest = Flat(from) + moveDir * Mathf.Clamp(t, 0f, moveLen);
+                if ((Flat(enemy.WorldPosition) - closest).sqrMagnitude > hitRadiusSq)
                     continue;
 
                 if (t >= bestT)
@@ -824,7 +840,7 @@ namespace GemTD.Gameplay.Combat
                 if (enemy == null || !enemy.IsAlive || ReferenceEquals(enemy, current))
                     continue;
 
-                var distSq = (enemy.WorldPosition - from).sqrMagnitude;
+                var distSq = FlatSqr(enemy.WorldPosition, from);
                 if (distSq > rangeSq || distSq >= bestDistSq)
                     continue;
 
@@ -833,6 +849,28 @@ namespace GemTD.Gameplay.Combat
             }
 
             return best;
+        }
+
+        static Vector3 FlattenHorizontal(Vector3 direction)
+        {
+            var flat = direction;
+            flat.y = 0f;
+            if (flat.sqrMagnitude < 1e-8f)
+                return direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
+            return flat.normalized;
+        }
+
+        static Vector3 Flat(Vector3 value)
+        {
+            value.y = 0f;
+            return value;
+        }
+
+        static float FlatSqr(Vector3 a, Vector3 b)
+        {
+            var dx = a.x - b.x;
+            var dz = a.z - b.z;
+            return dx * dx + dz * dz;
         }
     }
 }

@@ -83,6 +83,20 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void SimAnimatorSpeed_MultipliesClipBySimSpeed()
+        {
+            Assert.AreEqual(2.5f, TowerAttackPlayback.SimAnimatorSpeed(1.25f, 2f), 1e-4f);
+            Assert.AreEqual(5f, TowerAttackPlayback.SimAnimatorSpeed(1.25f, 4f), 1e-4f);
+        }
+
+        [Test]
+        public void SimAnimatorSpeed_PauseOrZero_IsZero()
+        {
+            Assert.AreEqual(0f, TowerAttackPlayback.SimAnimatorSpeed(1.25f, 0f), 1e-4f);
+            Assert.AreEqual(0f, TowerAttackPlayback.SimAnimatorSpeed(1.25f, -1f), 1e-4f);
+        }
+
+        [Test]
         public void ClipSpeed_NearZero_IsOne()
         {
             Assert.AreEqual(1f, TowerAttackPlayback.ClipSpeed(0f, 1f), 1e-4f);

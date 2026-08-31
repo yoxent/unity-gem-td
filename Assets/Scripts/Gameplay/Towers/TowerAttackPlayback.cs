@@ -16,6 +16,18 @@ namespace GemTD.Gameplay.Towers
             return authoredLength / windowSeconds;
         }
 
+        /// <summary>
+        /// Animator uses Unity time (timeScale stays 1). Multiply clip stretch by RunClock speed; pause is 0.
+        /// </summary>
+        public static float SimAnimatorSpeed(float clipSpeed, float simSpeed)
+        {
+            if (clipSpeed < 0f)
+                clipSpeed = 0f;
+            if (simSpeed <= 0f)
+                return 0f;
+            return clipSpeed * simSpeed;
+        }
+
         public static float ContactDelay(float interval, float strikeNormalized)
         {
             if (interval <= 0f)

@@ -22,6 +22,8 @@ namespace GemTD.Gameplay.Towers
         public float CurrentFireInterval { get; set; }
         /// <summary>0–1 contact pose in the current FireInterval. Spawn and bow Draw→Release use the same value. Default 1 (end of interval).</summary>
         public float StrikeNormalized { get; set; } = 1f;
+        /// <summary>World Y added to pad-top muzzle so bolts/warp/nova start at the character, not the tile.</summary>
+        public float MuzzleLocalY { get; set; }
         int _levelIndex;
 
         /// <summary>0-based draft progression. Combat uses Level, which is this index + 1 clamped to 1–10 (role Levels[] snapshot).</summary>

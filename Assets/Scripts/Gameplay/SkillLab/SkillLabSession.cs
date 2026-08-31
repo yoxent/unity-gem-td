@@ -123,6 +123,7 @@ namespace GemTD.Gameplay.SkillLab
             if (!IsSkillLabTower(def))
                 return;
             Tower = new TowerInstance(Vector2Int.zero, def);
+            Tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             SelectedTowerIndex = IndexOfDef(def);
             ClearOverlay();
         }
@@ -184,7 +185,7 @@ namespace GemTD.Gameplay.SkillLab
             Dummies.CopyLiving(_living);
             LastTrace = _tracer.Trace(
                 Tower,
-                TowerPosition,
+                CombatMuzzle(),
                 _living,
                 payloadRng: null,
                 includeRandomPayloads: false);
@@ -345,6 +346,14 @@ namespace GemTD.Gameplay.SkillLab
             if (cmp != 0)
                 return cmp;
             return string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        Vector3 CombatMuzzle()
+        {
+            var muzzle = TowerPosition;
+            if (Tower != null)
+                muzzle.y += Tower.MuzzleLocalY;
+            return muzzle;
         }
 
         static bool IsSkillLabTower(TowerDefinition tower)

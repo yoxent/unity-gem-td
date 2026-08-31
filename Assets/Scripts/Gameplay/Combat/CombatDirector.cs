@@ -71,7 +71,7 @@ namespace GemTD.Gameplay.Combat
             for (var i = _effectPayloads.Count - 1; i >= 0; i--)
             {
                 var payload = _effectPayloads[i];
-                if (keepDelayedStationaryPulses && IsPendingAftershock(payload))
+                if (keepDelayedStationaryPulses && IsLiveStationaryPulse(payload))
                     continue;
                 payload.Deactivate();
                 _effectPayloads.RemoveAt(i);
@@ -84,12 +84,11 @@ namespace GemTD.Gameplay.Combat
             _resolvedCasts.Clear();
         }
 
-        static bool IsPendingAftershock(EffectPayloadRuntime payload)
+        static bool IsLiveStationaryPulse(EffectPayloadRuntime payload)
         {
             return payload != null
                 && payload.IsActive
-                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
-                && payload.Plan.Trigger == EffectPayloadTrigger.AfterDelay;
+                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse;
         }
 
         /// <summary>Reset deterministic payload scatter before replaying a preview volley.</summary>
@@ -158,6 +157,7 @@ namespace GemTD.Gameplay.Combat
                         muzzle.y = TileHeightVisual.TopY(layer);
                         heightMul = TileHeightRules.RangeMultiplier(layer);
                     }
+                    ApplyMuzzleLocalY(ref muzzle, tower);
                     var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul * heightMul;
                     if (!_selector.TrySelect(tower.Targeting, towerPos, range, living, out var primary))
                         continue;
@@ -209,6 +209,7 @@ namespace GemTD.Gameplay.Combat
 
             if (tower.Def.HasRole<CurseRoleDefinition>())
             {
+                ApplyMuzzleLocalY(ref muzzle, tower);
                 ApplyCursePresence(tower, living, pipeline, statuses, muzzle, 1f);
                 return true;
             }
@@ -226,6 +227,7 @@ namespace GemTD.Gameplay.Combat
 
             var gemMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul;
+            ApplyMuzzleLocalY(ref muzzle, tower);
             if (!_selector.TrySelect(tower.Targeting, muzzle, range, living, out var primary))
                 return false;
 
@@ -318,7 +320,8 @@ namespace GemTD.Gameplay.Combat
                 _pendingStrikes.RemoveAt(i);
                 if (pending.Tower != null)
                     _resolvedCasts.Add(pending.Tower);
-                if (pending.Primary == null || !pending.Primary.IsAlive)
+                var primaryDead = pending.Primary == null || !pending.Primary.IsAlive;
+                if (primaryDead && pending.Spec.DeliveryPattern != DeliveryPattern.GroundPulse)
                     continue;
 
                 SpawnResolvedVolley(
@@ -401,6 +404,7 @@ namespace GemTD.Gameplay.Combat
                         living,
                         statuses,
                         tower.Def);
+                    SpawnImmediateSlamVisual(aimPoint, spec, statuses, tower);
                     SpawnDelayedStationaryPulses(
                         aimPoint,
                         spec,
@@ -443,7 +447,7 @@ namespace GemTD.Gameplay.Combat
                     var laterals = EvolutionEvaluator.HydraHeadLateralOffsets;
                     var yaws = EvolutionEvaluator.HydraHeadYawOffsets;
                     for (var h = 0; h < laterals.Length; h++)
-                        SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h], shotIndex: -1);
+                        SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, yaws[h], laterals[h], shotIndex: -1, maxTravel: range);
                 }
                 else if (spec.SequentialIntervalSeconds > 0.001f && spec.ProjectileCount > 1)
                 {
@@ -460,7 +464,8 @@ namespace GemTD.Gameplay.Combat
                         tower.Def,
                         0f,
                         0f,
-                        shotIndex: 0);
+                        shotIndex: 0,
+                        maxTravel: range);
                     _pendingSequential.Add(
                         new PendingSequentialVolley
                         {
@@ -475,12 +480,13 @@ namespace GemTD.Gameplay.Combat
                             Statuses = statuses,
                             SourceTower = tower.Def,
                             NextIndex = 1,
-                            Wait = spec.SequentialIntervalSeconds
+                            Wait = spec.SequentialIntervalSeconds,
+                            MaxTravel = range
                         });
                 }
                 else
                 {
-                    SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f, shotIndex: -1);
+                    SpawnVolley(muzzle, aimPoint, primary, spec, ProjectileRuntime.DefaultChainRange, volleyMin, volleyMax, speed, statuses, tower.Def, 0f, 0f, shotIndex: -1, maxTravel: range);
                 }
             }
         }
@@ -571,8 +577,6 @@ namespace GemTD.Gameplay.Combat
         {
             if (sourceTower == null || sourceTower.Def == null)
                 return;
-            if (HasPendingAftershock(sourceTower))
-                return;
 
             GemModifierPipeline.CollectEffectPayloads(
                 sourceTower,
@@ -599,19 +603,38 @@ namespace GemTD.Gameplay.Combat
             }
         }
 
-        bool HasPendingAftershock(TowerInstance tower)
+        void SpawnImmediateSlamVisual(
+            Vector3 aimPoint,
+            SkillSpec spec,
+            StatusRuntime statuses,
+            TowerInstance sourceTower)
         {
-            for (var i = 0; i < _effectPayloads.Count; i++)
-            {
-                var payload = _effectPayloads[i];
-                if (!IsPendingAftershock(payload))
-                    continue;
-                if (tower != null && payload.Owner != null && !ReferenceEquals(payload.Owner, tower))
-                    continue;
-                return true;
-            }
+            if (spec.AoeRadius <= 0f || sourceTower == null || sourceTower.Def == null)
+                return;
 
-            return false;
+            var plan = new EffectPayloadPlan
+            {
+                Trigger = EffectPayloadTrigger.AfterDelay,
+                TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = aimPoint,
+                LandingPoint = aimPoint,
+                DamageMin = 0f,
+                DamageMax = 0f,
+                AoeRadius = spec.AoeRadius,
+                DelaySeconds = 0f,
+                HitSpec = spec,
+                Visual = EffectPayloadVisual.Slam
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(
+                plan,
+                EffectPayloadRuntime.MinFlightSeconds,
+                statuses,
+                sourceTower.Def,
+                _recordDamage,
+                sourceTower);
+            _effectPayloads.Add(runtime);
         }
 
         static float ResolvePayloadFlightSeconds(in EffectPayloadPlan plan, float speed)
@@ -700,6 +723,7 @@ namespace GemTD.Gameplay.Combat
                 heightMul = TileHeightRules.RangeMultiplier(layer);
             }
 
+            ApplyMuzzleLocalY(ref muzzle, tower);
             ApplyCursePresence(tower, living, pipeline, statuses, muzzle, heightMul);
         }
 
@@ -876,9 +900,11 @@ namespace GemTD.Gameplay.Combat
             TowerDefinition sourceTower,
             float headYawDegrees,
             float headLateral,
-            int shotIndex)
+            int shotIndex,
+            float maxTravel)
         {
             var aim = aimPoint - origin;
+            aim.y = 0f;
             if (aim.sqrMagnitude < 1e-8f)
                 aim = Vector3.forward;
             else
@@ -943,7 +969,8 @@ namespace GemTD.Gameplay.Combat
                     spec.BleedChance,
                     spec.BleedDamageMultiplier,
                     AilmentTune.FromSkillSpec(spec),
-                    spec);
+                    spec,
+                    maxTravel);
                 _projectiles.Add(projectile);
             }
         }
@@ -969,7 +996,8 @@ namespace GemTD.Gameplay.Combat
                         pending.SourceTower,
                         0f,
                         0f,
-                        pending.NextIndex);
+                        pending.NextIndex,
+                        pending.MaxTravel);
                     pending.NextIndex++;
                     pending.Wait += pending.Spec.SequentialIntervalSeconds;
                 }
@@ -995,6 +1023,7 @@ namespace GemTD.Gameplay.Combat
             public TowerDefinition SourceTower;
             public int NextIndex;
             public float Wait;
+            public float MaxTravel;
         }
 
         sealed class PendingStrike
@@ -1007,6 +1036,13 @@ namespace GemTD.Gameplay.Combat
             public SkillSpec Baseline;
             public StatusRuntime Statuses;
             public float Remaining;
+        }
+
+        static void ApplyMuzzleLocalY(ref Vector3 muzzle, TowerInstance tower)
+        {
+            if (tower == null || tower.MuzzleLocalY == 0f)
+                return;
+            muzzle.y += tower.MuzzleLocalY;
         }
 
         Vector3 CellToWorld(Vector2Int cell)

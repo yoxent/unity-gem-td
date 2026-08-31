@@ -471,6 +471,62 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Init_DownwardAim_FlattensToHorizontal()
+        {
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: new Vector3(0f, 2f, 0f),
+                direction: new Vector3(1f, -4f, 0f),
+                target: null,
+                damage: 10f,
+                chainCount: 0,
+                speed: 10f,
+                chainRange: 0f);
+
+            Assert.AreEqual(0f, projectile.Direction.y, 1e-4f);
+            Assert.AreEqual(1f, projectile.Direction.x, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_HitsEnemyDespiteHeightDifference()
+        {
+            var enemy = MakeEnemyAt(new Vector3(1f, 0f, 0f), 100f);
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: new Vector3(0f, 2f, 0f),
+                direction: Vector3.right,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 100f,
+                chainRange: 0f);
+
+            Assert.IsFalse(projectile.Tick(0.02f, Living(enemy)));
+            Assert.AreEqual(90f, enemy.Hp, 1e-3f);
+            Assert.AreEqual(2f, projectile.Position.y, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_ExpiresAtMaxTravelBeforeLifetime()
+        {
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: null,
+                damage: 10f,
+                chainCount: 0,
+                speed: 10f,
+                chainRange: 0f,
+                maxTravel: 1f);
+
+            Assert.IsTrue(projectile.Tick(0.05f, null));
+            Assert.IsTrue(projectile.IsActive);
+            Assert.IsFalse(projectile.Tick(0.06f, null));
+            Assert.IsFalse(projectile.IsActive);
+        }
+
+        [Test]
         public void NonSeeking_ExpiresAfterMaxLifetime()
         {
             var projectile = new ProjectileRuntime();
