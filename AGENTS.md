@@ -10,10 +10,14 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 
 | Path | Contents |
 | --- | --- |
-| `GDD.md` / `ARCHITECTURE.md` / `UI-SPEC.md` | Canonical design |
+| `HOME.md` | Docs map |
+| `GDD.md` / `ARCHITECTURE.md` / `UI-SPEC.md` / `DAMAGE-MODEL.md` | Canonical design |
+| `wiki/catalog/` | Generated per-tower (and later per-gem) reference |
 | `planning/` | Phase designs, implementation plans, STATUS |
 | `planning/handoff.md` | Category-by-category tower catalog import workflow |
 | `planning/sdd/` | Superpowers / SDD session ledger (briefs, reports, `progress.md`) |
+
+**Do not use Notion.** The July 2026 Gem TD Notion tree is retired and is not a source.
 
 **Do not** put design docs, plans, or `.superpowers` / SDD scratch in this game repo. If a skill defaults to `<game-repo>/.superpowers/sdd`, write to `planning/sdd/` in the docs repo instead.
 
