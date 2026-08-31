@@ -225,7 +225,8 @@ namespace GemTD.Editor
                 "Purity_of_Lightning",
                 "Wrath",
                 "Zealotry",
-                "Summon_Skitterbots");
+                "Summon_Skitterbots",
+                "Envy");
         }
 
         static void ImportProofs(

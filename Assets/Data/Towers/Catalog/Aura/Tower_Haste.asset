@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Haste
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Haste
+  Description: Casts an aura that increases the movement speed, attack speed and
+    cast speed of you and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 568dcd1c254f7795c6d061929f436cf9, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 50

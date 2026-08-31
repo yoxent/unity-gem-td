@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Tower_Zealotry
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Zealotry
+  Description: Casts an aura that grants bonuses to damage and critical strike chance
+    of spells to you and your allies, and gives a chance to create Consecrated Ground
+    against stronger enemies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +23,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 34be120050cb4099cbe5d847286711a2, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 131122

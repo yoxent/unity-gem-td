@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Precision
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Precision
+  Description: Casts an aura that grants accuracy and critical strike chance to you
+    and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 319e54115194d9d96bf22775327c3d8a, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 131122

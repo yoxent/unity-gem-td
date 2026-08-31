@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Tower_Purity_of_Fire
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Purity of Fire
+  Description: Casts an aura that grants fire resistance to you and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +21,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f24c343f2abc01f32b4b0529bc39fa17, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 2097202

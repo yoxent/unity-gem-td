@@ -12,7 +12,7 @@ namespace GemTD.Gameplay.Towers
     /// </summary>
     public static class SkillGemTowerMap
     {
-        public const int ExpectedGemCount = 222;
+        public const int ExpectedGemCount = 223;
 
         public const int CostAttack = 20;
         public const int CostSpell = 25;
@@ -684,7 +684,7 @@ namespace GemTD.Gameplay.Towers
                 AddLevelDamage(modifiers, values, kind);
                 AddLevelChain(modifiers, values, result.Slug);
                 AddLevelProjectileCount(modifiers, values, result.Slug);
-                AddLevelRadiusBonus(modifiers, values, result.Slug);
+                AddLevelRadiusBonus(modifiers, values, kind);
                 AddCurseLevelRadius(modifiers, kind, sourceLevel);
                 AddLevelEffects(effects, values, kind, result.Slug, sourceLevel);
 
@@ -932,9 +932,9 @@ namespace GemTD.Gameplay.Towers
             }
         }
 
-        static void AddLevelRadiusBonus(List<RoleStatModifier> modifiers, JObject values, string slug)
+        static void AddLevelRadiusBonus(List<RoleStatModifier> modifiers, JObject values, RoleKind kind)
         {
-            if (!IsClassifiedRadiusBonusSource(slug) || values == null)
+            if (kind != RoleKind.Aura || values == null)
                 return;
 
             foreach (var effect in values.Properties())
@@ -953,11 +953,6 @@ namespace GemTD.Gameplay.Towers
                     return;
                 }
             }
-        }
-
-        static bool IsClassifiedRadiusBonusSource(string slug)
-        {
-            return string.Equals(slug, "Anger", StringComparison.OrdinalIgnoreCase);
         }
 
         static void AddCurseLevelRadius(List<RoleStatModifier> modifiers, RoleKind kind, int sourceLevel)
@@ -1172,26 +1167,19 @@ namespace GemTD.Gameplay.Towers
 
             foreach (var effect in values.Properties())
             {
-                if (IsAddedAttackFireHeader(effect.Name)
-                    && TryReadRange(effect.Value, out var attackMin, out var attackMax))
+                var kind = MapAuraEffectKind(effect.Name);
+                if (!kind.HasValue)
+                    continue;
+
+                if (TryReadRange(effect.Value, out var min, out var max))
                 {
-                    AddEffectRange(
-                        effects,
-                        RoleEffectKind.AllyAddedAttackFireDamage,
-                        attackMin,
-                        attackMax);
+                    AddEffectRange(effects, kind.Value, min, max);
                     continue;
                 }
 
-                if (IsAddedSpellFireHeader(effect.Name)
-                    && TryReadRange(effect.Value, out var spellMin, out var spellMax))
-                {
-                    AddEffectRange(
-                        effects,
-                        RoleEffectKind.AllyAddedSpellFireDamage,
-                        spellMin,
-                        spellMax);
-                }
+                var amount = ReadNumber(effect.Value) ?? ReadNumber(effect.Value?["value"]);
+                if (amount.HasValue)
+                    AddEffectSet(effects, kind.Value, amount.Value);
             }
         }
 
@@ -1231,8 +1219,40 @@ namespace GemTD.Gameplay.Towers
 
         static bool IsMappedEffectHeader(string header)
         {
-            return IsAddedAttackFireHeader(header)
-                || IsAddedSpellFireHeader(header);
+            return MapAuraEffectKind(header).HasValue;
+        }
+
+        static RoleEffectKind? MapAuraEffectKind(string header)
+        {
+            if (IsAddedAttackFireHeader(header))
+                return RoleEffectKind.AllyAddedAttackFireDamage;
+            if (IsAddedSpellFireHeader(header))
+                return RoleEffectKind.AllyAddedSpellFireDamage;
+            if (ContainsIgnoreCase(header, "additional Lightning Damage with Attacks"))
+                return RoleEffectKind.AllyAddedAttackLightningDamage;
+            if (ContainsIgnoreCase(header, "more Spell Lightning Damage"))
+                return RoleEffectKind.AllySpellLightningDamageMore;
+            if (ContainsIgnoreCase(header, "additional Chaos Damage with Attacks"))
+                return RoleEffectKind.AllyAddedAttackChaosDamage;
+            if (ContainsIgnoreCase(header, "additional Chaos Damage with Spells"))
+                return RoleEffectKind.AllyAddedSpellChaosDamage;
+            if (ContainsIgnoreCase(header, "Physical Damage as Extra Cold Damage"))
+                return RoleEffectKind.AllyPhysicalAsExtraCold;
+            if (ContainsIgnoreCase(header, "increased Attack Speed"))
+                return RoleEffectKind.AllyAttackSpeedIncreased;
+            if (ContainsIgnoreCase(header, "increased Cast Speed"))
+                return RoleEffectKind.AllyCastSpeedIncreased;
+            if (ContainsIgnoreCase(header, "increased Movement Speed"))
+                return RoleEffectKind.AllyMovementSpeedIncreased;
+            if (ContainsIgnoreCase(header, "Accuracy Rating"))
+                return RoleEffectKind.AllyAccuracyRating;
+            if (ContainsIgnoreCase(header, "increased Critical Strike Chance"))
+                return RoleEffectKind.AllyCriticalStrikeChanceIncreased;
+            if (ContainsIgnoreCase(header, "more Damage over Time"))
+                return RoleEffectKind.AllyDamageOverTimeMore;
+            if (ContainsIgnoreCase(header, "increased Skill Effect Duration"))
+                return RoleEffectKind.AllySkillEffectDurationIncreased;
+            return null;
         }
 
         static bool IsAddedAttackFireHeader(string header)

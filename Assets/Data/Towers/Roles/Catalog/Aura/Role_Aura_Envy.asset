@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aa82269e7a3b96d4dacb5681498c016b, type: 3}
-  m_Name: Role_Aura_Malevolence
+  m_Name: Role_Aura_Envy
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AuraRoleDefinition
   Modifiers:
   - Stat: 4
@@ -36,18 +36,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 15
-      Max: 15
-    - Kind: 34
+      Min: 33
+      Max: 47
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 11
-      Max: 11
+      Min: 30
+      Max: 40
   - SourceLevel: 2
     Modifiers:
     - Stat: 4
@@ -57,18 +57,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 16
-      Max: 16
-    - Kind: 34
+      Min: 56
+      Max: 78
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 13
-      Max: 13
+      Min: 50
+      Max: 67
   - SourceLevel: 3
     Modifiers:
     - Stat: 4
@@ -78,18 +78,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 17
-      Max: 17
-    - Kind: 34
+      Min: 79
+      Max: 112
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 15
-      Max: 15
+      Min: 71
+      Max: 96
   - SourceLevel: 4
     Modifiers:
     - Stat: 4
@@ -99,18 +99,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 19
-      Max: 19
-    - Kind: 34
+      Min: 109
+      Max: 151
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 17
-      Max: 17
+      Min: 98
+      Max: 129
   - SourceLevel: 5
     Modifiers:
     - Stat: 4
@@ -120,18 +120,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 20
-      Max: 20
-    - Kind: 34
+      Min: 144
+      Max: 201
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 19
-      Max: 19
+      Min: 130
+      Max: 173
   - SourceLevel: 6
     Modifiers:
     - Stat: 4
@@ -141,18 +141,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 21
-      Max: 21
-    - Kind: 34
+      Min: 189
+      Max: 266
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 21
-      Max: 21
+      Min: 170
+      Max: 229
   - SourceLevel: 7
     Modifiers:
     - Stat: 4
@@ -162,18 +162,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 23
-      Max: 23
-    - Kind: 34
+      Min: 249
+      Max: 348
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 23
-      Max: 23
+      Min: 224
+      Max: 299
   - SourceLevel: 8
     Modifiers:
     - Stat: 4
@@ -183,18 +183,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 24
-      Max: 24
-    - Kind: 34
+      Min: 303
+      Max: 425
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 25
-      Max: 25
+      Min: 273
+      Max: 365
   - SourceLevel: 9
     Modifiers:
     - Stat: 4
@@ -204,18 +204,18 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 24
-      Max: 24
-    - Kind: 34
+      Min: 344
+      Max: 484
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 26
-      Max: 26
+      Min: 310
+      Max: 415
   - SourceLevel: 10
     Modifiers:
     - Stat: 4
@@ -225,16 +225,16 @@ MonoBehaviour:
       Min: 0
       Max: 0
     Effects:
-    - Kind: 33
+    - Kind: 25
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 25
-      Max: 25
-    - Kind: 34
+      Min: 392
+      Max: 550
+    - Kind: 26
       Operation: 0
       ValueKind: 1
       Value: 0
-      Min: 27
-      Max: 27
+      Min: 353
+      Max: 472
   EffectPayloads: []

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Tower_Grace
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Grace
+  Description: Casts an aura that grants evasion to you and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +21,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f02f39ec9f7644b6657d1d8370b5e724, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 50

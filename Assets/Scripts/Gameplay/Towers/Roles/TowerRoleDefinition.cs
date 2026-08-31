@@ -272,6 +272,18 @@ namespace GemTD.Gameplay.Towers
                 case RoleEffectKind.EnemyMoveSpeedMultiplier:
                 case RoleEffectKind.AllyAddedAttackFireDamage:
                 case RoleEffectKind.AllyAddedSpellFireDamage:
+                case RoleEffectKind.AllyAddedAttackLightningDamage:
+                case RoleEffectKind.AllySpellLightningDamageMore:
+                case RoleEffectKind.AllyAddedAttackChaosDamage:
+                case RoleEffectKind.AllyAddedSpellChaosDamage:
+                case RoleEffectKind.AllyPhysicalAsExtraCold:
+                case RoleEffectKind.AllyAttackSpeedIncreased:
+                case RoleEffectKind.AllyCastSpeedIncreased:
+                case RoleEffectKind.AllyMovementSpeedIncreased:
+                case RoleEffectKind.AllyAccuracyRating:
+                case RoleEffectKind.AllyCriticalStrikeChanceIncreased:
+                case RoleEffectKind.AllyDamageOverTimeMore:
+                case RoleEffectKind.AllySkillEffectDurationIncreased:
                 case RoleEffectKind.SkillDuration:
                 case RoleEffectKind.EnemyPhysicalDamageTakenIncreased:
                 case RoleEffectKind.EnemyActionSpeedLessNormal:

@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Tower_Flesh_and_Stone
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Flesh and Stone
+  Description: Buffs you, and affects nearby enemies with an aura, differently depending
+    on your stance. Both stances are more impactful against enemies closer to you.
+    Using the skill again alternates between Blood Stance and Sand Stance.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +23,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4cbea036de928251d7c5ca29304b4c9b, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 309237645362

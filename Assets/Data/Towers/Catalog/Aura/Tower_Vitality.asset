@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Tower_Vitality
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Vitality
+  Description: Casts an aura that grants life regeneration to you and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +21,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3259133e0fcc746c20453f09166f1853, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 50

@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Hatred
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Hatred
+  Description: Casts an aura that grants extra cold damage based on physical damage
+    to you and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 56dbdadbc1ab6f26e44e590f2beaa81a, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 65586

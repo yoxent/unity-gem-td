@@ -143,7 +143,19 @@ namespace GemTD.Gameplay.Towers
         EnemyCriticalStrikeMultiplier,
         EnemyOutgoingDamageLessNormal,
         EnemyOutgoingDamageLessRare,
-        EnemyAccuracyRatingReduced
+        EnemyAccuracyRatingReduced,
+        AllyAddedAttackLightningDamage,
+        AllySpellLightningDamageMore,
+        AllyAddedAttackChaosDamage,
+        AllyAddedSpellChaosDamage,
+        AllyPhysicalAsExtraCold,
+        AllyAttackSpeedIncreased,
+        AllyCastSpeedIncreased,
+        AllyMovementSpeedIncreased,
+        AllyAccuracyRating,
+        AllyCriticalStrikeChanceIncreased,
+        AllyDamageOverTimeMore,
+        AllySkillEffectDurationIncreased
     }
 
     [Serializable]

@@ -10,17 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a73c30da3ad78d0418e3567e462e3405, type: 3}
-  m_Name: Tower_Malevolence
+  m_Name: Tower_Summon_Skitterbots
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
-  DisplayName: Malevolence
-  Description: Casts an aura that multiplies damage over time and increases skill
-    effect duration of you and your allies.
+  DisplayName: Summon Skitterbots
+  Description: Summon a Chilling Skitterbot and a Shocking Skitterbot, which will
+    trigger your traps and detonate your mines. Mines detonated by Skitterbots will
+    re-arm and can then be detonated again. The Skitterbots grant you more trap and
+    mine damage, and cannot be targeted or damaged.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
-  - {fileID: 11400000, guid: 6fea995fd0399029f9bdcb5bd6c157ca, type: 2}
+  - {fileID: 11400000, guid: 75d1f51b3a04e2042a1ef12ac4fa3bff, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
   viewPrefab: {fileID: 0}
-  tags: 50
+  tags: 1101189414962

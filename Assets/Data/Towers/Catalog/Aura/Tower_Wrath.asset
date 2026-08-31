@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Wrath
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Wrath
+  Description: Casts an aura that adds lightning damage to the attacks of you and
+    your allies, and makes your spells deal more lightning damage.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 033618697aac0fa7db40050cf5104fa2, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 67108914

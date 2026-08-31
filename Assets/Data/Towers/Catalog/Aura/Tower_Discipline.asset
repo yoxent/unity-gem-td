@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Discipline
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Discipline
+  Description: Casts an aura that grants additional energy shield and increased energy
+    shield recharge rate to you and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8e3efc00b4ea470f4699c87faa3e828b, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 50

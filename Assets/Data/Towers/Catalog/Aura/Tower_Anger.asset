@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Tower_Anger
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Anger
+  Description: Casts an aura that adds fire damage to the attacks and spells of you
+    and your allies.
   Cost: 30
   BuildIncrement: 15
   Damage: 0
@@ -20,4 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 255f19a396d175728c56b5d32cf93bc7, type: 2}
   SocketCount: 1
   AllowsHydraEvolution: 0
-  Tags: 50
+  viewPrefab: {fileID: 0}
+  tags: 2097202
