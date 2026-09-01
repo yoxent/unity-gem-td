@@ -12,7 +12,7 @@ namespace GemTD.Gameplay.Gems
     /// </summary>
     public static class SupportGemMap
     {
-        public const int ExpectedGemCount = 212;
+        public const int ExpectedGemCount = 210;
         public const float ExceptionalNormalMultiplier = 1.4f;
         public const int DefaultLesserSampleLevel = 3;
         public const int DefaultNormalSampleLevel = 5;

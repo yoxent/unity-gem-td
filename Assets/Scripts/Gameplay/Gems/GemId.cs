@@ -82,7 +82,6 @@ namespace GemTD.Gameplay.Gems
         Overheat = 77,
         Pyre = 78,
         Transfusion = 79,
-        VaalTemptation = 80,
         VoidShockwave = 81,
         ChanceToPoison = 82,
         Momentum = 83,
@@ -213,7 +212,6 @@ namespace GemTD.Gameplay.Gems
         Communion = 208,
         OverloadedIntensity = 209,
         ScornfulHerald = 210,
-        VaalSacrifice = 211,
         Eclipse = 212
     }
 }
