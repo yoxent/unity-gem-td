@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
 {
-    /// <summary>Full skill-gem tower pool for Skill Lab / Codex / future pick. Not the run build bar.</summary>
+    /// <summary>Named tower pool. Full ingest lives on <c>TowerCatalog</c>; the run and Skill Lab use <c>GameplayReadyTowersCatalog</c>.</summary>
     [CreateAssetMenu(menuName = "Gem TD/Tower Catalog", fileName = "TowerCatalog")]
     public sealed class TowerCatalog : ScriptableObject
     {

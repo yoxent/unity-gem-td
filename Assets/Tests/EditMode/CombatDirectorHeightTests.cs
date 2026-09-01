@@ -89,6 +89,94 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TryFireOnce_RaisedMuzzle_AimsDownAtGroundEnemy()
+        {
+            _towerRole.Modifiers = new[]
+            {
+                RoleStatModifier.Single(RoleStat.TowerRadius, RoleModifierOperation.Set, 20f),
+                RoleStatModifier.Single(RoleStat.AttackTime, RoleModifierOperation.Set, 0f),
+                RoleStatModifier.Single(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f),
+                RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 1f)
+            };
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+            var enemy = EnemyAt(new Vector3(2.5f, 0f, 0.5f));
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            var origin = muzzle + Vector3.up * TowerView.DefaultMuzzleLocalY;
+            var expected = (enemy.WorldPosition - origin).normalized;
+            var bolt = director.Projectiles[0];
+            Assert.AreEqual(expected.x, bolt.Direction.x, 1e-3f);
+            Assert.AreEqual(expected.y, bolt.Direction.y, 1e-3f);
+            Assert.AreEqual(expected.z, bolt.Direction.z, 1e-3f);
+            Assert.Less(bolt.Direction.y, 0f);
+        }
+
+        [Test]
+        public void TryFireOnce_RaisedMuzzle_HitsGroundEnemy()
+        {
+            _towerRole.Modifiers = new[]
+            {
+                RoleStatModifier.Single(RoleStat.TowerRadius, RoleModifierOperation.Set, 20f),
+                RoleStatModifier.Single(RoleStat.AttackTime, RoleModifierOperation.Set, 0f),
+                RoleStatModifier.Single(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f),
+                RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 1f)
+            };
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+            var enemy = EnemyAt(new Vector3(2.5f, 0f, 0.5f));
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.AreEqual(TowerView.DefaultMuzzleLocalY, director.Projectiles[0].Position.y, 1e-4f);
+
+            director.TickInFlight(0.05f, living);
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.Less(director.Projectiles[0].Position.y, TowerView.DefaultMuzzleLocalY - 0.05f);
+
+            director.TickInFlight(0.2f, living);
+
+            Assert.AreEqual(90f, enemy.Hp, 1e-3f);
+            Assert.AreEqual(0, director.Projectiles.Count);
+        }
+
+        [Test]
+        public void TryFireOnce_RaisedMuzzle_DoesNotShootForwardWhenEnemyIsBelow()
+        {
+            _towerRole.Modifiers = new[]
+            {
+                RoleStatModifier.Single(RoleStat.TowerRadius, RoleModifierOperation.Set, 20f),
+                RoleStatModifier.Single(RoleStat.AttackTime, RoleModifierOperation.Set, 0f),
+                RoleStatModifier.Single(RoleStat.AttackSpeed, RoleModifierOperation.Set, 100f),
+                RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 1f)
+            };
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+            var enemy = EnemyAt(new Vector3(0.55f, 0f, 0.5f));
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            var bolt = director.Projectiles[0];
+            Assert.Less(bolt.Direction.y, -0.8f);
+            Assert.Less(Mathf.Abs(bolt.Direction.z), 0.2f);
+        }
+
+        [Test]
         public void TryFireOnce_WarpStrike_StartsAtMuzzleLocalY()
         {
             _towerRole.AimMode = AimMode.Direct;

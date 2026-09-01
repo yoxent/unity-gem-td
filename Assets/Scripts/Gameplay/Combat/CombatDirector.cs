@@ -247,9 +247,8 @@ namespace GemTD.Gameplay.Combat
         {
             var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
             var speed = _projectileSpeed * speedMul;
-            var predictFrom = new Vector3(muzzle.x, 0f, muzzle.z);
             var aimPoint = spec.AimMode == AimMode.Ground
-                ? PathIntercept.Predict(predictFrom, speed, primary)
+                ? PathIntercept.Predict(muzzle, speed, primary)
                 : primary.WorldPosition;
             var interval = 0f;
             if (tower != null && tower.Def != null)
@@ -355,9 +354,8 @@ namespace GemTD.Gameplay.Combat
             var volleyMin = spec.DamageMin * echoFactor;
             var volleyMax = spec.DamageMax * echoFactor;
             var hydra = EvolutionEvaluator.IsHydraTower(tower);
-            var predictFrom = new Vector3(muzzle.x, 0f, muzzle.z);
             var aimPoint = spec.AimMode == AimMode.Ground
-                ? PathIntercept.Predict(predictFrom, speed, primary)
+                ? PathIntercept.Predict(muzzle, speed, primary)
                 : primary.WorldPosition;
             if (spec.DeliveryPattern == DeliveryPattern.Rain)
                 CancelRainFrom(tower);
@@ -904,20 +902,19 @@ namespace GemTD.Gameplay.Combat
             float maxTravel)
         {
             var aim = aimPoint - origin;
-            aim.y = 0f;
+            if (Mathf.Abs(headLateral) > 1e-4f)
+            {
+                var flat = aim;
+                flat.y = 0f;
+                var lateralBasis = flat.sqrMagnitude > 1e-8f ? flat.normalized : Vector3.forward;
+                origin += Quaternion.Euler(0f, 90f, 0f) * lateralBasis * headLateral;
+                aim = aimPoint - origin;
+            }
+
             if (aim.sqrMagnitude < 1e-8f)
                 aim = Vector3.forward;
             else
                 aim.Normalize();
-
-            if (Mathf.Abs(headLateral) > 1e-4f)
-            {
-                var headSide = Quaternion.Euler(0f, 90f, 0f) * aim;
-                origin += headSide * headLateral;
-                aim = aimPoint - origin;
-                if (aim.sqrMagnitude > 1e-8f)
-                    aim.Normalize();
-            }
 
             if (Mathf.Abs(headYawDegrees) > 1e-4f)
                 aim = Quaternion.Euler(0f, headYawDegrees, 0f) * aim;

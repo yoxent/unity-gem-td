@@ -16,13 +16,14 @@ namespace GemTD.Gameplay.Towers
         MaterialPropertyBlock _block;
 
         public const float DefaultMuzzleLocalY = 1.2f;
+        public const float GroundLift = 0.55f;
 
         public TowerInstance Runtime { get; private set; }
 
         public void Bind(TowerInstance runtime, Vector3 worldPosition)
         {
             Runtime = runtime;
-            transform.position = worldPosition + Vector3.up * 0.55f;
+            transform.position = worldPosition + Vector3.up * GroundLift;
             if (runtime != null)
                 runtime.MuzzleLocalY = muzzleLocalY < 0f ? 0f : muzzleLocalY;
             if (_renderer == null)

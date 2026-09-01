@@ -14,12 +14,21 @@ namespace GemTD.Gameplay.SkillLab
     {
         const string DefaultTowerName = "Fireball";
 
+        [Tooltip("Gameplay-ready pool (same asset as run draft). Picker still omits aura-only entries.")]
         [SerializeField] TowerCatalog towerCatalog;
         [SerializeField] GemDefinition[] draftGems;
         [SerializeField] EnemyDefinition dummyDefinition;
         [SerializeField] AttackOverlayView overlay;
         [SerializeField] Camera worldCamera;
         [SerializeField] Transform towerView;
+        [SerializeField] TowerView towerPrefab;
+        [SerializeField] TowerView spellTowerPrefab;
+        [SerializeField] TowerView slamTowerPrefab;
+        [SerializeField] TowerView strikeTowerPrefab;
+        [SerializeField] TowerView bowTowerPrefab;
+        [SerializeField] TowerView attackTowerPrefab;
+        [SerializeField] TowerView auraTowerPrefab;
+        [SerializeField] TowerView curseTowerPrefab;
         [SerializeField] SkillLabDummyView[] dummyViews;
         [SerializeField] ProjectileView projectilePrefab;
         [SerializeField] ProjectileView slamEffectPrefab;
@@ -33,6 +42,8 @@ namespace GemTD.Gameplay.SkillLab
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
+        TowerView _liveView;
+        TowerView _boundPrefab;
 
         public SkillLabSession Session => _session;
 
@@ -86,6 +97,7 @@ namespace GemTD.Gameplay.SkillLab
             if (dummyDefinition != null)
                 _session.Dummies.Init(dummyDefinition);
             _session.TowerPosition = DummyField.DefaultTowerPosition;
+            ApplyTowerView();
         }
 
         void OnEnable()
@@ -113,12 +125,16 @@ namespace GemTD.Gameplay.SkillLab
 
             TickDrag();
             _session.TickVolley(Time.deltaTime);
+            if (_liveView != null)
+                _liveView.TickAnimator(Time.deltaTime, 1f);
             FlashHitsFromDamage();
         }
 
         void LateUpdate()
         {
-            if (towerView != null)
+            if (_liveView != null)
+                _liveView.transform.position = _session.TowerPosition + Vector3.up * TowerView.GroundLift;
+            else if (towerView != null)
                 towerView.position = _session.TowerPosition;
 
             if (dummyViews != null)
@@ -145,6 +161,7 @@ namespace GemTD.Gameplay.SkillLab
         public void SelectTower(int index)
         {
             _session.SelectTower(index);
+            ApplyTowerView();
         }
 
         public void SetSocket(int index, GemId id)
@@ -175,6 +192,42 @@ namespace GemTD.Gameplay.SkillLab
         public void BackToMenu()
         {
             SceneManager.LoadScene(SceneNames.MainMenu);
+        }
+
+        Transform PickRoot =>
+            _liveView != null ? _liveView.transform : towerView;
+
+        TowerView ResolveTowerViewPrefab()
+        {
+            return TowerViewPrefabResolver.Resolve(
+                _session.Tower != null ? _session.Tower.Def : null,
+                towerPrefab,
+                auraTowerPrefab,
+                curseTowerPrefab,
+                slamTowerPrefab,
+                strikeTowerPrefab,
+                bowTowerPrefab,
+                attackTowerPrefab,
+                spellTowerPrefab);
+        }
+
+        void ApplyTowerView()
+        {
+            var prefab = ResolveTowerViewPrefab();
+            if (prefab == null)
+                return;
+
+            if (_liveView == null || _boundPrefab != prefab)
+            {
+                if (_liveView != null)
+                    Destroy(_liveView.gameObject);
+                _liveView = Instantiate(prefab, transform);
+                _boundPrefab = prefab;
+                if (towerView != null)
+                    towerView.gameObject.SetActive(false);
+            }
+
+            _liveView.Bind(_session.Tower, _session.TowerPosition);
         }
 
         void FlashHitsFromDamage()
@@ -232,7 +285,7 @@ namespace GemTD.Gameplay.SkillLab
             {
                 if (SkillLabWorldDrag.IsPointerOverUi())
                     return;
-                if (SkillLabWorldDrag.TryPick(worldCamera, towerView, dummyViews, out var tower, out var dummyIndex))
+                if (SkillLabWorldDrag.TryPick(worldCamera, PickRoot, dummyViews, out var tower, out var dummyIndex))
                 {
                     _session.StopVolley();
                     _draggingTower = tower;

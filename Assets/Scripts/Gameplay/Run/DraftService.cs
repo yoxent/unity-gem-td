@@ -43,10 +43,14 @@ namespace GemTD.Gameplay.Run
 
         public TowerRoster Roster { get; }
 
-        public DraftService(System.Random rng)
+        public DraftService(System.Random rng) : this(rng, TowerRosterCaps.Default)
+        {
+        }
+
+        public DraftService(System.Random rng, TowerRosterCaps caps)
         {
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
-            Roster = new TowerRoster();
+            Roster = new TowerRoster(caps);
         }
 
         public int FilledCardCount

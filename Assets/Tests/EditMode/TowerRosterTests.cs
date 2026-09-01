@@ -159,25 +159,23 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void ApplyPick_EleventhUniqueType_Ignored()
+        public void ApplyPick_SixthDamaging_Ignored_WhenCapIsFive()
         {
-            var roster = new TowerRoster();
-            var extras = new List<TowerDefinition>(TowerRoster.MaxSlots);
-            for (var i = 0; i < TowerRoster.MaxSlots; i++)
+            var roster = new TowerRoster(new TowerRosterCaps(5, 2, 2));
+            var extras = new List<TowerDefinition>(6);
+            for (var i = 0; i < 6; i++)
             {
                 var def = ScriptableObject.CreateInstance<TowerDefinition>();
-                def.DisplayName = "Cap" + i;
+                def.DisplayName = "D" + i;
                 extras.Add(def);
                 roster.ApplyPick(def);
             }
 
             try
             {
-                Assert.IsTrue(roster.IsFull);
-                roster.ApplyPick(_a);
-                Assert.AreEqual(TowerRoster.MaxSlots, roster.Count);
-                Assert.IsFalse(roster.Contains(_a));
-
+                Assert.AreEqual(5, roster.Count);
+                Assert.IsFalse(roster.Contains(extras[5]));
+                Assert.AreEqual(0, roster.Remaining(TowerRosterCategory.Damaging));
                 roster.ApplyPick(extras[0]);
                 Assert.AreEqual(1, roster.GetLevelIndex(extras[0]));
             }
@@ -186,6 +184,72 @@ namespace GemTD.Tests.EditMode
                 for (var i = 0; i < extras.Count; i++)
                     Object.DestroyImmediate(extras[i]);
             }
+        }
+
+        [Test]
+        public void ApplyPick_ThirdCurse_Ignored_WhenCapIsTwo()
+        {
+            var roster = new TowerRoster(new TowerRosterCaps(5, 2, 2));
+            var a = MakeCurse("A");
+            var b = MakeCurse("B");
+            var c = MakeCurse("C");
+            try
+            {
+                roster.ApplyPick(a);
+                roster.ApplyPick(b);
+                roster.ApplyPick(c);
+                Assert.AreEqual(2, roster.Count);
+                Assert.IsFalse(roster.Contains(c));
+                Assert.AreEqual(2, roster.CountIn(TowerRosterCategory.Curse));
+            }
+            finally
+            {
+                DestroyCurse(a);
+                DestroyCurse(b);
+                DestroyCurse(c);
+            }
+        }
+
+        [Test]
+        public void ApplyPick_CapZero_NeverUnlocks()
+        {
+            var roster = new TowerRoster(new TowerRosterCaps(0, 2, 2));
+            roster.ApplyPick(_a);
+            Assert.AreEqual(0, roster.Count);
+            Assert.IsFalse(roster.CanUnlock(_a));
+        }
+
+        [Test]
+        public void MaxSlots_FollowsSum()
+        {
+            Assert.AreEqual(9, new TowerRoster(new TowerRosterCaps(5, 2, 2)).MaxSlots);
+            Assert.AreEqual(8, new TowerRoster(new TowerRosterCaps(4, 2, 2)).MaxSlots);
+            Assert.AreEqual(10, new TowerRoster(new TowerRosterCaps(6, 2, 2)).MaxSlots);
+        }
+
+        TowerDefinition MakeCurse(string name)
+        {
+            var def = ScriptableObject.CreateInstance<TowerDefinition>();
+            def.DisplayName = name;
+            var role = ScriptableObject.CreateInstance<CurseRoleDefinition>();
+            def.Roles = new TowerRoleDefinition[] { role };
+            return def;
+        }
+
+        static void DestroyCurse(TowerDefinition def)
+        {
+            if (def == null)
+                return;
+            if (def.Roles != null)
+            {
+                for (var i = 0; i < def.Roles.Length; i++)
+                {
+                    if (def.Roles[i] != null)
+                        Object.DestroyImmediate(def.Roles[i]);
+                }
+            }
+
+            Object.DestroyImmediate(def);
         }
 
         [Test]

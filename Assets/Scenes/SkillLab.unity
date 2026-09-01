@@ -1150,7 +1150,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c3718b38d53e9140afe91e0846d1c22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.SkillLab.SkillLabController
-  towerCatalog: {fileID: 11400000, guid: 5718aee7175d18344e17c81fb368d37f, type: 2}
+  towerCatalog: {fileID: 11400000, guid: a8f3c21e9b4d47a6b0c15e82f39d7a14, type: 2}
   draftGems:
   - {fileID: 11400000, guid: f86ce146334a40daa59e21b5e7490b67, type: 2}
   - {fileID: 11400000, guid: 9a6e3c14daf26180be5c7d3f0a4b6c92, type: 2}
@@ -1197,6 +1197,14 @@ MonoBehaviour:
   overlay: {fileID: 270559725}
   worldCamera: {fileID: 88730596}
   towerView: {fileID: 2066314696}
+  towerPrefab: {fileID: 5918877022978656449, guid: 8d8f34f2e4fb8c6479b74953fde4bd78, type: 3}
+  spellTowerPrefab: {fileID: 5918877022978656449, guid: 23a86b5df1f08a74eb14ba9c0838e671, type: 3}
+  slamTowerPrefab: {fileID: 5918877022978656449, guid: 4f8fd35a7e5a8bd44ad244b32bb1eb59, type: 3}
+  strikeTowerPrefab: {fileID: 1977332737703839164, guid: 13ef2365b19a8df438cae6aff3e11ddd, type: 3}
+  bowTowerPrefab: {fileID: 5918877022978656449, guid: 06f72ee3d4d99444ca6c05616c52b68c, type: 3}
+  attackTowerPrefab: {fileID: 1977332737703839164, guid: e1e3e2ea5c434814988755601c5e5e43, type: 3}
+  auraTowerPrefab: {fileID: 5918877022978656449, guid: c4c7423283206114db75714a010ec301, type: 3}
+  curseTowerPrefab: {fileID: 5918877022978656449, guid: c9c7382751b348e44be72693f5d9f4fc, type: 3}
   dummyViews:
   - {fileID: 1236647241}
   - {fileID: 361761401}

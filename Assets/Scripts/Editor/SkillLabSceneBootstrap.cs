@@ -23,11 +23,19 @@ namespace GemTD.Editor
         [MenuItem("Gem TD/Bootstrap Skill Lab Scene")]
         public static void Bootstrap()
         {
-            var catalog = Load<TowerCatalog>("Assets/Data/Towers/TowerCatalog.asset");
+            var catalog = Load<TowerCatalog>("Assets/Data/Towers/GameplayReadyTowersCatalog.asset");
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
             var projectilePrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Projectile_Bolt.prefab");
             var slamEffectPrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Effect_Slam.prefab");
             var aftershockEffectPrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Effect_Aftershock.prefab");
+            var towerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Default.prefab");
+            var spellTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Spell.prefab");
+            var slamTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Slam.prefab");
+            var strikeTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Strike.prefab");
+            var bowTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Bow.prefab");
+            var attackTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Attack.prefab");
+            var auraTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Aura.prefab");
+            var curseTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Curse.prefab");
             var gems = LoadDraftGems();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
@@ -93,6 +101,14 @@ namespace GemTD.Editor
             ctrlSo.FindProperty("overlay").objectReferenceValue = overlay;
             ctrlSo.FindProperty("worldCamera").objectReferenceValue = cam;
             ctrlSo.FindProperty("towerView").objectReferenceValue = towerGo.transform;
+            ctrlSo.FindProperty("towerPrefab").objectReferenceValue = towerPrefab;
+            ctrlSo.FindProperty("spellTowerPrefab").objectReferenceValue = spellTowerPrefab;
+            ctrlSo.FindProperty("slamTowerPrefab").objectReferenceValue = slamTowerPrefab;
+            ctrlSo.FindProperty("strikeTowerPrefab").objectReferenceValue = strikeTowerPrefab;
+            ctrlSo.FindProperty("bowTowerPrefab").objectReferenceValue = bowTowerPrefab;
+            ctrlSo.FindProperty("attackTowerPrefab").objectReferenceValue = attackTowerPrefab;
+            ctrlSo.FindProperty("auraTowerPrefab").objectReferenceValue = auraTowerPrefab;
+            ctrlSo.FindProperty("curseTowerPrefab").objectReferenceValue = curseTowerPrefab;
             ctrlSo.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             ctrlSo.FindProperty("slamEffectPrefab").objectReferenceValue = slamEffectPrefab;
             ctrlSo.FindProperty("aftershockEffectPrefab").objectReferenceValue = aftershockEffectPrefab;

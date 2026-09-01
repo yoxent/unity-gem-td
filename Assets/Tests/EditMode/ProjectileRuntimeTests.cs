@@ -471,20 +471,25 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Init_DownwardAim_FlattensToHorizontal()
+        public void Init_KeepsAimPitchTowardTarget()
         {
+            var origin = new Vector3(0f, 2f, 0f);
+            var aimPoint = new Vector3(1f, 0f, 0f);
             var projectile = new ProjectileRuntime();
             projectile.Init(
-                origin: new Vector3(0f, 2f, 0f),
-                direction: new Vector3(1f, -4f, 0f),
+                origin: origin,
+                direction: aimPoint - origin,
                 target: null,
                 damage: 10f,
                 chainCount: 0,
                 speed: 10f,
                 chainRange: 0f);
 
-            Assert.AreEqual(0f, projectile.Direction.y, 1e-4f);
-            Assert.AreEqual(1f, projectile.Direction.x, 1e-4f);
+            var expected = (aimPoint - origin).normalized;
+            Assert.AreEqual(expected.x, projectile.Direction.x, 1e-4f);
+            Assert.AreEqual(expected.y, projectile.Direction.y, 1e-4f);
+            Assert.AreEqual(expected.z, projectile.Direction.z, 1e-4f);
+            Assert.Less(projectile.Direction.y, 0f);
         }
 
         [Test]
@@ -503,7 +508,27 @@ namespace GemTD.Tests.EditMode
 
             Assert.IsFalse(projectile.Tick(0.02f, Living(enemy)));
             Assert.AreEqual(90f, enemy.Hp, 1e-3f);
-            Assert.AreEqual(2f, projectile.Position.y, 1e-4f);
+            Assert.AreEqual(0f, projectile.Position.y, 1e-4f);
+        }
+
+        [Test]
+        public void Tick_FromRaisedOrigin_DescendsIntoGroundTarget()
+        {
+            var enemy = MakeEnemyAt(new Vector3(2f, 0f, 0f), 100f);
+            var origin = new Vector3(0f, TowerView.DefaultMuzzleLocalY, 0f);
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: origin,
+                direction: enemy.WorldPosition - origin,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 20f,
+                chainRange: 0f);
+
+            Assert.IsFalse(projectile.Tick(0.2f, Living(enemy)));
+            Assert.AreEqual(90f, enemy.Hp, 1e-3f);
+            Assert.Less(projectile.Position.y, origin.y - 0.3f);
         }
 
         [Test]

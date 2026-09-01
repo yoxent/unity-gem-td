@@ -390,30 +390,16 @@ namespace GemTD.Gameplay
 
         TowerView ResolveTowerViewPrefab(TowerDefinition def)
         {
-            if (def != null && def.ViewPrefab != null)
-                return def.ViewPrefab;
-
-            // Category/role before Spell tag. PoE curses and auras also carry
-            // Spell; handoff classifies by bucket (Aura-first, Curse not Aura).
-            switch (SkillGemTowerMap.ResolveVisualFamily(def))
-            {
-                case SkillGemTowerMap.TowerVisualFamily.Aura:
-                    return auraTowerPrefab != null ? auraTowerPrefab : towerPrefab;
-                case SkillGemTowerMap.TowerVisualFamily.Curse:
-                    return curseTowerPrefab != null ? curseTowerPrefab : towerPrefab;
-                case SkillGemTowerMap.TowerVisualFamily.Slam:
-                    return slamTowerPrefab != null ? slamTowerPrefab : towerPrefab;
-                case SkillGemTowerMap.TowerVisualFamily.Strike:
-                    return strikeTowerPrefab != null ? strikeTowerPrefab : towerPrefab;
-                case SkillGemTowerMap.TowerVisualFamily.Bow:
-                    return bowTowerPrefab != null ? bowTowerPrefab : towerPrefab;
-                case SkillGemTowerMap.TowerVisualFamily.Attack:
-                    return attackTowerPrefab != null ? attackTowerPrefab : towerPrefab;
-                case SkillGemTowerMap.TowerVisualFamily.Spell:
-                    return spellTowerPrefab != null ? spellTowerPrefab : towerPrefab;
-                default:
-                    return towerPrefab;
-            }
+            return TowerViewPrefabResolver.Resolve(
+                def,
+                towerPrefab,
+                auraTowerPrefab,
+                curseTowerPrefab,
+                slamTowerPrefab,
+                strikeTowerPrefab,
+                bowTowerPrefab,
+                attackTowerPrefab,
+                spellTowerPrefab);
         }
 
         float EffectiveAttackRange(TowerInstance tower)
@@ -555,7 +541,9 @@ namespace GemTD.Gameplay
             Inventory = new GemInventory(capacity);
             GameEvents.RaiseInventoryChanged();
 
-            Draft = new DraftService(new System.Random());
+            Draft = new DraftService(
+                new System.Random(),
+                runConfig != null ? runConfig.GetRosterCaps() : TowerRosterCaps.Default);
             var lockdownSeconds = runConfig != null
                 ? Mathf.Max(0f, runConfig.SocketLockdownSeconds)
                 : 0f;

@@ -116,12 +116,25 @@ namespace GemTD.UI
 
             var gold = _root.Economy != null ? _root.Economy.Gold : 0;
             var filledCount = _root.BuildBarTowerCount;
-            EnsureButtonCount(TowerRoster.MaxSlots);
+            var maxSlots = _root.Draft != null && _root.Draft.Roster != null
+                ? _root.Draft.Roster.MaxSlots
+                : 0;
+            if (maxSlots <= 0)
+            {
+                for (var i = 0; i < buildButtons.Count; i++)
+                {
+                    if (buildButtons[i] != null)
+                        buildButtons[i].gameObject.SetActive(false);
+                }
+                return;
+            }
+
+            EnsureButtonCount(maxSlots);
 
             for (var i = 0; i < buildButtons.Count; i++)
             {
                 if (buildButtons[i] == null) continue;
-                var show = i < TowerRoster.MaxSlots;
+                var show = i < maxSlots;
                 buildButtons[i].gameObject.SetActive(show);
                 if (!show) continue;
 

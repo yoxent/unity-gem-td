@@ -9,14 +9,55 @@ namespace GemTD.Gameplay.Towers
     /// </summary>
     public sealed class TowerRoster
     {
-        public const int MaxSlots = 10;
+        readonly TowerRosterCaps _caps;
+        readonly List<TowerDefinition> _unlocked;
+        readonly List<int> _levelIndex;
 
-        readonly List<TowerDefinition> _unlocked = new List<TowerDefinition>(MaxSlots);
-        readonly List<int> _levelIndex = new List<int>(MaxSlots);
+        public TowerRoster() : this(TowerRosterCaps.Default)
+        {
+        }
+
+        public TowerRoster(TowerRosterCaps caps)
+        {
+            _caps = caps;
+            var capacity = caps.MaxSlots > 0 ? caps.MaxSlots : 1;
+            _unlocked = new List<TowerDefinition>(capacity);
+            _levelIndex = new List<int>(capacity);
+        }
+
+        public int MaxSlots => _caps.MaxSlots;
 
         public int Count => _unlocked.Count;
 
-        public bool IsFull => _unlocked.Count >= MaxSlots;
+        public bool IsFull =>
+            Remaining(TowerRosterCategory.Damaging) == 0
+            && Remaining(TowerRosterCategory.Curse) == 0
+            && Remaining(TowerRosterCategory.Aura) == 0;
+
+        public int CountIn(TowerRosterCategory category)
+        {
+            var n = 0;
+            for (var i = 0; i < _unlocked.Count; i++)
+            {
+                if (TowerRosterCategoryRules.Of(_unlocked[i]) == category)
+                    n++;
+            }
+
+            return n;
+        }
+
+        public int Remaining(TowerRosterCategory category)
+        {
+            var left = _caps.Cap(category) - CountIn(category);
+            return left < 0 ? 0 : left;
+        }
+
+        public bool CanUnlock(TowerDefinition def)
+        {
+            if (def == null || Contains(def))
+                return false;
+            return Remaining(TowerRosterCategoryRules.Of(def)) > 0;
+        }
 
         public bool Contains(TowerDefinition def)
         {
@@ -48,7 +89,7 @@ namespace GemTD.Gameplay.Towers
             var i = IndexOf(def);
             if (i < 0)
             {
-                if (_unlocked.Count >= MaxSlots)
+                if (!CanUnlock(def))
                     return;
                 _unlocked.Add(def);
                 _levelIndex.Add(0);

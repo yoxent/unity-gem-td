@@ -492,19 +492,19 @@ namespace GemTD.Gameplay.SkillLab
             AttackTraceKind firstKind)
         {
             var aim = aimPoint - origin;
+            if (Mathf.Abs(headLateral) > 1e-4f)
+            {
+                var flat = aim;
+                flat.y = 0f;
+                var lateralBasis = flat.sqrMagnitude > 1e-8f ? flat.normalized : Vector3.forward;
+                origin += Quaternion.Euler(0f, 90f, 0f) * lateralBasis * headLateral;
+                aim = aimPoint - origin;
+            }
+
             if (aim.sqrMagnitude < 1e-8f)
                 aim = Vector3.forward;
             else
                 aim.Normalize();
-
-            if (Mathf.Abs(headLateral) > 1e-4f)
-            {
-                var headSide = Quaternion.Euler(0f, 90f, 0f) * aim;
-                origin += headSide * headLateral;
-                aim = aimPoint - origin;
-                if (aim.sqrMagnitude > 1e-8f)
-                    aim.Normalize();
-            }
 
             if (Mathf.Abs(headYawDegrees) > 1e-4f)
                 aim = Quaternion.Euler(0f, headYawDegrees, 0f) * aim;

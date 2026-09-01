@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using GemTD.Gameplay.Gems;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Run
 {
@@ -22,6 +23,9 @@ namespace GemTD.Gameplay.Run
         public int EndWaveGold = 50;
         public int EndWave = 50;
         public int InventoryCapacity = 10;
+        public int MaxDamagingTowers = 5;
+        public int MaxCurseTowers = 2;
+        public int MaxAuraTowers = 2;
         public int OpenArmCount = 1;
         public int ChunkGridWidth = 13;
         public int ChunkGridHeight = 13;
@@ -31,6 +35,9 @@ namespace GemTD.Gameplay.Run
         public DifficultyModeRow[] DifficultyModes = CreateDefaultDifficultyModes();
 
         public int LaneCount => Mathf.Clamp(OpenArmCount, 1, 4);
+
+        public TowerRosterCaps GetRosterCaps() =>
+            new TowerRosterCaps(MaxDamagingTowers, MaxCurseTowers, MaxAuraTowers);
 
         public DifficultyModeRow GetDifficultyMode()
         {

@@ -81,6 +81,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TryPick_DamagingCapOne_LaterOffersOnlyOwnedUpgrade()
+        {
+            var catalog = MakeFourTowerCatalog(4);
+            var draft = new DraftService(new System.Random(1), new TowerRosterCaps(1, 0, 0));
+            var inventory = new GemInventory(10);
+            draft.BeginOffer(catalog, allowSkip: false);
+            var picked = draft.CurrentOffer[0].Tower;
+            Assert.IsTrue(draft.TryPick(0, inventory, out _));
+            Assert.AreEqual(1, draft.Roster.Count);
+
+            draft.BeginOffer(catalog, allowSkip: true);
+            Assert.Greater(draft.CurrentOffer.Count, 0);
+            for (var i = 0; i < draft.CurrentOffer.Count; i++)
+            {
+                Assert.IsTrue(draft.CurrentOffer[i].IsTower);
+                Assert.AreSame(picked, draft.CurrentOffer[i].Tower);
+            }
+        }
+
+        [Test]
         public void TryPick_SameTowerTwice_IncrementsRosterLevel()
         {
             var catalog = MakeFourTowerCatalog(1);

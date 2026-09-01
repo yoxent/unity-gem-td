@@ -1453,9 +1453,9 @@ namespace GemTD.Tests.EditMode
             var muzzle = new Vector3(0.5f, 0f, 0.5f);
 
             Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
-            director.TickInFlight(0.1f, living);
+            director.TickInFlight(0.25f, living);
             Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
-            director.TickInFlight(0.1f, living);
+            director.TickInFlight(0.25f, living);
 
             var aftershocks = 0;
             var slams = 0;

@@ -77,5 +77,41 @@ namespace GemTD.Tests.EditMode
 
             Object.DestroyImmediate(config);
         }
+
+        [Test]
+        public void GetRosterCaps_Defaults_AreFiveTwoTwo_SumNine()
+        {
+            var config = ScriptableObject.CreateInstance<RunConfig>();
+            var caps = config.GetRosterCaps();
+            Assert.AreEqual(5, caps.MaxDamaging);
+            Assert.AreEqual(2, caps.MaxCurse);
+            Assert.AreEqual(2, caps.MaxAura);
+            Assert.AreEqual(9, caps.MaxSlots);
+            Object.DestroyImmediate(config);
+        }
+
+        [Test]
+        public void GetRosterCaps_DamagingFour_SumIsEight()
+        {
+            var config = ScriptableObject.CreateInstance<RunConfig>();
+            config.MaxDamagingTowers = 4;
+            Assert.AreEqual(8, config.GetRosterCaps().MaxSlots);
+            Object.DestroyImmediate(config);
+        }
+
+        [Test]
+        public void GetRosterCaps_Negative_ClampsToZero()
+        {
+            var config = ScriptableObject.CreateInstance<RunConfig>();
+            config.MaxDamagingTowers = -3;
+            config.MaxCurseTowers = -1;
+            config.MaxAuraTowers = 2;
+            var caps = config.GetRosterCaps();
+            Assert.AreEqual(0, caps.MaxDamaging);
+            Assert.AreEqual(0, caps.MaxCurse);
+            Assert.AreEqual(2, caps.MaxAura);
+            Assert.AreEqual(2, caps.MaxSlots);
+            Object.DestroyImmediate(config);
+        }
     }
 }

@@ -58,10 +58,10 @@ namespace GemTD.Gameplay.Run
             List<TowerDefinition> excludeTowers,
             TowerRoster roster)
         {
-            var towers = CopyTowers(catalog, excludeTowers, roster);
+            var towers = CopyTowers(catalog, excludeTowers);
             for (var n = 0; n < 4; n++)
             {
-                var t = TakeTower(towers, rng);
+                var t = TakeTower(towers, rng, roster, damagingOnly: true);
                 if (t == null)
                     break;
                 dest.Add(DraftOfferCard.FromTower(t));
@@ -77,7 +77,7 @@ namespace GemTD.Gameplay.Run
             TowerRoster roster)
         {
             var gems = CopyGems(catalog, excludeGems);
-            var towers = CopyTowers(catalog, excludeTowers, roster);
+            var towers = CopyTowers(catalog, excludeTowers);
 
             for (var n = 0; n < 2; n++)
             {
@@ -87,12 +87,12 @@ namespace GemTD.Gameplay.Run
                 dest.Add(DraftOfferCard.FromGem(gem));
             }
 
-            var guaranteedTower = TakeTower(towers, rng);
+            var guaranteedTower = TakeTower(towers, rng, roster, damagingOnly: false);
             if (guaranteedTower != null)
                 dest.Add(DraftOfferCard.FromTower(guaranteedTower));
 
             var extraGemFamily = TakeGemFamily(gems, rng);
-            var extraTower = TakeTower(towers, rng);
+            var extraTower = TakeTower(towers, rng, roster, damagingOnly: false);
             if (extraGemFamily != null && extraTower != null)
             {
                 if (rng.Next(0, 2) == 0)
@@ -121,17 +121,13 @@ namespace GemTD.Gameplay.Run
 
         static List<TowerDefinition> CopyTowers(
             DraftCatalog catalog,
-            List<TowerDefinition> exclude,
-            TowerRoster roster)
+            List<TowerDefinition> exclude)
         {
             var src = catalog.TowerPool != null ? catalog.TowerPool.GetTowersOrEmpty() : System.Array.Empty<TowerDefinition>();
             var list = new List<TowerDefinition>(src.Length);
-            var rosterFull = roster != null && roster.IsFull;
             for (var i = 0; i < src.Length; i++)
             {
                 if (src[i] == null || ContainsTower(exclude, src[i]))
-                    continue;
-                if (rosterFull && !roster.Contains(src[i]))
                     continue;
                 list.Add(src[i]);
             }
@@ -206,14 +202,98 @@ namespace GemTD.Gameplay.Run
                 : GemRarity.Normal;
         }
 
-        static TowerDefinition TakeTower(List<TowerDefinition> pool, System.Random rng)
+        static TowerDefinition TakeTower(
+            List<TowerDefinition> pool,
+            System.Random rng,
+            TowerRoster roster,
+            bool damagingOnly)
         {
-            if (pool.Count == 0)
+            var damaging = new List<TowerDefinition>(pool.Count);
+            var curses = new List<TowerDefinition>(pool.Count);
+            var auras = new List<TowerDefinition>(pool.Count);
+
+            for (var i = 0; i < pool.Count; i++)
+            {
+                var tower = pool[i];
+                var category = TowerRosterCategoryRules.Of(tower);
+                if (damagingOnly && category != TowerRosterCategory.Damaging)
+                    continue;
+                if (!IsEligible(tower, roster))
+                    continue;
+                if (category == TowerRosterCategory.Curse)
+                    curses.Add(tower);
+                else if (category == TowerRosterCategory.Aura)
+                    auras.Add(tower);
+                else
+                    damaging.Add(tower);
+            }
+
+            var chosenList = PickBucket(damaging, curses, auras, rng, roster);
+            if (chosenList == null || chosenList.Count == 0)
                 return null;
-            var i = PickIndex(pool.Count, rng, _ => 1f);
-            var chosen = pool[i];
-            pool.RemoveAt(i);
-            return chosen;
+
+            var pick = chosenList[rng.Next(0, chosenList.Count)];
+            pool.Remove(pick);
+            return pick;
+        }
+
+        static bool IsEligible(TowerDefinition tower, TowerRoster roster)
+        {
+            if (roster == null)
+                return true;
+            if (roster.Contains(tower))
+                return true;
+            return roster.Remaining(TowerRosterCategoryRules.Of(tower)) > 0;
+        }
+
+        static List<TowerDefinition> PickBucket(
+            List<TowerDefinition> damaging,
+            List<TowerDefinition> curses,
+            List<TowerDefinition> auras,
+            System.Random rng,
+            TowerRoster roster)
+        {
+            var wD = BucketWeight(damaging, TowerRosterCategory.Damaging, roster);
+            var wC = BucketWeight(curses, TowerRosterCategory.Curse, roster);
+            var wA = BucketWeight(auras, TowerRosterCategory.Aura, roster);
+            var total = wD + wC + wA;
+            if (total <= 0f)
+                return null;
+
+            var roll = (float)rng.NextDouble() * total;
+            if (roll < wD)
+                return damaging;
+            if (roll < wD + wC)
+                return curses;
+            return auras;
+        }
+
+        static float BucketWeight(
+            List<TowerDefinition> eligible,
+            TowerRosterCategory category,
+            TowerRoster roster)
+        {
+            if (eligible.Count == 0)
+                return 0f;
+
+            var hasNew = false;
+            var hasUpgrade = false;
+            for (var i = 0; i < eligible.Count; i++)
+            {
+                if (roster != null && roster.Contains(eligible[i]))
+                    hasUpgrade = true;
+                else
+                    hasNew = true;
+            }
+
+            if (hasNew)
+            {
+                if (roster == null)
+                    return TowerRosterCaps.Default.Cap(category);
+                return roster.Remaining(category);
+            }
+
+            return hasUpgrade ? 1f : 0f;
         }
 
         static int PickIndex(int count, System.Random rng, System.Func<int, float> weightAt)

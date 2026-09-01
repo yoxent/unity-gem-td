@@ -213,8 +213,8 @@ namespace GemTD.Tests.EditMode
         public void Campaign_RosterFull_OnlyOwnedTowersAppear()
         {
             var catalog = MakeCatalog(DraftMixKind.TwoGemsOneTowerContested, gems: 6, towers: 12);
-            var roster = new TowerRoster();
-            for (var i = 0; i < TowerRoster.MaxSlots; i++)
+            var roster = new TowerRoster(new TowerRosterCaps(10, 0, 0));
+            for (var i = 0; i < 10; i++)
                 roster.ApplyPick(catalog.TowerPool.Towers[i]);
 
             var dest = new List<DraftOfferCard>(4);
@@ -255,6 +255,129 @@ namespace GemTD.Tests.EditMode
             }
 
             Assert.IsTrue(sawNew);
+        }
+
+        [Test]
+        public void FourTowers_SkipsCurseAndAura_EvenWhenCapsOpen()
+        {
+            var catalog = MakeMixedCatalog(DraftMixKind.FourTowers, damaging: 4, curses: 2, auras: 2);
+            var dest = new List<DraftOfferCard>(4);
+            for (var seed = 1; seed <= 40; seed++)
+            {
+                DraftOfferSampler.Fill(dest, catalog, new System.Random(seed), shuffle: false);
+                Assert.AreEqual(4, dest.Count);
+                for (var i = 0; i < dest.Count; i++)
+                {
+                    Assert.IsTrue(dest[i].IsTower);
+                    Assert.AreEqual(
+                        TowerRosterCategory.Damaging,
+                        TowerRosterCategoryRules.Of(dest[i].Tower));
+                }
+            }
+        }
+
+        [Test]
+        public void Campaign_OffersCurseWhileDamagingRemaining()
+        {
+            var catalog = MakeMixedCatalog(DraftMixKind.TwoGemsOneTowerContested, damaging: 8, curses: 4, auras: 4);
+            var roster = new TowerRoster(new TowerRosterCaps(5, 2, 2));
+            roster.ApplyPick(FirstOfCategory(catalog, TowerRosterCategory.Damaging));
+
+            var dest = new List<DraftOfferCard>(4);
+            var sawCurse = false;
+            var sawAura = false;
+            for (var seed = 1; seed <= 80; seed++)
+            {
+                DraftOfferSampler.Fill(
+                    dest, catalog, new System.Random(seed), shuffle: false, null, null, roster);
+                for (var i = 0; i < dest.Count; i++)
+                {
+                    if (!dest[i].IsTower)
+                        continue;
+                    var cat = TowerRosterCategoryRules.Of(dest[i].Tower);
+                    sawCurse |= cat == TowerRosterCategory.Curse;
+                    sawAura |= cat == TowerRosterCategory.Aura;
+                }
+            }
+
+            Assert.IsTrue(sawCurse);
+            Assert.IsTrue(sawAura);
+        }
+
+        [Test]
+        public void Campaign_DamagingCapFull_HidesUnownedDamaging_KeepsOwnedUpgrade()
+        {
+            var catalog = MakeMixedCatalog(DraftMixKind.TwoGemsOneTowerContested, damaging: 8, curses: 3, auras: 3);
+            var roster = new TowerRoster(new TowerRosterCaps(5, 2, 2));
+            var damaging = CollectByCategory(catalog, TowerRosterCategory.Damaging);
+            for (var i = 0; i < 5; i++)
+                roster.ApplyPick(damaging[i]);
+
+            var dest = new List<DraftOfferCard>(4);
+            for (var seed = 1; seed <= 40; seed++)
+            {
+                DraftOfferSampler.Fill(
+                    dest, catalog, new System.Random(seed), shuffle: false, null, null, roster);
+                for (var i = 0; i < dest.Count; i++)
+                {
+                    if (!dest[i].IsTower)
+                        continue;
+                    if (TowerRosterCategoryRules.Of(dest[i].Tower) != TowerRosterCategory.Damaging)
+                        continue;
+                    Assert.IsTrue(roster.Contains(dest[i].Tower));
+                }
+            }
+        }
+
+        [Test]
+        public void Campaign_CurseCapZero_NeverOffersNewCurse()
+        {
+            var catalog = MakeMixedCatalog(DraftMixKind.TwoGemsOneTowerContested, damaging: 4, curses: 3, auras: 2);
+            var roster = new TowerRoster(new TowerRosterCaps(5, 0, 2));
+            var dest = new List<DraftOfferCard>(4);
+            for (var seed = 1; seed <= 40; seed++)
+            {
+                DraftOfferSampler.Fill(
+                    dest, catalog, new System.Random(seed), shuffle: false, null, null, roster);
+                for (var i = 0; i < dest.Count; i++)
+                {
+                    if (dest[i].IsTower)
+                    {
+                        Assert.AreNotEqual(
+                            TowerRosterCategory.Curse,
+                            TowerRosterCategoryRules.Of(dest[i].Tower));
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void Campaign_AllCapsFilled_OnlyOwnedTowersAppear()
+        {
+            var catalog = MakeMixedCatalog(DraftMixKind.TwoGemsOneTowerContested, damaging: 8, curses: 4, auras: 4);
+            var roster = new TowerRoster(new TowerRosterCaps(5, 2, 2));
+            var damaging = CollectByCategory(catalog, TowerRosterCategory.Damaging);
+            var curses = CollectByCategory(catalog, TowerRosterCategory.Curse);
+            var auras = CollectByCategory(catalog, TowerRosterCategory.Aura);
+            for (var i = 0; i < 5; i++)
+                roster.ApplyPick(damaging[i]);
+            roster.ApplyPick(curses[0]);
+            roster.ApplyPick(curses[1]);
+            roster.ApplyPick(auras[0]);
+            roster.ApplyPick(auras[1]);
+
+            var dest = new List<DraftOfferCard>(4);
+            for (var seed = 1; seed <= 40; seed++)
+            {
+                DraftOfferSampler.Fill(
+                    dest, catalog, new System.Random(seed), shuffle: false, null, null, roster);
+                for (var i = 0; i < dest.Count; i++)
+                {
+                    if (!dest[i].IsTower)
+                        continue;
+                    Assert.IsTrue(roster.Contains(dest[i].Tower));
+                }
+            }
         }
 
         DraftCatalog MakeCatalog(DraftMixKind mix, int gems, int towers)
@@ -298,6 +421,62 @@ namespace GemTD.Tests.EditMode
             }
 
             return catalog;
+        }
+
+        DraftCatalog MakeMixedCatalog(DraftMixKind mix, int damaging, int curses, int auras)
+        {
+            var catalog = MakeCatalog(mix, gems: mix == DraftMixKind.FourTowers ? 0 : 6, towers: 0);
+            var total = damaging + curses + auras;
+            var towerPool = ScriptableObject.CreateInstance<TowerCatalog>();
+            _destroy.Add(towerPool);
+            towerPool.Towers = new TowerDefinition[total];
+            var n = 0;
+            n = FillRoleTowers(towerPool, n, damaging, () => ScriptableObject.CreateInstance<AttackRoleDefinition>());
+            n = FillRoleTowers(towerPool, n, curses, () => ScriptableObject.CreateInstance<CurseRoleDefinition>());
+            FillRoleTowers(towerPool, n, auras, () => ScriptableObject.CreateInstance<AuraRoleDefinition>());
+            catalog.TowerPool = towerPool;
+            return catalog;
+        }
+
+        int FillRoleTowers(TowerCatalog pool, int start, int count, System.Func<TowerRoleDefinition> makeRole)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var tower = ScriptableObject.CreateInstance<TowerDefinition>();
+                tower.DisplayName = "T" + (start + i);
+                var role = makeRole();
+                _destroy.Add(role);
+                tower.Roles = new TowerRoleDefinition[] { role };
+                _destroy.Add(tower);
+                pool.Towers[start + i] = tower;
+            }
+
+            return start + count;
+        }
+
+        static TowerDefinition FirstOfCategory(DraftCatalog catalog, TowerRosterCategory category)
+        {
+            var towers = catalog.TowerPool.Towers;
+            for (var i = 0; i < towers.Length; i++)
+            {
+                if (TowerRosterCategoryRules.Of(towers[i]) == category)
+                    return towers[i];
+            }
+
+            return null;
+        }
+
+        static List<TowerDefinition> CollectByCategory(DraftCatalog catalog, TowerRosterCategory category)
+        {
+            var towers = catalog.TowerPool.Towers;
+            var list = new List<TowerDefinition>(towers.Length);
+            for (var i = 0; i < towers.Length; i++)
+            {
+                if (TowerRosterCategoryRules.Of(towers[i]) == category)
+                    list.Add(towers[i]);
+            }
+
+            return list;
         }
 
         GemRarityTable MakeRarityTable(float lesser, float normal, float greater)

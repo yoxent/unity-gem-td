@@ -7,7 +7,8 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain projectile. Primary / fork / pierce / chain all fly straight (ballistic).
+    /// Domain projectile. Primary / fork / pierce / chain all fly straight (ballistic)
+    /// from muzzle toward the aim point (pitch included). Hit tests stay XZ.
     /// Chain: snap-aim once toward nearest living enemy within <see cref="DefaultChainRange"/>, then fly straight.
     /// Fork: parent dies on the forking hit, then two children at ±ForkHalfAngleDegrees.
     /// Fork children never fork.
@@ -127,7 +128,7 @@ namespace GemTD.Gameplay.Combat
             float maxTravel = 0f)
         {
             Position = origin;
-            Direction = FlattenHorizontal(direction);
+            Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
             Target = target;
             Damage = damage;
             ChainRemaining = chainCount;
@@ -368,14 +369,14 @@ namespace GemTD.Gameplay.Combat
             var hit = FindPierceCandidate(from, to, livingCandidates);
             if (hit != null)
             {
-                Position = new Vector3(hit.WorldPosition.x, from.y, hit.WorldPosition.z);
+                Position = hit.WorldPosition;
                 Target = hit;
                 OnHit(livingCandidates);
                 return IsActive;
             }
 
             Position = to;
-            _travelled += stepDist;
+            _travelled += Flat(to - from).magnitude;
             if (_maxTravel > 0.01f && _travelled >= _maxTravel)
             {
                 IsActive = false;
@@ -540,7 +541,7 @@ namespace GemTD.Gameplay.Combat
                     // Snap-aim once toward the nearest in-range enemy, then resume ballistic flight.
                     var aim = next.WorldPosition - Position;
                     if (aim.sqrMagnitude > 1e-8f)
-                        Direction = FlattenHorizontal(aim);
+                        Direction = aim.normalized;
                     return;
                 }
             }
@@ -849,15 +850,6 @@ namespace GemTD.Gameplay.Combat
             }
 
             return best;
-        }
-
-        static Vector3 FlattenHorizontal(Vector3 direction)
-        {
-            var flat = direction;
-            flat.y = 0f;
-            if (flat.sqrMagnitude < 1e-8f)
-                return direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
-            return flat.normalized;
         }
 
         static Vector3 Flat(Vector3 value)
