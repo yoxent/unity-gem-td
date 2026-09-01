@@ -363,7 +363,101 @@ namespace GemTD.Tests.EditMode
 
             Assert.AreEqual(3, director.Projectiles.Count);
             for (var i = 0; i < director.Projectiles.Count; i++)
+            {
                 Assert.AreSame(enemy, director.Projectiles[i].Target);
+                Assert.AreEqual(i == 0, director.Projectiles[i].Seeking);
+            }
+        }
+
+        [Test]
+        public void Tick_AuthoredMultipleProjectilesWithoutSpread_FansDistinctPelletDirections()
+        {
+            _multipleProjectiles.Modifiers = new[]
+            {
+                GemStatModifier.TieredSingle(
+                    GemStat.Damage,
+                    RoleModifierOperation.Multiply,
+                    0.9f,
+                    0.94f,
+                    0.98f),
+                new GemStatModifier
+                {
+                    Stat = GemStat.ProjectileCount,
+                    Operation = RoleModifierOperation.Add,
+                    ValueKind = RoleStatValueKind.Single,
+                    Value = 0.94f,
+                    Lesser = 2f,
+                    Normal = 3f,
+                    Greater = 4f
+                }
+            };
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
+
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            TickThroughCast(director, tower, registry);
+
+            Assert.AreEqual(4, director.Projectiles.Count);
+            Assert.Greater(
+                (director.Projectiles[0].Direction - director.Projectiles[3].Direction).sqrMagnitude,
+                0.01f);
+        }
+
+        [Test]
+        public void Tick_SpreadVolley_MissedPelletsKeepFlyingAfterOneHits()
+        {
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
+            _multipleProjectiles.Modifiers = new[]
+            {
+                GemStatModifier.Single(GemStat.ProjectileCount, RoleModifierOperation.Add, 3f),
+                GemStatModifier.Single(GemStat.SpreadDegrees, RoleModifierOperation.Set, 24f)
+            };
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            tower.StrikeNormalized = 0f;
+            Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
+
+            var dummy = new EnemyRuntime();
+            dummy.Init(_enemyDef, new[] { new Vector3(4.5f, 0f, 0f) });
+            dummy.Invulnerable = true;
+            var living = new List<EnemyRuntime> { dummy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            Assert.AreEqual(4, director.Projectiles.Count);
+
+            var hit = false;
+            for (var i = 0; i < 40; i++)
+            {
+                director.TickInFlight(0.02f, living);
+                if (director.Projectiles.Count < 4)
+                {
+                    hit = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hit, "center pellet should hit the dummy");
+            Assert.Greater(director.Projectiles.Count, 0, "missed pellets must outlive the hit");
+
+            director.TickInFlight(0.2f, living);
+            Assert.Greater(
+                director.Projectiles.Count,
+                0,
+                "missed pellets should still be flying past the dummy");
+            for (var i = 0; i < director.Projectiles.Count; i++)
+                Assert.IsTrue(director.Projectiles[i].IsActive);
         }
 
         [Test]
@@ -508,6 +602,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(expected.x, shot.Direction.x, 0.05f);
             Assert.AreEqual(expected.z, shot.Direction.z, 0.05f);
             Assert.AreSame(enemy, shot.Target);
+            Assert.IsTrue(shot.Seeking);
         }
 
         [Test]
@@ -533,6 +628,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(expected.x, shot.Direction.x, 0.05f);
             Assert.AreEqual(expected.z, shot.Direction.z, 0.05f);
             Assert.Greater(intercept.x, enemy.WorldPosition.x);
+            Assert.IsFalse(shot.Seeking);
         }
 
         [Test]
@@ -1562,10 +1658,13 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
             CompleteCast(director, living);
             Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.IsTrue(director.Projectiles[0].Seeking);
             Assert.IsTrue(director.HasActiveVolley);
 
             director.TickInFlight(0.1f, living);
             Assert.AreEqual(2, director.Projectiles.Count);
+            Assert.IsTrue(director.Projectiles[0].Seeking);
+            Assert.IsFalse(director.Projectiles[1].Seeking);
 
             director.TickInFlight(0.1f, living);
             Assert.AreEqual(3, director.Projectiles.Count);

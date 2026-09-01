@@ -451,12 +451,22 @@ namespace GemTD.Gameplay.Gems
                 return true;
             }
 
-            if (text == "#% increased Duration of Ailments inflicted with Supported Skills")
+            if (text == "#% increased Duration of Ailments inflicted with Supported Skills"
+                || text == "#% increased Duration of Elemental Ailments on Enemies")
             {
                 mapped = Tiered(
                     GemStat.AilmentDuration,
                     RoleModifierOperation.Multiply,
                     PercentFactor(values, more: true));
+                return true;
+            }
+
+            if (text == "Elemental Ailments inflicted by Supported Skills spread to other enemies within # metres")
+            {
+                mapped = GemStatModifier.Single(
+                    GemStat.Proliferate,
+                    RoleModifierOperation.Set,
+                    1f);
                 return true;
             }
 
@@ -843,6 +853,90 @@ namespace GemTD.Gameplay.Gems
                 RemoveFlavorContaining(flavor, "Skills Fork");
             }
 
+            if (name == "Multiple Projectiles Support")
+            {
+                if (!HasStat(modifiers, GemStat.ProjectileCount))
+                {
+                    modifiers.Add(GemStatModifier.TieredSingle(
+                        GemStat.ProjectileCount,
+                        RoleModifierOperation.Add,
+                        lesser: 2f,
+                        normal: 3f,
+                        greater: 4f));
+                }
+
+                if (!HasStat(modifiers, GemStat.SpreadDegrees))
+                {
+                    modifiers.Add(GemStatModifier.Single(
+                        GemStat.SpreadDegrees,
+                        RoleModifierOperation.Set,
+                        ProjectileRuntime.DefaultVolleySpreadDegrees));
+                }
+
+                RemoveFlavorContaining(flavor, "additional Projectiles");
+            }
+
+            if (name == "Combustion Support")
+            {
+                if (!HasStat(modifiers, GemStat.Ignite))
+                {
+                    modifiers.Add(GemStatModifier.Single(
+                        GemStat.Ignite,
+                        RoleModifierOperation.Set,
+                        1f));
+                }
+
+                RemoveFlavorContaining(flavor, "chance to Ignite");
+            }
+
+            if (name == "Knockback Support")
+            {
+                if (!HasStat(modifiers, GemStat.KnockbackDistance))
+                {
+                    modifiers.Add(GemStatModifier.Single(
+                        GemStat.KnockbackDistance,
+                        RoleModifierOperation.Set,
+                        1f));
+                }
+
+                RemoveFlavorContaining(flavor, "Knockback Distance");
+            }
+
+            if (name == "Added Cold Damage Support")
+            {
+                if (!HasStat(modifiers, GemStat.Chill))
+                {
+                    modifiers.Add(GemStatModifier.Single(
+                        GemStat.Chill,
+                        RoleModifierOperation.Set,
+                        1f));
+                }
+            }
+
+            if (name == "Added Lightning Damage Support")
+            {
+                if (!HasStat(modifiers, GemStat.Shock))
+                {
+                    modifiers.Add(GemStatModifier.Single(
+                        GemStat.Shock,
+                        RoleModifierOperation.Set,
+                        1f));
+                }
+            }
+
+            if (name == "Elemental Proliferation Support")
+            {
+                if (!HasStat(modifiers, GemStat.Proliferate))
+                {
+                    modifiers.Add(GemStatModifier.Single(
+                        GemStat.Proliferate,
+                        RoleModifierOperation.Set,
+                        1f));
+                }
+
+                RemoveFlavorContaining(flavor, "Freeze, Shock and Ignite");
+            }
+
             if (name == "Chance to Poison Support")
             {
                 modifiers.Add(GemStatModifier.Single(
@@ -894,6 +988,17 @@ namespace GemTD.Gameplay.Gems
                     1.4f));
                 RemoveFlavorContaining(flavor, "Splash Damage to surrounding");
             }
+        }
+
+        static bool HasStat(List<GemStatModifier> modifiers, GemStat stat)
+        {
+            for (var i = 0; i < modifiers.Count; i++)
+            {
+                if (modifiers[i].Stat == stat)
+                    return true;
+            }
+
+            return false;
         }
 
         static bool FlavorContains(List<string> flavor, string fragment)

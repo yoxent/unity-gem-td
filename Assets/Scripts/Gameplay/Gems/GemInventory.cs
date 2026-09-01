@@ -44,6 +44,8 @@ namespace GemTD.Gameplay.Gems
             var count = gems.Count < _slots.Length ? gems.Count : _slots.Length;
             for (var i = 0; i < count; i++)
                 _slots[i] = GemInstance.FromDefinition(gems[i]);
+
+            CombineTriples();
         }
 
         public bool TryAdd(GemInstance gem)
@@ -57,6 +59,7 @@ namespace GemTD.Gameplay.Gems
                     continue;
 
                 _slots[i] = gem;
+                CombineTriples();
                 return true;
             }
 
@@ -74,6 +77,7 @@ namespace GemTD.Gameplay.Gems
                 return false;
 
             _slots[index] = gem;
+            CombineTriples();
             return true;
         }
 
@@ -145,6 +149,59 @@ namespace GemTD.Gameplay.Gems
             _slots[fromIndex] = toGem;
             _slots[toIndex] = fromGem;
             return true;
+        }
+
+        /// <summary>
+        /// Fuse every bag triple of the same family and rarity into the next rarity.
+        /// Greater does not fuse. Sockets are not this inventory. Cascades until no triple remains.
+        /// </summary>
+        public int CombineTriples()
+        {
+            var fuses = 0;
+            while (TryCombineOnce())
+                fuses++;
+            return fuses;
+        }
+
+        bool TryCombineOnce()
+        {
+            for (var i = 0; i < _slots.Length; i++)
+            {
+                var first = _slots[i];
+                if (first.IsEmpty)
+                    continue;
+                if (!GemRarityUtility.TryNext(first.Rarity, out var next))
+                    continue;
+
+                var i0 = -1;
+                var i1 = -1;
+                var i2 = -1;
+                for (var j = 0; j < _slots.Length; j++)
+                {
+                    var slot = _slots[j];
+                    if (slot.IsEmpty || slot.Id != first.Id || slot.Rarity != first.Rarity)
+                        continue;
+                    if (i0 < 0)
+                        i0 = j;
+                    else if (i1 < 0)
+                        i1 = j;
+                    else
+                    {
+                        i2 = j;
+                        break;
+                    }
+                }
+
+                if (i2 < 0)
+                    continue;
+
+                _slots[i0] = new GemInstance(first.Def, next);
+                _slots[i1] = default;
+                _slots[i2] = default;
+                return true;
+            }
+
+            return false;
         }
     }
 }

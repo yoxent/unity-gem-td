@@ -247,7 +247,8 @@ namespace GemTD.Gameplay
         readonly List<ISkillModifier> _socketModScratch = new List<ISkillModifier>(4);
         readonly List<EnemyRuntime> _livingScratch = new List<EnemyRuntime>(32);
 
-        ViewObjectPool<EnemyView> _enemyPool;
+        readonly Dictionary<EnemyView, ViewObjectPool<EnemyView>> _enemyPoolsByPrefab =
+            new Dictionary<EnemyView, ViewObjectPool<EnemyView>>(8);
         ManualMotionDispatcher _enemyHopDispatcher;
         ViewObjectPool<ProjectileView> _projectilePool;
         ViewObjectPool<ProjectileView> _slamEffectPool;
@@ -321,7 +322,9 @@ namespace GemTD.Gameplay
 
             GameEvents.ClearAll();
             _debugMap?.Dispose();
-            _enemyPool?.Clear();
+            foreach (var pool in _enemyPoolsByPrefab.Values)
+                pool.Clear();
+            _enemyPoolsByPrefab.Clear();
             _projectilePool?.Clear();
             _slamEffectPool?.Clear();
             _aftershockEffectPool?.Clear();
@@ -599,8 +602,6 @@ namespace GemTD.Gameplay
         void SetupPools()
         {
             var parent = poolRoot != null ? poolRoot : transform;
-            if (enemyPrefab != null)
-                _enemyPool = new ViewObjectPool<EnemyView>(enemyPrefab, parent);
             if (projectilePrefab != null)
             {
                 _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, parent, ProjectileViewBinder.BoltPrewarm);
@@ -621,6 +622,20 @@ namespace GemTD.Gameplay
             }
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
+        }
+
+        ViewObjectPool<EnemyView> GetOrCreateEnemyPool(EnemyView prefab)
+        {
+            if (prefab == null)
+                return null;
+
+            if (_enemyPoolsByPrefab.TryGetValue(prefab, out var pool))
+                return pool;
+
+            var parent = poolRoot != null ? poolRoot : transform;
+            pool = new ViewObjectPool<EnemyView>(prefab, parent);
+            _enemyPoolsByPrefab.Add(prefab, pool);
+            return pool;
         }
 
         void OnStateChanged(RunStateId prev, RunStateId next)
@@ -1493,9 +1508,11 @@ namespace GemTD.Gameplay
             runtime.Init(def, _polylineWorld, hpScale);
             _registry.Register(runtime);
 
-            if (_enemyPool != null)
+            var viewPrefab = EnemyViewPrefabResolver.Resolve(def, enemyPrefab);
+            var pool = GetOrCreateEnemyPool(viewPrefab);
+            if (pool != null)
             {
-                var view = _enemyPool.Get();
+                var view = pool.Get();
                 view.Bind(runtime, _enemyHopDispatcher != null ? _enemyHopDispatcher.Scheduler : null);
                 _enemyViews.Add(view);
             }
@@ -1572,8 +1589,9 @@ namespace GemTD.Gameplay
 
                 view.Clear();
                 _enemyViews.RemoveAt(i);
-                if (_enemyPool != null)
-                    _enemyPool.Release(view);
+                var viewPrefab = EnemyViewPrefabResolver.Resolve(enemy.Definition, enemyPrefab);
+                if (viewPrefab != null && _enemyPoolsByPrefab.TryGetValue(viewPrefab, out var pool))
+                    pool.Release(view);
                 else if (view != null)
                     Destroy(view.gameObject);
             }

@@ -24,6 +24,10 @@ namespace GemTD.Gameplay.Enemies
         public LocomotionStyle Locomotion = LocomotionStyle.Slide;
         public float HopHeight = 0.35f;
         public float HopPeriod = 0.4f;
+        public float FlyHeight = 0.45f;
+        public float FlyPeriod = 1.25f;
+        [Tooltip("Optional EnemyView prefab. Empty uses the composition-root enemy prefab.")]
+        public EnemyView ViewPrefab;
         public Material PlaceholderMaterial;
     }
 }

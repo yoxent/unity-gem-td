@@ -26,6 +26,8 @@ namespace GemTD.Gameplay.Enemies
         public LocomotionStyle LocomotionStyle { get; private set; }
         public float HopHeight { get; private set; }
         public float HopPeriod { get; private set; }
+        public float FlyHeight { get; private set; }
+        public float FlyPeriod { get; private set; }
         public float Hp { get; private set; }
         public float ShieldHp { get; private set; }
         public float SpawnMaxHealth => _maxHealth;
@@ -103,12 +105,16 @@ namespace GemTD.Gameplay.Enemies
                 LocomotionStyle = def.Locomotion;
                 HopHeight = def.HopHeight;
                 HopPeriod = def.HopPeriod;
+                FlyHeight = def.FlyHeight;
+                FlyPeriod = def.FlyPeriod;
             }
             else
             {
                 LocomotionStyle = LocomotionStyle.Slide;
                 HopHeight = 0f;
                 HopPeriod = 0f;
+                FlyHeight = 0f;
+                FlyPeriod = 0f;
             }
 
             if (worldWaypoints == null || worldWaypoints.Count == 0)
@@ -193,6 +199,28 @@ namespace GemTD.Gameplay.Enemies
             }
 
             return _segmentIndex >= _waypoints.Length - 1;
+        }
+
+        public bool TryGetPathTangent(out Vector3 tangent)
+        {
+            tangent = Vector3.zero;
+            if (_waypoints == null || _waypoints.Length < 2)
+                return false;
+
+            var seg = _segmentIndex;
+            if (seg >= _waypoints.Length - 1)
+                seg = _waypoints.Length - 2;
+            if (seg < 0)
+                return false;
+
+            var delta = _waypoints[seg + 1] - _waypoints[seg];
+            delta.y = 0f;
+            var mag = delta.magnitude;
+            if (mag <= 1e-5f)
+                return false;
+
+            tangent = delta / mag;
+            return true;
         }
 
         public void ApplyPackBonuses(int armor, float extraMaxHealth, float extraShield, float extraMoveSpeed)

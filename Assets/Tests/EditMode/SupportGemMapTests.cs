@@ -335,6 +335,88 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void MultipleProjectiles_StampsAdditionalCountAndSpreadWhenJsonCountIsNull()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Multiple Projectiles Support\",\"tags\":[\"Support\",\"Projectile\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% less Projectile Damage\",\"values\":{\"lesser\":10,\"normal\":6,\"greater\":2}},{\"text\":\"Supported Skills fire # additional Projectiles\"}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(3, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.Damage, result.Modifiers[0].Stat);
+            Assert.AreEqual(0.94f, result.Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(GemStat.ProjectileCount, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Add, result.Modifiers[1].Operation);
+            Assert.AreEqual(2f, result.Modifiers[1].Lesser, 1e-4f);
+            Assert.AreEqual(3f, result.Modifiers[1].Normal, 1e-4f);
+            Assert.AreEqual(4f, result.Modifiers[1].Greater, 1e-4f);
+            Assert.AreEqual(GemStat.SpreadDegrees, result.Modifiers[2].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[2].Operation);
+            Assert.AreEqual(ProjectileRuntime.DefaultVolleySpreadDegrees, result.Modifiers[2].Value, 1e-4f);
+            Assert.AreEqual(0, result.FlavorTexts.Length);
+        }
+
+        [Test]
+        public void Combustion_AddsWikiIgniteWhenJsonChanceIsNull()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Combustion Support\",\"tags\":[\"Fire\",\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills deal #% more Fire Damage\",\"values\":{\"normal\":19}},{\"text\":\"Supported Skills have #% chance to Ignite\"}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.Damage, result.Modifiers[0].Stat);
+            Assert.AreEqual(GemStat.Ignite, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[1].Operation);
+            Assert.AreEqual(1f, result.Modifiers[1].Value, 1e-4f);
+        }
+
+        [Test]
+        public void Knockback_AddsWikiDistanceWhenJsonDistanceIsNull()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Knockback Support\",\"tags\":[\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have #% chance to Knock Enemies Back on hit\",\"values\":{\"normal\":44}},{\"text\":\"Supported Skills have #% increased Knockback Distance\"}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.KnockbackChance, result.Modifiers[0].Stat);
+            Assert.AreEqual(0.44f, result.Modifiers[0].Normal, 1e-4f);
+            Assert.AreEqual(GemStat.KnockbackDistance, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[1].Operation);
+            Assert.AreEqual(1f, result.Modifiers[1].Value, 1e-4f);
+        }
+
+        [Test]
+        public void AddedColdAndLightning_AddWikiAilmentFlags()
+        {
+            var cold = SupportGemMap.FromGemJson(
+                "{\"name\":\"Added Cold Damage Support\",\"tags\":[\"Cold\",\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have # to # added Cold Damage\",\"values\":{\"normal\":152}}]}");
+            Assert.IsTrue(cold.CanIngest);
+            Assert.AreEqual(GemStat.Chill, cold.Modifiers[cold.Modifiers.Length - 1].Stat);
+            Assert.AreEqual(1f, cold.Modifiers[cold.Modifiers.Length - 1].Value, 1e-4f);
+
+            var lightning = SupportGemMap.FromGemJson(
+                "{\"name\":\"Added Lightning Damage Support\",\"tags\":[\"Lightning\",\"Support\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have # to # added Lightning Damage\",\"values\":{\"normal\":19}}]}");
+            Assert.IsTrue(lightning.CanIngest);
+            Assert.AreEqual(GemStat.Shock, lightning.Modifiers[lightning.Modifiers.Length - 1].Stat);
+            Assert.AreEqual(1f, lightning.Modifiers[lightning.Modifiers.Length - 1].Value, 1e-4f);
+        }
+
+        [Test]
+        public void ElementalProliferation_MapsSpreadFlagAndIngests()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Elemental Proliferation Support\",\"tags\":[\"Cold\",\"Fire\",\"Lightning\",\"Support\",\"AoE\"],\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Elemental Ailments inflicted by Supported Skills spread to other enemies within # metres\",\"values\":{\"normal\":1.5}},{\"text\":\"#% increased Duration of Elemental Ailments on Enemies\",\"values\":{\"normal\":19}},{\"text\":\"Supported Skills have #% chance to Freeze, Shock and Ignite\"}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(2, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.Proliferate, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Set, result.Modifiers[0].Operation);
+            Assert.AreEqual(1f, result.Modifiers[0].Value, 1e-4f);
+            Assert.AreEqual(GemStat.AilmentDuration, result.Modifiers[1].Stat);
+            Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[1].Operation);
+            Assert.AreEqual(1.19f, result.Modifiers[1].Normal, 1e-4f);
+        }
+
+        [Test]
         public void BallistaTotem_SkippedAsTransformation()
         {
             var result = SupportGemMap.FromGemJson(

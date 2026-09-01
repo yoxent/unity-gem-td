@@ -7,8 +7,9 @@ using GemTD.Gameplay.Towers;
 namespace GemTD.Gameplay.Combat
 {
     /// <summary>
-    /// Domain projectile. Primary / fork / pierce / chain all fly straight (ballistic)
-    /// from muzzle toward the aim point (pitch included). Hit tests stay XZ.
+    /// Domain projectile. Straight Direct index-0 bolts forward-cone seek the locked
+    /// primary (XZ hemisphere). Fan extras, Ground, pierce continue, chain hops, and
+    /// fork children fly straight. Hit tests stay XZ.
     /// Chain: snap-aim once toward nearest living enemy within <see cref="DefaultChainRange"/>, then fly straight.
     /// Fork: parent dies on the forking hit, then two children at ±ForkHalfAngleDegrees.
     /// Fork children never fork.
@@ -26,6 +27,10 @@ namespace GemTD.Gameplay.Combat
         public const float MaxLifetimeSeconds = 2f;
         public const float ForkHalfAngleDegrees = 30f;
         public const float ForkSpawnForwardPad = 0.08f;
+        /// <summary>
+        /// Shotgun fan when <see cref="SkillSpec.ProjectileCount"/> is above 1 and no spread was authored.
+        /// </summary>
+        public const float DefaultVolleySpreadDegrees = 24f;
 
         public static float ForkChildYawDegrees(int index, int count)
         {
@@ -33,6 +38,22 @@ namespace GemTD.Gameplay.Combat
                 return 0f;
             var t = index / (float)(count - 1);
             return Mathf.Lerp(-ForkHalfAngleDegrees, ForkHalfAngleDegrees, t);
+        }
+
+        public static float VolleyYawDegrees(int index, int count, float spreadDegrees)
+        {
+            if (count <= 1)
+                return 0f;
+            var spread = spreadDegrees > 0f ? spreadDegrees : DefaultVolleySpreadDegrees;
+            if (index <= 0)
+                return 0f;
+
+            var extra = count - 1;
+            if (extra == 1)
+                return spread * 0.5f;
+
+            var t = (index - 1) / (float)(extra - 1);
+            return Mathf.Lerp(-spread * 0.5f, spread * 0.5f, t);
         }
         public const float BleedDuration = 2f;
         public const float BleedHitFraction = 0.2f;
@@ -125,7 +146,8 @@ namespace GemTD.Gameplay.Combat
             float bleedDamageMultiplier = 0f,
             AilmentTune ailments = default,
             SkillSpec hitSpec = default,
-            float maxTravel = 0f)
+            float maxTravel = 0f,
+            bool seeking = false)
         {
             Position = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
@@ -138,8 +160,8 @@ namespace GemTD.Gameplay.Combat
             ChainRange = chainRange;
             ChainHopFalloff = chainHopFalloff == 0f ? 1f : chainHopFalloff;
             AoeRadius = aoeRadius > 0f ? aoeRadius : 0f;
-            // Ballistic only. Chain hop snap-aims Direction once in OnHit (no continuous homing).
-            Seeking = false;
+            // Index-0 Straight Direct may seek. Chain hops snap-aim once in OnHit.
+            Seeking = seeking;
             SoftSeek = false;
             _ = softSeek;
             _ = seekOffset;
@@ -335,6 +357,40 @@ namespace GemTD.Gameplay.Combat
 
         public void Deactivate() => IsActive = false;
 
+        void TickForwardConeSeek()
+        {
+            if (!Seeking)
+                return;
+
+            if (Target == null || !Target.IsAlive)
+            {
+                Seeking = false;
+                return;
+            }
+
+            var to = Target.WorldPosition - Position;
+            var flatTo = to;
+            flatTo.y = 0f;
+            var flatDir = Direction;
+            flatDir.y = 0f;
+            if (flatDir.sqrMagnitude < 1e-8f)
+                flatDir = Vector3.forward;
+            else
+                flatDir.Normalize();
+
+            if (flatTo.sqrMagnitude < 1e-8f)
+                return;
+
+            if (Vector3.Dot(flatDir, flatTo.normalized) <= 0f)
+            {
+                Seeking = false;
+                return;
+            }
+
+            if (to.sqrMagnitude > 1e-8f)
+                Direction = to.normalized;
+        }
+
         /// <summary>
         /// Advances flight. Returns false when the projectile should be removed.
         /// </summary>
@@ -361,6 +417,8 @@ namespace GemTD.Gameplay.Combat
 
             if (dt <= 0f)
                 return true;
+
+            TickForwardConeSeek();
 
             var from = Position;
             var stepDist = Speed * dt;

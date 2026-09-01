@@ -927,14 +927,13 @@ namespace GemTD.Gameplay.Combat
             if (end > count)
                 end = count;
 
+            var travelCap = count > 1 && spec.SequentialIntervalSeconds <= 0.001f
+                ? 0f
+                : maxTravel;
+
             for (var i = start; i < end; i++)
             {
-                var yaw = 0f;
-                if (count > 1 && spec.SpreadDegrees > 0f)
-                {
-                    var t = i / (float)(count - 1);
-                    yaw = Mathf.Lerp(-spec.SpreadDegrees * 0.5f, spec.SpreadDegrees * 0.5f, t);
-                }
+                var yaw = ProjectileRuntime.VolleyYawDegrees(i, count, spec.SpreadDegrees);
 
                 var dir = Quaternion.Euler(0f, yaw, 0f) * aim;
 
@@ -967,7 +966,10 @@ namespace GemTD.Gameplay.Combat
                     spec.BleedDamageMultiplier,
                     AilmentTune.FromSkillSpec(spec),
                     spec,
-                    maxTravel);
+                    maxTravel: travelCap,
+                    seeking: spec.AimMode == AimMode.Direct
+                        && spec.DeliveryPattern == DeliveryPattern.Straight
+                        && i == 0);
                 _projectiles.Add(projectile);
             }
         }

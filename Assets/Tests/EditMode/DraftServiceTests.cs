@@ -382,12 +382,14 @@ namespace GemTD.Tests.EditMode
             for (var i = 0; i < capacity; i++)
             {
                 var filler = ScriptableObject.CreateInstance<GemDefinition>();
-                filler.Id = GemId.MultipleProjectiles;
+                // Distinct families: same-id triples fuse in TryAdd and would leave free slots.
+                filler.Id = (GemId)(i + 1);
                 filler.DisplayName = "Fill" + i;
                 _destroy.Add(filler);
                 Assert.IsTrue(inventory.TryAdd(filler));
             }
 
+            Assert.AreEqual(0, inventory.FreeSlotCount);
             return inventory;
         }
     }

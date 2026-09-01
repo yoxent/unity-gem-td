@@ -88,6 +88,8 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(LocomotionStyle.Slide, _def.Locomotion);
             Assert.AreEqual(0.35f, _def.HopHeight, 1e-4f);
             Assert.AreEqual(0.4f, _def.HopPeriod, 1e-4f);
+            Assert.AreEqual(0.45f, _def.FlyHeight, 1e-4f);
+            Assert.AreEqual(1.25f, _def.FlyPeriod, 1e-4f);
         }
 
         [Test]
@@ -104,11 +106,26 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TickMove_WhenLocomotionFly_StillReachesExit()
+        {
+            _def.Locomotion = LocomotionStyle.Fly;
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            Assert.IsFalse(enemy.TickMove(0.25f));
+            Assert.IsTrue(enemy.TickMove(0.25f));
+            Assert.AreEqual(waypoints[1], enemy.WorldPosition);
+        }
+
+        [Test]
         public void Runtime_SnapshotsLocomotionOnInit()
         {
             _def.Locomotion = LocomotionStyle.Hop;
             _def.HopHeight = 0.11f;
             _def.HopPeriod = 0.22f;
+            _def.FlyHeight = 0.33f;
+            _def.FlyPeriod = 0.44f;
 
             var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
             var enemy = new EnemyRuntime();
@@ -118,10 +135,14 @@ namespace GemTD.Tests.EditMode
             _def.Locomotion = LocomotionStyle.Slide;
             _def.HopHeight = 1.7f;
             _def.HopPeriod = 3.3f;
+            _def.FlyHeight = 2.5f;
+            _def.FlyPeriod = 4.5f;
 
             Assert.AreEqual(LocomotionStyle.Hop, enemy.LocomotionStyle);
             Assert.AreEqual(0.11f, enemy.HopHeight, 1e-4f);
             Assert.AreEqual(0.22f, enemy.HopPeriod, 1e-4f);
+            Assert.AreEqual(0.33f, enemy.FlyHeight, 1e-4f);
+            Assert.AreEqual(0.44f, enemy.FlyPeriod, 1e-4f);
         }
 
         [Test]
@@ -173,6 +194,35 @@ namespace GemTD.Tests.EditMode
             enemy.Init(_def, System.Array.Empty<Vector3>());
             Assert.IsFalse(enemy.TryGetPositionAfter(1f, out var point));
             Assert.AreEqual(enemy.WorldPosition, point);
+        }
+
+        [Test]
+        public void TryGetPathTangent_Eastbound_FacesPlusX()
+        {
+            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            Assert.IsTrue(enemy.TryGetPathTangent(out var tangent));
+            Assert.AreEqual(1f, tangent.x, 1e-4f);
+            Assert.AreEqual(0f, tangent.y, 1e-4f);
+            Assert.AreEqual(0f, tangent.z, 1e-4f);
+        }
+
+        [Test]
+        public void TryGetPathTangent_AfterCorner_FacesNewSegment()
+        {
+            var waypoints = BuildWorldWaypoints(
+                new Vector2Int(0, 0),
+                new Vector2Int(1, 0),
+                new Vector2Int(1, 1));
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            Assert.IsFalse(enemy.TickMove(0.5f));
+            Assert.IsTrue(enemy.TryGetPathTangent(out var tangent));
+            Assert.AreEqual(0f, tangent.x, 1e-4f);
+            Assert.AreEqual(1f, tangent.z, 1e-4f);
         }
 
         EnemyRuntime CreateEnemy()

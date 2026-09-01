@@ -153,11 +153,11 @@ namespace GemTD.Tests.EditMode
 
                 Assert.AreEqual(3, director.Projectiles.Count);
                 // Multiple Projectiles post-mod damage is base*0.8; each pellet deals that full amount (not split).
-                // Pellets fan and fly straight (no homing).
+                // Index 0 forward-cone seeks; extras stay ballistic.
                 for (var i = 0; i < director.Projectiles.Count; i++)
                 {
                     Assert.AreSame(enemy, director.Projectiles[i].Target);
-                    Assert.IsFalse(director.Projectiles[i].Seeking);
+                    Assert.AreEqual(i == 0, director.Projectiles[i].Seeking);
                     Assert.IsFalse(director.Projectiles[i].SoftSeek);
                     Assert.AreEqual(8f, director.Projectiles[i].Damage, 1e-4f);
                 }
@@ -532,6 +532,16 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void VolleyYawDegrees_KeepsOnePelletOnAimLine()
+        {
+            Assert.AreEqual(0f, ProjectileRuntime.VolleyYawDegrees(0, 1, 24f), 1e-4f);
+            Assert.AreEqual(0f, ProjectileRuntime.VolleyYawDegrees(0, 4, 24f), 1e-4f);
+            Assert.AreEqual(0f, ProjectileRuntime.VolleyYawDegrees(0, 5, 24f), 1e-4f);
+            Assert.AreEqual(-12f, ProjectileRuntime.VolleyYawDegrees(1, 3, 24f), 1e-4f);
+            Assert.AreEqual(12f, ProjectileRuntime.VolleyYawDegrees(2, 3, 24f), 1e-4f);
+        }
+
+        [Test]
         public void Tick_ExpiresAtMaxTravelBeforeLifetime()
         {
             var projectile = new ProjectileRuntime();
@@ -549,6 +559,72 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(projectile.IsActive);
             Assert.IsFalse(projectile.Tick(0.06f, null));
             Assert.IsFalse(projectile.IsActive);
+        }
+
+        [Test]
+        public void Seeking_SteersTowardTarget_WhenAhead()
+        {
+            var enemy = MakeEnemyAt(new Vector3(5f, 0f, 2f), 100f);
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 1f,
+                chainRange: 0f,
+                seeking: true);
+
+            Assert.IsTrue(projectile.Seeking);
+            Assert.IsTrue(projectile.Tick(0.05f, Living(enemy)));
+            Assert.IsTrue(projectile.Seeking);
+            Assert.Greater(projectile.Direction.z, 0.05f);
+            Assert.AreEqual(100f, enemy.Hp, 1e-3f);
+        }
+
+        [Test]
+        public void Seeking_DoesNotUTurn_WhenTargetBehind()
+        {
+            var enemy = MakeEnemyAt(new Vector3(-2f, 0f, 0f), 100f);
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 1f,
+                chainRange: 0f,
+                seeking: true);
+
+            Assert.IsTrue(projectile.Tick(0.05f, Living(enemy)));
+            Assert.IsFalse(projectile.Seeking);
+            Assert.AreEqual(1f, projectile.Direction.x, 1e-3f);
+            Assert.AreEqual(0f, projectile.Direction.z, 1e-3f);
+            Assert.IsTrue(projectile.IsActive);
+        }
+
+        [Test]
+        public void Seeking_Stops_WhenTargetDies()
+        {
+            var enemy = MakeEnemyAt(new Vector3(5f, 0f, 0f), 100f);
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 1f,
+                chainRange: 0f,
+                seeking: true);
+
+            enemy.ApplyDamage(1000f);
+            Assert.IsFalse(enemy.IsAlive);
+            Assert.IsTrue(projectile.Tick(0.05f, Living(enemy)));
+            Assert.IsFalse(projectile.Seeking);
+            Assert.AreEqual(1f, projectile.Direction.x, 1e-3f);
         }
 
         [Test]

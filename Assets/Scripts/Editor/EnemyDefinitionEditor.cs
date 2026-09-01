@@ -11,8 +11,11 @@ namespace GemTD.Editor
         {
             serializedObject.Update();
             var locomotion = serializedObject.FindProperty("Locomotion");
-            var hop = locomotion != null
-                && (LocomotionStyle)locomotion.enumValueIndex == LocomotionStyle.Hop;
+            var style = locomotion != null
+                ? (LocomotionStyle)locomotion.enumValueIndex
+                : LocomotionStyle.Slide;
+            var hop = style == LocomotionStyle.Hop;
+            var fly = style == LocomotionStyle.Fly;
 
             var iterator = serializedObject.GetIterator();
             var enterChildren = true;
@@ -27,6 +30,9 @@ namespace GemTD.Editor
                 }
 
                 if (!hop && (iterator.name == "HopHeight" || iterator.name == "HopPeriod"))
+                    continue;
+
+                if (!fly && (iterator.name == "FlyHeight" || iterator.name == "FlyPeriod"))
                     continue;
 
                 EditorGUILayout.PropertyField(iterator, true);

@@ -363,6 +363,30 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ProjectileCount_InspectorDuplicateValue_UsesRarityTiers()
+        {
+            var baseline = SkillSpec.FromBase(10f, 10f, projectiles: 1, aoe: 0f);
+            var modifier = new GemStatModifier
+            {
+                Stat = GemStat.ProjectileCount,
+                Operation = RoleModifierOperation.Add,
+                ValueKind = RoleStatValueKind.Single,
+                Value = 0.94f,
+                Lesser = 2f,
+                Normal = 3f,
+                Greater = 4f
+            };
+
+            var lesser = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Lesser);
+            var normal = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Normal);
+            var greater = GemStatResolver.Apply(baseline, new[] { modifier }, GemRarity.Greater);
+
+            Assert.AreEqual(3, lesser.ProjectileCount);
+            Assert.AreEqual(4, normal.ProjectileCount);
+            Assert.AreEqual(5, greater.ProjectileCount);
+        }
+
+        [Test]
         public void LegacyModifierWithoutTierValues_UsesValueForEveryRarity()
         {
             var baseline = SkillSpec.FromBase(10f, 10f, projectiles: 1, aoe: 0f);

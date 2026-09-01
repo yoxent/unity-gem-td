@@ -35,5 +35,21 @@ namespace GemTD.Gameplay.Gems
                     return "";
             }
         }
+
+        public static bool TryNext(GemRarity rarity, out GemRarity next)
+        {
+            switch (Normalize(rarity))
+            {
+                case GemRarity.Lesser:
+                    next = GemRarity.Normal;
+                    return true;
+                case GemRarity.Normal:
+                    next = GemRarity.Greater;
+                    return true;
+                default:
+                    next = rarity;
+                    return false;
+            }
+        }
     }
 }

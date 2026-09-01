@@ -30,7 +30,7 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 5. **Object pools** for spawnables; no `System.Linq` in combat ticks.
 6. **Protected `main`** — feature branch + PR only; never push straight to main.
 7. **No auto commit/push** — never `git commit` or `git push` unless the user explicitly asks.
-8. **Conventional TD shell** — gems/sockets are the unique fantasy; place/select/sell/upgrade/waves/hotkeys/previews follow **Bloons TD 5/6** first (see `.cursor/rules/gem-td-bloons-mechanics.mdc`).
+8. **Conventional TD shell** — gems/sockets are the unique fantasy; place/select/sell/waves/hotkeys/previews follow **Bloons TD 5/6** first unless GDD/UI-SPEC override (no Tower Details Upgrade button; tower types level from draft). See `.cursor/rules/gem-td-bloons-mechanics.mdc`.
 9. **Prefab-based UI** — panel shells are prefabs pre-placed in the scene, referenced via serialized `[SerializeField]` fields. No ad-hoc UI hierarchy or `RectTransform` math. **Fixed slots:** pre-place N instances (Draft, Codex). **Variable lists:** **bindable prefab view hierarchy** — pool child-view prefabs under serialized parents; `Bind(domainData)` per tier (`RunSummaryController` → `RunSummarySection` → `RunSummaryElement`). Gameplay spawnables may `Instantiate`/pool. TMP only. No new bootstrap/wire-menu code. **Same-prefab:** inspector-drag refs; no `AddComponent`/`GetComponent` in `Awake`/`Start` for prefab children. See `UI-SPEC.md` "Implementation conventions" and "Bindable prefab view hierarchy".
 
 ## Testing responsibility
