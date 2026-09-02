@@ -13,7 +13,7 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 | `HOME.md` | Docs map |
 | `GDD.md` / `ARCHITECTURE.md` / `UI-SPEC.md` / `DAMAGE-MODEL.md` | Canonical design |
 | `wiki/catalog/` | Generated per-tower (and later per-gem) reference |
-| `planning/` | Phase designs, implementation plans, STATUS |
+| `planning/` | Phase designs, implementation plans, STATUS. **Phase 2 is closed** — do not execute `phase2-*` or PR6 plans. |
 | `planning/handoff.md` | Category-by-category tower catalog import workflow |
 | `planning/sdd/` | Superpowers / SDD session ledger (briefs, reports, `progress.md`) |
 
