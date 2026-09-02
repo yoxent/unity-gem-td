@@ -44,7 +44,7 @@ namespace GemTD.Gameplay.Towers
             }
 
             if (_towerVisual != null)
-                Destroy(_towerVisual.gameObject);
+                DestroySafe(_towerVisual.gameObject);
 
             _sourcePrefab = towerPrefab;
             _towerRenderers = null;
@@ -54,34 +54,28 @@ namespace GemTD.Gameplay.Towers
             {
                 var visual = Instantiate(towerPrefab.gameObject, transform);
                 visual.name = "GhostTowerVisual";
-                visual.transform.localPosition = Vector3.up * 0.55f;
                 visual.transform.localRotation = Quaternion.identity;
-                visual.transform.localScale = Vector3.one;
                 _towerVisual = visual.transform;
 
                 var towerView = visual.GetComponent<TowerView>();
                 if (towerView != null)
-                    Destroy(towerView);
+                    DestroySafe(towerView);
 
-                var animators = visual.GetComponentsInChildren<Animator>(true);
-                for (var i = 0; i < animators.Length; i++)
-                {
-                    if (animators[i] != null)
-                        animators[i].enabled = false;
-                }
-
+                HideOccupants(visual);
                 StripColliders(visual);
-                _towerRenderers = visual.GetComponentsInChildren<MeshRenderer>(true);
+                TowerPadSnap.ApplyFootOnParentOrigin(_towerVisual);
+                _towerRenderers = visual.GetComponentsInChildren<MeshRenderer>(false);
             }
             else
             {
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = "GhostTowerFallback";
                 cube.transform.SetParent(transform, false);
-                cube.transform.localPosition = Vector3.up * 0.55f;
+                cube.transform.localPosition = Vector3.zero;
                 cube.transform.localScale = new Vector3(0.7f, 1.1f, 0.7f);
                 StripColliders(cube);
                 _towerVisual = cube.transform;
+                TowerPadSnap.ApplyFootOnParentOrigin(_towerVisual);
                 _towerRenderers = cube.GetComponentsInChildren<MeshRenderer>(true);
             }
 
@@ -232,14 +226,49 @@ namespace GemTD.Gameplay.Towers
             _rangeRenderer.SetPropertyBlock(_block);
         }
 
+        static void HideOccupants(GameObject visual)
+        {
+            var animatorView = visual.GetComponent<TowerAnimatorView>();
+            if (animatorView != null && animatorView.OccupantRoot != null)
+            {
+                TowerPadSnap.UniformizeLocalScale(animatorView.OccupantRoot);
+                animatorView.SetOccupantVisible(false);
+                DestroySafe(animatorView);
+                return;
+            }
+
+            if (animatorView != null)
+                DestroySafe(animatorView);
+
+            var animators = visual.GetComponentsInChildren<Animator>(true);
+            for (var i = 0; i < animators.Length; i++)
+            {
+                var anim = animators[i];
+                if (anim == null || anim.gameObject == visual)
+                    continue;
+                TowerPadSnap.UniformizeLocalScale(anim.transform);
+                anim.gameObject.SetActive(false);
+            }
+        }
+
         static void StripColliders(GameObject root)
         {
             var cols = root.GetComponentsInChildren<Collider>(true);
             for (var i = 0; i < cols.Length; i++)
             {
                 if (cols[i] != null)
-                    Destroy(cols[i]);
+                    DestroySafe(cols[i]);
             }
+        }
+
+        static void DestroySafe(Object obj)
+        {
+            if (obj == null)
+                return;
+            if (Application.isPlaying)
+                Object.Destroy(obj);
+            else
+                Object.DestroyImmediate(obj);
         }
     }
 }

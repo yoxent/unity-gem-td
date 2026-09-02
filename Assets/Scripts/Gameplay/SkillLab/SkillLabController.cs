@@ -133,7 +133,7 @@ namespace GemTD.Gameplay.SkillLab
         void LateUpdate()
         {
             if (_liveView != null)
-                _liveView.transform.position = _session.TowerPosition + Vector3.up * TowerView.GroundLift;
+                _liveView.PlaceOnPad(_session.TowerPosition);
             else if (towerView != null)
                 towerView.position = _session.TowerPosition;
 

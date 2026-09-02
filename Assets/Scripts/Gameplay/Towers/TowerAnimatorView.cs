@@ -25,6 +25,16 @@ namespace GemTD.Gameplay.Towers
         string _playingState;
         float _simSpeed = 1f;
 
+        public Transform OccupantRoot => facingRoot;
+
+        public void SetOccupantVisible(bool visible)
+        {
+            if (facingRoot == null)
+                return;
+            if (facingRoot.gameObject.activeSelf != visible)
+                facingRoot.gameObject.SetActive(visible);
+        }
+
         public void Bind(TowerInstance runtime)
         {
             _runtime = runtime;
