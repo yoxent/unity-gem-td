@@ -145,6 +145,31 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(27f, _enemy.Hp, 1e-4f);
         }
 
+        [Test]
+        public void ApplyCrit_RollBelowChance_MultipliesBeforeMitigate()
+        {
+            var spec = SkillSpec.FromBase(10f);
+            Assert.AreEqual(15f, IncomingHit.ApplyCrit(10f, spec, 0.04), 1e-4f);
+            Assert.AreEqual(10f, IncomingHit.ApplyCrit(10f, spec, 0.05), 1e-4f);
+        }
+
+        [Test]
+        public void ApplyCrit_ZeroChance_NeverMultiplies()
+        {
+            Assert.AreEqual(10f, IncomingHit.ApplyCrit(10f, default, 0.0), 1e-4f);
+        }
+
+        [Test]
+        public void ApplyCrit_ThenMitigate_StillPaysArmor()
+        {
+            _def.Armor = 5;
+            _enemy.Init(_def, new List<Vector3> { Vector3.zero, Vector3.right });
+            var spec = SkillSpec.FromBase(10f);
+            var crit = IncomingHit.ApplyCrit(10f, spec, 0.0);
+            var remaining = IncomingHit.Mitigate(crit, spec, _enemy, null);
+            Assert.AreEqual(10f, remaining, 1e-4f);
+        }
+
         static SkillSpec Mix(DamageType type, int percent)
         {
             var shares = new[] { new DamageTypeShare { Type = type, Percent = percent } };

@@ -95,6 +95,8 @@ namespace GemTD.Gameplay.Combat
         public bool HallowingFlame;
         public float AilmentDamageMultiplier;
         public float AilmentDurationMultiplier;
+        public float CritChance;
+        public float CritMultiplier;
 
         public bool Pierce => PierceBehavior == PierceMode.Infinite || PierceCount > 0;
 
@@ -187,7 +189,9 @@ namespace GemTD.Gameplay.Combat
                 ConvertColdToChaos = 0f,
                 HallowingFlame = false,
                 AilmentDamageMultiplier = 1f,
-                AilmentDurationMultiplier = 1f
+                AilmentDurationMultiplier = 1f,
+                CritChance = 0.05f,
+                CritMultiplier = 1.5f
             };
         }
 

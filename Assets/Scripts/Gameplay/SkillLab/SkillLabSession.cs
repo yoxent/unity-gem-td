@@ -22,6 +22,7 @@ namespace GemTD.Gameplay.SkillLab
         readonly StatusRuntime _statuses = new StatusRuntime();
         readonly List<ISkillModifier> _scratch = new List<ISkillModifier>(8);
         readonly List<EnemyRuntime> _living = new List<EnemyRuntime>(DummyField.PinCount);
+        readonly List<TowerInstance> _placed = new List<TowerInstance>(1);
         GemDefinition[] _catalog;
         GemId[] _draftGemIds = EmptyDraftIds;
         TowerDefinition[] _towers = EmptyTowers;
@@ -125,6 +126,8 @@ namespace GemTD.Gameplay.SkillLab
             Tower = new TowerInstance(Vector2Int.zero, def);
             Tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             SelectedTowerIndex = IndexOfDef(def);
+            _placed.Clear();
+            _placed.Add(Tower);
             ClearOverlay();
         }
 
@@ -195,7 +198,7 @@ namespace GemTD.Gameplay.SkillLab
                 return;
             }
 
-            if (!_combat.TryFireOnce(Tower, TowerPosition, _living, _pipeline, _statuses))
+            if (!_combat.TryFireOnce(Tower, TowerPosition, _living, _pipeline, _statuses, _placed))
             {
                 LastTrace = new AttackTrace();
                 Status = StatusNoTarget;
@@ -219,7 +222,7 @@ namespace GemTD.Gameplay.SkillLab
             if (_curseFieldActive)
             {
                 _statuses.ClearCurseHexes(_living);
-                _combat.TryFireOnce(Tower, TowerPosition, _living, _pipeline, _statuses);
+                _combat.TryFireOnce(Tower, TowerPosition, _living, _pipeline, _statuses, _placed);
             }
 
             if (!_combat.HasActiveVolley)

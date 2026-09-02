@@ -978,7 +978,7 @@ namespace GemTD.Gameplay.Towers
 
             if (kind == RoleKind.Aura)
             {
-                AddAuraLevelEffects(effects, values);
+                AddAuraLevelEffects(effects, values, slug, sourceLevel);
                 return;
             }
 
@@ -1160,19 +1160,37 @@ namespace GemTD.Gameplay.Towers
                 && ContainsIgnoreCase(header, "Action Speed");
         }
 
-        static void AddAuraLevelEffects(List<RoleEffectModifier> effects, JObject values)
+        static void AddAuraLevelEffects(
+            List<RoleEffectModifier> effects,
+            JObject values,
+            string slug,
+            int sourceLevel)
         {
             if (values == null)
                 return;
 
+            float attackLightningMin = 0f;
+            float attackLightningMax = 0f;
+            var hasAttackLightning = false;
+
             foreach (var effect in values.Properties())
             {
+                if (IsIgnoredAuraHeader(effect.Name))
+                    continue;
+
                 var kind = MapAuraEffectKind(effect.Name);
                 if (!kind.HasValue)
                     continue;
 
                 if (TryReadRange(effect.Value, out var min, out var max))
                 {
+                    if (kind.Value == RoleEffectKind.AllyAddedAttackLightningDamage)
+                    {
+                        attackLightningMin = min;
+                        attackLightningMax = max;
+                        hasAttackLightning = true;
+                    }
+
                     AddEffectRange(effects, kind.Value, min, max);
                     continue;
                 }
@@ -1181,6 +1199,90 @@ namespace GemTD.Gameplay.Towers
                 if (amount.HasValue)
                     AddEffectSet(effects, kind.Value, amount.Value);
             }
+
+            if (hasAttackLightning)
+            {
+                AddEffectRange(
+                    effects,
+                    RoleEffectKind.AllyAddedSpellLightningDamage,
+                    attackLightningMin,
+                    attackLightningMax);
+            }
+
+            if (IsHatred(slug) && TryAngerShapedAdded(sourceLevel, out var coldMin, out var coldMax))
+            {
+                AddEffectRange(effects, RoleEffectKind.AllyAddedAttackColdDamage, coldMin, coldMax);
+                AddEffectRange(effects, RoleEffectKind.AllyAddedSpellColdDamage, coldMin, coldMax);
+            }
+        }
+
+        static bool IsHatred(string slug)
+        {
+            return string.Equals(slug, "Hatred", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool TryAngerShapedAdded(int sourceLevel, out float min, out float max)
+        {
+            switch (sourceLevel)
+            {
+                case 1:
+                    min = 25f;
+                    max = 36f;
+                    return true;
+                case 2:
+                    min = 42f;
+                    max = 60f;
+                    return true;
+                case 3:
+                    min = 60f;
+                    max = 86f;
+                    return true;
+                case 4:
+                    min = 82f;
+                    max = 116f;
+                    return true;
+                case 5:
+                    min = 109f;
+                    max = 155f;
+                    return true;
+                case 6:
+                    min = 143f;
+                    max = 205f;
+                    return true;
+                case 7:
+                    min = 188f;
+                    max = 268f;
+                    return true;
+                case 8:
+                    min = 229f;
+                    max = 327f;
+                    return true;
+                case 9:
+                    min = 260f;
+                    max = 372f;
+                    return true;
+                case 10:
+                    min = 296f;
+                    max = 423f;
+                    return true;
+                default:
+                    min = 0f;
+                    max = 0f;
+                    return false;
+            }
+        }
+
+        static bool IsIgnoredAuraHeader(string header)
+        {
+            return ContainsIgnoreCase(header, "increased Movement Speed")
+                || ContainsIgnoreCase(header, "Accuracy Rating")
+                || ContainsIgnoreCase(header, "Physical Damage as Extra Cold Damage")
+                || ContainsIgnoreCase(header, "more Spell Lightning Damage");
+        }
+
+        static bool IsMappedEffectHeader(string header)
+        {
+            return MapAuraEffectKind(header).HasValue || IsIgnoredAuraHeader(header);
         }
 
         static void AddSharedNonAuraLevelEffects(List<RoleEffectModifier> effects, JObject values)
@@ -1217,11 +1319,6 @@ namespace GemTD.Gameplay.Towers
             }
         }
 
-        static bool IsMappedEffectHeader(string header)
-        {
-            return MapAuraEffectKind(header).HasValue;
-        }
-
         static RoleEffectKind? MapAuraEffectKind(string header)
         {
             if (IsAddedAttackFireHeader(header))
@@ -1230,22 +1327,14 @@ namespace GemTD.Gameplay.Towers
                 return RoleEffectKind.AllyAddedSpellFireDamage;
             if (ContainsIgnoreCase(header, "additional Lightning Damage with Attacks"))
                 return RoleEffectKind.AllyAddedAttackLightningDamage;
-            if (ContainsIgnoreCase(header, "more Spell Lightning Damage"))
-                return RoleEffectKind.AllySpellLightningDamageMore;
             if (ContainsIgnoreCase(header, "additional Chaos Damage with Attacks"))
                 return RoleEffectKind.AllyAddedAttackChaosDamage;
             if (ContainsIgnoreCase(header, "additional Chaos Damage with Spells"))
                 return RoleEffectKind.AllyAddedSpellChaosDamage;
-            if (ContainsIgnoreCase(header, "Physical Damage as Extra Cold Damage"))
-                return RoleEffectKind.AllyPhysicalAsExtraCold;
             if (ContainsIgnoreCase(header, "increased Attack Speed"))
                 return RoleEffectKind.AllyAttackSpeedIncreased;
             if (ContainsIgnoreCase(header, "increased Cast Speed"))
                 return RoleEffectKind.AllyCastSpeedIncreased;
-            if (ContainsIgnoreCase(header, "increased Movement Speed"))
-                return RoleEffectKind.AllyMovementSpeedIncreased;
-            if (ContainsIgnoreCase(header, "Accuracy Rating"))
-                return RoleEffectKind.AllyAccuracyRating;
             if (ContainsIgnoreCase(header, "increased Critical Strike Chance"))
                 return RoleEffectKind.AllyCriticalStrikeChanceIncreased;
             if (ContainsIgnoreCase(header, "more Damage over Time"))

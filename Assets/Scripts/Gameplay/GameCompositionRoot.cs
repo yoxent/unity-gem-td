@@ -159,6 +159,11 @@ namespace GemTD.Gameplay
             if (_pipeline != null)
             {
                 spec = _pipeline.Resolve(tower, _socketModScratch);
+                AuraInfluenceRuntime.Apply(
+                    tower,
+                    _towers,
+                    ref spec,
+                    chunkBoardView != null ? chunkBoardView.CellSize : 1f);
             }
             else
             {

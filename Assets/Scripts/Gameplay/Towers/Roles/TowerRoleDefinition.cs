@@ -274,8 +274,11 @@ namespace GemTD.Gameplay.Towers
                 case RoleEffectKind.AllyAddedSpellFireDamage:
                 case RoleEffectKind.AllyAddedAttackLightningDamage:
                 case RoleEffectKind.AllySpellLightningDamageMore:
+                case RoleEffectKind.AllyAddedSpellLightningDamage:
                 case RoleEffectKind.AllyAddedAttackChaosDamage:
                 case RoleEffectKind.AllyAddedSpellChaosDamage:
+                case RoleEffectKind.AllyAddedAttackColdDamage:
+                case RoleEffectKind.AllyAddedSpellColdDamage:
                 case RoleEffectKind.AllyPhysicalAsExtraCold:
                 case RoleEffectKind.AllyAttackSpeedIncreased:
                 case RoleEffectKind.AllyCastSpeedIncreased:

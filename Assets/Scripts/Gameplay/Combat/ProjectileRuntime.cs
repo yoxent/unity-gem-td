@@ -110,6 +110,7 @@ namespace GemTD.Gameplay.Combat
         Vector3 _landPoint;
         SkillSpec _payloadSpec;
         SkillSpec _hitSpec;
+        System.Random _critRng;
         float _payloadDamageMin;
         float _payloadDamageMax;
         float _payloadChainRange;
@@ -194,6 +195,12 @@ namespace GemTD.Gameplay.Combat
             IsPayload = false;
             IsWarpStrike = false;
             _hitSpec = hitSpec;
+            _critRng = null;
+        }
+
+        public void SetCritRng(System.Random rng)
+        {
+            _critRng = rng;
         }
 
         public void InitPayload(
@@ -349,6 +356,7 @@ namespace GemTD.Gameplay.Combat
                     _payloadSpec.BleedDamageMultiplier,
                     ailments,
                     _payloadSpec);
+                child.SetCritRng(_critRng);
                 _spawnBuffer.Add(child);
             }
 
@@ -612,7 +620,10 @@ namespace GemTD.Gameplay.Combat
             if (_sourceTower != null)
                 enemy.LastDamageSource = _sourceTower;
 
-            var dealt = Damage + ExtraHitDamage(enemy);
+            var dealt = IncomingHit.ApplyCrit(
+                Damage + ExtraHitDamage(enemy),
+                _hitSpec,
+                _critRng != null ? _critRng.NextDouble() : 1d);
             if (_statuses != null)
                 _statuses.ApplyDamage(enemy, dealt, _hitSpec);
             else
@@ -829,6 +840,7 @@ namespace GemTD.Gameplay.Combat
                 chainHopFalloff: ChainHopFalloff,
                 ailments: _ailments,
                 hitSpec: _hitSpec);
+            child.SetCritRng(_critRng);
             child._lastHit = _lastHit;
             child._maxTravel = _maxTravel;
             child._travelled = 0f;

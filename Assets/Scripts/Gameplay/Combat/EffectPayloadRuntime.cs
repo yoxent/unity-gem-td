@@ -24,6 +24,7 @@ namespace GemTD.Gameplay.Combat
         TowerDefinition _sourceTower;
         TowerInstance _owner;
         Action<TowerDefinition, float> _recordDamage;
+        System.Random _critRng;
         readonly List<EnemyRuntime> _impactScratch = new List<EnemyRuntime>(8);
 
         public bool IsActive { get; private set; }
@@ -67,6 +68,7 @@ namespace GemTD.Gameplay.Combat
             Position = plan.Origin;
             Direction = ResolveDirection(0f);
             IsActive = true;
+            _critRng = null;
             if (_plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
                 && _delayRemaining <= 0f
                 && _plan.DamageMin <= 0f
@@ -76,6 +78,11 @@ namespace GemTD.Gameplay.Combat
                 _visualRemaining = StationaryPulseVisualSeconds;
                 Position = _plan.LandingPoint;
             }
+        }
+
+        public void SetCritRng(System.Random rng)
+        {
+            _critRng = rng;
         }
 
         public void Deactivate() => IsActive = false;
@@ -203,12 +210,16 @@ namespace GemTD.Gameplay.Combat
             if (_sourceTower != null)
                 enemy.LastDamageSource = _sourceTower;
 
+            var dealt = IncomingHit.ApplyCrit(
+                damage,
+                _plan.HitSpec,
+                _critRng != null ? _critRng.NextDouble() : 1d);
             if (_statuses != null)
-                _statuses.ApplyDamage(enemy, damage, _plan.HitSpec);
+                _statuses.ApplyDamage(enemy, dealt, _plan.HitSpec);
             else
-                enemy.ApplyDamage(damage, _plan.HitSpec, null);
+                enemy.ApplyDamage(dealt, _plan.HitSpec, null);
 
-            _recordDamage?.Invoke(_sourceTower, damage);
+            _recordDamage?.Invoke(_sourceTower, dealt);
         }
     }
 }

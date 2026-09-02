@@ -28,6 +28,7 @@ namespace GemTD.Gameplay.Combat
         readonly List<PendingSequentialVolley> _pendingSequential = new List<PendingSequentialVolley>(8);
         readonly List<PendingStrike> _pendingStrikes = new List<PendingStrike>(8);
         readonly List<TowerInstance> _resolvedCasts = new List<TowerInstance>(8);
+        readonly List<TowerInstance> _soloPlaced = new List<TowerInstance>(1);
         System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
         readonly TileHeightMap _heights;
@@ -146,6 +147,7 @@ namespace GemTD.Gameplay.Combat
                     var baseline = pipeline.ResolveBaseline(tower);
                     var spec = pipeline.Resolve(tower, modifiers);
                     ListPool<ISkillModifier>.Release(modifiers);
+                    FoldAura(tower, towers, ref spec);
 
                     var towerPos = CellToWorld(tower.Cell);
                     var muzzle = towerPos;
@@ -202,7 +204,8 @@ namespace GemTD.Gameplay.Combat
             Vector3 muzzle,
             List<EnemyRuntime> living,
             GemModifierPipeline pipeline,
-            StatusRuntime statuses = null)
+            StatusRuntime statuses = null,
+            IReadOnlyList<TowerInstance> placedTowers = null)
         {
             if (tower == null || tower.Def == null || pipeline == null || living == null)
                 return false;
@@ -224,6 +227,7 @@ namespace GemTD.Gameplay.Combat
             var baseline = pipeline.ResolveBaseline(tower);
             var spec = pipeline.Resolve(tower, modifiers);
             ListPool<ISkillModifier>.Release(modifiers);
+            FoldAura(tower, placedTowers, ref spec);
 
             var gemMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.GetFireTowerRadius(tower.Level) * gemMul;
@@ -492,7 +496,10 @@ namespace GemTD.Gameplay.Combat
         void MergeSpawnBuffer()
         {
             for (var i = 0; i < _spawnBuffer.Count; i++)
+            {
+                BindCritRng(_spawnBuffer[i]);
                 _projectiles.Add(_spawnBuffer[i]);
+            }
             _spawnBuffer.Clear();
         }
 
@@ -526,6 +533,7 @@ namespace GemTD.Gameplay.Combat
                     speed,
                     statuses,
                     sourceTower));
+            BindCritRng(warp);
             _projectiles.Add(warp);
         }
 
@@ -561,6 +569,7 @@ namespace GemTD.Gameplay.Combat
                 var flight = ResolvePayloadFlightSeconds(plan, speed);
                 var runtime = new EffectPayloadRuntime();
                 runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
+                BindCritRng(runtime);
                 _effectPayloads.Add(runtime);
             }
         }
@@ -597,6 +606,7 @@ namespace GemTD.Gameplay.Combat
                 var flight = ResolvePayloadFlightSeconds(plan, speed);
                 var runtime = new EffectPayloadRuntime();
                 runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
+                BindCritRng(runtime);
                 _effectPayloads.Add(runtime);
             }
         }
@@ -632,6 +642,7 @@ namespace GemTD.Gameplay.Combat
                 sourceTower.Def,
                 _recordDamage,
                 sourceTower);
+            BindCritRng(runtime);
             _effectPayloads.Add(runtime);
         }
 
@@ -682,6 +693,7 @@ namespace GemTD.Gameplay.Combat
                 var flight = ResolvePayloadFlightSeconds(plan, speed);
                 var runtime = new EffectPayloadRuntime();
                 runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
+                BindCritRng(runtime);
                 _effectPayloads.Add(runtime);
             }
         }
@@ -838,12 +850,13 @@ namespace GemTD.Gameplay.Combat
             if (sourceTower != null)
                 enemy.LastDamageSource = sourceTower;
 
+            var dealt = IncomingHit.ApplyCrit(damage, spec, _payloadRng.NextDouble());
             if (statuses != null)
-                statuses.ApplyDamage(enemy, damage, spec);
+                statuses.ApplyDamage(enemy, dealt, spec);
             else
-                enemy.ApplyDamage(damage, spec, null);
+                enemy.ApplyDamage(dealt, spec, null);
 
-            _recordDamage?.Invoke(sourceTower, damage);
+            _recordDamage?.Invoke(sourceTower, dealt);
         }
 
         void SpawnPayloadNova(
@@ -873,6 +886,7 @@ namespace GemTD.Gameplay.Combat
                 _spawnBuffer,
                 sourceTower,
                 _recordDamage);
+            BindCritRng(payload);
 
             if ((aimPoint - origin).sqrMagnitude
                 <= ProjectileRuntime.HitRadius * ProjectileRuntime.HitRadius)
@@ -970,6 +984,7 @@ namespace GemTD.Gameplay.Combat
                     seeking: spec.AimMode == AimMode.Direct
                         && spec.DeliveryPattern == DeliveryPattern.Straight
                         && i == 0);
+                BindCritRng(projectile);
                 _projectiles.Add(projectile);
             }
         }
@@ -1042,6 +1057,29 @@ namespace GemTD.Gameplay.Combat
             if (tower == null || tower.MuzzleLocalY == 0f)
                 return;
             muzzle.y += tower.MuzzleLocalY;
+        }
+
+        void FoldAura(TowerInstance tower, IReadOnlyList<TowerInstance> placed, ref SkillSpec spec)
+        {
+            var sources = placed;
+            if (sources == null)
+            {
+                _soloPlaced.Clear();
+                _soloPlaced.Add(tower);
+                sources = _soloPlaced;
+            }
+
+            AuraInfluenceRuntime.Apply(tower, sources, ref spec, _cellSize);
+        }
+
+        void BindCritRng(ProjectileRuntime projectile)
+        {
+            projectile?.SetCritRng(_payloadRng);
+        }
+
+        void BindCritRng(EffectPayloadRuntime payload)
+        {
+            payload?.SetCritRng(_payloadRng);
         }
 
         Vector3 CellToWorld(Vector2Int cell)

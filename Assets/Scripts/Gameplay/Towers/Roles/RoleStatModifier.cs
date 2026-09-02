@@ -155,7 +155,10 @@ namespace GemTD.Gameplay.Towers
         AllyAccuracyRating,
         AllyCriticalStrikeChanceIncreased,
         AllyDamageOverTimeMore,
-        AllySkillEffectDurationIncreased
+        AllySkillEffectDurationIncreased,
+        AllyAddedSpellLightningDamage,
+        AllyAddedAttackColdDamage,
+        AllyAddedSpellColdDamage
     }
 
     [Serializable]

@@ -321,15 +321,15 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Precision_MapsAccuracyCritAndRadiusBonus()
+        public void Precision_MapsCritAndRadius_DropsAccuracy()
         {
             var r = SkillGemTowerMap.FromJson(PrecisionJson);
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
             Assert.AreEqual(50f, FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value, 0.001f);
-            Assert.AreEqual(193f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAccuracyRating).Min, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[0], RoleEffectKind.AllyAccuracyRating));
             Assert.AreEqual(26f, FindEffect(aura.Levels[0], RoleEffectKind.AllyCriticalStrikeChanceIncreased).Min, 0.001f);
             Assert.AreEqual(0.3f, FindModifier(aura.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
-            Assert.AreEqual(1390f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAccuracyRating).Min, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[1], RoleEffectKind.AllyAccuracyRating));
             Assert.AreEqual(88f, FindEffect(aura.Levels[1], RoleEffectKind.AllyCriticalStrikeChanceIncreased).Min, 0.001f);
             Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.Damage));
             Assert.IsFalse(r.IsActiveCatalogCompatible);
@@ -343,10 +343,14 @@ namespace GemTD.Tests.EditMode
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
             Assert.AreEqual(4f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackLightningDamage).Min, 0.001f);
             Assert.AreEqual(57f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackLightningDamage).Max, 0.001f);
-            Assert.AreEqual(16f, FindEffect(aura.Levels[0], RoleEffectKind.AllySpellLightningDamageMore).Min, 0.001f);
+            Assert.AreEqual(4f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedSpellLightningDamage).Min, 0.001f);
+            Assert.AreEqual(57f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedSpellLightningDamage).Max, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[0], RoleEffectKind.AllySpellLightningDamageMore));
             Assert.AreEqual(42f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedAttackLightningDamage).Min, 0.001f);
             Assert.AreEqual(676f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedAttackLightningDamage).Max, 0.001f);
-            Assert.AreEqual(26f, FindEffect(aura.Levels[1], RoleEffectKind.AllySpellLightningDamageMore).Min, 0.001f);
+            Assert.AreEqual(42f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedSpellLightningDamage).Min, 0.001f);
+            Assert.AreEqual(676f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedSpellLightningDamage).Max, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[1], RoleEffectKind.AllySpellLightningDamageMore));
             Assert.AreEqual(0.3f, FindModifier(aura.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
             Assert.IsFalse(HasEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackFireDamage));
             Assert.IsFalse(HasEffect(aura.Levels[0], RoleEffectKind.AllyAddedSpellFireDamage));
@@ -356,12 +360,17 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Hatred_MapsPhysicalAsExtraCold()
+        public void Hatred_MapsAngerShapedAddedCold()
         {
             var r = SkillGemTowerMap.FromJson(HatredJson);
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
-            Assert.AreEqual(31f, FindEffect(aura.Levels[0], RoleEffectKind.AllyPhysicalAsExtraCold).Min, 0.001f);
-            Assert.AreEqual(47f, FindEffect(aura.Levels[1], RoleEffectKind.AllyPhysicalAsExtraCold).Min, 0.001f);
+            Assert.AreEqual(25f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackColdDamage).Min, 0.001f);
+            Assert.AreEqual(36f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackColdDamage).Max, 0.001f);
+            Assert.AreEqual(25f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedSpellColdDamage).Min, 0.001f);
+            Assert.AreEqual(36f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedSpellColdDamage).Max, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[0], RoleEffectKind.AllyPhysicalAsExtraCold));
+            Assert.AreEqual(296f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedAttackColdDamage).Min, 0.001f);
+            Assert.AreEqual(423f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAddedAttackColdDamage).Max, 0.001f);
             Assert.AreEqual(0.3f, FindModifier(aura.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
             Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.Damage));
             Assert.IsFalse(r.IsActiveCatalogCompatible);
@@ -375,10 +384,10 @@ namespace GemTD.Tests.EditMode
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
             Assert.AreEqual(16f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAttackSpeedIncreased).Min, 0.001f);
             Assert.AreEqual(16f, FindEffect(aura.Levels[0], RoleEffectKind.AllyCastSpeedIncreased).Min, 0.001f);
-            Assert.AreEqual(11f, FindEffect(aura.Levels[0], RoleEffectKind.AllyMovementSpeedIncreased).Min, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[0], RoleEffectKind.AllyMovementSpeedIncreased));
             Assert.AreEqual(32f, FindEffect(aura.Levels[1], RoleEffectKind.AllyAttackSpeedIncreased).Min, 0.001f);
             Assert.AreEqual(32f, FindEffect(aura.Levels[1], RoleEffectKind.AllyCastSpeedIncreased).Min, 0.001f);
-            Assert.AreEqual(21f, FindEffect(aura.Levels[1], RoleEffectKind.AllyMovementSpeedIncreased).Min, 0.001f);
+            Assert.IsFalse(HasEffect(aura.Levels[1], RoleEffectKind.AllyMovementSpeedIncreased));
             Assert.AreEqual(0.3f, FindModifier(aura.Levels[0], RoleStat.TowerRadius).Value, 0.001f);
             Assert.IsFalse(HasModifier(aura.Modifiers, RoleStat.AttackSpeed));
             Assert.IsFalse(HasModifier(aura.Levels[0], RoleStat.AttackSpeed));

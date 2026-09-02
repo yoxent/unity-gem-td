@@ -18,6 +18,19 @@ namespace GemTD.Gameplay.Combat
                 && spec.MixChaos <= 0f;
         }
 
+        public static float ApplyCrit(float damage, in SkillSpec spec, double unitInterval)
+        {
+            if (damage <= 0f)
+                return 0f;
+
+            var chance = spec.CritChance;
+            if (chance <= 0f || unitInterval >= chance)
+                return damage;
+
+            var multiplier = spec.CritMultiplier > 0f ? spec.CritMultiplier : 1.5f;
+            return damage * multiplier;
+        }
+
         public static float Mitigate(
             float damage,
             in SkillSpec spec,
