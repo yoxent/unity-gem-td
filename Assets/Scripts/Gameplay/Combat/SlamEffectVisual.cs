@@ -2,14 +2,14 @@ using UnityEngine;
 
 namespace GemTD.Gameplay.Combat
 {
-    /// <summary>Slam VFX: match AoE width, keep authored height, sit on the ground plane.</summary>
+    /// <summary>Slam VFX: scale uniformly to the AoE diameter and sit on the ground plane.</summary>
     public static class SlamEffectVisual
     {
-        public static Vector3 ScaleXz(Vector3 authoredScale, float aoeRadius)
+        public static Vector3 ScaleToDiameter(float aoeRadius)
         {
             var radius = aoeRadius > 0.4f ? aoeRadius : 0.4f;
             var diameter = radius * 2f;
-            return new Vector3(diameter, authoredScale.y, diameter);
+            return Vector3.one * diameter;
         }
 
         public static Vector3 SitOnGround(Vector3 groundPoint, float meshExtentsY, float scaleY)

@@ -81,7 +81,7 @@ namespace GemTD.Gameplay.Combat
             {
                 case EffectPayloadTravelPattern.StationaryPulse:
                     if (SitsOnGround)
-                        transform.localScale = SlamEffectVisual.ScaleXz(_defaultScale, Payload.Plan.AoeRadius);
+                        transform.localScale = SlamEffectVisual.ScaleToDiameter(Payload.Plan.AoeRadius);
                     else
                     {
                         var radius = Payload.Plan.AoeRadius > 0.4f ? Payload.Plan.AoeRadius : 0.4f;
@@ -108,7 +108,8 @@ namespace GemTD.Gameplay.Combat
                 transform.position = SlamEffectVisual.SitOnGround(
                     ground,
                     1f,
-                    transform.localScale.y);
+                    // Parent Y is now the AoE diameter; keep the authored ground lift.
+                    _defaultScale.y);
                 transform.rotation = Quaternion.identity;
                 return;
             }

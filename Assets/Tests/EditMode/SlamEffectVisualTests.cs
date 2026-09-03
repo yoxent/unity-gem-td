@@ -7,26 +7,24 @@ namespace GemTD.Tests.EditMode
     public sealed class SlamEffectVisualTests
     {
         [Test]
-        public void ScaleXz_MatchesDiameter_KeepsAuthoredHeight()
+        public void ScaleToDiameter_MatchesAoeDiameterOnAllAxes()
         {
-            var authored = new Vector3(1f, 0.25f, 1f);
-
-            var scale = SlamEffectVisual.ScaleXz(authored, 2.8f);
+            var scale = SlamEffectVisual.ScaleToDiameter(2.8f);
 
             Assert.AreEqual(5.6f, scale.x, 0.0001f);
-            Assert.AreEqual(0.25f, scale.y, 0.0001f);
+            Assert.AreEqual(5.6f, scale.y, 0.0001f);
             Assert.AreEqual(5.6f, scale.z, 0.0001f);
         }
 
         [Test]
-        public void ScaleXz_DoesNotScaleHeightWithRadius()
+        public void ScaleToDiameter_UsesMinimumRadius()
         {
-            var authored = new Vector3(1f, 1f, 1f);
+            var small = SlamEffectVisual.ScaleToDiameter(0.2f);
+            var large = SlamEffectVisual.ScaleToDiameter(2.8f);
 
-            var small = SlamEffectVisual.ScaleXz(authored, 0.5f);
-            var large = SlamEffectVisual.ScaleXz(authored, 2.8f);
-
-            Assert.AreEqual(small.y, large.y, 0.0001f);
+            Assert.AreEqual(0.8f, small.x, 0.0001f);
+            Assert.AreEqual(small.x, small.y, 0.0001f);
+            Assert.AreEqual(small.x, small.z, 0.0001f);
             Assert.Greater(large.x, small.x);
         }
 
