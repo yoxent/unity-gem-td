@@ -57,15 +57,13 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void PlaySfx_RaisesAndClears()
         {
-            AudioCue received = null;
-            var cue = ScriptableObject.CreateInstance<AudioCue>();
-            GameEvents.PlaySfx += c => received = c;
-            GameEvents.RaisePlaySfx(cue);
-            Assert.AreSame(cue, received);
+            string received = null;
+            GameEvents.PlaySfx += key => received = key;
+            GameEvents.RaisePlaySfx("Click");
+            Assert.AreEqual("Click", received);
             GameEvents.ClearAll();
-            GameEvents.RaisePlaySfx(cue);
-            Assert.AreSame(cue, received);
-            Object.DestroyImmediate(cue);
+            GameEvents.RaisePlaySfx("Drop");
+            Assert.AreEqual("Click", received);
         }
 
         [Test]

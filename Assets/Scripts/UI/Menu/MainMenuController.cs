@@ -13,7 +13,7 @@ namespace GemTD.UI
         [SerializeField] Button skillLabButton;
         [SerializeField] Button quitButton;
         [SerializeField] SettingsController settings;
-        [SerializeField] AudioCue bgmCue;
+        [SerializeField] string clickSfxKey = "Click";
 
         InputAction _escape;
 
@@ -24,7 +24,6 @@ namespace GemTD.UI
             if (skillLabButton == null) Debug.LogError("MainMenuController: skillLabButton is not assigned.", this);
             if (quitButton == null) Debug.LogError("MainMenuController: quitButton is not assigned.", this);
             if (settings == null) Debug.LogError("MainMenuController: settings is not assigned.", this);
-            if (bgmCue == null) Debug.LogError("MainMenuController: bgmCue is not assigned.", this);
 
             if (playButton != null) playButton.onClick.AddListener(OnPlay);
             if (settingsButton != null) settingsButton.onClick.AddListener(OnSettings);
@@ -34,8 +33,6 @@ namespace GemTD.UI
             PlayerProfile.Load();
             AudioPlayer.EnsureExists();
             GameSettings.ApplyAudio();
-            if (bgmCue != null)
-                GameEvents.RaisePlayBgm(bgmCue);
             if (settings != null) settings.Close();
         }
 
@@ -58,22 +55,37 @@ namespace GemTD.UI
                 settings.Close();
         }
 
-        void OnPlay() => SceneManager.LoadScene(SceneNames.Run);
+        void OnPlay()
+        {
+            PlayClickSfx();
+            SceneManager.LoadScene(SceneNames.Run);
+        }
 
-        void OnSkillLab() => SceneManager.LoadScene(SceneNames.SkillLab);
+        void OnSkillLab()
+        {
+            PlayClickSfx();
+            SceneManager.LoadScene(SceneNames.SkillLab);
+        }
 
         void OnSettings()
         {
+            PlayClickSfx();
             if (settings != null) settings.Open();
         }
 
         void OnQuit()
         {
+            PlayClickSfx();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
             Application.Quit();
 #endif
+        }
+
+        void PlayClickSfx()
+        {
+            GameEvents.RaisePlaySfx(clickSfxKey);
         }
     }
 }

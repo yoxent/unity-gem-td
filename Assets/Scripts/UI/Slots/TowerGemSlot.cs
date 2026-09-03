@@ -4,6 +4,7 @@ using TMPro;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
+using GemTD.Core;
 using UnityEngine.EventSystems;
 
 namespace GemTD.UI
@@ -19,6 +20,7 @@ namespace GemTD.UI
         [SerializeField] GameObject lockedIcon;
         [SerializeField] HoverPointerRelay slotHover;
         [SerializeField] HoverPointerRelay xHover;
+        [SerializeField] string dropSfxKey = "Drop";
 
         GameCompositionRoot _root;
         int _socketIndex = -1;
@@ -120,6 +122,7 @@ namespace GemTD.UI
             if (GemDragState.InventoryIndex < 0 || _socketIndex < 0)
                 return;
 
+            GameEvents.RaisePlaySfx(dropSfxKey);
             _root.RequestSocketFromInventoryAt(GemDragState.InventoryIndex, _socketIndex);
         }
 

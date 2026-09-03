@@ -2,12 +2,9 @@ namespace GemTD.Core
 {
     public static class AudioMix
     {
-        public const float PauseDuck = 0.5f;
-        public const float DuckFadeSeconds = 0.2f;
-
-        public static float BgmSourceVolume(float cueVolume, float bgmSlider, bool paused)
+        public static float BgmSourceVolume(float cueVolume, float bgmSlider)
         {
-            return cueVolume * bgmSlider * (paused ? PauseDuck : 1f);
+            return cueVolume * bgmSlider;
         }
 
         public static float SfxSourceVolume(float cueVolume, float sfxSlider)

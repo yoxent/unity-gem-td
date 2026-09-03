@@ -7,6 +7,7 @@ using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
+using GemTD.Core;
 
 namespace GemTD.UI
 {
@@ -23,6 +24,7 @@ namespace GemTD.UI
         [SerializeField] CanvasGroup canvasGroup;
         [SerializeField] HoverPointerRelay xHover;
         [SerializeField] GameObject disabledOverlay;
+        [SerializeField] string dropSfxKey = "Drop";
 
         static InventoryGemSlot s_dragSource;
         static RectTransform s_ghost;
@@ -218,6 +220,7 @@ namespace GemTD.UI
                 if (fromIndex < 0 || fromIndex == _slotIndex)
                     return;
 
+                GameEvents.RaisePlaySfx(dropSfxKey);
                 _root.RequestMoveOrSwapInventoryAt(fromIndex, _slotIndex);
                 return;
             }
@@ -228,6 +231,7 @@ namespace GemTD.UI
                 if (fromSocketIndex < 0)
                     return;
 
+                GameEvents.RaisePlaySfx(dropSfxKey);
                 _root.RequestUnsocketToInventoryAt(fromSocketIndex, _slotIndex);
                 return;
             }

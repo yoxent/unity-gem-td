@@ -2,20 +2,18 @@ using UnityEngine;
 
 namespace GemTD.Core
 {
+    [DefaultExecutionOrder(-1000)]
     public sealed class AudioPlayer : MonoBehaviour
     {
         const int SfxPoolSize = 8;
 
+        [SerializeField, Tooltip("The central BGM and SFX configuration for this audio player.")]
+        AudioCueCatalog catalog;
         public static AudioPlayer Instance { get; private set; }
 
         AudioSource _bgm;
         AudioSource[] _sfx;
         AudioCue _currentBgmCue;
-        bool _paused;
-        float _bgmDisplayed;
-        float _bgmFrom;
-        float _bgmTarget;
-        float _bgmFadeT = 1f;
 
         public static AudioPlayer EnsureExists()
         {
@@ -36,6 +34,7 @@ namespace GemTD.Core
             }
 
             Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             _bgm = CreateChildSource("BGM");
             _bgm.loop = true;
@@ -45,12 +44,22 @@ namespace GemTD.Core
                 _sfx[i] = CreateChildSource("SFX_" + i);
         }
 
+        void Start()
+        {
+            PlayConfiguredBgm();
+        }
+
+        public void PlayConfiguredBgm()
+        {
+            if (catalog != null && catalog.ActiveBgmCue != null)
+                GameEvents.RaisePlayBgm(catalog.ActiveBgmCue);
+        }
+
         void OnEnable()
         {
             GameEvents.PlaySfx += OnPlaySfx;
             GameEvents.PlayBgm += OnPlayBgm;
             GameEvents.StopBgm += OnStopBgm;
-            GameEvents.PauseChanged += OnPauseChanged;
         }
 
         void OnDisable()
@@ -58,7 +67,6 @@ namespace GemTD.Core
             GameEvents.PlaySfx -= OnPlaySfx;
             GameEvents.PlayBgm -= OnPlayBgm;
             GameEvents.StopBgm -= OnStopBgm;
-            GameEvents.PauseChanged -= OnPauseChanged;
         }
 
         void OnDestroy()
@@ -67,22 +75,10 @@ namespace GemTD.Core
                 Instance = null;
         }
 
-        void Update()
-        {
-            if (_bgm == null || _bgmFadeT >= 1f)
-                return;
-
-            _bgmFadeT += Time.unscaledDeltaTime / AudioMix.DuckFadeSeconds;
-            if (_bgmFadeT > 1f)
-                _bgmFadeT = 1f;
-            _bgmDisplayed = Mathf.Lerp(_bgmFrom, _bgmTarget, _bgmFadeT);
-            _bgm.volume = _bgmDisplayed;
-        }
-
         public void RefreshBusVolumes()
         {
             if (_currentBgmCue != null)
-                SetBgmTarget(BgmTargetVolume(_currentBgmCue), snap: false);
+                SetBgmVolume(BgmTargetVolume(_currentBgmCue));
         }
 
         AudioSource CreateChildSource(string name)
@@ -95,13 +91,29 @@ namespace GemTD.Core
             return src;
         }
 
-        void OnPlaySfx(AudioCue cue)
+        void OnValidate()
         {
-            if (cue == null || cue.bus != AudioBus.Sfx || cue.sfx.clip == null)
+            if (catalog == null)
+                Debug.LogWarning("AudioPlayer: no AudioCueCatalog is assigned.", this);
+        }
+
+        void OnPlaySfx(string eventKey)
+        {
+            if (catalog == null || !catalog.TryGetSfx(eventKey, out var cue))
             {
 #if UNITY_EDITOR
-                if (cue != null && (cue.bus != AudioBus.Sfx || cue.sfx.clip == null))
-                    Debug.LogWarning("AudioPlayer: PlaySfx ignored (need Sfx bus + clip).", cue);
+                Debug.LogWarning("AudioPlayer: no SFX cue is configured for eventKey '" + eventKey + "'.", this);
+#endif
+                return;
+            }
+
+            if (cue.sfx.clip == null)
+                return;
+
+            if (cue.bus != AudioBus.Sfx)
+            {
+#if UNITY_EDITOR
+                Debug.LogWarning("AudioPlayer: PlaySfx ignored because the cue is not on the Sfx bus.", cue);
 #endif
                 return;
             }
@@ -109,18 +121,20 @@ namespace GemTD.Core
             var src = NextSfxSource();
             src.clip = cue.sfx.clip;
             src.loop = false;
-            src.pitch = AudioPitch.Resolve(cue.sfx, Random.value);
+            src.pitch = AudioPitch.Resolve(cue.sfx, UnityEngine.Random.value);
             src.volume = AudioMix.SfxSourceVolume(cue.volume, GameSettings.GetSfxVolume());
             src.Play();
         }
 
         void OnPlayBgm(AudioCue cue)
         {
-            if (cue == null || cue.bus != AudioBus.Bgm || cue.bgmClip == null)
+            if (cue == null || cue.bgmClip == null)
+                return;
+
+            if (cue.bus != AudioBus.Bgm)
             {
 #if UNITY_EDITOR
-                if (cue != null)
-                    Debug.LogWarning("AudioPlayer: PlayBgm ignored (need Bgm bus + clip).", cue);
+                Debug.LogWarning("AudioPlayer: PlayBgm ignored because the cue is not on the Bgm bus.", cue);
 #endif
                 return;
             }
@@ -132,7 +146,7 @@ namespace GemTD.Core
             _bgm.clip = cue.bgmClip;
             _bgm.loop = cue.loop;
             _bgm.pitch = 1f;
-            SetBgmTarget(BgmTargetVolume(cue), snap: true);
+            SetBgmVolume(BgmTargetVolume(cue));
             _bgm.Play();
         }
 
@@ -143,33 +157,15 @@ namespace GemTD.Core
                 _bgm.Stop();
         }
 
-        void OnPauseChanged(bool paused)
-        {
-            _paused = paused;
-            if (_currentBgmCue != null)
-                SetBgmTarget(BgmTargetVolume(_currentBgmCue), snap: false);
-        }
-
         float BgmTargetVolume(AudioCue cue)
         {
-            return AudioMix.BgmSourceVolume(cue.volume, GameSettings.GetBgmVolume(), _paused);
+            return AudioMix.BgmSourceVolume(cue.volume, GameSettings.GetBgmVolume());
         }
 
-        void SetBgmTarget(float target, bool snap)
+        void SetBgmVolume(float volume)
         {
-            _bgmTarget = target;
-            if (snap || _bgm == null)
-            {
-                _bgmDisplayed = target;
-                _bgmFrom = target;
-                _bgmFadeT = 1f;
-                if (_bgm != null)
-                    _bgm.volume = target;
-                return;
-            }
-
-            _bgmFrom = _bgmDisplayed;
-            _bgmFadeT = 0f;
+            if (_bgm != null)
+                _bgm.volume = volume;
         }
 
         AudioSource NextSfxSource()

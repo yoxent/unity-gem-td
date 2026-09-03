@@ -40,13 +40,10 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void BgmSourceVolume_IgnoresMaster_DucksWhenPaused()
+        public void BgmSourceVolume_IsCueTimesSlider()
         {
-            Assert.AreEqual(0.8f, AudioMix.BgmSourceVolume(1f, 0.8f, false), 0.0001f);
-            Assert.AreEqual(0.4f, AudioMix.BgmSourceVolume(1f, 0.8f, true), 0.0001f);
-            Assert.AreEqual(0.2f, AudioMix.BgmSourceVolume(0.5f, 0.8f, true), 0.0001f);
-            Assert.AreEqual(0.5f, AudioMix.PauseDuck, 0.0001f);
-            Assert.AreEqual(0.2f, AudioMix.DuckFadeSeconds, 0.0001f);
+            Assert.AreEqual(0.8f, AudioMix.BgmSourceVolume(1f, 0.8f), 0.0001f);
+            Assert.AreEqual(0.4f, AudioMix.BgmSourceVolume(0.5f, 0.8f), 0.0001f);
         }
 
         [Test]

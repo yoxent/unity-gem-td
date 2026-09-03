@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a11b22c33d44e55f66778899aabb0005, type: 3}
   m_Name: Cue_Sfx
   m_EditorClassIdentifier: GemTD.Core::GemTD.Core.AudioCue
+  eventKey: Click
   bus: 1
   volume: 1
   bgmClip: {fileID: 0}
   loop: 0
   sfx:
-    clip: {fileID: 8300000, guid: e55f66778899aabbccddeeff000002, type: 3}
-    randomPitch: 0
+    clip: {fileID: 0}
+    randomPitch: 1
     pitch: 1
     pitchMin: 0.9
     pitchMax: 1.1

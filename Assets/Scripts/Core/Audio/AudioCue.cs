@@ -5,11 +5,15 @@ namespace GemTD.Core
     [CreateAssetMenu(menuName = "Gem TD/Audio Cue", fileName = "AudioCue")]
     public sealed class AudioCue : ScriptableObject
     {
+        [SerializeField, Tooltip("The event key used to request this cue. Required for SFX; BGM is selected directly by the catalog.")]
+        string eventKey;
         public AudioBus bus;
         [Range(0f, 1f)] public float volume = 1f;
         public AudioClip bgmClip;
         public bool loop = true;
         public SfxData sfx = SfxData.Default;
+
+        public string EventKey => eventKey;
 
         void Reset()
         {

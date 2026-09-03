@@ -26,7 +26,7 @@ namespace GemTD.Core
         public static event Action PlaceModeChanged;
         public static event Action DraftOfferChanged;
         public static event Action TowerRosterChanged;
-        public static event Action<AudioCue> PlaySfx;
+        public static event Action<string> PlaySfx;
         public static event Action<AudioCue> PlayBgm;
         public static event Action StopBgm;
 
@@ -49,7 +49,7 @@ namespace GemTD.Core
         public static void RaisePlaceModeChanged() => PlaceModeChanged?.Invoke();
         public static void RaiseDraftOfferChanged() => DraftOfferChanged?.Invoke();
         public static void RaiseTowerRosterChanged() => TowerRosterChanged?.Invoke();
-        public static void RaisePlaySfx(AudioCue cue) => PlaySfx?.Invoke(cue);
+        public static void RaisePlaySfx(string eventKey) => PlaySfx?.Invoke(eventKey);
         public static void RaisePlayBgm(AudioCue cue) => PlayBgm?.Invoke(cue);
         public static void RaiseStopBgm() => StopBgm?.Invoke();
 
