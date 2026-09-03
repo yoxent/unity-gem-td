@@ -167,6 +167,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9410486b1b690b3458eb9150671937df, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7878653745219082270}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9410486b1b690b3458eb9150671937df, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7878653745219082271}
   m_SourcePrefab: {fileID: 100100000, guid: 9410486b1b690b3458eb9150671937df, type: 3}
 --- !u!1 &1924361674311588331 stripped
 GameObject:
@@ -195,6 +198,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7878653745219082271
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1924361674311588331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2f04a7b9c1e4d8a8f5c6b7e0a1d3c9e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerAnimationEventRelay
 --- !u!4 &2666655638071252158 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5515783359193845756, guid: 9410486b1b690b3458eb9150671937df, type: 3}

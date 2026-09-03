@@ -20,8 +20,10 @@ namespace GemTD.Gameplay.Towers
         public Vector3 LastAimPoint { get; private set; }
         /// <summary>Resolved attack/cast interval for the current volley. Animation stretches clips to fill this window.</summary>
         public float CurrentFireInterval { get; set; }
-        /// <summary>0–1 contact pose in the current FireInterval. Spawn and bow Draw→Release use the same value. Default 1 (end of interval).</summary>
+        /// <summary>0–1 normalized action point used when imported event timing is disabled. Default 1 (end of interval).</summary>
         public float StrikeNormalized { get; set; } = 1f;
+        /// <summary>When true, combat waits exclusively for OnCombatAction("execute").</summary>
+        public bool UsesAnimationActionEvent { get; set; }
         /// <summary>World Y added to pad-top muzzle so bolts/warp/nova start at the character, not the tile.</summary>
         public float MuzzleLocalY { get; set; }
         int _levelIndex;

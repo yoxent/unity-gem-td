@@ -377,6 +377,12 @@ namespace GemTD.Gameplay
                 _enemyHopDispatcher.Update(dt);
 
             TickTowerAnimators(dt);
+            if (_combat != null && _registry != null)
+            {
+                _livingScratch.Clear();
+                _registry.CopyAlive(_livingScratch);
+                _combat.ResolveQueuedAnimationActions(_livingScratch);
+            }
 
             SyncProjectileViews();
             SyncEnemyViews();
@@ -920,6 +926,8 @@ namespace GemTD.Gameplay
             if (viewPrefab != null)
             {
                 var view = Instantiate(viewPrefab, transform);
+                if (_combat != null)
+                    view.SetCombatActionHandler(_combat.QueueAnimationAction);
                 view.Bind(tower, chunkBoardView.TowerCellWorld(cell));
                 _towerViews.Add(view);
             }

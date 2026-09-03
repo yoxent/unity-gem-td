@@ -11,7 +11,8 @@ namespace GemTD.Gameplay.Combat
 {
     /// <summary>
     /// Domain combat tick: cooldown ready starts a cast (NotifyFired). FireInterval is the whole action.
-    /// The volley spawns at strikeNormalized of that interval; cooldown still covers the full interval.
+    /// Event-enabled towers resolve their pending volley from OnCombatAction("execute");
+    /// non-event towers use normalized action timing.
     /// </summary>
     public sealed class CombatDirector
     {
@@ -39,7 +40,7 @@ namespace GemTD.Gameplay.Combat
             _projectiles.Count > 0
             || _effectPayloads.Count > 0
             || _pendingSequential.Count > 0
-            || _pendingStrikes.Count > 0;
+            || HasPendingStrikeAction();
 
         public CombatDirector(
             float cellSize = 1f,
@@ -83,6 +84,63 @@ namespace GemTD.Gameplay.Combat
             _pendingSequential.Clear();
             _pendingStrikes.Clear();
             _resolvedCasts.Clear();
+        }
+
+        /// <summary>
+        /// Queue one independent pending action for each imported animation execution marker.
+        /// The event listener remains available for additional markers in the same fire generation.
+        /// </summary>
+        public void QueueAnimationAction(TowerInstance tower, int fireGeneration, string action)
+        {
+            if (tower == null
+                || fireGeneration <= 0
+                || action != TowerAnimationEventRelay.ExecuteAction
+                || !tower.UsesAnimationActionEvent)
+                return;
+
+            for (var i = 0; i < _pendingStrikes.Count; i++)
+            {
+                var pending = _pendingStrikes[i];
+                if (pending.Tower != tower
+                    || pending.FireGeneration != fireGeneration
+                    || !pending.WaitForAnimationAction
+                    || !pending.IsAnimationEventListener)
+                    continue;
+
+                _pendingStrikes.Add(new PendingStrike
+                {
+                    Tower = pending.Tower,
+                    FireGeneration = pending.FireGeneration,
+                    Muzzle = pending.Muzzle,
+                    Range = pending.Range,
+                    Primary = pending.Primary,
+                    Spec = pending.Spec,
+                    Baseline = pending.Baseline,
+                    Statuses = pending.Statuses,
+                    Remaining = 0f,
+                    WaitForAnimationAction = true,
+                    AnimationActionReceived = true,
+                    IsAnimationEventListener = false
+                });
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Resolve animation actions raised after the normal combat tick, before views are synchronized.
+        /// </summary>
+        public void ResolveQueuedAnimationActions(List<EnemyRuntime> living)
+        {
+            if (living == null)
+                return;
+
+            for (var i = _pendingStrikes.Count - 1; i >= 0; i--)
+            {
+                if (_pendingStrikes[i].AnimationActionReceived)
+                    ResolvePendingStrike(i, living);
+            }
+
+            MergeSpawnBuffer();
         }
 
         static bool IsLiveStationaryPulse(EffectPayloadRuntime payload)
@@ -259,25 +317,30 @@ namespace GemTD.Gameplay.Combat
                 interval = tower.Def.FireInterval(spec, tower.Level);
             if (tower != null)
             {
+                RemoveAnimationEventListener(tower);
                 tower.CurrentFireInterval = interval;
                 tower.NotifyFired(aimPoint);
             }
 
-            var contact = tower != null
+            var useAnimationActionEvent = tower != null && tower.UsesAnimationActionEvent;
+            var normalizedActionDelay = !useAnimationActionEvent && tower != null
                 ? TowerAttackPlayback.ContactDelay(interval, tower.StrikeNormalized)
-                : interval;
-            if (tower != null && contact > 0.0001f)
+                : 0f;
+            if (tower != null && (useAnimationActionEvent || normalizedActionDelay > 0.0001f))
             {
                 _pendingStrikes.Add(new PendingStrike
                 {
                     Tower = tower,
+                    FireGeneration = tower.FireGeneration,
                     Muzzle = muzzle,
                     Range = range,
                     Primary = primary,
                     Spec = spec,
                     Baseline = baseline,
                     Statuses = statuses,
-                    Remaining = contact
+                    Remaining = useAnimationActionEvent ? 0f : normalizedActionDelay,
+                    WaitForAnimationAction = useAnimationActionEvent,
+                    IsAnimationEventListener = useAnimationActionEvent
                 });
                 return;
             }
@@ -291,11 +354,33 @@ namespace GemTD.Gameplay.Combat
                 return false;
             for (var i = 0; i < _pendingStrikes.Count; i++)
             {
-                if (_pendingStrikes[i].Tower == tower)
+                if (_pendingStrikes[i].Tower == tower
+                    && !_pendingStrikes[i].IsAnimationEventListener)
                     return true;
             }
 
             return false;
+        }
+
+        bool HasPendingStrikeAction()
+        {
+            for (var i = 0; i < _pendingStrikes.Count; i++)
+            {
+                if (!_pendingStrikes[i].IsAnimationEventListener)
+                    return true;
+            }
+
+            return false;
+        }
+
+        void RemoveAnimationEventListener(TowerInstance tower)
+        {
+            for (var i = _pendingStrikes.Count - 1; i >= 0; i--)
+            {
+                if (_pendingStrikes[i].Tower == tower
+                    && _pendingStrikes[i].IsAnimationEventListener)
+                    _pendingStrikes.RemoveAt(i);
+            }
         }
 
         bool ResolvedThisTick(TowerInstance tower)
@@ -316,27 +401,41 @@ namespace GemTD.Gameplay.Combat
             for (var i = _pendingStrikes.Count - 1; i >= 0; i--)
             {
                 var pending = _pendingStrikes[i];
-                pending.Remaining -= dt;
-                if (pending.Remaining > 0f)
-                    continue;
+                if (pending.WaitForAnimationAction)
+                {
+                    if (!pending.AnimationActionReceived)
+                        continue;
+                }
+                else
+                {
+                    pending.Remaining -= dt;
+                    if (pending.Remaining > 0f)
+                        continue;
+                }
 
-                _pendingStrikes.RemoveAt(i);
-                if (pending.Tower != null)
-                    _resolvedCasts.Add(pending.Tower);
-                var primaryDead = pending.Primary == null || !pending.Primary.IsAlive;
-                if (primaryDead && pending.Spec.DeliveryPattern != DeliveryPattern.GroundPulse)
-                    continue;
-
-                SpawnResolvedVolley(
-                    pending.Muzzle,
-                    pending.Range,
-                    pending.Primary,
-                    pending.Spec,
-                    pending.Baseline,
-                    living,
-                    pending.Statuses,
-                    pending.Tower);
+                ResolvePendingStrike(i, living);
             }
+        }
+
+        void ResolvePendingStrike(int index, List<EnemyRuntime> living)
+        {
+            var pending = _pendingStrikes[index];
+            _pendingStrikes.RemoveAt(index);
+            if (pending.Tower != null)
+                _resolvedCasts.Add(pending.Tower);
+            var primaryDead = pending.Primary == null || !pending.Primary.IsAlive;
+            if (primaryDead && pending.Spec.DeliveryPattern != DeliveryPattern.GroundPulse)
+                return;
+
+            SpawnResolvedVolley(
+                pending.Muzzle,
+                pending.Range,
+                pending.Primary,
+                pending.Spec,
+                pending.Baseline,
+                living,
+                pending.Statuses,
+                pending.Tower);
         }
 
         void SpawnResolvedVolley(
@@ -1043,6 +1142,7 @@ namespace GemTD.Gameplay.Combat
         sealed class PendingStrike
         {
             public TowerInstance Tower;
+            public int FireGeneration;
             public Vector3 Muzzle;
             public float Range;
             public EnemyRuntime Primary;
@@ -1050,6 +1150,9 @@ namespace GemTD.Gameplay.Combat
             public SkillSpec Baseline;
             public StatusRuntime Statuses;
             public float Remaining;
+            public bool WaitForAnimationAction;
+            public bool AnimationActionReceived;
+            public bool IsAnimationEventListener;
         }
 
         static void ApplyMuzzleLocalY(ref Vector3 muzzle, TowerInstance tower)

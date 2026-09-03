@@ -126,7 +126,10 @@ namespace GemTD.Gameplay.SkillLab
             TickDrag();
             _session.TickVolley(Time.deltaTime);
             if (_liveView != null)
+            {
                 _liveView.TickAnimator(Time.deltaTime, 1f);
+                _session.ResolveQueuedAnimationActions();
+            }
             FlashHitsFromDamage();
         }
 
@@ -227,6 +230,7 @@ namespace GemTD.Gameplay.SkillLab
                     towerView.gameObject.SetActive(false);
             }
 
+            _liveView.SetCombatActionHandler(_session.QueueAnimationAction);
             _liveView.Bind(_session.Tower, _session.TowerPosition);
         }
 

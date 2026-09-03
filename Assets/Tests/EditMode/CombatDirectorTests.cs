@@ -210,6 +210,93 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void AnimationAction_ResolvesPendingStrikeFromEvent()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef)
+            {
+                StrikeNormalized = 0.9f,
+                UsesAnimationActionEvent = true
+            };
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            director.TickInFlight(0.25f, living);
+            Assert.AreEqual(0, director.Projectiles.Count);
+
+            director.QueueAnimationAction(tower, tower.FireGeneration, TowerAnimationEventRelay.ExecuteAction);
+            director.ResolveQueuedAnimationActions(living);
+
+            Assert.AreEqual(1, director.Projectiles.Count);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void AnimationAction_TwoEventsInOneGeneration_SpawnsTwoProjectiles()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef)
+            {
+                UsesAnimationActionEvent = true
+            };
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+
+            director.QueueAnimationAction(tower, tower.FireGeneration, TowerAnimationEventRelay.ExecuteAction);
+            director.QueueAnimationAction(tower, tower.FireGeneration, TowerAnimationEventRelay.ExecuteAction);
+            director.ResolveQueuedAnimationActions(living);
+
+            Assert.AreEqual(2, director.Projectiles.Count);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void AnimationAction_TwoEventsOnSeparateFrames_StayInOneGeneration()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef)
+            {
+                UsesAnimationActionEvent = true
+            };
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+
+            director.QueueAnimationAction(tower, tower.FireGeneration, TowerAnimationEventRelay.ExecuteAction);
+            director.ResolveQueuedAnimationActions(living);
+            Assert.AreEqual(1, director.Projectiles.Count);
+
+            director.QueueAnimationAction(tower, tower.FireGeneration, TowerAnimationEventRelay.ExecuteAction);
+            director.ResolveQueuedAnimationActions(living);
+
+            Assert.AreEqual(2, director.Projectiles.Count);
+            Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void AnimationAction_MissingEvent_DoesNotUseNormalizedFallback()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 1f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef)
+            {
+                StrikeNormalized = 0.5f,
+                UsesAnimationActionEvent = true
+            };
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            director.TickInFlight(2f, living);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.IsFalse(director.HasActiveVolley);
+        }
+
+        [Test]
         public void Tick_DoesNotRecastDuringRecoveryAfterStrike()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 100f);

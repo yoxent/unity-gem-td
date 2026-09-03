@@ -37,7 +37,7 @@ namespace GemTD.Gameplay.Towers
 
         /// <summary>
         /// Seconds the clip at <paramref name="stepIndex"/> should occupy.
-        /// One clip fills the whole interval. Two clips: draw until contact, then release.
+        /// Used by non-event timing: one clip fills the whole interval; two clips split at the normalized action point.
         /// </summary>
         public static float ClipWindow(float interval, float strikeNormalized, int stepIndex, int fireStepCount)
         {
@@ -106,7 +106,7 @@ namespace GemTD.Gameplay.Towers
 
         /// <summary>
         /// When <paramref name="windupSeconds"/> is &gt; 0 and there is a next fire clip, leave step 0 after that time.
-        /// Single-clip attacks keep playing for the whole FireInterval; combat spawns at strikeNormalized.
+        /// Event-enabled playback does not call this method and advances only when the current clip ends.
         /// </summary>
         public bool TryTickWindup(float dt, float windupSeconds, int fireStepCount, out int playIndex)
         {

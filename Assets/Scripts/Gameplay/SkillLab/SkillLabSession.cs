@@ -232,6 +232,19 @@ namespace GemTD.Gameplay.SkillLab
             StampNewPayloads();
         }
 
+        public void QueueAnimationAction(TowerInstance tower, int fireGeneration, string action)
+        {
+            _combat.QueueAnimationAction(tower, fireGeneration, action);
+        }
+
+        public void ResolveQueuedAnimationActions()
+        {
+            _living.Clear();
+            Dummies.CopyLiving(_living);
+            _combat.ResolveQueuedAnimationActions(_living);
+            StampNewPayloads();
+        }
+
         public void StopVolley()
         {
             _combat.ClearProjectiles();

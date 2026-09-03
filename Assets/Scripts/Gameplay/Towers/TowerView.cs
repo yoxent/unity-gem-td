@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
@@ -35,6 +36,11 @@ namespace GemTD.Gameplay.Towers
         {
             if (animatorView != null)
                 animatorView.Tick(dt, simSpeed);
+        }
+
+        public void SetCombatActionHandler(Action<TowerInstance, int, string> handler)
+        {
+            animatorView?.SetCombatActionHandler(handler);
         }
 
         /// <summary>Selection is the range cylinder, not an albedo swap — keep the authored tower material.</summary>
