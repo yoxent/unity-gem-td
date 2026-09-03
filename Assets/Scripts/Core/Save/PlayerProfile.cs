@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace GemTD.Core
 {
     /// <summary>Process-lifetime profile facade over <see cref="IGemTdSaveStore"/>.</summary>
@@ -29,6 +31,7 @@ namespace GemTD.Core
                 _store = new JsonFileGemTdSaveStore();
 
             _cache = _store.Load() ?? new GemTdSaveDto();
+            MigrateLegacyVolumePrefsIfPresent();
             _loaded = true;
         }
 
@@ -36,6 +39,45 @@ namespace GemTD.Core
         {
             Load();
             return _cache.HighestWaveCleared;
+        }
+
+        public static float GetMasterVolume()
+        {
+            Load();
+            return Mathf.Clamp01(_cache.MasterVolume);
+        }
+
+        public static float GetBgmVolume()
+        {
+            Load();
+            return Mathf.Clamp01(_cache.BgmVolume);
+        }
+
+        public static float GetSfxVolume()
+        {
+            Load();
+            return Mathf.Clamp01(_cache.SfxVolume);
+        }
+
+        public static void SetMasterVolume(float volume)
+        {
+            Load();
+            _cache.MasterVolume = Mathf.Clamp01(volume);
+            _store.Save(_cache);
+        }
+
+        public static void SetBgmVolume(float volume)
+        {
+            Load();
+            _cache.BgmVolume = Mathf.Clamp01(volume);
+            _store.Save(_cache);
+        }
+
+        public static void SetSfxVolume(float volume)
+        {
+            Load();
+            _cache.SfxVolume = Mathf.Clamp01(volume);
+            _store.Save(_cache);
         }
 
         /// <summary>Monotonic. Returns true when <paramref name="wave"/> becomes the new high.</summary>
@@ -61,6 +103,28 @@ namespace GemTD.Core
             _cache = null;
             _loaded = false;
             LastUpdateWasNewBest = false;
+        }
+
+        static void MigrateLegacyVolumePrefsIfPresent()
+        {
+            var hasMaster = PlayerPrefs.HasKey(GameSettings.MasterVolumeKey);
+            var hasBgm = PlayerPrefs.HasKey(GameSettings.BgmVolumeKey);
+            var hasSfx = PlayerPrefs.HasKey(GameSettings.SfxVolumeKey);
+            if (!hasMaster && !hasBgm && !hasSfx)
+                return;
+
+            if (hasMaster)
+                _cache.MasterVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(GameSettings.MasterVolumeKey));
+            if (hasBgm)
+                _cache.BgmVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(GameSettings.BgmVolumeKey));
+            if (hasSfx)
+                _cache.SfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(GameSettings.SfxVolumeKey));
+
+            _store.Save(_cache);
+            PlayerPrefs.DeleteKey(GameSettings.MasterVolumeKey);
+            PlayerPrefs.DeleteKey(GameSettings.BgmVolumeKey);
+            PlayerPrefs.DeleteKey(GameSettings.SfxVolumeKey);
+            PlayerPrefs.Save();
         }
     }
 }

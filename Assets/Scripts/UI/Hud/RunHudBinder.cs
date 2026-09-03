@@ -18,6 +18,7 @@ namespace GemTD.UI
         [SerializeField] CodexController codex;
         [SerializeField] SettingsController settings;
         [SerializeField] RunSummaryController runSummary;
+        [SerializeField] AudioCue bgmCue;
 
         void Awake()
         {
@@ -36,6 +37,7 @@ namespace GemTD.UI
             if (speedPanel == null) Debug.LogError("RunHudBinder: speedPanel is not assigned.", this);
             if (codex == null) Debug.LogError("RunHudBinder: codex is not assigned.", this);
             if (settings == null) Debug.LogError("RunHudBinder: settings is not assigned.", this);
+            if (bgmCue == null) Debug.LogError("RunHudBinder: bgmCue is not assigned.", this);
 
             if (popup != null) popup.Init(root.Speed);
 
@@ -47,7 +49,10 @@ namespace GemTD.UI
             speedPanel?.Bind(root);
             codex?.Bind(root);
 
+            AudioPlayer.EnsureExists();
             GameSettings.ApplyAudio();
+            if (bgmCue != null)
+                GameEvents.RaisePlayBgm(bgmCue);
             if (settings != null)
             {
                 settings.BindSpeed(root.Speed);

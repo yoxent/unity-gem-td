@@ -26,6 +26,9 @@ namespace GemTD.Core
         public static event Action PlaceModeChanged;
         public static event Action DraftOfferChanged;
         public static event Action TowerRosterChanged;
+        public static event Action<AudioCue> PlaySfx;
+        public static event Action<AudioCue> PlayBgm;
+        public static event Action StopBgm;
 
         public static void RaiseGoldChanged(int gold) => GoldChanged?.Invoke(gold);
         public static void RaiseLivesChanged(int lives) => LivesChanged?.Invoke(lives);
@@ -46,6 +49,9 @@ namespace GemTD.Core
         public static void RaisePlaceModeChanged() => PlaceModeChanged?.Invoke();
         public static void RaiseDraftOfferChanged() => DraftOfferChanged?.Invoke();
         public static void RaiseTowerRosterChanged() => TowerRosterChanged?.Invoke();
+        public static void RaisePlaySfx(AudioCue cue) => PlaySfx?.Invoke(cue);
+        public static void RaisePlayBgm(AudioCue cue) => PlayBgm?.Invoke(cue);
+        public static void RaiseStopBgm() => StopBgm?.Invoke();
 
         public static void ClearAll()
         {
@@ -66,6 +72,9 @@ namespace GemTD.Core
             PlaceModeChanged = null;
             DraftOfferChanged = null;
             TowerRosterChanged = null;
+            PlaySfx = null;
+            PlayBgm = null;
+            StopBgm = null;
         }
     }
 }

@@ -82,5 +82,16 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(PlayerProfile.TryUpdateHighestWave(5));
             Assert.IsFalse(File.Exists(_tempPath));
         }
+
+        [Test]
+        public void SetMasterVolume_PreservesHighestWave()
+        {
+            PlayerProfile.Initialize(new JsonFileGemTdSaveStore(_tempPath));
+            Assert.IsTrue(PlayerProfile.TryUpdateHighestWave(4));
+            PlayerProfile.SetMasterVolume(0.2f);
+            var reloaded = new JsonFileGemTdSaveStore(_tempPath).Load();
+            Assert.AreEqual(4, reloaded.HighestWaveCleared);
+            Assert.AreEqual(0.2f, reloaded.MasterVolume, 0.0001f);
+        }
     }
 }
