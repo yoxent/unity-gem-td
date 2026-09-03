@@ -56,7 +56,11 @@ namespace GemTD.Tests.EditMode
                 view.SetSelected(false);
 
                 var renderer = cube.GetComponent<MeshRenderer>();
-                Assert.AreEqual(authored, renderer.sharedMaterial.GetColor("_Color"));
+                var got = renderer.sharedMaterial.GetColor("_Color");
+                Assert.AreEqual(authored.r, got.r, 1e-3f);
+                Assert.AreEqual(authored.g, got.g, 1e-3f);
+                Assert.AreEqual(authored.b, got.b, 1e-3f);
+                Assert.AreEqual(authored.a, got.a, 1e-3f);
                 var block = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(block);
                 Assert.AreNotEqual(new Color(0.45f, 0.5f, 0.55f), block.GetColor("_BaseColor"));

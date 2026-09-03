@@ -24,7 +24,9 @@ namespace GemTD.Gameplay.Combat
                 return 0f;
 
             var chance = spec.CritChance;
-            if (chance <= 0f || unitInterval >= chance)
+            // Compare in float space: double 0.05 is slightly below float 0.05f,
+            // so `unitInterval >= chance` would treat an at-chance roll as a crit.
+            if (chance <= 0f || (float)unitInterval >= chance)
                 return damage;
 
             var multiplier = spec.CritMultiplier > 0f ? spec.CritMultiplier : 1.5f;
