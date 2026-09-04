@@ -32,6 +32,7 @@ namespace GemTD.Gameplay.Enemies
         public float ShieldHp { get; private set; }
         public float SpawnMaxHealth => _maxHealth;
         public float MaxHealth => _maxHealth + _packMaxHealth;
+        public float ShieldMax => _shieldMax + _packShield;
         public int Armor => _baseArmor + _packArmor;
         public int FireResistance { get; set; }
         public int ColdResistance { get; set; }

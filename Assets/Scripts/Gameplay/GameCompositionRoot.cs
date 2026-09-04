@@ -71,6 +71,12 @@ namespace GemTD.Gameplay
         public StatusRuntime Statuses => _statuses;
         public RunStatsTracker RunStats => _runStats;
         public int CurrentWaveNumber => WaveController != null ? WaveController.CurrentWaveNumber : 0;
+        public int EnemyViewCount => _enemyViews.Count;
+
+        public EnemyView GetEnemyViewAt(int index)
+        {
+            return _enemyViews[index];
+        }
         public bool HasSelectedTower => Placement != null && Placement.Selected != null;
         public bool SelectedHasSocketedGems =>
             Placement?.Selected != null && Placement.Selected.HasSocketedGems;
