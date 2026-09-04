@@ -53,7 +53,7 @@ namespace GemTD.Tests.EditMode
         {
             var heights = new TileHeightMap(8, 8);
             heights.Set(0, 0, 2);
-            var director = new CombatDirector(CellSize, projectileSpeed: 100f, recordDamage: null, heights);
+            var director = Director(projectileSpeed: 100f, heights);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             var enemy = EnemyAt(new Vector3(0.5f, 0f, 1.5f));
             var registry = new EnemyRegistry();
@@ -71,7 +71,7 @@ namespace GemTD.Tests.EditMode
         {
             var heights = new TileHeightMap(8, 8);
             heights.Set(0, 0, 2);
-            var director = new CombatDirector(CellSize, projectileSpeed: 100f, recordDamage: null, heights);
+            var director = Director(projectileSpeed: 100f, heights);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             var enemy = EnemyAt(new Vector3(0.5f, 0f, 1.5f));
@@ -99,7 +99,7 @@ namespace GemTD.Tests.EditMode
                 RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 1f)
             };
 
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var director = Director(projectileSpeed: 20f);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             var muzzle = new Vector3(0.5f, 0f, 0.5f);
@@ -129,7 +129,7 @@ namespace GemTD.Tests.EditMode
                 RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 1f)
             };
 
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var director = Director(projectileSpeed: 20f);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             var muzzle = new Vector3(0.5f, 0f, 0.5f);
@@ -161,7 +161,7 @@ namespace GemTD.Tests.EditMode
                 RoleStatModifier.Single(RoleStat.ProjectileCount, RoleModifierOperation.Set, 1f)
             };
 
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var director = Director(projectileSpeed: 20f);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             var muzzle = new Vector3(0.5f, 0f, 0.5f);
@@ -190,7 +190,7 @@ namespace GemTD.Tests.EditMode
             };
             _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
 
-            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var director = Director(projectileSpeed: 20f);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             tower.MuzzleLocalY = TowerView.DefaultMuzzleLocalY;
             tower.StrikeNormalized = 1f;
@@ -212,7 +212,7 @@ namespace GemTD.Tests.EditMode
         {
             var heights = new TileHeightMap(8, 8);
             heights.Set(0, 0, 2);
-            var director = new CombatDirector(CellSize, projectileSpeed: 100f, recordDamage: null, heights);
+            var director = Director(projectileSpeed: 100f, heights);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             // Base radius 2; layer 2 → 2.6. Enemy at 2.2 from cell center (0.5,0.5).
             var enemy = EnemyAt(new Vector3(2.7f, 0f, 0.5f));
@@ -230,7 +230,7 @@ namespace GemTD.Tests.EditMode
         {
             var heights = new TileHeightMap(8, 8);
             heights.Set(0, 0, 2);
-            var director = new CombatDirector(CellSize, projectileSpeed: 100f, recordDamage: null, heights);
+            var director = Director(projectileSpeed: 100f, heights);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             var enemy = EnemyAt(new Vector3(0.5f, 0f, 1.5f));
             var registry = new EnemyRegistry();
@@ -249,7 +249,7 @@ namespace GemTD.Tests.EditMode
         {
             var heights = new TileHeightMap(8, 8);
             heights.Set(0, 0, 0);
-            var director = new CombatDirector(CellSize, projectileSpeed: 100f, recordDamage: null, heights);
+            var director = Director(projectileSpeed: 100f, heights);
             var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
             var enemy = EnemyAt(new Vector3(2.7f, 0f, 0.5f));
             var registry = new EnemyRegistry();
@@ -260,11 +260,31 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, director.Projectiles.Count);
         }
 
+        static CombatDirector Director(float projectileSpeed, TileHeightMap heights = null)
+        {
+            return new CombatDirector(
+                CellSize,
+                projectileSpeed,
+                recordDamage: null,
+                heights,
+                payloadRng: new NeverCritRng());
+        }
+
         EnemyRuntime EnemyAt(Vector3 world)
         {
             var enemy = new EnemyRuntime();
             enemy.Init(_enemyDef, new List<Vector3> { world, world + Vector3.right * 0.01f });
             return enemy;
+        }
+
+        /// <summary>Baseline SkillSpec is 5% crit × 1.5; HP asserts need a roll that never crits.</summary>
+        sealed class NeverCritRng : System.Random
+        {
+            public NeverCritRng() : base(0) { }
+
+            public override double NextDouble() => 1d;
+
+            protected override double Sample() => 1d;
         }
     }
 }

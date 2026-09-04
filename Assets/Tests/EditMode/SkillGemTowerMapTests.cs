@@ -716,6 +716,8 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(SkillGemTowerMap.FirestormImpactCount, rain.Count);
             Assert.AreEqual(1f, rain.DamageMultiplier, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.FirestormExplosionRadius, rain.AoeRadius, 0.001f);
+            Assert.AreEqual(5.5f, FindModifier(spell.Levels[0], RoleStat.Damage).Min, 0.001f);
+            Assert.AreEqual(8.25f, FindModifier(spell.Levels[0], RoleStat.Damage).Max, 0.001f);
             Assert.AreEqual(0f, rain.MinDistance, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.FirestormStormRadius, rain.MaxDistance, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.FirestormDropHeight, rain.ArcHeight, 0.001f);

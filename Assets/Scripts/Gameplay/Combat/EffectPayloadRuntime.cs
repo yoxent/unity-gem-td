@@ -13,6 +13,8 @@ namespace GemTD.Gameplay.Combat
     {
         public const float MinFlightSeconds = 0.08f;
         public const float StationaryPulseVisualSeconds = 1f;
+        public const float FallLandVisualSeconds = 1f;
+        public const float FallEnemyHitVisualSeconds = 0.5f;
 
         EffectPayloadPlan _plan;
         float _progress;
@@ -36,10 +38,16 @@ namespace GemTD.Gameplay.Combat
             ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Slam;
         public bool ShowsAftershockVisual =>
             ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Aftershock;
+        public bool ShowsFallVisual =>
+            IsActive
+            && _plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky
+            && _delayRemaining <= 0f
+            && _progress > 0f;
         public bool IsAwaitingImpact =>
             IsActive
             && _plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
             && !_resolved;
+        public bool HasResolvedImpact => _resolved;
         public Vector3 Position { get; private set; }
         public Vector3 Direction { get; private set; }
         public Vector3 Origin => _plan.Origin;
@@ -113,6 +121,18 @@ namespace GemTD.Gameplay.Combat
                 return true;
             }
 
+            if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky && _resolved)
+            {
+                _visualRemaining -= dt;
+                if (_visualRemaining <= 0f)
+                {
+                    IsActive = false;
+                    return false;
+                }
+
+                return true;
+            }
+
             if (dt <= 0f)
                 return true;
 
@@ -121,6 +141,9 @@ namespace GemTD.Gameplay.Combat
             {
                 Position = _plan.LandingPoint;
                 ResolveImpact(livingCandidates);
+                if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+                    return true;
+
                 IsActive = false;
                 return false;
             }
@@ -183,23 +206,36 @@ namespace GemTD.Gameplay.Combat
             if (_plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse)
                 _visualRemaining = StationaryPulseVisualSeconds;
 
-            if (livingCandidates == null || _plan.AoeRadius <= 0f)
-                return;
+            var hitEnemy = false;
+            if (livingCandidates != null && _plan.AoeRadius > 0f)
+            {
+                _impactScratch.Clear();
+                AreaEffectResolver.CollectCircle(
+                    _plan.LandingPoint,
+                    _plan.AoeRadius,
+                    livingCandidates,
+                    _impactScratch,
+                    _plan.HitPolicy);
 
-            var damage = RoleStatValue.SampleHitDamage(_plan.DamageMin, _plan.DamageMax);
-            if (damage <= 0f)
-                return;
+                var damage = RoleStatValue.SampleHitDamage(_plan.DamageMin, _plan.DamageMax);
+                for (var i = 0; i < _impactScratch.Count; i++)
+                {
+                    var enemy = _impactScratch[i];
+                    if (enemy == null || !enemy.IsAlive)
+                        continue;
 
-            _impactScratch.Clear();
-            AreaEffectResolver.CollectCircle(
-                _plan.LandingPoint,
-                _plan.AoeRadius,
-                livingCandidates,
-                _impactScratch,
-                _plan.HitPolicy);
+                    hitEnemy = true;
+                    if (damage > 0f)
+                        ApplyDamage(enemy, damage);
+                }
+            }
 
-            for (var i = 0; i < _impactScratch.Count; i++)
-                ApplyDamage(_impactScratch[i], damage);
+            if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
+            {
+                _visualRemaining = hitEnemy
+                    ? FallEnemyHitVisualSeconds
+                    : FallLandVisualSeconds;
+            }
         }
 
         void ApplyDamage(EnemyRuntime enemy, float damage)

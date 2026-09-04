@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GemTD.Gameplay.Combat
 {
-    /// <summary>Slam VFX: scale uniformly to the AoE diameter and sit on the ground plane.</summary>
+    /// <summary>Slam VFX: uniform diameter scale for the visual child; parent pose sits on the ground plane.</summary>
     public static class SlamEffectVisual
     {
         public static Vector3 ScaleToDiameter(float aoeRadius)

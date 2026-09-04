@@ -30,15 +30,17 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] TowerView auraTowerPrefab;
         [SerializeField] TowerView curseTowerPrefab;
         [SerializeField] SkillLabDummyView[] dummyViews;
-        [SerializeField] ProjectileView projectilePrefab;
-        [SerializeField] ProjectileView slamEffectPrefab;
-        [SerializeField] ProjectileView aftershockEffectPrefab;
+        [SerializeField] EffectView projectilePrefab;
+        [SerializeField] EffectView slamEffectPrefab;
+        [SerializeField] EffectView aftershockEffectPrefab;
+        [SerializeField] EffectView fallEffectPrefab;
 
         readonly SkillLabSession _session = new SkillLabSession();
-        readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
-        ViewObjectPool<ProjectileView> _projectilePool;
-        ViewObjectPool<ProjectileView> _slamEffectPool;
-        ViewObjectPool<ProjectileView> _aftershockEffectPool;
+        readonly List<EffectView> _effectViews = new List<EffectView>(32);
+        ViewObjectPool<EffectView> _projectilePool;
+        ViewObjectPool<EffectView> _slamEffectPool;
+        ViewObjectPool<EffectView> _aftershockEffectPool;
+        ViewObjectPool<EffectView> _fallEffectPool;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -61,27 +63,35 @@ namespace GemTD.Gameplay.SkillLab
                 Debug.LogError("SkillLabController: projectilePrefab is not assigned.", this);
             else
             {
-                _projectilePool = new ViewObjectPool<ProjectileView>(
+                _projectilePool = new ViewObjectPool<EffectView>(
                     projectilePrefab,
                     transform,
-                    ProjectileViewBinder.BoltPrewarm);
-                _projectilePool.Prewarm(ProjectileViewBinder.BoltPrewarm);
+                    EffectViewBinder.BoltPrewarm);
+                _projectilePool.Prewarm(EffectViewBinder.BoltPrewarm);
             }
             if (slamEffectPrefab != null)
             {
-                _slamEffectPool = new ViewObjectPool<ProjectileView>(
+                _slamEffectPool = new ViewObjectPool<EffectView>(
                     slamEffectPrefab,
                     transform,
-                    ProjectileViewBinder.SlamPrewarm);
-                _slamEffectPool.Prewarm(ProjectileViewBinder.SlamPrewarm);
+                    EffectViewBinder.SlamPrewarm);
+                _slamEffectPool.Prewarm(EffectViewBinder.SlamPrewarm);
             }
             if (aftershockEffectPrefab != null)
             {
-                _aftershockEffectPool = new ViewObjectPool<ProjectileView>(
+                _aftershockEffectPool = new ViewObjectPool<EffectView>(
                     aftershockEffectPrefab,
                     transform,
-                    ProjectileViewBinder.AftershockPrewarm);
-                _aftershockEffectPool.Prewarm(ProjectileViewBinder.AftershockPrewarm);
+                    EffectViewBinder.AftershockPrewarm);
+                _aftershockEffectPool.Prewarm(EffectViewBinder.AftershockPrewarm);
+            }
+            if (fallEffectPrefab != null)
+            {
+                _fallEffectPool = new ViewObjectPool<EffectView>(
+                    fallEffectPrefab,
+                    transform,
+                    EffectViewBinder.FallPrewarm);
+                _fallEffectPool.Prewarm(EffectViewBinder.FallPrewarm);
             }
 
             _session.BindCatalog(draftGems);
@@ -112,7 +122,7 @@ namespace GemTD.Gameplay.SkillLab
             _escape?.Dispose();
             _escape = null;
             _session.ClearOverlay();
-            SyncProjectileViews();
+            SyncEffectViews();
         }
 
         void Update()
@@ -158,7 +168,7 @@ namespace GemTD.Gameplay.SkillLab
                 overlay.SetRangeRing(_session.TowerPosition, _session.Range);
             }
 
-            SyncProjectileViews();
+            SyncEffectViews();
         }
 
         public void SelectTower(int index)
@@ -269,15 +279,16 @@ namespace GemTD.Gameplay.SkillLab
             }
         }
 
-        void SyncProjectileViews()
+        void SyncEffectViews()
         {
-            ProjectileViewBinder.SyncLive(
-                _projectileViews,
+            EffectViewBinder.SyncLive(
+                _effectViews,
                 _session.Projectiles,
                 _session.EffectPayloads,
                 _projectilePool,
                 _slamEffectPool,
-                _aftershockEffectPool);
+                _aftershockEffectPool,
+                _fallEffectPool);
         }
 
         void TickDrag()

@@ -180,8 +180,8 @@ namespace GemTD.Gameplay.SkillLab
 
         public void Fire()
         {
-            _combat.ClearProjectiles(keepDelayedStationaryPulses: true);
-            _stampedPayloadCount = 0;
+            _combat.ClearProjectiles(keepInFlight: true);
+            _stampedPayloadCount = _combat.EffectPayloads.Count;
             _curseFieldActive = false;
             _statuses.Clear();
             _living.Clear();

@@ -25,9 +25,10 @@ namespace GemTD.Editor
         {
             var catalog = Load<TowerCatalog>("Assets/Data/Towers/GameplayReadyTowersCatalog.asset");
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
-            var projectilePrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Projectile_Bolt.prefab");
-            var slamEffectPrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Effect_Slam.prefab");
-            var aftershockEffectPrefab = Load<ProjectileView>("Assets/Prefabs/Phase2/Effect_Aftershock.prefab");
+            var projectilePrefab = Load<EffectView>("Assets/Prefabs/Phase2/Projectile_Bolt.prefab");
+            var slamEffectPrefab = Load<EffectView>("Assets/Prefabs/Phase2/Effect_Slam.prefab");
+            var aftershockEffectPrefab = Load<EffectView>("Assets/Prefabs/Phase2/Effect_Aftershock.prefab");
+            var fallEffectPrefab = Load<EffectView>("Assets/Prefabs/Effects/Effect_Fall.prefab");
             var towerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Default.prefab");
             var spellTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Spell.prefab");
             var slamTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Slam.prefab");
@@ -112,6 +113,7 @@ namespace GemTD.Editor
             ctrlSo.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
             ctrlSo.FindProperty("slamEffectPrefab").objectReferenceValue = slamEffectPrefab;
             ctrlSo.FindProperty("aftershockEffectPrefab").objectReferenceValue = aftershockEffectPrefab;
+            ctrlSo.FindProperty("fallEffectPrefab").objectReferenceValue = fallEffectPrefab;
             var gemsProp = ctrlSo.FindProperty("draftGems");
             gemsProp.arraySize = gems.Length;
             for (var i = 0; i < gems.Length; i++)

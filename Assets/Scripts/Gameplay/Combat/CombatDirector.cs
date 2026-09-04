@@ -61,27 +61,30 @@ namespace GemTD.Gameplay.Combat
         /// <summary>Despawn all in-flight bolts (wave end / leave combat). Views pool via sync.</summary>
         public void ClearProjectiles()
         {
-            ClearProjectiles(keepDelayedStationaryPulses: false);
+            ClearProjectiles(keepInFlight: false);
         }
 
-        public void ClearProjectiles(bool keepDelayedStationaryPulses)
+        /// <summary>
+        /// When <paramref name="keepInFlight"/> is true, already-released bolts, rain,
+        /// magma, sequential remainder, and delayed pulses keep running. Unreleased
+        /// pending strikes are still cleared so a new action can start.
+        /// </summary>
+        public void ClearProjectiles(bool keepInFlight)
         {
-            for (var i = 0; i < _projectiles.Count; i++)
-                _projectiles[i].Deactivate();
-            _projectiles.Clear();
-            _spawnBuffer.Clear();
-            for (var i = _effectPayloads.Count - 1; i >= 0; i--)
+            if (!keepInFlight)
             {
-                var payload = _effectPayloads[i];
-                if (keepDelayedStationaryPulses && IsLiveStationaryPulse(payload))
-                    continue;
-                payload.Deactivate();
-                _effectPayloads.RemoveAt(i);
+                for (var i = 0; i < _projectiles.Count; i++)
+                    _projectiles[i].Deactivate();
+                _projectiles.Clear();
+                _spawnBuffer.Clear();
+                for (var i = 0; i < _effectPayloads.Count; i++)
+                    _effectPayloads[i].Deactivate();
+                _effectPayloads.Clear();
+                _pendingSequential.Clear();
             }
 
             _payloadDefinitionsScratch.Clear();
             _payloadPlanScratch.Clear();
-            _pendingSequential.Clear();
             _pendingStrikes.Clear();
             _resolvedCasts.Clear();
         }
@@ -141,13 +144,6 @@ namespace GemTD.Gameplay.Combat
             }
 
             MergeSpawnBuffer();
-        }
-
-        static bool IsLiveStationaryPulse(EffectPayloadRuntime payload)
-        {
-            return payload != null
-                && payload.IsActive
-                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse;
         }
 
         /// <summary>Reset deterministic payload scatter before replaying a preview volley.</summary>
@@ -460,8 +456,6 @@ namespace GemTD.Gameplay.Combat
             var aimPoint = spec.AimMode == AimMode.Ground
                 ? PathIntercept.Predict(muzzle, speed, primary)
                 : primary.WorldPosition;
-            if (spec.DeliveryPattern == DeliveryPattern.Rain)
-                CancelRainFrom(tower);
 
             for (var v = 0; v < volleys; v++)
             {
@@ -794,22 +788,6 @@ namespace GemTD.Gameplay.Combat
                 runtime.Init(plan, flight, statuses, sourceTower.Def, _recordDamage, sourceTower);
                 BindCritRng(runtime);
                 _effectPayloads.Add(runtime);
-            }
-        }
-
-        void CancelRainFrom(TowerInstance tower)
-        {
-            if (tower == null)
-                return;
-
-            for (var i = _effectPayloads.Count - 1; i >= 0; i--)
-            {
-                var payload = _effectPayloads[i];
-                if (payload.Owner != tower)
-                    continue;
-
-                payload.Deactivate();
-                _effectPayloads.RemoveAt(i);
             }
         }
 

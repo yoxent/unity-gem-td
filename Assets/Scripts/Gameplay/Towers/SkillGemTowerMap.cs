@@ -54,6 +54,7 @@ namespace GemTD.Gameplay.Towers
         public const float FirestormStormRadius = 2.5f;
         public const float FirestormExplosionRadius = 1.3f;
         public const float FirestormDropHeight = 3f;
+        public const float FirestormDamageMultiplier = 0.125f;
         public const int BarrageProjectileCount = 6;
         public const float BarrageSpreadDegrees = 10f;
         public const float BarrageSequentialIntervalSeconds = 0.08f;
@@ -681,7 +682,7 @@ namespace GemTD.Gameplay.Towers
                     kind,
                     result.Slug,
                     sourceLevel);
-                AddLevelDamage(modifiers, values, kind);
+                AddLevelDamage(modifiers, values, kind, result.Slug);
                 AddLevelChain(modifiers, values, result.Slug);
                 AddLevelProjectileCount(modifiers, values, result.Slug);
                 AddLevelRadiusBonus(modifiers, values, kind);
@@ -884,7 +885,8 @@ namespace GemTD.Gameplay.Towers
         static void AddLevelDamage(
             List<RoleStatModifier> modifiers,
             JObject values,
-            RoleKind kind)
+            RoleKind kind,
+            string slug)
         {
             if (kind == RoleKind.Attack)
             {
@@ -916,6 +918,13 @@ namespace GemTD.Gameplay.Towers
 
             if (TryReadFlatDamage(values, out var min, out var max))
             {
+                if (kind == RoleKind.Spell
+                    && string.Equals(slug, "Firestorm", StringComparison.OrdinalIgnoreCase))
+                {
+                    min *= FirestormDamageMultiplier;
+                    max *= FirestormDamageMultiplier;
+                }
+
                 AddRange(modifiers, RoleStat.Damage, min, max);
                 return;
             }

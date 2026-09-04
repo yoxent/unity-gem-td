@@ -135,6 +135,64 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void FallFromSky_DoesNotShowVisualUntilFalling()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f,
+                DelaySeconds = 0.2f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+
+            Assert.IsFalse(runtime.ShowsFallVisual);
+            Assert.AreEqual(plan.Origin, runtime.Position);
+
+            runtime.Tick(0.1f, Living());
+            Assert.IsFalse(runtime.ShowsFallVisual);
+            Assert.AreEqual(plan.Origin, runtime.Position);
+
+            runtime.Tick(0.1f, Living());
+            Assert.IsFalse(runtime.ShowsFallVisual);
+            Assert.AreEqual(plan.Origin, runtime.Position);
+
+            runtime.Tick(0.05f, Living());
+            Assert.IsTrue(runtime.ShowsFallVisual);
+            Assert.Less(runtime.Position.y, plan.Origin.y);
+        }
+
+        [Test]
+        public void FallFromSky_ZeroDelay_DoesNotShowUntilMotionStarts()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f,
+                DelaySeconds = 0f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+
+            Assert.IsFalse(runtime.ShowsFallVisual);
+            runtime.Tick(0.05f, Living());
+            Assert.IsTrue(runtime.ShowsFallVisual);
+            Assert.Less(runtime.Position.y, plan.Origin.y);
+        }
+
+        [Test]
         public void FallFromSky_DetonatesAtLanding()
         {
             var landing = new Vector3(2f, 0f, 0f);
@@ -155,6 +213,73 @@ namespace GemTD.Tests.EditMode
             while (runtime.IsActive)
                 runtime.Tick(0.05f, living);
             Assert.Less(enemy.Hp, 100f);
+        }
+
+        [Test]
+        public void FallFromSky_LandOnEmptyGround_LingersOneSecondThenStores()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+
+            runtime.Tick(0.2f, Living());
+            Assert.IsTrue(runtime.IsActive);
+            Assert.IsTrue(runtime.HasResolvedImpact);
+            Assert.IsTrue(runtime.ShowsFallVisual);
+            Assert.AreEqual(landing, runtime.Position);
+
+            runtime.Tick(EffectPayloadRuntime.FallLandVisualSeconds - 0.05f, Living());
+            Assert.IsTrue(runtime.IsActive);
+            Assert.IsTrue(runtime.ShowsFallVisual);
+
+            runtime.Tick(0.06f, Living());
+            Assert.IsFalse(runtime.IsActive);
+            Assert.IsFalse(runtime.ShowsFallVisual);
+        }
+
+        [Test]
+        public void FallFromSky_HitEnemy_LingersHalfSecondThenStores()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var enemy = MakeEnemy(landing);
+            var living = Living(enemy);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+
+            runtime.Tick(0.2f, living);
+            Assert.Less(enemy.Hp, 100f);
+            Assert.IsTrue(runtime.IsActive);
+            Assert.IsTrue(runtime.HasResolvedImpact);
+            Assert.IsTrue(runtime.ShowsFallVisual);
+
+            var hpAfterHit = enemy.Hp;
+            runtime.Tick(EffectPayloadRuntime.FallEnemyHitVisualSeconds - 0.05f, living);
+            Assert.IsTrue(runtime.IsActive);
+            Assert.AreEqual(hpAfterHit, enemy.Hp, 1e-4f);
+
+            runtime.Tick(0.06f, living);
+            Assert.IsFalse(runtime.IsActive);
+            Assert.AreEqual(hpAfterHit, enemy.Hp, 1e-4f);
         }
 
         [Test]

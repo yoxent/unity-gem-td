@@ -5,24 +5,26 @@ using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Combat
 {
-    /// <summary>Gets/releases bolt vs slam vs aftershock views so those meshes stay distinct.</summary>
-    public static class ProjectileViewBinder
+    /// <summary>Gets/releases bolt vs slam vs aftershock vs fall views so those meshes stay distinct.</summary>
+    public static class EffectViewBinder
     {
         public const int BoltPrewarm = 48;
         public const int SlamPrewarm = 16;
         public const int AftershockPrewarm = 16;
+        public const int FallPrewarm = 48;
 
         public static void Release(
-            ProjectileView view,
-            ViewObjectPool<ProjectileView> boltPool,
-            ViewObjectPool<ProjectileView> slamPool,
-            ViewObjectPool<ProjectileView> aftershockPool)
+            EffectView view,
+            ViewObjectPool<EffectView> boltPool,
+            ViewObjectPool<EffectView> slamPool,
+            ViewObjectPool<EffectView> aftershockPool,
+            ViewObjectPool<EffectView> fallPool)
         {
             if (view == null)
                 return;
 
             view.Clear();
-            var pool = PoolForView(view, boltPool, slamPool, aftershockPool);
+            var pool = PoolForView(view, boltPool, slamPool, aftershockPool, fallPool);
             if (pool != null)
                 pool.Release(view);
             else
@@ -30,12 +32,13 @@ namespace GemTD.Gameplay.Combat
         }
 
         public static void SyncLive(
-            List<ProjectileView> views,
+            List<EffectView> views,
             IReadOnlyList<ProjectileRuntime> bolts,
             IReadOnlyList<EffectPayloadRuntime> payloads,
-            ViewObjectPool<ProjectileView> boltPool,
-            ViewObjectPool<ProjectileView> slamPool,
-            ViewObjectPool<ProjectileView> aftershockPool)
+            ViewObjectPool<EffectView> boltPool,
+            ViewObjectPool<EffectView> slamPool,
+            ViewObjectPool<EffectView> aftershockPool,
+            ViewObjectPool<EffectView> fallPool)
         {
             if (views == null)
                 return;
@@ -50,7 +53,7 @@ namespace GemTD.Gameplay.Combat
                     continue;
 
                 views.RemoveAt(i);
-                Release(view, boltPool, slamPool, aftershockPool);
+                Release(view, boltPool, slamPool, aftershockPool, fallPool);
             }
 
             for (var i = 0; i < boltCount; i++)
@@ -70,9 +73,12 @@ namespace GemTD.Gameplay.Combat
                 if (payload.Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
                     && !payload.ShowsPulseVisual)
                     continue;
+                if (payload.Plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky
+                    && !payload.ShowsFallVisual)
+                    continue;
                 if (HasPayloadView(views, payload))
                     continue;
-                var view = Take(PoolForPayload(payload, boltPool, slamPool, aftershockPool));
+                var view = Take(PoolForPayload(payload, boltPool, slamPool, aftershockPool, fallPool));
                 if (view == null)
                     continue;
                 views.Add(view);
@@ -88,7 +94,7 @@ namespace GemTD.Gameplay.Combat
         }
 
         static bool IsLive(
-            ProjectileView view,
+            EffectView view,
             IReadOnlyList<ProjectileRuntime> bolts,
             int boltCount,
             IReadOnlyList<EffectPayloadRuntime> payloads,
@@ -112,6 +118,9 @@ namespace GemTD.Gameplay.Combat
                     if (payloads[i].Plan.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
                         && !payloads[i].ShowsPulseVisual)
                         return false;
+                    if (payloads[i].Plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky
+                        && !payloads[i].ShowsFallVisual)
+                        return false;
                     return true;
                 }
             }
@@ -119,7 +128,7 @@ namespace GemTD.Gameplay.Combat
             return false;
         }
 
-        static bool HasBoltView(List<ProjectileView> views, ProjectileRuntime bolt)
+        static bool HasBoltView(List<EffectView> views, ProjectileRuntime bolt)
         {
             for (var i = 0; i < views.Count; i++)
             {
@@ -130,7 +139,7 @@ namespace GemTD.Gameplay.Combat
             return false;
         }
 
-        static bool HasPayloadView(List<ProjectileView> views, EffectPayloadRuntime payload)
+        static bool HasPayloadView(List<EffectView> views, EffectPayloadRuntime payload)
         {
             for (var i = 0; i < views.Count; i++)
             {
@@ -141,33 +150,39 @@ namespace GemTD.Gameplay.Combat
             return false;
         }
 
-        static ViewObjectPool<ProjectileView> PoolForView(
-            ProjectileView view,
-            ViewObjectPool<ProjectileView> boltPool,
-            ViewObjectPool<ProjectileView> slamPool,
-            ViewObjectPool<ProjectileView> aftershockPool)
+        static ViewObjectPool<EffectView> PoolForView(
+            EffectView view,
+            ViewObjectPool<EffectView> boltPool,
+            ViewObjectPool<EffectView> slamPool,
+            ViewObjectPool<EffectView> aftershockPool,
+            ViewObjectPool<EffectView> fallPool)
         {
-            if (view != null && view.IsAftershockEffect)
+            if (view is FallEffectView)
+                return fallPool != null ? fallPool : boltPool;
+            if (view is AftershockEffectView)
                 return aftershockPool != null ? aftershockPool : slamPool;
-            if (view != null && view.IsSlamEffect)
+            if (view is SlamEffectView)
                 return slamPool;
             return boltPool;
         }
 
-        static ViewObjectPool<ProjectileView> PoolForPayload(
+        static ViewObjectPool<EffectView> PoolForPayload(
             EffectPayloadRuntime payload,
-            ViewObjectPool<ProjectileView> boltPool,
-            ViewObjectPool<ProjectileView> slamPool,
-            ViewObjectPool<ProjectileView> aftershockPool)
+            ViewObjectPool<EffectView> boltPool,
+            ViewObjectPool<EffectView> slamPool,
+            ViewObjectPool<EffectView> aftershockPool,
+            ViewObjectPool<EffectView> fallPool)
         {
-            if (ProjectileView.WantsAftershockEffect(payload))
+            if (EffectView.WantsFallEffect(payload))
+                return fallPool != null ? fallPool : boltPool;
+            if (EffectView.WantsAftershockEffect(payload))
                 return aftershockPool != null ? aftershockPool : slamPool;
-            if (ProjectileView.WantsSlamEffect(payload))
+            if (EffectView.WantsSlamEffect(payload))
                 return slamPool;
             return boltPool;
         }
 
-        static ProjectileView Take(ViewObjectPool<ProjectileView> pool)
+        static EffectView Take(ViewObjectPool<EffectView> pool)
         {
             return pool != null ? pool.Get() : null;
         }

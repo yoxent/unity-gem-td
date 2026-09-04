@@ -1069,7 +1069,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Tick_Rain_RecastReplacesSameTowerStorm()
+        public void Tick_Rain_RecastKeepsPriorStorm()
         {
             _towerRole.AimMode = AimMode.Ground;
             _towerRole.DeliveryPattern = DeliveryPattern.Rain;
@@ -1094,7 +1094,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(10, director.EffectPayloads.Count);
             director.Tick(0.016f, towers, registry, _pipeline);
             director.Tick(0.1f, towers, registry, _pipeline);
-            Assert.AreEqual(10, director.EffectPayloads.Count);
+            Assert.AreEqual(20, director.EffectPayloads.Count);
         }
 
         [Test]
@@ -1653,6 +1653,35 @@ namespace GemTD.Tests.EditMode
 
             Assert.AreEqual(2, slams);
             Assert.AreEqual(2, aftershocks);
+        }
+
+        [Test]
+        public void TryFireOnce_Rain_SecondCastKeepsPriorStorm()
+        {
+            _towerRole.AimMode = AimMode.Ground;
+            _towerRole.DeliveryPattern = DeliveryPattern.Rain;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 0.05f),
+                Modifier(RoleStat.AttackSpeed, 100f)
+            };
+            _towerRole.EffectPayloads = new[] { FirestormCombatPayload() };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f, payloadRng: new System.Random(1));
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var primary = new EnemyRuntime();
+            primary.Init(_enemyDef, new[] { new Vector3(4f, 0f, 0f) });
+            var living = new List<EnemyRuntime> { primary };
+            var muzzle = new Vector3(0.5f, 0f, 0.5f);
+
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            director.TickInFlight(0.06f, living);
+            Assert.AreEqual(10, director.EffectPayloads.Count);
+            Assert.IsTrue(director.TryFireOnce(tower, muzzle, living, _pipeline));
+            director.TickInFlight(0.06f, living);
+            Assert.AreEqual(20, director.EffectPayloads.Count);
         }
 
         [Test]

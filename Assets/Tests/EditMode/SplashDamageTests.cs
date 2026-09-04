@@ -53,7 +53,11 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void SplashTower_DamagesPrimaryAndNearbyEnemy()
         {
-            var director = new CombatDirector(CellSize, projectileSpeed: 200f);
+            // Keep the exact-damage assertions independent of the default 5% crit roll.
+            var director = new CombatDirector(
+                CellSize,
+                projectileSpeed: 200f,
+                payloadRng: new System.Random(42));
             var tower = new TowerInstance(new Vector2Int(0, 0), _splashTower);
 
             // Same progress; nearby is off the flight line so ballistic hits primary first.

@@ -38,9 +38,10 @@ namespace GemTD.Gameplay
 
         [Header("Prefabs")]
         [SerializeField] EnemyView enemyPrefab;
-        [SerializeField] ProjectileView projectilePrefab;
-        [SerializeField] ProjectileView slamEffectPrefab;
-        [SerializeField] ProjectileView aftershockEffectPrefab;
+        [SerializeField] EffectView projectilePrefab;
+        [SerializeField] EffectView slamEffectPrefab;
+        [SerializeField] EffectView aftershockEffectPrefab;
+        [SerializeField] EffectView fallEffectPrefab;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] TowerView spellTowerPrefab;
         [SerializeField] TowerView slamTowerPrefab;
@@ -242,7 +243,7 @@ namespace GemTD.Gameplay
         readonly List<TowerView> _towerViews = new List<TowerView>(16);
         PlacementGhostView _placementGhost;
         readonly List<EnemyView> _enemyViews = new List<EnemyView>(32);
-        readonly List<ProjectileView> _projectileViews = new List<ProjectileView>(32);
+        readonly List<EffectView> _effectViews = new List<EffectView>(32);
         readonly List<ExpandMarkerView> _markers = new List<ExpandMarkerView>(16);
         readonly List<Vector2Int> _legalChunks = new List<Vector2Int>(16);
         readonly HashSet<Vector2Int> _legalChunkSet = new HashSet<Vector2Int>();
@@ -261,9 +262,10 @@ namespace GemTD.Gameplay
         readonly Dictionary<EnemyView, ViewObjectPool<EnemyView>> _enemyPoolsByPrefab =
             new Dictionary<EnemyView, ViewObjectPool<EnemyView>>(8);
         ManualMotionDispatcher _enemyHopDispatcher;
-        ViewObjectPool<ProjectileView> _projectilePool;
-        ViewObjectPool<ProjectileView> _slamEffectPool;
-        ViewObjectPool<ProjectileView> _aftershockEffectPool;
+        ViewObjectPool<EffectView> _projectilePool;
+        ViewObjectPool<EffectView> _slamEffectPool;
+        ViewObjectPool<EffectView> _aftershockEffectPool;
+        ViewObjectPool<EffectView> _fallEffectPool;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
@@ -339,6 +341,7 @@ namespace GemTD.Gameplay
             _projectilePool?.Clear();
             _slamEffectPool?.Clear();
             _aftershockEffectPool?.Clear();
+            _fallEffectPool?.Clear();
         }
 
         void Update()
@@ -390,7 +393,7 @@ namespace GemTD.Gameplay
                 _combat.ResolveQueuedAnimationActions(_livingScratch);
             }
 
-            SyncProjectileViews();
+            SyncEffectViews();
             SyncEnemyViews();
             TickPlacementGhost();
         }
@@ -621,21 +624,29 @@ namespace GemTD.Gameplay
             var parent = poolRoot != null ? poolRoot : transform;
             if (projectilePrefab != null)
             {
-                _projectilePool = new ViewObjectPool<ProjectileView>(projectilePrefab, parent, ProjectileViewBinder.BoltPrewarm);
-                _projectilePool.Prewarm(ProjectileViewBinder.BoltPrewarm);
+                _projectilePool = new ViewObjectPool<EffectView>(projectilePrefab, parent, EffectViewBinder.BoltPrewarm);
+                _projectilePool.Prewarm(EffectViewBinder.BoltPrewarm);
             }
             if (slamEffectPrefab != null)
             {
-                _slamEffectPool = new ViewObjectPool<ProjectileView>(slamEffectPrefab, parent, ProjectileViewBinder.SlamPrewarm);
-                _slamEffectPool.Prewarm(ProjectileViewBinder.SlamPrewarm);
+                _slamEffectPool = new ViewObjectPool<EffectView>(slamEffectPrefab, parent, EffectViewBinder.SlamPrewarm);
+                _slamEffectPool.Prewarm(EffectViewBinder.SlamPrewarm);
             }
             if (aftershockEffectPrefab != null)
             {
-                _aftershockEffectPool = new ViewObjectPool<ProjectileView>(
+                _aftershockEffectPool = new ViewObjectPool<EffectView>(
                     aftershockEffectPrefab,
                     parent,
-                    ProjectileViewBinder.AftershockPrewarm);
-                _aftershockEffectPool.Prewarm(ProjectileViewBinder.AftershockPrewarm);
+                    EffectViewBinder.AftershockPrewarm);
+                _aftershockEffectPool.Prewarm(EffectViewBinder.AftershockPrewarm);
+            }
+            if (fallEffectPrefab != null)
+            {
+                _fallEffectPool = new ViewObjectPool<EffectView>(
+                    fallEffectPrefab,
+                    parent,
+                    EffectViewBinder.FallPrewarm);
+                _fallEffectPool.Prewarm(EffectViewBinder.FallPrewarm);
             }
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
@@ -665,7 +676,7 @@ namespace GemTD.Gameplay
             if (IsCombatPhase(prev) && !IsCombatPhase(next))
             {
                 _combat?.ClearProjectiles();
-                SyncProjectileViews();
+                SyncEffectViews();
             }
 
             if (next == RunStateId.Plan)
@@ -1635,18 +1646,19 @@ namespace GemTD.Gameplay
                 _enemyViews[i]?.SyncTransform();
         }
 
-        void SyncProjectileViews()
+        void SyncEffectViews()
         {
             if (_combat == null)
                 return;
 
-            ProjectileViewBinder.SyncLive(
-                _projectileViews,
+            EffectViewBinder.SyncLive(
+                _effectViews,
                 _combat.Projectiles,
                 _combat.EffectPayloads,
                 _projectilePool,
                 _slamEffectPool,
-                _aftershockEffectPool);
+                _aftershockEffectPool,
+                _fallEffectPool);
         }
 
         void EnsureHomeMarker()

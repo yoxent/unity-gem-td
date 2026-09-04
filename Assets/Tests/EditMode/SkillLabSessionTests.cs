@@ -233,7 +233,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(4, first.Count);
 
             session.Fire();
-            WaitForMagmaPayloads(session, 4);
+            WaitForMagmaPayloads(session, 8);
             var second = CollectMagmaLandings(session.LastTrace);
             Assert.AreEqual(4, second.Count);
             Assert.IsFalse(
@@ -626,6 +626,68 @@ namespace GemTD.Tests.EditMode
 
             Assert.AreEqual(2, slams);
             Assert.AreEqual(2, aftershocks);
+        }
+
+        [Test]
+        public void Fire_Rain_SecondFireKeepsPriorStorm()
+        {
+            _fireball.Tags = GemTag.Spell | GemTag.Aoe;
+            _fireballRole.AimMode = AimMode.Ground;
+            _fireballRole.DeliveryPattern = DeliveryPattern.Rain;
+            _fireballRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.CastTime, 1f),
+                Modifier(RoleStat.CastSpeed, 100f),
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _fireballRole.EffectPayloads = new[]
+            {
+                new EffectPayloadDefinition
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    Anchor = EffectPayloadAnchor.GroundTarget,
+                    TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                    ScatterPattern = EffectPayloadScatterPattern.None,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Tags = GemTag.Aoe,
+                    Count = 4,
+                    DamageMultiplier = 1f,
+                    AoeRadius = 1.3f,
+                    MinDistance = 0f,
+                    MaxDistance = 2.5f,
+                    ArcHeight = 3f,
+                    IntervalSeconds = 0.15f
+                }
+            };
+
+            var session = MakeSession();
+            session.Tower.StrikeNormalized = 0.1f;
+            session.TowerPosition = Vector3.zero;
+            session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(3f, 0f, 0f));
+
+            session.Fire();
+            session.TickVolley(0.12f);
+            Assert.AreEqual(4, session.EffectPayloads.Count);
+            session.Fire();
+            session.TickVolley(0.12f);
+            Assert.AreEqual(8, session.EffectPayloads.Count);
+        }
+
+        [Test]
+        public void Fire_SecondFireKeepsInFlightProjectile()
+        {
+            var session = MakeSession();
+            session.Tower.StrikeNormalized = 0.1f;
+            session.TowerPosition = Vector3.zero;
+            session.Dummies.GetDummy(0).SetWorldPosition(new Vector3(12f, 0f, 0f));
+
+            session.Fire();
+            session.TickVolley(0.12f);
+            Assert.AreEqual(1, session.Projectiles.Count);
+            session.Fire();
+            session.TickVolley(0.12f);
+            Assert.AreEqual(2, session.Projectiles.Count);
         }
 
         [Test]
