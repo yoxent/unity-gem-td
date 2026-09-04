@@ -65,7 +65,7 @@ namespace GemTD.Editor
             EnsureFolder(RoleRoot);
             for (var i = 0; i < Categories.Length; i++)
             {
-                var folder = ToFolderName(Categories[i]);
+                var folder = TowerCatalogLayout.CategoryFolder(Categories[i]);
                 EnsureFolder(TowerRoot + "/" + folder);
                 EnsureFolder(RoleRoot + "/" + folder);
             }
@@ -305,20 +305,13 @@ namespace GemTD.Editor
             return Categories.Length;
         }
 
-        static string ToFolderName(string category)
-        {
-            if (string.IsNullOrEmpty(category))
-                return "Attack";
-            return char.ToUpperInvariant(category[0]) + category.Substring(1);
-        }
-
         static TowerRoleDefinition[] WriteRoles(SkillGemTowerMap.Result result)
         {
             var roles = new TowerRoleDefinition[result.RoleKinds.Length];
             for (var i = 0; i < result.RoleKinds.Length; i++)
             {
                 var kind = result.RoleKinds[i];
-                var folder = ToFolderName(RoleFolder(kind));
+                var folder = TowerCatalogLayout.CategoryFolder(RoleFolder(kind));
                 var path = RoleRoot + "/" + folder + "/Role_" + folder + "_" + result.Slug + ".asset";
                 roles[i] = WriteRole(path, kind, result, result.GetRolePayload(kind));
             }
@@ -407,8 +400,10 @@ namespace GemTD.Editor
 
         static TowerDefinition WriteTower(SkillGemTowerMap.Result result, TowerRoleDefinition[] roles)
         {
-            var folder = ToFolderName(result.Category);
+            var folder = TowerCatalogLayout.RelativeFolder(result.Category, result.Tags);
+            EnsureFolder(TowerRoot + "/" + folder);
             var path = TowerRoot + "/" + folder + "/Tower_" + result.Slug + ".asset";
+            RelocateExistingTower(result.Slug, path);
             var tower = LoadOrCreate<TowerDefinition>(path);
             tower.DisplayName = result.DisplayName;
             tower.Description = result.Description ?? "";
@@ -507,6 +502,24 @@ namespace GemTD.Editor
             var created = ScriptableObject.CreateInstance<T>();
             AssetDatabase.CreateAsset(created, path);
             return created;
+        }
+
+        static void RelocateExistingTower(string slug, string destPath)
+        {
+            var name = "Tower_" + slug;
+            var guids = AssetDatabase.FindAssets(name + " t:TowerDefinition", new[] { TowerRoot });
+            for (var i = 0; i < guids.Length; i++)
+            {
+                var existing = AssetDatabase.GUIDToAssetPath(guids[i]).Replace('\\', '/');
+                if (Path.GetFileNameWithoutExtension(existing) != name)
+                    continue;
+                if (existing == destPath)
+                    return;
+                var error = AssetDatabase.MoveAsset(existing, destPath);
+                if (!string.IsNullOrEmpty(error))
+                    Debug.LogError("[Gem TD] Failed to move " + existing + " -> " + destPath + ": " + error);
+                return;
+            }
         }
 
         static string FormatSkippedEntry(SkillGemTowerMap.Result result)

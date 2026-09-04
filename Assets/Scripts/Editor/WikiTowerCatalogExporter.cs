@@ -29,10 +29,16 @@ namespace GemTD.Editor
 
             var pages = new List<WikiTowerPage>(WikiTowerCatalogSets.Completed.Length);
             var missing = new List<string>();
+            var bySlug = IndexTowerAssets();
             for (var i = 0; i < WikiTowerCatalogSets.Completed.Length; i++)
             {
                 var entry = WikiTowerCatalogSets.Completed[i];
-                var assetPath = TowerAssetRoot + "/" + entry.CategoryName + "/Tower_" + entry.Slug + ".asset";
+                if (!bySlug.TryGetValue(entry.Slug, out var assetPath))
+                {
+                    missing.Add(entry.Slug + " (not under " + TowerAssetRoot + ")");
+                    continue;
+                }
+
                 var tower = AssetDatabase.LoadAssetAtPath<TowerDefinition>(assetPath);
                 if (tower == null)
                 {
@@ -74,6 +80,23 @@ namespace GemTD.Editor
                 "[Gem TD] Wiki tower catalog exported. pages=" + pages.Count +
                 " missing=" + missing.Count +
                 " root=" + towersRoot);
+        }
+
+        static Dictionary<string, string> IndexTowerAssets()
+        {
+            var map = new Dictionary<string, string>(StringComparer.Ordinal);
+            var guids = AssetDatabase.FindAssets("t:TowerDefinition", new[] { TowerAssetRoot });
+            const string prefix = "Tower_";
+            for (var i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]).Replace('\\', '/');
+                var file = Path.GetFileNameWithoutExtension(path);
+                if (file == null || !file.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+                map[file.Substring(prefix.Length)] = path;
+            }
+
+            return map;
         }
 
         static List<WikiTowerPage> Collect(List<WikiTowerPage> pages, string folder)
