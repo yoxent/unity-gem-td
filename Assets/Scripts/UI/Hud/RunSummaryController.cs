@@ -28,8 +28,10 @@ namespace GemTD.UI
         [SerializeField] TMP_Text totalGoldText;
         [SerializeField] TMP_Text totalBuiltText;
         [SerializeField] TMP_Text skillsText;
+        [SerializeField] TMP_Text newBestText;
         [SerializeField] Transform towerSectionsParent;
         [SerializeField] RunSummarySection towerSummarySectionPrefab;
+        [SerializeField] Button endlessButton;
         [SerializeField] Button mainMenuButton;
 
         readonly List<RunSummarySection> _sectionPool = new List<RunSummarySection>(4);
@@ -48,6 +50,11 @@ namespace GemTD.UI
                 Debug.LogError("RunSummaryController: mainMenuButton is not assigned.", this);
             else
                 mainMenuButton.onClick.AddListener(LoadMainMenu);
+
+            if (endlessButton != null)
+                endlessButton.onClick.AddListener(OnEndlessClicked);
+            else
+                Debug.LogWarning("RunSummaryController: endlessButton is not assigned (Victory Endless CTA).", this);
 
             if (panel != null)
                 panel.SetActive(false);
@@ -79,6 +86,9 @@ namespace GemTD.UI
             }
 
             var victory = state == RunStateId.VictorySummary;
+            if (endlessButton != null)
+                endlessButton.gameObject.SetActive(victory);
+
             var snapshot = _root.RunStats.Snapshot(_root.CurrentWaveNumber, _root.GetBuildBarTowers());
             ApplySnapshot(snapshot, victory);
         }
@@ -89,6 +99,13 @@ namespace GemTD.UI
                 outcomeText.text = victory ? "Victory" : "Defeat";
             if (waveText != null)
                 waveText.text = $"Wave {snapshot.WaveReached}";
+            if (newBestText != null)
+            {
+                var showNewBest = PlayerProfile.LastUpdateWasNewBest;
+                newBestText.gameObject.SetActive(showNewBest);
+                if (showNewBest)
+                    newBestText.text = "New best!";
+            }
             if (totalDamageText != null)
                 totalDamageText.text = $"Total damage: {Mathf.RoundToInt(snapshot.TotalDamage)}";
             if (totalKillsText != null)
@@ -133,6 +150,13 @@ namespace GemTD.UI
             }
 
             return _sectionPool[index];
+        }
+
+        void OnEndlessClicked()
+        {
+            if (_root == null)
+                return;
+            _root.BeginEndless();
         }
 
         static string GetTowerDisplayName(TowerDefinition tower)

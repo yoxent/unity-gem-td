@@ -3,6 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using GemTD.Gameplay.Grid;
 using GemTD.Gameplay.Map;
+using GemTD.Gameplay.Run;
 
 namespace GemTD.Tests.EditMode
 {
@@ -15,6 +16,7 @@ namespace GemTD.Tests.EditMode
         FakeCatalog _catalog;
         System.Random _rng;
         ChunkExpandService _expand;
+        RunConfig _config;
 
         sealed class FakeCatalog : IChunkCatalog
         {
@@ -111,6 +113,21 @@ namespace GemTD.Tests.EditMode
             return s;
         }
 
+        // Legal south-opening dead-end plus an isolated path cell that cannot
+        // reach the incoming portal (would create an unreachable spawn tip).
+        static MapChunkStamp MakeDeadEndWithIsland()
+        {
+            var go = new GameObject("deadend-island");
+            var s = go.AddComponent<MapChunkStamp>();
+            var m = new bool[ChunkMask.CellCount];
+            var mid = ChunkMask.Mid;
+            for (var y = 0; y <= mid; y++)
+                m[y * ChunkMask.Size + mid] = true;
+            m[0] = true;
+            s.ApplyMask(new ChunkMask(m));
+            return s;
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -122,7 +139,8 @@ namespace GemTD.Tests.EditMode
             _stamp = new ChunkStampService();
             _catalog = new FakeCatalog();
             _rng = new System.Random(0);
-            _expand = new ChunkExpandService(_grid, _path, _board, _stamp, _catalog, _rng);
+            _config = ScriptableObject.CreateInstance<RunConfig>();
+            _expand = new ChunkExpandService(_grid, _path, _board, _stamp, _catalog, _rng, _config);
         }
 
         [TearDown]
@@ -131,6 +149,7 @@ namespace GemTD.Tests.EditMode
             for (var i = 0; i < _catalog.Stamps.Count; i++)
                 if (_catalog.Stamps[i] != null)
                     Object.DestroyImmediate(_catalog.Stamps[i].gameObject);
+            Object.DestroyImmediate(_config);
         }
 
         void StampKeep()
@@ -224,6 +243,38 @@ namespace GemTD.Tests.EditMode
             _expand.CollectLegalExpands(into);
 
             Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test] public void CollectLegalExpands_RejectsPrefabWithPathIsland()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEndWithIsland());
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 6)));
+        }
+
+        [Test] public void CollectLegalExpands_DoesNotMutatePathTiles()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeCorner());
+            _catalog.Stamps.Add(MakeCross());
+
+            var cells = _path.Width * _path.Height;
+            var before = new bool[cells];
+            for (var y = 0; y < _path.Height; y++)
+                for (var x = 0; x < _path.Width; x++)
+                    before[y * _path.Width + x] = _path.IsPath(x, y);
+
+            _expand.CollectLegalExpands(new List<Vector2Int>());
+
+            for (var y = 0; y < _path.Height; y++)
+                for (var x = 0; x < _path.Width; x++)
+                    Assert.AreEqual(before[y * _path.Width + x], _path.IsPath(x, y), $"path mutated at {x},{y}");
         }
 
         [Test] public void TryExpand_LegalSlot_PicksPassingComboAndCommits()
@@ -437,6 +488,24 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TryForceDeadEndCap_CapsOpenTip_EvenWhenStraightAlsoLegal()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeDeadEnd());
+
+            Assert.IsTrue(_expand.TryForceDeadEndCap());
+            Assert.IsTrue(_grid.IsOccupied(4, 6));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreEqual(ChunkType.DeadEnd, slot.Mask.Type);
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+            Assert.IsFalse(into.Contains(new Vector2Int(4, 7)));
+        }
+
+        [Test]
         public void CollectLegalExpands_RejectsLoopFillEvenWithOutwardArm()
         {
             StampEastWestLoopGap();
@@ -576,6 +645,104 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(_expand.TryExpand(new Vector2Int(8, 2)));
             Assert.IsTrue(_grid.TryGet(8, 2, out var slot));
             Assert.AreNotEqual(0, (int)(slot.Mask.OpenEdges & EdgeFlags.West));
+        }
+
+        [Test]
+        public void TryExpand_BeforeFirstSplit_OpenTipDoesNotPickOptionalT()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeTJunction());
+            _expand.UpcomingWaveNumber = 7;
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreNotEqual(ChunkType.TJunction, slot.Mask.Type);
+        }
+
+        [Test]
+        public void TryExpand_AtTipCap_DoesNotPickOptionalT()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeTJunction());
+            var row = _config.DifficultyModes[0];
+            row.TipCap = 1;
+            row.SplitP = 1f;
+            _config.DifficultyModes[0] = row;
+            _expand.UpcomingWaveNumber = 20;
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreNotEqual(ChunkType.TJunction, slot.Mask.Type);
+        }
+
+        [Test]
+        public void TryExpand_AfterCrossStopWave_DoesNotPickOptionalCross()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeCross());
+            var row = _config.DifficultyModes[0];
+            row.SplitP = 1f;
+            _config.DifficultyModes[0] = row;
+            _expand.UpcomingWaveNumber = 35;
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreNotEqual(ChunkType.Cross, slot.Mask.Type);
+        }
+
+        [Test]
+        public void TryExpand_AfterTStopWave_DoesNotPickOptionalT()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeTJunction());
+            var row = _config.DifficultyModes[0];
+            row.SplitP = 1f;
+            _config.DifficultyModes[0] = row;
+            _expand.UpcomingWaveNumber = 45;
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreNotEqual(ChunkType.TJunction, slot.Mask.Type);
+        }
+
+        [Test]
+        public void TryExpand_ClosingWindow_PicksDeadEndOverStraight()
+        {
+            StampCrossCorridorWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeStraight());
+            _expand.UpcomingWaveNumber = 49;
+            _config.EndWave = 50;
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+            Assert.Greater(into.Count, 0);
+            Assert.IsTrue(_expand.TryExpand(into[0]));
+            Assert.IsTrue(_grid.TryGet(into[0].x, into[0].y, out var slot));
+            Assert.AreEqual(ChunkType.DeadEnd, slot.Mask.Type);
+        }
+
+        [Test]
+        public void TryExpand_NotClosing_StillDropsOptionalDeadEnd()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeCorner());
+            _expand.UpcomingWaveNumber = 1;
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreEqual(ChunkType.Corner, slot.Mask.Type);
         }
 
         void StampHorseshoeDeadEndPocket()

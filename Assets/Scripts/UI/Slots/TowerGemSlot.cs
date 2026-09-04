@@ -4,6 +4,7 @@ using TMPro;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
+using GemTD.Core;
 using UnityEngine.EventSystems;
 
 namespace GemTD.UI
@@ -16,12 +17,14 @@ namespace GemTD.UI
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] Button xButton;
         [SerializeField] Button slotButton;
+        [SerializeField] GameObject lockedIcon;
         [SerializeField] HoverPointerRelay slotHover;
         [SerializeField] HoverPointerRelay xHover;
+        [SerializeField] string dropSfxKey = "Drop";
 
         GameCompositionRoot _root;
         int _socketIndex = -1;
-        GemDefinition _gem;
+        GemInstance _gem;
 
         static TowerGemSlot s_dragSource;
         static RectTransform s_ghost;
@@ -31,6 +34,9 @@ namespace GemTD.UI
 
         void Awake()
         {
+            if (lockedIcon == null)
+                Debug.LogError("TowerGemSlot: assign Locked Icon on the prefab.", this);
+
             if (xButton != null)
                 xButton.onClick.AddListener(OnXClicked);
 
@@ -44,16 +50,28 @@ namespace GemTD.UI
                 slotHover,
                 xHover,
                 xButton != null ? xButton.gameObject : null,
-                () => _root != null && _root.SelectedSocketLockRemaining <= 0f && _gem != null);
+                () => _root != null && _root.CanUnsocketSelected(_socketIndex));
         }
 
-        public void Configure(GameCompositionRoot root, int socketIndex, GemDefinition gem)
+        public void Configure(GameCompositionRoot root, int socketIndex, GemInstance gem)
         {
             _root = root;
             _socketIndex = socketIndex;
             _gem = gem;
-            if (icon != null) icon.color = gem != null ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
-            if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
+            if (icon != null) icon.color = !gem.IsEmpty ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
+            if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : "—";
+            if (xButton != null && (_root == null || !_root.CanUnsocketSelected(_socketIndex)))
+                xButton.gameObject.SetActive(false);
+            RefreshLockOverlay();
+        }
+
+        public void RefreshLockOverlay()
+        {
+            var locked = _root != null && _root.SelectedSocketsLocked;
+            if (lockedIcon != null && lockedIcon.activeSelf != locked)
+                lockedIcon.SetActive(locked);
+            if (slotButton != null)
+                slotButton.interactable = !locked;
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -104,6 +122,7 @@ namespace GemTD.UI
             if (GemDragState.InventoryIndex < 0 || _socketIndex < 0)
                 return;
 
+            GameEvents.RaisePlaySfx(dropSfxKey);
             _root.RequestSocketFromInventoryAt(GemDragState.InventoryIndex, _socketIndex);
         }
 
@@ -118,14 +137,14 @@ namespace GemTD.UI
         {
             if (eventData.button != PointerEventData.InputButton.Right)
                 return;
-            if (_root == null || _gem == null)
+            if (_root == null || _gem.IsEmpty)
                 return;
             if (_root.States == null)
                 return;
             var s = _root.States.Current;
             if (s != RunStateId.Plan && s != RunStateId.Combat)
                 return;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            if (!_root.CanUnsocketSelected(_socketIndex))
                 return;
 
             _root.RequestUnsocket(_socketIndex);
@@ -133,11 +152,11 @@ namespace GemTD.UI
 
         bool CanBeginDrag()
         {
-            if (_root == null || _gem == null)
+            if (_root == null || _gem.IsEmpty)
                 return false;
             if (_socketIndex < 0)
                 return false;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            if (!_root.CanUnsocketSelected(_socketIndex))
                 return false;
             if (_root.States == null)
                 return false;
@@ -182,7 +201,7 @@ namespace GemTD.UI
             tmp.raycastTarget = false;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.fontSize = nameLabel != null ? nameLabel.fontSize : 16f;
-            tmp.text = nameLabel != null ? nameLabel.text : (_gem != null ? _gem.DisplayName : "—");
+            tmp.text = nameLabel != null ? nameLabel.text : (!_gem.IsEmpty ? _gem.DisplayName : "—");
             if (nameLabel != null)
                 tmp.font = nameLabel.font;
 

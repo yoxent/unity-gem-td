@@ -126,11 +126,15 @@ namespace GemTD.Gameplay.Run
                         return;
                 }
 
-                var tower = hit.collider.GetComponentInParent<TowerView>();
-                if (tower != null)
+                // Place mode owns the click (Bloons): do not steal it as a tower select.
+                if (!_root.HasPlaceTowerSelected)
                 {
-                    _root.SelectTower(tower);
-                    return;
+                    var tower = hit.collider.GetComponentInParent<TowerView>();
+                    if (tower != null)
+                    {
+                        _root.SelectTower(tower);
+                        return;
+                    }
                 }
             }
 

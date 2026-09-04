@@ -14,15 +14,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Run.RunConfig
   StartingGold: 100
   StartingLives: 20
-  EndWaveGold: 25
+  EndWaveGold: 50
+  EndWave: 50
   InventoryCapacity: 10
+  MaxDamagingTowers: 5
+  MaxCurseTowers: 2
+  MaxAuraTowers: 2
   OpenArmCount: 1
   ChunkGridWidth: 13
   ChunkGridHeight: 13
-  SocketLockdownSeconds: 3
-  DraftSkipGold: 75
-  SeedHydraRecipeGems: 1
+  SocketLockdownSeconds: 0
   SeedGems:
   - {fileID: 11400000, guid: e58557673bf7d024bb6f27eb6870660d, type: 2}
   - {fileID: 11400000, guid: d46f707e8e3fdad42be378f8e1a52483, type: 2}
   - {fileID: 11400000, guid: 45f03424ea8dc3e4a8c44937d4b2e0f5, type: 2}
+  DifficultyModes:
+  - FirstSplitWave: 8
+    CrossUnlockWave: 25
+    TipCap: 4
+    SplitP: 0.3
+    HpMultiplier: 1
+  - FirstSplitWave: 7
+    CrossUnlockWave: 22
+    TipCap: 6
+    SplitP: 0.32
+    HpMultiplier: 1.1
+  - FirstSplitWave: 6
+    CrossUnlockWave: 18
+    TipCap: 8
+    SplitP: 0.34
+    HpMultiplier: 1.25
+  - FirstSplitWave: 5
+    CrossUnlockWave: 15
+    TipCap: 10
+    SplitP: 0.36
+    HpMultiplier: 1.4

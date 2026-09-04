@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine;
 using GemTD.Core;
 
 namespace GemTD.Tests.EditMode
@@ -50,6 +51,45 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1, count);
             GameEvents.ClearAll();
             GameEvents.RaiseRequestTargetingAllConfirm();
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void PlaySfx_RaisesAndClears()
+        {
+            string received = null;
+            GameEvents.PlaySfx += key => received = key;
+            GameEvents.RaisePlaySfx("Click");
+            Assert.AreEqual("Click", received);
+            GameEvents.ClearAll();
+            GameEvents.RaisePlaySfx("Drop");
+            Assert.AreEqual("Click", received);
+        }
+
+        [Test]
+        public void PlayBgm_RaisesAndClears()
+        {
+            AudioCue received = null;
+            var cue = ScriptableObject.CreateInstance<AudioCue>();
+            GameEvents.PlayBgm += c => received = c;
+            GameEvents.RaisePlayBgm(cue);
+            Assert.AreSame(cue, received);
+            GameEvents.ClearAll();
+            received = null;
+            GameEvents.RaisePlayBgm(cue);
+            Assert.IsNull(received);
+            Object.DestroyImmediate(cue);
+        }
+
+        [Test]
+        public void StopBgm_RaisesAndClears()
+        {
+            var count = 0;
+            GameEvents.StopBgm += () => count++;
+            GameEvents.RaiseStopBgm();
+            Assert.AreEqual(1, count);
+            GameEvents.ClearAll();
+            GameEvents.RaiseStopBgm();
             Assert.AreEqual(1, count);
         }
     }

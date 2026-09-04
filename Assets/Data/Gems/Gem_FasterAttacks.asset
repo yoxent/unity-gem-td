@@ -12,6 +12,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d58eaa9bb5eec44c9718c97df04697c, type: 3}
   m_Name: Gem_FasterAttacks
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
-  Id: 10
+  Id: 7
   DisplayName: Faster Attacks
-  Description: +25% fire rate
+  Description: Increases attack speed. Damage per attack is reduced.
+  DraftWeight: 1
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 264
+  Modifiers:
+  - Stat: 7
+    Operation: 2
+    ValueKind: 0
+    Value: 1.44
+    Min: 0
+    Max: 0
+    Lesser: 1.33
+    Normal: 1.44
+    Greater: 1.52
+    Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
+  EffectPayloads: []

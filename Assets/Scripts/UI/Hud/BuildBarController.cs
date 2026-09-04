@@ -3,14 +3,17 @@ using UnityEngine.UI;
 using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Run;
+using GemTD.Gameplay.Towers;
 using System.Collections.Generic;
 
 namespace GemTD.UI
 {
-    /// <summary>Lives on BuildBar prefab. Build-tower buttons for Plan + Combat placement.</summary>
+    /// <summary>Lives on BuildBar prefab. Pooled build-tower buttons for Plan + Combat placement.</summary>
     public sealed class BuildBarController : MonoBehaviour
     {
         [SerializeField] GameObject panel;
+        [SerializeField] Transform buildButtonsParent;
+        [SerializeField] BuildTowerButton buttonPrefab;
         [SerializeField] List<BuildTowerButton> buildButtons = new List<BuildTowerButton>();
 
         GameCompositionRoot _root;
@@ -35,21 +38,64 @@ namespace GemTD.UI
         public void Bind(GameCompositionRoot root)
         {
             _root = root;
-            if (buildButtons == null || buildButtons.Count == 0)
-            {
-                Debug.LogError("BuildBarController: assign BuildTowerButton refs on the prefab.", this);
-                return;
-            }
+            BindExistingButtons();
+            _buttonsBound = true;
+            Refresh();
+        }
+
+        void BindExistingButtons()
+        {
+            if (buildButtons == null)
+                buildButtons = new List<BuildTowerButton>();
 
             for (var i = 0; i < buildButtons.Count; i++)
             {
-                var idx = i;
-                if (buildButtons[i] != null)
-                    buildButtons[i].GetButton().onClick.AddListener(() => _root?.SetPlaceTower(idx));
+                if (buildButtons[i] == null)
+                    continue;
+                WireClick(buildButtons[i], i);
             }
+        }
 
-            _buttonsBound = true;
-            Refresh();
+        void WireClick(BuildTowerButton button, int index)
+        {
+            var btn = button.GetButton();
+            if (btn == null)
+                return;
+            btn.onClick.RemoveAllListeners();
+            var idx = index;
+            btn.onClick.AddListener(() => _root?.SetPlaceTower(idx));
+        }
+
+        void EnsureButtonCount(int needed)
+        {
+            if (needed <= 0)
+                return;
+
+            while (buildButtons.Count < needed)
+            {
+                BuildTowerButton extra = null;
+                var parent = buildButtonsParent != null
+                    ? buildButtonsParent
+                    : (buildButtons.Count > 0 && buildButtons[0] != null
+                        ? buildButtons[0].transform.parent
+                        : transform);
+
+                if (buttonPrefab != null)
+                    extra = Instantiate(buttonPrefab, parent);
+                else if (buildButtons.Count > 0 && buildButtons[0] != null)
+                    extra = Instantiate(buildButtons[0], parent);
+
+                if (extra == null)
+                {
+                    Debug.LogError("BuildBarController: assign buttonPrefab (or seed BuildTowerButton refs) on the prefab.", this);
+                    return;
+                }
+
+                extra.name = "BuildTowerButton_" + buildButtons.Count;
+                var idx = buildButtons.Count;
+                WireClick(extra, idx);
+                buildButtons.Add(extra);
+            }
         }
 
         void OnGoldChanged(int _) => Refresh();
@@ -69,17 +115,38 @@ namespace GemTD.UI
             if (!showBar) return;
 
             var gold = _root.Economy != null ? _root.Economy.Gold : 0;
-            var towerCount = _root.BuildBarTowerCount;
+            var filledCount = _root.BuildBarTowerCount;
+            var maxSlots = _root.Draft != null && _root.Draft.Roster != null
+                ? _root.Draft.Roster.MaxSlots
+                : 0;
+            if (maxSlots <= 0)
+            {
+                for (var i = 0; i < buildButtons.Count; i++)
+                {
+                    if (buildButtons[i] != null)
+                        buildButtons[i].gameObject.SetActive(false);
+                }
+                return;
+            }
+
+            EnsureButtonCount(maxSlots);
+
             for (var i = 0; i < buildButtons.Count; i++)
             {
                 if (buildButtons[i] == null) continue;
-                var show = i < towerCount;
+                var show = i < maxSlots;
                 buildButtons[i].gameObject.SetActive(show);
                 if (!show) continue;
-                buildButtons[i].UpdateTowerButton(_root.GetPlaceTowerName(i), _root.GetPlaceTowerCost(i));
-                var btn = buildButtons[i].GetButton();
-                if (btn != null)
-                    btn.interactable = gold >= _root.GetPlaceTowerCost(i);
+
+                if (i < filledCount)
+                {
+                    buildButtons[i].UpdateTowerButton(_root.GetPlaceTowerName(i), _root.GetPlaceTowerCost(i));
+                    var btn = buildButtons[i].GetButton();
+                    if (btn != null)
+                        btn.interactable = gold >= _root.GetPlaceTowerCost(i);
+                }
+                else
+                    buildButtons[i].BindEmpty();
             }
         }
     }

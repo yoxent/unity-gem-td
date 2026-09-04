@@ -55,6 +55,30 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void ApplyDamage_Invulnerable_StaysAliveAtFullHp()
+        {
+            _def.MaxHealth = 10f;
+            var enemy = CreateEnemy();
+            enemy.Invulnerable = true;
+            enemy.ApplyDamage(999f);
+            Assert.IsTrue(enemy.IsAlive);
+            Assert.AreEqual(10f, enemy.Hp, 1e-4f);
+        }
+
+        [Test]
+        public void Init_HealthScale_SetsHpAndMaxHealthWithoutMutatingDefinition()
+        {
+            _def.MaxHealth = 20f;
+            var waypoints = new List<Vector3> { Vector3.zero, Vector3.right };
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints, 2f);
+
+            Assert.AreEqual(40f, enemy.MaxHealth, 1e-4f);
+            Assert.AreEqual(40f, enemy.Hp, 1e-4f);
+            Assert.AreEqual(20f, _def.MaxHealth, 1e-4f);
+        }
+
+        [Test]
         public void ArmoredDefinition_LeakDamageIsReadable()
         {
             _def.LeakDamage = 2;

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace GemTD.Gameplay.Map
@@ -145,39 +144,109 @@ namespace GemTD.Gameplay.Map
             return new Vector2Int(chunkCoord.x * Size + local.x, chunkCoord.y * Size + local.y);
         }
 
+        /// <summary>
+        /// True when every path tile is reachable from the given opening (edge mid).
+        /// Expand legality uses this instead of stamping + full-board BFS per prefab×yaw.
+        /// </summary>
+        public bool AllPathTilesReachEdge(EdgeFlags edge)
+        {
+            var start = EdgeMidIndex(edge);
+            if (start < 0 || _isPath == null || !_isPath[start])
+                return false;
+
+            var pathCount = 0;
+            for (var i = 0; i < CellCount; i++)
+            {
+                if (_isPath[i])
+                    pathCount++;
+            }
+            if (pathCount <= 0)
+                return false;
+
+            ClearVisitScratch();
+            var head = 0;
+            var tail = 0;
+            VisitScratch[start] = true;
+            QueueScratch[tail++] = start;
+            var reached = 1;
+
+            while (head < tail)
+            {
+                var i = QueueScratch[head++];
+                var x = i % Size;
+                var y = i / Size;
+                reached += TryVisitPath(x + 1, y, ref tail);
+                reached += TryVisitPath(x - 1, y, ref tail);
+                reached += TryVisitPath(x, y + 1, ref tail);
+                reached += TryVisitPath(x, y - 1, ref tail);
+            }
+
+            return reached == pathCount;
+        }
+
         public bool AreOpeningsConnected()
         {
             var edges = OpenEdges;
             if (edges == EdgeFlags.None) return true;
 
-            var starts = new List<int>(4);
-            if ((edges & EdgeFlags.North) != 0) starts.Add(Idx(Mid, Size - 1));
-            if ((edges & EdgeFlags.South) != 0) starts.Add(Idx(Mid, 0));
-            if ((edges & EdgeFlags.East)  != 0) starts.Add(Idx(Size - 1, Mid));
-            if ((edges & EdgeFlags.West)  != 0) starts.Add(Idx(0, Mid));
-            if (starts.Count < 2) return true;
+            var n = 0;
+            if ((edges & EdgeFlags.North) != 0) OpeningScratch[n++] = Idx(Mid, Size - 1);
+            if ((edges & EdgeFlags.South) != 0) OpeningScratch[n++] = Idx(Mid, 0);
+            if ((edges & EdgeFlags.East)  != 0) OpeningScratch[n++] = Idx(Size - 1, Mid);
+            if ((edges & EdgeFlags.West)  != 0) OpeningScratch[n++] = Idx(0, Mid);
+            if (n < 2) return true;
 
-            var visited = new bool[CellCount];
-            var q = new Queue<int>(CellCount);
-            var isPath = _isPath;
-            q.Enqueue(starts[0]); visited[starts[0]] = true;
-            while (q.Count > 0)
+            ClearVisitScratch();
+            var head = 0;
+            var tail = 0;
+            VisitScratch[OpeningScratch[0]] = true;
+            QueueScratch[tail++] = OpeningScratch[0];
+            while (head < tail)
             {
-                var i = q.Dequeue();
-                var x = i % Size; var y = i / Size;
-                TryVisit(x + 1, y); TryVisit(x - 1, y); TryVisit(x, y + 1); TryVisit(x, y - 1);
+                var i = QueueScratch[head++];
+                var x = i % Size;
+                var y = i / Size;
+                TryVisitPath(x + 1, y, ref tail);
+                TryVisitPath(x - 1, y, ref tail);
+                TryVisitPath(x, y + 1, ref tail);
+                TryVisitPath(x, y - 1, ref tail);
             }
-            for (var i = 1; i < starts.Count; i++)
-                if (!visited[starts[i]]) return false;
+
+            for (var i = 1; i < n; i++)
+            {
+                if (!VisitScratch[OpeningScratch[i]])
+                    return false;
+            }
             return true;
+        }
 
-            void TryVisit(int x, int y)
-            {
-                if (x < 0 || x >= Size || y < 0 || y >= Size) return;
-                var j = Idx(x, y);
-                if (visited[j] || !isPath[j]) return;
-                visited[j] = true; q.Enqueue(j);
-            }
+        static readonly bool[] VisitScratch = new bool[CellCount];
+        static readonly int[] QueueScratch = new int[CellCount];
+        static readonly int[] OpeningScratch = new int[4];
+
+        static void ClearVisitScratch()
+        {
+            for (var i = 0; i < CellCount; i++)
+                VisitScratch[i] = false;
+        }
+
+        int TryVisitPath(int x, int y, ref int tail)
+        {
+            if (x < 0 || x >= Size || y < 0 || y >= Size) return 0;
+            var j = Idx(x, y);
+            if (VisitScratch[j] || !_isPath[j]) return 0;
+            VisitScratch[j] = true;
+            QueueScratch[tail++] = j;
+            return 1;
+        }
+
+        static int EdgeMidIndex(EdgeFlags edge)
+        {
+            if (edge == EdgeFlags.North) return Idx(Mid, Size - 1);
+            if (edge == EdgeFlags.South) return Idx(Mid, 0);
+            if (edge == EdgeFlags.East) return Idx(Size - 1, Mid);
+            if (edge == EdgeFlags.West) return Idx(0, Mid);
+            return -1;
         }
 
         static int Idx(int x, int y) => y * Size + x;

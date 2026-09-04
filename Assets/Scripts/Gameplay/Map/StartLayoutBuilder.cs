@@ -6,8 +6,6 @@ namespace GemTD.Gameplay.Map
 {
     public static class StartLayoutBuilder
     {
-        const int CorridorLength = 4;
-
         // Open-arm order by difficulty: 1=E, 2=E+S, 3=E+S+N, 4=all.
         static readonly EdgeFlags[] ArmOrder =
         {
@@ -48,24 +46,19 @@ namespace GemTD.Gameplay.Map
             if ((keepRes.Mask.OpenEdges & ArmOrder[0]) == 0)
                 Debug.LogError("[GemTD] Keep has no mid-edge opening toward the start arm. Paint a path to a mid-edge cell.");
 
-            var armsToPlace = openArmCount;
-
-            for (var a = 0; a < armsToPlace; a++)
+            // One Straight per open arm (Home + N Straights), not a long corridor.
+            for (var a = 0; a < openArmCount; a++)
             {
                 var dir = ArmOrder[a];
                 var offset = OffsetFor(dir);
                 var requiredEdge = dir.Opposite();
+                var coord = new Vector2Int(keep.x + offset.x, keep.y + offset.y);
+                if (!grid.InBounds(coord.x, coord.y)) continue;
 
-                for (var i = 1; i <= CorridorLength; i++)
-                {
-                    var coord = new Vector2Int(keep.x + offset.x * i, keep.y + offset.y * i);
-                    if (!grid.InBounds(coord.x, coord.y)) break;
-
-                    var straight = PickStraight(catalog, rng);
-                    var yaw = PickYawForEdge(straight, requiredEdge, rng);
-                    var res = stamp.StampTentative(coord, straight, yaw, path, board);
-                    stamp.Commit(coord, straight, yaw, res.Mask, grid);
-                }
+                var straight = PickStraight(catalog, rng);
+                var yaw = PickYawForEdge(straight, requiredEdge, rng);
+                var res = stamp.StampTentative(coord, straight, yaw, path, board);
+                stamp.Commit(coord, straight, yaw, res.Mask, grid);
             }
 
             if (!keepRes.Mask.HasHome)
@@ -104,12 +97,11 @@ namespace GemTD.Gameplay.Map
             var required = EdgeFlags.None;
             for (var i = 0; i < openArmCount; i++)
                 required |= ArmOrder[i];
-            var baseMask = prefab.GetMask();
             for (var yaw = 0; yaw < 4; yaw++)
-                if (baseMask.Rotated(yaw).OpenEdges == required)
+                if (prefab.GetRotatedMask(yaw).OpenEdges == required)
                     return yaw;
             for (var yaw = 0; yaw < 4; yaw++)
-                if ((baseMask.Rotated(yaw).OpenEdges & ArmOrder[0]) != 0)
+                if ((prefab.GetRotatedMask(yaw).OpenEdges & ArmOrder[0]) != 0)
                     return yaw;
             return 0;
         }
@@ -138,11 +130,10 @@ namespace GemTD.Gameplay.Map
         static int PickYawForEdge(MapChunkStamp prefab, EdgeFlags requiredEdge, System.Random rng)
         {
             // Collect valid yaws, pick one at random.
-            var baseMask = prefab.GetMask();
             var valid = new int[4];
             var n = 0;
             for (var yaw = 0; yaw < 4; yaw++)
-                if ((baseMask.Rotated(yaw).OpenEdges & requiredEdge) != 0)
+                if ((prefab.GetRotatedMask(yaw).OpenEdges & requiredEdge) != 0)
                     valid[n++] = yaw;
             if (n == 0) return 0; // shouldn't happen for a Straight facing any edge
             return valid[rng.Next(n)];

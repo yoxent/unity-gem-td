@@ -12,11 +12,22 @@ namespace GemTD.Gameplay.Combat
             public float Duration;
             public float Magnitude;
             public float InitialDuration;
+            public object Source;
         }
 
         readonly Dictionary<EnemyRuntime, List<StatusEntry>> _byEnemy = new Dictionary<EnemyRuntime, List<StatusEntry>>();
 
         public void Apply(EnemyRuntime enemy, StatusId id, float duration, float magnitude)
+        {
+            Apply(enemy, id, duration, magnitude, source: null);
+        }
+
+        public void Apply(
+            EnemyRuntime enemy,
+            StatusId id,
+            float duration,
+            float magnitude,
+            object source)
         {
             if (enemy == null || duration <= 0f)
                 return;
@@ -38,6 +49,7 @@ namespace GemTD.Gameplay.Combat
                     Duration = duration,
                     Magnitude = magnitude,
                     InitialDuration = duration,
+                    Source = source,
                 };
                 return;
             }
@@ -48,7 +60,48 @@ namespace GemTD.Gameplay.Combat
                 Duration = duration,
                 Magnitude = magnitude,
                 InitialDuration = duration,
+                Source = source,
             });
+        }
+
+        public void ClearCurseHexes(List<EnemyRuntime> living)
+        {
+            if (living == null)
+                return;
+
+            for (var e = 0; e < living.Count; e++)
+            {
+                var enemy = living[e];
+                if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
+                    continue;
+
+                for (var i = list.Count - 1; i >= 0; i--)
+                {
+                    if (!CurseHex.IsCurseStatus(list[i].Id))
+                        continue;
+                    list.RemoveAt(i);
+                }
+
+                if (list.Count == 0)
+                    _byEnemy.Remove(enemy);
+            }
+        }
+
+        public bool TryGetMagnitude(EnemyRuntime enemy, StatusId id, out float magnitude)
+        {
+            magnitude = 0f;
+            if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
+                return false;
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].Id != id || list[i].Duration <= 0f)
+                    continue;
+                magnitude = list[i].Magnitude;
+                return true;
+            }
+
+            return false;
         }
 
         public bool Has(EnemyRuntime enemy, StatusId id)
@@ -65,6 +118,48 @@ namespace GemTD.Gameplay.Combat
             return false;
         }
 
+        public bool HasAnyCurse(EnemyRuntime enemy)
+        {
+            if (enemy == null || !_byEnemy.TryGetValue(enemy, out var list))
+                return false;
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].Duration > 0f && CurseHex.IsCurseStatus(list[i].Id))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public void Clear()
+        {
+            _byEnemy.Clear();
+        }
+
+        public bool TryConsumeHallowingFlame(EnemyRuntime enemy, object attacker, out float magnitude)
+        {
+            magnitude = 0f;
+            if (enemy == null || attacker == null || !_byEnemy.TryGetValue(enemy, out var list))
+                return false;
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].Id != StatusId.HallowingFlame || list[i].Duration <= 0f)
+                    continue;
+                if (list[i].Source == null || ReferenceEquals(list[i].Source, attacker))
+                    return false;
+
+                magnitude = list[i].Magnitude;
+                list.RemoveAt(i);
+                if (list.Count == 0)
+                    _byEnemy.Remove(enemy);
+                return true;
+            }
+
+            return false;
+        }
+
         public void Tick(float dt, List<EnemyRuntime> living)
         {
             if (living == null)
@@ -76,13 +171,20 @@ namespace GemTD.Gameplay.Combat
                 if (enemy == null || !enemy.IsAlive || !_byEnemy.TryGetValue(enemy, out var list))
                     continue;
 
+                enemy.MoveSpeedMultiplier = 1f;
                 var chillMagnitude = -1f;
+                var frozen = false;
+                var temporalLess = 0f;
 
                 for (var i = list.Count - 1; i >= 0; i--)
                 {
                     var entry = list[i];
 
-                    if (entry.Id == StatusId.Ignite && dt > 0f && entry.InitialDuration > 0f)
+                    if ((entry.Id == StatusId.Ignite
+                            || entry.Id == StatusId.Bleed
+                            || entry.Id == StatusId.Poison)
+                        && dt > 0f
+                        && entry.InitialDuration > 0f)
                     {
                         var tickDt = dt;
                         if (tickDt > entry.Duration)
@@ -91,9 +193,6 @@ namespace GemTD.Gameplay.Combat
                         if (damage > 0f)
                             enemy.ApplyDamage(damage);
                     }
-
-                    if (entry.Id == StatusId.Chill)
-                        chillMagnitude = entry.Magnitude;
 
                     if (dt > 0f)
                     {
@@ -106,10 +205,22 @@ namespace GemTD.Gameplay.Combat
 
                         list[i] = entry;
                     }
+
+                    if (entry.Id == StatusId.Chill)
+                        chillMagnitude = entry.Magnitude;
+                    else if (entry.Id == StatusId.Freeze)
+                        frozen = true;
+                    else if (entry.Id == StatusId.CurseTemporalChains)
+                        temporalLess = entry.Magnitude;
                 }
 
-                if (chillMagnitude >= 0f)
+                if (frozen)
+                    enemy.MoveSpeedMultiplier = 0f;
+                else if (chillMagnitude >= 0f)
                     enemy.MoveSpeedMultiplier = chillMagnitude;
+
+                if (!frozen && temporalLess > 0f)
+                    enemy.MoveSpeedMultiplier *= Mathf.Max(0f, 1f - temporalLess / 100f);
 
                 if (list.Count == 0)
                     _byEnemy.Remove(enemy);
@@ -117,6 +228,11 @@ namespace GemTD.Gameplay.Combat
         }
 
         public float ApplyDamage(EnemyRuntime enemy, float amount)
+        {
+            return ApplyDamage(enemy, amount, default);
+        }
+
+        public float ApplyDamage(EnemyRuntime enemy, float amount, SkillSpec spec)
         {
             if (enemy == null || amount <= 0f)
                 return 0f;
@@ -134,7 +250,7 @@ namespace GemTD.Gameplay.Combat
                 }
             }
 
-            enemy.ApplyDamage(amplified);
+            enemy.ApplyDamage(amplified, spec, this);
             return amplified;
         }
 

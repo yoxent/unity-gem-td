@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e6db3b80c401b448a86b7a04ea2a6fe, type: 3}
+  m_Name: Role_Spell_Firestorm
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.SpellRoleDefinition
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.75
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 8
+    Min: 0
+    Max: 0
+  Effects: []
+  Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 5.5
+      Max: 8.25
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 10.125
+      Max: 15.125
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 16.875
+      Max: 25.25
+    Effects: []
+  - SourceLevel: 4
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 27.75
+      Max: 41.625
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 45.125
+      Max: 67.625
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 72.625
+      Max: 109
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 115.875
+      Max: 173.875
+    Effects: []
+  - SourceLevel: 8
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 163.875
+      Max: 245.75
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 206
+      Max: 309
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 258.5
+      Max: 387.875
+    Effects: []
+  EffectPayloads:
+  - Trigger: 1
+    Anchor: 3
+    TravelPattern: 3
+    ScatterPattern: 0
+    HitPolicy: 0
+    tags: 2
+    Count: 10
+    DamageMultiplier: 1
+    AoeRadius: 1.3
+    MinDistance: 0
+    MaxDistance: 2.5
+    ArcHeight: 3
+    DelaySeconds: 0
+    IntervalSeconds: 0.15
+    RepeatCount: 0
+  PierceBehavior: 0
+  AimMode: 1
+  DeliveryPattern: 6
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
+  Mix:
+  - Type: 1
+    Percent: 100

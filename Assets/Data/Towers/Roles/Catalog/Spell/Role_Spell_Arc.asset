@@ -1,0 +1,212 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e6db3b80c401b448a86b7a04ea2a6fe, type: 3}
+  m_Name: Role_Spell_Arc
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.SpellRoleDefinition
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.6
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 0
+    Value: 8
+    Min: 0
+    Max: 0
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 9
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  Effects: []
+  Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 13
+      Max: 75
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 4
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 34
+      Max: 194
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 5
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 68
+      Max: 387
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 6
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 4
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 131
+      Max: 740
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 7
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 198
+      Max: 1122
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 7
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 297
+      Max: 1683
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 8
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 442
+      Max: 2503
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 9
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 8
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 592
+      Max: 3356
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 10
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 719
+      Max: 4072
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 11
+      Min: 0
+      Max: 0
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 871
+      Max: 4934
+    - Stat: 10
+      Operation: 0
+      ValueKind: 0
+      Value: 11
+      Min: 0
+      Max: 0
+    Effects: []
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
+  Mix:
+  - Type: 3
+    Percent: 100

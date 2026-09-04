@@ -1,0 +1,240 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa82269e7a3b96d4dacb5681498c016b, type: 3}
+  m_Name: Role_Aura_Hatred
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.AuraRoleDefinition
+  Modifiers:
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 1.5
+    Min: 0
+    Max: 0
+  - Stat: 7
+    Operation: 0
+    ValueKind: 0
+    Value: 50
+    Min: 0
+    Max: 0
+  Effects: []
+  Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 0.3
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 25
+      Max: 36
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 25
+      Max: 36
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 0.7
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 42
+      Max: 60
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 42
+      Max: 60
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.1
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 60
+      Max: 86
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 60
+      Max: 86
+  - SourceLevel: 4
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.5
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 82
+      Max: 116
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 82
+      Max: 116
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 1.9
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 109
+      Max: 155
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 109
+      Max: 155
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 2.3
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 143
+      Max: 205
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 143
+      Max: 205
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 2.7
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 188
+      Max: 268
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 188
+      Max: 268
+  - SourceLevel: 8
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 229
+      Max: 327
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 229
+      Max: 327
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 3.2
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 260
+      Max: 372
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 260
+      Max: 372
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 4
+      Operation: 1
+      ValueKind: 0
+      Value: 3.4
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 36
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 296
+      Max: 423
+    - Kind: 37
+      Operation: 0
+      ValueKind: 1
+      Value: 0
+      Min: 296
+      Max: 423
+  EffectPayloads: []

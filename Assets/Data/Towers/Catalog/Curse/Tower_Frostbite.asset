@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a73c30da3ad78d0418e3567e462e3405, type: 3}
+  m_Name: Tower_Frostbite
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
+  DisplayName: Frostbite
+  Description: Curses all targets in an area, lowering their cold resistance and
+    giving them a chance to be frozen when hit.
+  Cost: 30
+  BuildIncrement: 15
+  Damage: 0
+  Roles:
+  - {fileID: 11400000, guid: ec94d5e47c9f8f27d2aa603c60b0a241, type: 2}
+  SocketCount: 3
+  AllowsHydraEvolution: 0
+  tags: 34406418

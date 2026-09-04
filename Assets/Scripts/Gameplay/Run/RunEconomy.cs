@@ -10,6 +10,7 @@ namespace GemTD.Gameplay.Run
         public int Gold { get; private set; }
         public int Lives { get; private set; }
         public bool IsDefeated { get; private set; }
+        public int LastEndWaveGold { get; private set; }
 
         public RunEconomy(int gold, int lives, Action<int> onGoldEarned = null)
         {
@@ -39,7 +40,12 @@ namespace GemTD.Gameplay.Run
 
         public void GrantKillGold(int amount) => EarnGold(amount);
 
-        public void GrantEndWaveGold(int amount) => EarnGold(amount);
+        public void GrantEndWaveGold(int amount)
+        {
+            if (amount > 0)
+                LastEndWaveGold = amount;
+            EarnGold(amount);
+        }
 
         public void GrantDraftSkipGold(int amount) => EarnGold(amount);
 

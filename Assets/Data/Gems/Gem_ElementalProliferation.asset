@@ -12,7 +12,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d58eaa9bb5eec44c9718c97df04697c, type: 3}
   m_Name: Gem_ElementalProliferation
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
-  Id: 8
+  Id: 6
   DisplayName: Elemental Proliferation
-  Description: "\u221225% direct damage. Spread Ignite + Chill + Shock nearby."
+  Description: Spreads elemental ailments to nearby enemies. Direct damage is reduced.
   DraftWeight: 1
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 69271810
+  Modifiers:
+  - Stat: 17
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    Lesser: 1
+    Normal: 1
+    Greater: 1
+    Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
+  - Stat: 49
+    Operation: 2
+    ValueKind: 0
+    Value: 1.19
+    Min: 0
+    Max: 0
+    Lesser: 1.11
+    Normal: 1.19
+    Greater: 1.27
+    Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
+  EffectPayloads: []

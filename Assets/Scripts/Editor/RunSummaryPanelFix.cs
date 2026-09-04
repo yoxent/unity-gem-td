@@ -53,17 +53,80 @@ namespace GemTD.Editor
             ClearChildren(sectionsParent);
 
             var totalGoldText = EnsureTotalGoldText(panel);
+            var newBestText = EnsureNewBestText(panel);
+            var endlessButton = EnsureEndlessButton(panel);
 
             var so = new SerializedObject(controller);
             so.FindProperty("towerSectionsParent").objectReferenceValue = sectionsParent;
             so.FindProperty("towerSummarySectionPrefab").objectReferenceValue = sectionPrefab;
             so.FindProperty("totalGoldText").objectReferenceValue = totalGoldText;
+            so.FindProperty("newBestText").objectReferenceValue = newBestText;
+            so.FindProperty("endlessButton").objectReferenceValue = endlessButton;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             PrefabUtility.UnloadPrefabContents(root);
             AssetDatabase.SaveAssets();
             Debug.Log("RunSummaryPanelFix: cleaned and wired " + PrefabPath);
+        }
+
+        static Button EnsureEndlessButton(Transform panel)
+        {
+            var existing = panel.Find("EndlessButton");
+            if (existing != null)
+            {
+                var btn = existing.GetComponent<Button>();
+                if (btn != null)
+                {
+                    PlaceEndlessAboveMainMenu(existing, panel);
+                    return btn;
+                }
+            }
+
+            var mainMenu = panel.Find("MainMenuButton");
+            var go = new GameObject("EndlessButton", typeof(RectTransform), typeof(CanvasRenderer));
+            go.transform.SetParent(panel, false);
+
+            var image = go.AddComponent<Image>();
+            image.color = new Color(0.85f, 0.55f, 0.15f, 1f);
+
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            var layout = go.AddComponent<LayoutElement>();
+            layout.preferredHeight = 56f;
+
+            var labelGo = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer));
+            labelGo.transform.SetParent(go.transform, false);
+            var labelRect = labelGo.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+            var label = labelGo.AddComponent<TextMeshProUGUI>();
+            label.text = "Endless";
+            label.fontSize = 28;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = Color.white;
+
+            PlaceEndlessAboveMainMenu(go.transform, panel);
+
+            if (mainMenu != null)
+            {
+                var panelRect = panel as RectTransform;
+                if (panelRect != null && panelRect.sizeDelta.y < 820f)
+                    panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, 820f);
+            }
+
+            return button;
+        }
+
+        static void PlaceEndlessAboveMainMenu(Transform endless, Transform panel)
+        {
+            var mainMenu = panel.Find("MainMenuButton");
+            if (mainMenu == null)
+                return;
+            endless.SetSiblingIndex(mainMenu.GetSiblingIndex());
         }
 
         static TMP_Text EnsureTotalGoldText(Transform panel)
@@ -96,6 +159,45 @@ namespace GemTD.Editor
                 panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, 760f);
 
             return text;
+        }
+
+        static TMP_Text EnsureNewBestText(Transform panel)
+        {
+            var existing = panel.Find("NewBestText");
+            if (existing != null)
+            {
+                var tmp = existing.GetComponent<TMP_Text>();
+                if (tmp != null)
+                {
+                    PlaceNewBestAfterWave(existing, panel);
+                    existing.gameObject.SetActive(false);
+                    return tmp;
+                }
+            }
+
+            var go = new GameObject("NewBestText", typeof(RectTransform), typeof(CanvasRenderer));
+            go.transform.SetParent(panel, false);
+            go.SetActive(false);
+
+            var text = go.AddComponent<TextMeshProUGUI>();
+            text.text = "New best!";
+            text.fontSize = 22;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = new Color(0.878f, 0.706f, 0.294f, 1f);
+
+            var layout = go.AddComponent<LayoutElement>();
+            layout.preferredHeight = 28f;
+
+            PlaceNewBestAfterWave(go.transform, panel);
+            return text;
+        }
+
+        static void PlaceNewBestAfterWave(Transform newBest, Transform panel)
+        {
+            var wave = panel.Find("WaveText");
+            if (wave == null)
+                return;
+            newBest.SetSiblingIndex(wave.GetSiblingIndex() + 1);
         }
 
         static Transform EnsureSectionsParent(Transform panel)

@@ -4,12 +4,11 @@ using UnityEngine;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
-using GemTD.Gameplay.Towers;
 using GemTD.Gameplay.Meta;
 
 namespace GemTD.Editor
 {
-    /// <summary>Creates PR5 gem SOs, Ballista sockets=3, Hydra seed, 9-gem draft pool.</summary>
+    /// <summary>Creates the MVP gem SOs, Hydra Codex entry, and 11-gem draft pool.</summary>
     public static class Phase2Pr5WireScene
     {
         const string RunScenePath = "Assets/Scenes/Run.unity";
@@ -24,27 +23,35 @@ namespace GemTD.Editor
             if (!AssetDatabase.IsValidFolder(GemsFolder))
                 AssetDatabase.CreateFolder("Assets/Data", "Gems");
 
-            var lmp = EnsureGem("Gem_LMP.asset", GemId.Lmp, "Multiple Projectiles",
+            var multipleProjectiles = EnsureGem("Gem_MultipleProjectiles.asset", GemId.MultipleProjectiles, "Multiple Projectiles",
                 "−20% damage / +2 projectiles. Spread shotgun.", 2f);
             var chain = EnsureGem("Gem_Chain.asset", GemId.Chain, "Chain",
-                "−30% damage / +2 chains. Hop damage ×0.6 after first hit.", 2f);
+                "−30% damage / +1 chain (3 units). Hop damage ×0.6 after first hit.", 2f);
             var fork = EnsureGem("Gem_Fork.asset", GemId.Fork, "Fork",
-                "−15% damage. On hit, split ×2 at ±45°.", 2f);
+                "−15% damage. On hit, split ×2 at ±30°.", 2f);
             var area = EnsureGem("Gem_IncreasedArea.asset", GemId.IncreasedArea, "Increased Area",
                 "+35% AoE / −10% fire rate.", 1f);
-            var ignite = EnsureGem("Gem_Ignite.asset", GemId.Ignite, "Ignite",
-                "Apply Ignite (short fire DoT).", 1f);
-            var chill = EnsureGem("Gem_Chill.asset", GemId.Chill, "Chill",
-                "Apply Chill (short slow).", 1f);
-            var shock = EnsureGem("Gem_Shock.asset", GemId.Shock, "Shock",
-                "Apply Shock (target takes extra damage).", 1f);
             var pierce = EnsureGem("Gem_Pierce.asset", GemId.Pierce, "Pierce",
-                "−15% damage. Projectile continues through targets.", 1f);
+                "−15% damage. Continues through one extra target.", 1f);
             var prolif = EnsureGem("Gem_ElementalProliferation.asset", GemId.ElementalProliferation,
                 "Elemental Proliferation",
                 "−25% direct damage. Spread Ignite + Chill + Shock nearby.", 1f);
+            var combustion = EnsureGem("Gem_Combustion.asset", GemId.Combustion, "Combustion",
+                "+14% more damage. Apply Ignite.", 1f);
+            var addedFire = EnsureGem("Gem_AddedFireDamage.asset", GemId.AddedFireDamage, "Added Fire Damage",
+                "+31% of hit as extra fire damage.", 1f);
+            var addedCold = EnsureGem("Gem_AddedColdDamage.asset", GemId.AddedColdDamage, "Added Cold Damage",
+                "+4 added damage. Apply Chill.", 1f);
+            var addedLightning = EnsureGem("Gem_AddedLightningDamage.asset", GemId.AddedLightningDamage,
+                "Added Lightning Damage", "+4 added damage. Apply Shock.", 1f);
+            var knockback = EnsureGem("Gem_Knockback.asset", GemId.Knockback, "Knockback",
+                "34% chance to knock back 1 unit along the path.", 1f);
 
-            var pool = new[] { lmp, chain, fork, area, ignite, chill, shock, pierce, prolif };
+            var pool = new[]
+            {
+                multipleProjectiles, chain, fork, area, pierce, prolif,
+                combustion, addedFire, addedCold, addedLightning, knockback
+            };
             for (var i = 0; i < pool.Length; i++)
             {
                 if (pool[i] == null)
@@ -66,10 +73,10 @@ namespace GemTD.Editor
                 AssetDatabase.CreateAsset(hydra, $"{CodexFolder}/Codex_Hydra.asset");
             }
             hydra.Id = "hydra-ballista";
-            hydra.DisplayName = "Hydra Ballista";
+            hydra.DisplayName = "Hydra";
             hydra.LockedHint = "Three jaws share one quarrelsome appetite.";
-            hydra.UnlockedText = "Hydra Ballista — Chain + Fork + Multiple Projectiles";
-            hydra.Recipe = new[] { chain, fork, lmp };
+            hydra.UnlockedText = "Hydra — Chain + Fork + Multiple Projectiles";
+            hydra.Recipe = new[] { chain, fork, multipleProjectiles };
 
             var snakeIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Temp/Icons/snake.png");
             hydra.Icon = snakeIcon;
@@ -87,30 +94,6 @@ namespace GemTD.Editor
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
 
-            var ballista = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Ballista.asset");
-            if (ballista == null)
-            {
-                Debug.LogError("[PR5 Wire] Missing Tower_Ballista.asset");
-                return;
-            }
-
-            ballista.SocketCount = 3;
-            EditorUtility.SetDirty(ballista);
-
-            var cannon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Cannon.asset");
-            if (cannon != null)
-            {
-                cannon.SocketCount = 3;
-                EditorUtility.SetDirty(cannon);
-            }
-
-            var beacon = AssetDatabase.LoadAssetAtPath<TowerDefinition>("Assets/Data/Towers/Tower_Beacon.asset");
-            if (beacon != null)
-            {
-                beacon.SocketCount = 1;
-                EditorUtility.SetDirty(beacon);
-            }
-
             var cfg = AssetDatabase.LoadAssetAtPath<RunConfig>("Assets/Data/RunConfig_Default.asset");
             if (cfg == null)
             {
@@ -119,8 +102,7 @@ namespace GemTD.Editor
             }
 
             cfg.InventoryCapacity = 10;
-            cfg.SeedHydraRecipeGems = true;
-            cfg.SeedGems = new[] { lmp, chain, fork };
+            cfg.SeedGems = new[] { multipleProjectiles, chain, fork };
             EditorUtility.SetDirty(cfg);
 
             var scene = EditorSceneManager.OpenScene(RunScenePath);
@@ -131,18 +113,26 @@ namespace GemTD.Editor
                 return;
             }
 
+            var draftCatalogPath = $"{GemsFolder}/DraftPoolCatalog.asset";
+            var draftCatalog = AssetDatabase.LoadAssetAtPath<DraftPoolCatalog>(draftCatalogPath);
+            if (draftCatalog == null)
+            {
+                draftCatalog = ScriptableObject.CreateInstance<DraftPoolCatalog>();
+                AssetDatabase.CreateAsset(draftCatalog, draftCatalogPath);
+            }
+
+            draftCatalog.Gems = pool;
+            EditorUtility.SetDirty(draftCatalog);
+
             var so = new SerializedObject(root);
-            var draftProp = so.FindProperty("draftPool");
+            var draftProp = so.FindProperty("draftPoolCatalog");
             if (draftProp == null)
             {
-                Debug.LogError("[PR5 Wire] draftPool property missing.");
+                Debug.LogError("[PR5 Wire] draftPoolCatalog property missing.");
                 return;
             }
 
-            draftProp.arraySize = pool.Length;
-            for (var i = 0; i < pool.Length; i++)
-                draftProp.GetArrayElementAtIndex(i).objectReferenceValue = pool[i];
-
+            draftProp.objectReferenceValue = draftCatalog;
             so.FindProperty("runConfig").objectReferenceValue = cfg;
             so.FindProperty("codexCatalog").objectReferenceValue = catalog;
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -155,7 +145,7 @@ namespace GemTD.Editor
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[PR5 Wire] draftPool={pool.Length}, Ballista sockets=3, SeedHydraRecipeGems=true.");
+            Debug.Log($"[PR5 Wire] draftPoolCatalog={pool.Length}, Hydra off.");
         }
 
         static GemDefinition EnsureGem(string fileName, GemId id, string displayName, string description, float weight)

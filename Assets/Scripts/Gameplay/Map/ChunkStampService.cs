@@ -20,27 +20,48 @@ namespace GemTD.Gameplay.Map
 
     public sealed class ChunkStampService
     {
+        readonly bool[] _prevPath = new bool[ChunkMask.CellCount];
+        readonly bool[] _prevBuildable = new bool[ChunkMask.CellCount];
+        readonly TileHeightMap _heights;
+        readonly System.Random _rng;
+
+        public HeightInfluenceWeights Weights { get; set; }
+
+        public ChunkStampService(
+            TileHeightMap heights = null,
+            System.Random rng = null,
+            HeightInfluenceWeights weights = default)
+        {
+            _heights = heights;
+            _rng = rng;
+            Weights = weights.IsUnset ? HeightInfluenceWeights.Default : weights;
+        }
+
+        /// <summary>
+        /// One tentative stamp at a time — rollback buffers are reused.
+        /// Call <see cref="Rollback"/> (or <see cref="Commit"/>) before the next stamp.
+        /// </summary>
         public StampResult StampTentative(Vector2Int coord, MapChunkStamp prefab, int yaw, PathGraph path, GridBoard board)
         {
-            var mask = prefab.GetMask().Rotated(yaw);
-            var prevPath = new bool[ChunkMask.CellCount];
-            var prevBuildable = new bool[ChunkMask.CellCount];
+            var mask = prefab.GetRotatedMask(yaw);
             for (var ly = 0; ly < ChunkMask.Size; ly++)
                 for (var lx = 0; lx < ChunkMask.Size; lx++)
                 {
                     var wx = coord.x * ChunkMask.Size + lx;
                     var wy = coord.y * ChunkMask.Size + ly;
                     var i = ly * ChunkMask.Size + lx;
-                    prevPath[i] = path.IsPath(wx, wy);
-                    prevBuildable[i] = board.IsBuildable(wx, wy);
+                    _prevPath[i] = path.IsPath(wx, wy);
+                    _prevBuildable[i] = board.IsBuildable(wx, wy);
                     path.SetPathTile(wx, wy, mask.IsPath(lx, ly));
                 }
-            return new StampResult(prevPath, prevBuildable, mask);
+            return new StampResult(_prevPath, _prevBuildable, mask);
         }
 
         public void Commit(Vector2Int coord, MapChunkStamp prefab, int yaw, ChunkMask mask, ChunkGrid grid)
         {
             grid.Place(coord, new ChunkSlot(prefab, yaw, mask));
+            if (_heights != null && _rng != null)
+                TileHeightAssigner.AssignChunk(_heights, mask, coord, _rng, Weights);
             GameEvents.RaiseChunkPlaced(coord);
         }
 
