@@ -316,6 +316,7 @@ namespace GemTD.Gameplay.Combat
                 RemoveAnimationEventListener(tower);
                 tower.CurrentFireInterval = interval;
                 tower.NotifyFired(aimPoint);
+                GameEvents.RaiseCameraShake(CameraShakeRequest.Fire);
             }
 
             var useAnimationActionEvent = tower != null && tower.UsesAnimationActionEvent;
@@ -459,6 +460,8 @@ namespace GemTD.Gameplay.Combat
 
             for (var v = 0; v < volleys; v++)
             {
+                GameEvents.RaisePlaySfx(SfxKeys.TowerShoot);
+
                 if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
                 {
                     SpawnWarpStrike(
@@ -883,6 +886,12 @@ namespace GemTD.Gameplay.Combat
                 EffectPayloadHitPolicy.PerImpact);
             for (var i = 0; i < _casterNovaScratch.Count; i++)
                 ApplyPulseDamage(_casterNovaScratch[i], damage, spec, statuses, sourceTower);
+
+            if (_casterNovaScratch.Count > 0)
+            {
+                GameEvents.RaisePlaySfx(SfxKeys.HitEnemy);
+                GameEvents.RaiseCameraShake(CameraShakeRequest.Hit);
+            }
         }
 
         void ApplyGroundPulse(
@@ -900,6 +909,8 @@ namespace GemTD.Gameplay.Combat
 
             var damage = RoleStatValue.SampleHitDamage(damageMin, damageMax);
             ApplyPulseDamage(primary, damage, spec, statuses, sourceTower);
+            GameEvents.RaisePlaySfx(SfxKeys.HitEnemy);
+            GameEvents.RaiseCameraShake(CameraShakeRequest.Hit);
 
             var radius = spec.AoeRadius;
             if (radius <= 0f || living == null)
@@ -1074,6 +1085,7 @@ namespace GemTD.Gameplay.Combat
                 pending.Wait -= dt;
                 while (pending.Wait <= 0f && pending.NextIndex < pending.Spec.ProjectileCount)
                 {
+                    GameEvents.RaisePlaySfx(SfxKeys.TowerShoot);
                     SpawnVolley(
                         pending.Origin,
                         pending.AimPoint,

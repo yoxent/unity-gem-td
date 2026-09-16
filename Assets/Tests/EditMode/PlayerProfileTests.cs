@@ -74,6 +74,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0.4f, reloaded.MasterVolume, 0.0001f);
             Assert.AreEqual(0.6f, reloaded.BgmVolume, 0.0001f);
             Assert.AreEqual(0.8f, reloaded.SfxVolume, 0.0001f);
+            Assert.IsFalse(reloaded.CameraShakeDisabled);
         }
 
         [Test]
@@ -92,6 +93,17 @@ namespace GemTD.Tests.EditMode
             var reloaded = new JsonFileGemTdSaveStore(_tempPath).Load();
             Assert.AreEqual(4, reloaded.HighestWaveCleared);
             Assert.AreEqual(0.2f, reloaded.MasterVolume, 0.0001f);
+        }
+
+        [Test]
+        public void SetCameraShakeEnabled_PreservesHighestWave()
+        {
+            PlayerProfile.Initialize(new JsonFileGemTdSaveStore(_tempPath));
+            Assert.IsTrue(PlayerProfile.TryUpdateHighestWave(4));
+            PlayerProfile.SetCameraShakeEnabled(false);
+            var reloaded = new JsonFileGemTdSaveStore(_tempPath).Load();
+            Assert.AreEqual(4, reloaded.HighestWaveCleared);
+            Assert.IsTrue(reloaded.CameraShakeDisabled);
         }
     }
 }

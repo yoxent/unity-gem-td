@@ -63,7 +63,11 @@ namespace GemTD.UI
                 return;
             btn.onClick.RemoveAllListeners();
             var idx = index;
-            btn.onClick.AddListener(() => _root?.SetPlaceTower(idx));
+            btn.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root?.SetPlaceTower(idx);
+            });
         }
 
         void EnsureButtonCount(int needed)

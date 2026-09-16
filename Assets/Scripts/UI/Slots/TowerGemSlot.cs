@@ -20,7 +20,7 @@ namespace GemTD.UI
         [SerializeField] GameObject lockedIcon;
         [SerializeField] HoverPointerRelay slotHover;
         [SerializeField] HoverPointerRelay xHover;
-        [SerializeField] string dropSfxKey = "Drop";
+        [SerializeField] string dropSfxKey = SfxKeys.Drop;
 
         GameCompositionRoot _root;
         int _socketIndex = -1;
@@ -128,6 +128,7 @@ namespace GemTD.UI
 
         void OnXClicked()
         {
+            UiSfx.Click();
             if (_root == null)
                 return;
             _root.RequestUnsocket(_socketIndex);

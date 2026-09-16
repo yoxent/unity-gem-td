@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using GemTD.Core;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Towers;
@@ -88,6 +89,33 @@ namespace GemTD.Tests.EditMode
 
             Assert.Less(a.Hp, 100f);
             Assert.Less(b.Hp, 100f);
+        }
+
+        [Test]
+        public void Fountain_Hit_RaisesCameraShakeOnceForAoe()
+        {
+            var count = 0;
+            GameEvents.CameraShake += _ => count++;
+            try
+            {
+                var a = MakeEnemy(new Vector3(2.2f, 0f, 0.3f));
+                var b = MakeEnemy(new Vector3(2.2f, 0f, -0.3f));
+                var living = Living(a, b);
+                var runtime = MakeFountainRuntime(
+                    origin: Vector3.zero,
+                    landing: new Vector3(2f, 0f, 0f),
+                    aoe: 1f,
+                    damage: 10f);
+
+                while (runtime.IsActive)
+                    runtime.Tick(0.05f, living);
+
+                Assert.AreEqual(1, count);
+            }
+            finally
+            {
+                GameEvents.ClearAll();
+            }
         }
 
         [Test]

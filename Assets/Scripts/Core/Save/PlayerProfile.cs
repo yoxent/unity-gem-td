@@ -59,6 +59,12 @@ namespace GemTD.Core
             return Mathf.Clamp01(_cache.SfxVolume);
         }
 
+        public static bool GetCameraShakeEnabled()
+        {
+            Load();
+            return !_cache.CameraShakeDisabled;
+        }
+
         public static void SetMasterVolume(float volume)
         {
             Load();
@@ -77,6 +83,13 @@ namespace GemTD.Core
         {
             Load();
             _cache.SfxVolume = Mathf.Clamp01(volume);
+            _store.Save(_cache);
+        }
+
+        public static void SetCameraShakeEnabled(bool enabled)
+        {
+            Load();
+            _cache.CameraShakeDisabled = !enabled;
             _store.Save(_cache);
         }
 

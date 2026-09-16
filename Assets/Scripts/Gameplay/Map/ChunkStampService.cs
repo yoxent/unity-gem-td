@@ -63,6 +63,7 @@ namespace GemTD.Gameplay.Map
             if (_heights != null && _rng != null)
                 TileHeightAssigner.AssignChunk(_heights, mask, coord, _rng, Weights);
             GameEvents.RaiseChunkPlaced(coord);
+            GameEvents.RaisePlaySfx(SfxKeys.ChunkExpand);
         }
 
         public void Rollback(Vector2Int coord, StampResult result, PathGraph path, GridBoard board)

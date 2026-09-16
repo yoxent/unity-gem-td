@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using GemTD.Core;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
@@ -27,6 +28,35 @@ namespace GemTD.Tests.EditMode
         public void TearDown()
         {
             Object.DestroyImmediate(_def);
+            GameEvents.ClearAll();
+        }
+
+        [Test]
+        public void Hit_RaisesCameraShakeOnce()
+        {
+            var count = 0;
+            CameraShakeRequest received = default;
+            GameEvents.CameraShake += r =>
+            {
+                received = r;
+                count++;
+            };
+
+            var enemy = MakeEnemyAt(Vector3.zero, 100f);
+            var projectile = new ProjectileRuntime();
+            projectile.Init(
+                origin: Vector3.zero,
+                direction: Vector3.right,
+                target: enemy,
+                damage: 10f,
+                chainCount: 0,
+                speed: 100f,
+                chainRange: ProjectileRuntime.DefaultChainRange);
+
+            projectile.Tick(0.05f, Living(enemy));
+
+            Assert.AreEqual(1, count);
+            Assert.AreEqual(CameraShakeRequest.HitIntensity, received.Intensity, 1e-4f);
         }
 
         [Test]

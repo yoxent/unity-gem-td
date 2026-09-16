@@ -930,6 +930,7 @@ namespace GemTD.Gameplay
             var placeCost = ComputePlaceCost(_placeDef);
             if (!Placement.TryPlace(_placeDef, cell, phase, placeCost, out var tower))
             {
+                GameEvents.RaisePlaySfx(SfxKeys.Invalid);
                 Debug.Log($"[GemTD] Place rejected at {cell} (phase={phase}, gold={Economy.Gold}, cost={placeCost})");
                 return;
             }
@@ -953,6 +954,7 @@ namespace GemTD.Gameplay
             if (!keepPlacementSelected)
                 ClearPlaceTower();
 
+            GameEvents.RaisePlaySfx(SfxKeys.PlaceTower);
             GameEvents.RaiseTowerRosterChanged();
         }
 
@@ -1064,6 +1066,7 @@ namespace GemTD.Gameplay
 
                 var bagBlocked = Inventory != null
                                  && gemCount > Inventory.FreeSlotCount;
+                GameEvents.RaisePlaySfx(SfxKeys.Invalid);
                 Debug.Log(bagBlocked
                     ? "[GemTD] Sell blocked — inventory cannot fit socketed gems (discard first)."
                     : $"[GemTD] Sell rejected (phase={States.Current})");
@@ -1080,6 +1083,7 @@ namespace GemTD.Gameplay
 
             _towers.Remove(selected);
             ClearSelectionHighlight();
+            GameEvents.RaisePlaySfx(SfxKeys.SellTower);
             GameEvents.RaiseTowerSelectionChanged();
             GameEvents.RaiseInventoryChanged();
             GameEvents.RaiseTowerRosterChanged();
@@ -1579,6 +1583,8 @@ namespace GemTD.Gameplay
                 {
                     if (enemy.LastDamageSource != null)
                         _runStats.RecordKill(enemy.LastDamageSource);
+
+                    GameEvents.RaisePlaySfx(SfxKeys.EnemyDeath);
 
                     var killGold = enemy.Definition != null ? enemy.Definition.KillGold : 0;
                     if (killGold > 0 && enemy.Definition != null)

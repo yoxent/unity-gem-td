@@ -11,6 +11,7 @@ namespace GemTD.Core
         public const float DefaultMasterVolume = 1f;
         public const float DefaultBgmVolume = 1f;
         public const float DefaultSfxVolume = 1f;
+        public const bool DefaultCameraShakeEnabled = true;
 
         public static bool IsPanelOpen { get; set; }
 
@@ -36,6 +37,13 @@ namespace GemTD.Core
         {
             PlayerProfile.SetSfxVolume(volume);
             ApplyAudio();
+        }
+
+        public static bool GetCameraShakeEnabled() => PlayerProfile.GetCameraShakeEnabled();
+
+        public static void SetCameraShakeEnabled(bool enabled)
+        {
+            PlayerProfile.SetCameraShakeEnabled(enabled);
         }
 
         public static float GetEffectiveBgmVolume() => GetBgmVolume() * GetMasterVolume();

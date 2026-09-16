@@ -63,6 +63,7 @@ namespace GemTD.Gameplay.Run
             if (Lives < 0)
                 Lives = 0;
 
+            GameEvents.RaisePlaySfx(SfxKeys.Leak);
             GameEvents.RaiseLivesChanged(Lives);
 
             if (Lives <= 0)

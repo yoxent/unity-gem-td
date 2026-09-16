@@ -123,6 +123,7 @@ namespace GemTD.Tests.EditMode
             GameSettings.SetMasterVolume(0.33f);
             GameSettings.SetBgmVolume(0.44f);
             GameSettings.SetSfxVolume(0.55f);
+            GameSettings.SetCameraShakeEnabled(false);
             PlayerProfile.TryUpdateHighestWave(9);
 
             PlayerProfile.ResetForTests();
@@ -130,6 +131,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0.33f, GameSettings.GetMasterVolume(), 0.0001f);
             Assert.AreEqual(0.44f, GameSettings.GetBgmVolume(), 0.0001f);
             Assert.AreEqual(0.55f, GameSettings.GetSfxVolume(), 0.0001f);
+            Assert.IsFalse(GameSettings.GetCameraShakeEnabled());
             Assert.AreEqual(9, PlayerProfile.GetHighestWaveCleared());
         }
 
@@ -165,6 +167,34 @@ namespace GemTD.Tests.EditMode
             PlayerProfile.Initialize(new JsonFileGemTdSaveStore(_tempPath));
             Assert.AreEqual(0.3f, GameSettings.GetMasterVolume(), 0.0001f);
             Assert.IsFalse(PlayerPrefs.HasKey(GameSettings.MasterVolumeKey));
+        }
+
+        [Test]
+        public void GetCameraShakeEnabled_MissingSave_IsOn()
+        {
+            Assert.IsTrue(GameSettings.GetCameraShakeEnabled());
+            Assert.AreEqual(true, GameSettings.DefaultCameraShakeEnabled);
+        }
+
+        [Test]
+        public void SetCameraShakeEnabled_RoundTrips()
+        {
+            GameSettings.SetCameraShakeEnabled(false);
+            Assert.IsFalse(GameSettings.GetCameraShakeEnabled());
+            GameSettings.SetCameraShakeEnabled(true);
+            Assert.IsTrue(GameSettings.GetCameraShakeEnabled());
+        }
+
+        [Test]
+        public void Load_LegacySaveWithoutCameraShakeField_StaysEnabled()
+        {
+            PlayerProfile.ResetForTests();
+            File.WriteAllText(
+                _tempPath,
+                "{\"MasterVolume\":1.0,\"BgmVolume\":1.0,\"SfxVolume\":1.0,\"HighestWaveCleared\":4}");
+            PlayerProfile.Initialize(new JsonFileGemTdSaveStore(_tempPath));
+            Assert.IsTrue(GameSettings.GetCameraShakeEnabled());
+            Assert.AreEqual(4, PlayerProfile.GetHighestWaveCleared());
         }
     }
 }

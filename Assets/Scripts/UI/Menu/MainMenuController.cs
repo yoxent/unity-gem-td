@@ -13,7 +13,7 @@ namespace GemTD.UI
         [SerializeField] Button skillLabButton;
         [SerializeField] Button quitButton;
         [SerializeField] SettingsController settings;
-        [SerializeField] string clickSfxKey = "Click";
+        [SerializeField] string clickSfxKey = SfxKeys.Click;
 
         InputAction _escape;
 

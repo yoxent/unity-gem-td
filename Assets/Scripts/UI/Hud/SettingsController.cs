@@ -13,6 +13,7 @@ namespace GemTD.UI
         [SerializeField] SliderHandler masterSlider;
         [SerializeField] SliderHandler bgmSlider;
         [SerializeField] SliderHandler sfxSlider;
+        [SerializeField] ToggleHandler cameraShakeToggle;
         [SerializeField] Button closeButton;
         [SerializeField] Button quitToMenuButton;
         [SerializeField] bool showQuitToMenu;
@@ -30,6 +31,8 @@ namespace GemTD.UI
             if (masterSlider == null) Debug.LogError("SettingsController: masterSlider is not assigned.", this);
             if (bgmSlider == null) Debug.LogError("SettingsController: bgmSlider is not assigned.", this);
             if (sfxSlider == null) Debug.LogError("SettingsController: sfxSlider is not assigned.", this);
+            if (cameraShakeToggle == null)
+                Debug.LogError("SettingsController: cameraShakeToggle is not assigned.", this);
             if (closeButton == null) Debug.LogError("SettingsController: closeButton is not assigned.", this);
             if (showQuitToMenu && popup == null)
                 Debug.LogError("SettingsController: popup is required when showQuitToMenu is set.", this);
@@ -39,10 +42,15 @@ namespace GemTD.UI
             BindSlider(masterSlider, "Master Volume", OnMasterVolumeChanged);
             BindSlider(bgmSlider, "BGM Volume", OnBgmVolumeChanged);
             BindSlider(sfxSlider, "SFX Volume", OnSfxVolumeChanged);
+            BindToggle(cameraShakeToggle, "Camera Shake", OnCameraShakeChanged);
 
             if (quitToMenuButton != null)
             {
-                quitToMenuButton.onClick.AddListener(OnQuitToMenuClicked);
+                quitToMenuButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    OnQuitToMenuClicked();
+                });
                 quitToMenuButton.gameObject.SetActive(showQuitToMenu);
             }
 
@@ -60,7 +68,7 @@ namespace GemTD.UI
         {
             if (rootPanel == null || IsOpen) return;
 
-            SyncSlidersFromStore();
+            SyncFromStore();
             rootPanel.SetActive(true);
             GameSettings.IsPanelOpen = true;
             _speed?.PushPause("settings");
@@ -75,16 +83,18 @@ namespace GemTD.UI
                 return;
             }
 
+            UiSfx.Close();
             rootPanel.SetActive(false);
             GameSettings.IsPanelOpen = false;
             _speed?.PopPause("settings");
         }
 
-        void SyncSlidersFromStore()
+        void SyncFromStore()
         {
             masterSlider?.SetValue01(GameSettings.GetMasterVolume());
             bgmSlider?.SetValue01(GameSettings.GetBgmVolume());
             sfxSlider?.SetValue01(GameSettings.GetSfxVolume());
+            cameraShakeToggle?.SetIsOn(GameSettings.GetCameraShakeEnabled());
         }
 
         static void BindSlider(SliderHandler handler, string label, System.Action<float> onChange)
@@ -94,9 +104,18 @@ namespace GemTD.UI
             handler.BindOnValueChanged(onChange);
         }
 
+        static void BindToggle(ToggleHandler handler, string label, System.Action<bool> onChange)
+        {
+            if (handler == null)
+                return;
+            handler.SetLabel(label);
+            handler.BindOnValueChanged(onChange);
+        }
+
         static void OnMasterVolumeChanged(float v) => GameSettings.SetMasterVolume(v);
         static void OnBgmVolumeChanged(float v) => GameSettings.SetBgmVolume(v);
         static void OnSfxVolumeChanged(float v) => GameSettings.SetSfxVolume(v);
+        static void OnCameraShakeChanged(bool enabled) => GameSettings.SetCameraShakeEnabled(enabled);
 
         void OnQuitToMenuClicked()
         {

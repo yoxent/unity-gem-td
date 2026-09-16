@@ -24,7 +24,7 @@ namespace GemTD.UI
         [SerializeField] CanvasGroup canvasGroup;
         [SerializeField] HoverPointerRelay xHover;
         [SerializeField] GameObject disabledOverlay;
-        [SerializeField] string dropSfxKey = "Drop";
+        [SerializeField] string dropSfxKey = SfxKeys.Drop;
 
         static InventoryGemSlot s_dragSource;
         static RectTransform s_ghost;
@@ -138,6 +138,7 @@ namespace GemTD.UI
 
         void OnXClicked()
         {
+            UiSfx.Click();
             if (_root == null || _popup == null || _gem.IsEmpty)
                 return;
             if (slotEvents != null && slotEvents.DragStarted)
@@ -159,6 +160,7 @@ namespace GemTD.UI
             if (_root == null)
                 return;
 
+            UiSfx.Click();
             var kb = Keyboard.current;
             var shift = kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed);
             _root.RequestInventorySlotClick(_slotIndex, shift);

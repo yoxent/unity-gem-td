@@ -49,10 +49,18 @@ namespace GemTD.UI
             if (mainMenuButton == null)
                 Debug.LogError("RunSummaryController: mainMenuButton is not assigned.", this);
             else
-                mainMenuButton.onClick.AddListener(LoadMainMenu);
+                mainMenuButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    LoadMainMenu();
+                });
 
             if (endlessButton != null)
-                endlessButton.onClick.AddListener(OnEndlessClicked);
+                endlessButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    OnEndlessClicked();
+                });
             else
                 Debug.LogWarning("RunSummaryController: endlessButton is not assigned (Victory Endless CTA).", this);
 

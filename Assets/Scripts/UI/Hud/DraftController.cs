@@ -62,7 +62,11 @@ namespace GemTD.UI
                 {
                     var idx = i;
                     if (picks[i] != null)
-                        picks[i].GetButton().onClick.AddListener(() => _root?.RequestDraftSelect(idx));
+                    picks[i].GetButton().onClick.AddListener(() =>
+                    {
+                        UiSfx.Click();
+                        _root?.RequestDraftSelect(idx);
+                    });
                 }
             }
 
@@ -83,13 +87,29 @@ namespace GemTD.UI
                     if (group == null)
                         Debug.LogError("DraftController: SelectButton is missing a CanvasGroup.", btn);
                     _selectGroups.Add(group);
-                    btn.onClick.AddListener(() => _root?.RequestDraftPick(idx));
+                    btn.onClick.AddListener(() =>
+                    {
+                        GameEvents.RaisePlaySfx(SfxKeys.DraftPick);
+                        _root?.RequestDraftPick(idx);
+                    });
                 }
             }
 
-            if (skipButton != null) skipButton.onClick.AddListener(() => _root?.RequestDraftSkip());
-            if (rerollButton != null) rerollButton.onClick.AddListener(() => _root?.RequestDraftReroll());
-            if (banButton != null) banButton.onClick.AddListener(() => _root?.RequestDraftBan());
+            if (skipButton != null) skipButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root?.RequestDraftSkip();
+            });
+            if (rerollButton != null) rerollButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root?.RequestDraftReroll();
+            });
+            if (banButton != null) banButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root?.RequestDraftBan();
+            });
             if (replaceHintText != null) replaceHintText.gameObject.SetActive(false);
 
             _buttonsBound = picks != null && picks.Count > 0;

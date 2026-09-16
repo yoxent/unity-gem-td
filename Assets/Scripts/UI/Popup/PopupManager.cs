@@ -77,6 +77,8 @@ namespace GemTD.UI
 
         public void Hide()
         {
+            if (IsOpen)
+                UiSfx.Close();
             if (rootPanel != null)
             {
                 rootPanel.SetActive(false);
@@ -128,6 +130,9 @@ namespace GemTD.UI
         // Called by yesButton.onClick (wired in Awake).
         public void OnYesClicked()
         {
+            UiSfx.Click();
+            if (IsOpen)
+                UiSfx.Close();
             if (dontShowAgain != null && dontShowAgain.isOn && !string.IsNullOrEmpty(_currentId))
                 Suppress(_currentId);
             var cb = _onYes;
@@ -144,6 +149,7 @@ namespace GemTD.UI
         // Called by noButton.onClick. Fires onCancel (the "No" decision) then hides.
         public void OnNoClicked()
         {
+            UiSfx.Click();
             var cb = _onNo;
             Hide();
             cb?.Invoke();

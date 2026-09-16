@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using GemTD.Core;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Towers;
 
@@ -207,6 +208,7 @@ namespace GemTD.Gameplay.Combat
                 _visualRemaining = StationaryPulseVisualSeconds;
 
             var hitEnemy = false;
+            var damage = 0f;
             if (livingCandidates != null && _plan.AoeRadius > 0f)
             {
                 _impactScratch.Clear();
@@ -217,7 +219,7 @@ namespace GemTD.Gameplay.Combat
                     _impactScratch,
                     _plan.HitPolicy);
 
-                var damage = RoleStatValue.SampleHitDamage(_plan.DamageMin, _plan.DamageMax);
+                damage = RoleStatValue.SampleHitDamage(_plan.DamageMin, _plan.DamageMax);
                 for (var i = 0; i < _impactScratch.Count; i++)
                 {
                     var enemy = _impactScratch[i];
@@ -229,6 +231,14 @@ namespace GemTD.Gameplay.Combat
                         ApplyDamage(enemy, damage);
                 }
             }
+
+            if (hitEnemy && damage > 0f)
+                GameEvents.RaisePlaySfx(SfxKeys.HitEnemy);
+            else
+                GameEvents.RaisePlaySfx(SfxKeys.HitEnvironment);
+
+            if (hitEnemy)
+                GameEvents.RaiseCameraShake(CameraShakeRequest.Hit);
 
             if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
             {

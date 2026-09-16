@@ -92,5 +92,54 @@ namespace GemTD.Tests.EditMode
             GameEvents.RaiseStopBgm();
             Assert.AreEqual(1, count);
         }
+
+        [Test]
+        public void CameraShake_RaisesAndClears()
+        {
+            CameraShakeRequest received = default;
+            var count = 0;
+            GameEvents.CameraShake += r =>
+            {
+                received = r;
+                count++;
+            };
+            GameEvents.RaiseCameraShake(0.04f);
+            Assert.AreEqual(1, count);
+            Assert.AreEqual(0.04f, received.Intensity, 1e-4f);
+            GameEvents.ClearAll();
+            GameEvents.RaiseCameraShake(0.08f);
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void CameraShake_NoArg_UsesDefaultRequest()
+        {
+            CameraShakeRequest received = default;
+            GameEvents.CameraShake += r => received = r;
+            GameEvents.RaiseCameraShake();
+            Assert.AreEqual(-1f, received.Intensity, 1e-4f);
+            Assert.AreEqual(CameraShakeKind.Burst, received.Kind);
+        }
+
+        [Test]
+        public void CameraShakeFor_RaisesDurationKind()
+        {
+            CameraShakeRequest received = default;
+            GameEvents.CameraShake += r => received = r;
+            GameEvents.RaiseCameraShakeFor(0.5f, 0.04f);
+            Assert.AreEqual(CameraShakeKind.Duration, received.Kind);
+            Assert.AreEqual(0.5f, received.Duration, 1e-4f);
+            Assert.AreEqual(0.04f, received.Intensity, 1e-4f);
+        }
+
+        [Test]
+        public void CameraShakeContinuous_RaisesContinuousKind()
+        {
+            CameraShakeRequest received = default;
+            GameEvents.CameraShake += r => received = r;
+            GameEvents.RaiseCameraShakeContinuous(0.03f);
+            Assert.AreEqual(CameraShakeKind.Continuous, received.Kind);
+            Assert.AreEqual(0.03f, received.Intensity, 1e-4f);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GemTD.Core;
 
 namespace GemTD.Gameplay.Gems
 {
@@ -160,6 +161,8 @@ namespace GemTD.Gameplay.Gems
             var fuses = 0;
             while (TryCombineOnce())
                 fuses++;
+            if (fuses > 0)
+                GameEvents.RaisePlaySfx(SfxKeys.Combine);
             return fuses;
         }
 

@@ -46,10 +46,26 @@ namespace GemTD.UI
             if (lab == null)
                 return;
             if (towerDropdown != null) towerDropdown.onValueChanged.AddListener(OnTowerDropdownChanged);
-            if (fireButton != null) fireButton.onClick.AddListener(() => lab.Fire());
-            if (clearButton != null) clearButton.onClick.AddListener(() => lab.ClearOverlay());
-            if (resetPinsButton != null) resetPinsButton.onClick.AddListener(() => lab.ResetPins());
-            if (backButton != null) backButton.onClick.AddListener(() => lab.BackToMenu());
+            if (fireButton != null) fireButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                lab.Fire();
+            });
+            if (clearButton != null) clearButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                lab.ClearOverlay();
+            });
+            if (resetPinsButton != null) resetPinsButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                lab.ResetPins();
+            });
+            if (backButton != null) backButton.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                lab.BackToMenu();
+            });
 
             if (gemSlotDropdowns != null)
             {

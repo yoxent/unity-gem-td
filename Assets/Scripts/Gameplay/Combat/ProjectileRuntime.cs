@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using GemTD.Core;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Towers;
 
@@ -540,6 +541,8 @@ namespace GemTD.Gameplay.Combat
                 Target = hit;
                 OnHit(livingCandidates);
             }
+            else
+                GameEvents.RaisePlaySfx(SfxKeys.HitEnvironment);
 
             _onImpactPayloads?.Invoke(Position, _warpSpec);
             IsActive = false;
@@ -556,6 +559,8 @@ namespace GemTD.Gameplay.Combat
 
             _lastHit = hit;
             ApplyHitDamage(hit);
+            GameEvents.RaisePlaySfx(SfxKeys.HitEnemy);
+            GameEvents.RaiseCameraShake(CameraShakeRequest.Hit);
 
             if (AoeRadius > 0f && livingCandidates != null)
             {

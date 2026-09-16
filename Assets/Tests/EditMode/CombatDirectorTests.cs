@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using GemTD.Core;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
@@ -94,6 +95,36 @@ namespace GemTD.Tests.EditMode
 
             director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
             Assert.AreEqual(1, tower.FireGeneration);
+        }
+
+        [Test]
+        public void Tick_WhenTowerFires_RaisesCameraShake()
+        {
+            CameraShakeRequest received = default;
+            var count = 0;
+            GameEvents.CameraShake += r =>
+            {
+                if (count == 0)
+                    received = r;
+                count++;
+            };
+            try
+            {
+                var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+                var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+                var enemy = CreateEnemyNearTower();
+                var registry = new EnemyRegistry();
+                registry.Register(enemy);
+
+                director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+
+                Assert.GreaterOrEqual(count, 1);
+                Assert.AreEqual(CameraShakeRequest.FireIntensity, received.Intensity, 1e-4f);
+            }
+            finally
+            {
+                GameEvents.ClearAll();
+            }
         }
 
         [Test]

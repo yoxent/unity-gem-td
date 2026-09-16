@@ -61,9 +61,17 @@ namespace GemTD.UI
             }
 
             if (scopeThisButton != null)
-                scopeThisButton.onClick.AddListener(() => _root?.SetApplyScope(TargetingApplyScope.ThisTower));
+                scopeThisButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    _root?.SetApplyScope(TargetingApplyScope.ThisTower);
+                });
             if (scopeTypeButton != null)
-                scopeTypeButton.onClick.AddListener(() => _root?.SetApplyScope(TargetingApplyScope.ThisType));
+                scopeTypeButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    _root?.SetApplyScope(TargetingApplyScope.ThisType);
+                });
             if (scopeAllButton != null)
                 scopeAllButton.onClick.AddListener(ConfirmAllThenSet);
 
@@ -164,6 +172,7 @@ namespace GemTD.UI
 
         void ConfirmAllThenSet()
         {
+            UiSfx.Click();
             if (_root == null) return;
             if (_root.CurrentApplyScope == TargetingApplyScope.AllTowers)
                 return;
@@ -188,6 +197,7 @@ namespace GemTD.UI
 
         void OnSell()
         {
+            UiSfx.Click();
             if (_root == null || !_root.HasSelectedTower) return;
 
             if (!_root.CanSellSelected)

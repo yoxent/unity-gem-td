@@ -561,6 +561,7 @@ GameObject:
   - component: {fileID: 88730596}
   - component: {fileID: 88730598}
   - component: {fileID: 88730597}
+  - component: {fileID: 88730601}
   - component: {fileID: 88730600}
   m_Layer: 0
   m_Name: Main Camera
@@ -642,6 +643,24 @@ MonoBehaviour:
   minOrthoSize: 3
   focus: {x: -1, y: 0, z: 0}
   maxOrthoSize: 18
+--- !u!114 &88730601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88730595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6c4e218a9d047f3b1e5c8d0a7f39216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.CameraControl.CameraShakeDriver
+  defaultIntensity: 0.03
+  maxIntensity: 0.08
+  defaultDuration: 0.12
+  defaultHoldDuration: 0.4
+  frequency: 14
+  falloffDistance: 40
 --- !u!81 &88730598
 AudioListener:
   m_ObjectHideFlags: 0
