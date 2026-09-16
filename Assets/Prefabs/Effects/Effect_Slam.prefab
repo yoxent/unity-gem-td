@@ -193,6 +193,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Combat.SlamEffectView
   scaleRoot: {fileID: 2921998250184642850}
+  particles: {fileID: 6576321647905429874}
 --- !u!1001 &7277127905274577092
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -427,6 +428,11 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!198 &6576321647905429874 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 4593184484909914550, guid: 2e1e9506f5904a64b81744324fb7cd50, type: 3}
+  m_PrefabInstance: {fileID: 7277127905274577092}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6576321647905429875 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4593184484909914551, guid: 2e1e9506f5904a64b81744324fb7cd50, type: 3}

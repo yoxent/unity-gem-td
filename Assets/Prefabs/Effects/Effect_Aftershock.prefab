@@ -160,6 +160,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Combat.AftershockEffectView
   scaleRoot: {fileID: 7730518483629974081}
+  particles: {fileID: 6236479998115424080}
 --- !u!1 &8731579853818278207
 GameObject:
   m_ObjectHideFlags: 0
@@ -250,6 +251,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c3861e95d2eb51f4f838356ad0e11282, type: 3}
+--- !u!198 &6236479998115424080 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 2031565016353518241, guid: c3861e95d2eb51f4f838356ad0e11282, type: 3}
+  m_PrefabInstance: {fileID: 5385737920045061617}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6236479998115424081 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2031565016353518240, guid: c3861e95d2eb51f4f838356ad0e11282, type: 3}

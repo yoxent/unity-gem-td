@@ -11,6 +11,7 @@ namespace GemTD.Gameplay.Combat
 
         Vector3 _defaultScale = Vector3.one;
         bool _capturedScale;
+        bool _particlesPlayed;
         Collider[] _colliders;
         bool[] _colliderDefaults;
 
@@ -18,6 +19,7 @@ namespace GemTD.Gameplay.Combat
         public virtual bool IsAftershockEffect => false;
         public virtual bool IsFallEffect => false;
         protected virtual bool SitsOnGround => false;
+        protected virtual ParticleSystem AssignedParticles => null;
 
         public static bool WantsSlamEffect(EffectPayloadRuntime payload)
         {
@@ -92,14 +94,52 @@ namespace GemTD.Gameplay.Combat
 
         protected virtual void OnBind()
         {
+            _particlesPlayed = false;
         }
 
         protected virtual void AfterSync()
         {
+            if (_particlesPlayed)
+                return;
+
+            _particlesPlayed = true;
+            PlayAssigned(AssignedParticles);
         }
 
         protected virtual void OnClear()
         {
+            _particlesPlayed = false;
+            StopAssigned(AssignedParticles);
+        }
+
+        protected static void PlayIsolated(ParticleSystem system)
+        {
+            if (system == null)
+                return;
+            system.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            system.Play(false);
+        }
+
+        protected static void StopIsolated(ParticleSystem system)
+        {
+            if (system == null)
+                return;
+            system.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        static void PlayAssigned(ParticleSystem system)
+        {
+            if (system == null)
+                return;
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            system.Play(true);
+        }
+
+        static void StopAssigned(ParticleSystem system)
+        {
+            if (system == null)
+                return;
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
         void ApplyPayloadVisual()

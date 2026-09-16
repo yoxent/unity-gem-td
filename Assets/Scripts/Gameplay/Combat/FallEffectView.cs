@@ -110,20 +110,5 @@ namespace GemTD.Gameplay.Combat
             for (var i = 0; i < fallImpacts.Length; i++)
                 StopIsolated(fallImpacts[i]);
         }
-
-        static void PlayIsolated(ParticleSystem system)
-        {
-            if (system == null)
-                return;
-            system.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
-            system.Play(false);
-        }
-
-        static void StopIsolated(ParticleSystem system)
-        {
-            if (system == null)
-                return;
-            system.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
     }
 }

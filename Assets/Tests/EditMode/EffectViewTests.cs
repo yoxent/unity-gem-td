@@ -164,6 +164,63 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void BindSlam_PlaysParticles_StopsOnClear()
+        {
+            var (view, particles) = MakeParticleView<SlamEffectView>();
+            try
+            {
+                view.Bind(MakeSlamPayload(new Vector3(3f, 0.5f, 4f), aoeRadius: 1.8f));
+                Assert.IsTrue(particles.isPlaying);
+
+                view.SyncTransform();
+                Assert.IsTrue(particles.isPlaying);
+
+                view.Clear();
+                Assert.IsFalse(particles.isPlaying);
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
+        public void BindAftershock_PlaysParticles_StopsOnClear()
+        {
+            var (view, particles) = MakeParticleView<AftershockEffectView>();
+            try
+            {
+                view.Bind(MakeAftershockPayload(new Vector3(3f, 0.5f, 4f), aoeRadius: 1.8f));
+                Assert.IsTrue(particles.isPlaying);
+
+                view.Clear();
+                Assert.IsFalse(particles.isPlaying);
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
+        public void BindFountain_PlaysParticles_StopsOnClear()
+        {
+            var (view, particles) = MakeParticleView<BoltEffectView>();
+            try
+            {
+                view.Bind(MakeFountainPayload(Vector3.zero, Vector3.forward));
+                Assert.IsTrue(particles.isPlaying);
+
+                view.Clear();
+                Assert.IsFalse(particles.isPlaying);
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
         public void BindFallFromSky_PlaysDrop_ThenImpactOnLand_StopsOnClear()
         {
             var go = new GameObject("Fall");
@@ -241,6 +298,24 @@ namespace GemTD.Tests.EditMode
             return (view, child.transform);
         }
 
+        static (T view, ParticleSystem particles) MakeParticleView<T>() where T : EffectView
+        {
+            var go = new GameObject("Payload");
+            var scale = new GameObject("Scale");
+            scale.transform.SetParent(go.transform, false);
+            var particleGo = new GameObject("Particles");
+            particleGo.transform.SetParent(go.transform, false);
+            var particles = particleGo.AddComponent<ParticleSystem>();
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var view = go.AddComponent<T>();
+            var so = new SerializedObject(view);
+            so.FindProperty("scaleRoot").objectReferenceValue = scale.transform;
+            so.FindProperty("particles").objectReferenceValue = particles;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return (view, particles);
+        }
+
         static EffectPayloadRuntime MakeSlamPayload(Vector3 landing, float aoeRadius)
         {
             var runtime = new EffectPayloadRuntime();
@@ -257,6 +332,30 @@ namespace GemTD.Tests.EditMode
                     AoeRadius = aoeRadius,
                     DelaySeconds = 0f,
                     Visual = EffectPayloadVisual.Slam
+                },
+                flightSeconds: 0.08f,
+                statuses: null,
+                sourceTower: null,
+                recordDamage: null);
+            return runtime;
+        }
+
+        static EffectPayloadRuntime MakeAftershockPayload(Vector3 landing, float aoeRadius)
+        {
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(
+                new EffectPayloadPlan
+                {
+                    Trigger = EffectPayloadTrigger.AfterDelay,
+                    TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                    Origin = landing,
+                    LandingPoint = landing,
+                    DamageMin = 0f,
+                    DamageMax = 0f,
+                    AoeRadius = aoeRadius,
+                    DelaySeconds = 0f,
+                    Visual = EffectPayloadVisual.Aftershock
                 },
                 flightSeconds: 0.08f,
                 statuses: null,
