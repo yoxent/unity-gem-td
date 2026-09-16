@@ -8,5 +8,14 @@ namespace GemTD.Gameplay.Combat
         Poison,
         Stun,
         Freeze,
+        Bleed,
+        HallowingFlame,
+        CurseFlammability,
+        CurseFrostbite,
+        CurseConductivity,
+        CurseDespair,
+        CurseVulnerability,
+        CurseTemporalChains,
+        CurseElementalWeakness,
     }
 }

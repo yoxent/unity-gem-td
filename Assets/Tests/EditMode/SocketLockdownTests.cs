@@ -9,17 +9,17 @@ namespace GemTD.Tests.EditMode
     public sealed class SocketLockdownTests
     {
         TowerDefinition _def;
-        TowerRuntime _towerA;
-        TowerRuntime _towerB;
+        TowerInstance _towerA;
+        TowerInstance _towerB;
 
         [SetUp]
         public void SetUp()
         {
             _def = ScriptableObject.CreateInstance<TowerDefinition>();
-            _def.DisplayName = "Ballista";
+            _def.DisplayName = "Test Tower";
             _def.SocketCount = 3;
-            _towerA = new TowerRuntime(new Vector2Int(0, 0), _def);
-            _towerB = new TowerRuntime(new Vector2Int(1, 0), _def);
+            _towerA = new TowerInstance(new Vector2Int(0, 0), _def);
+            _towerB = new TowerInstance(new Vector2Int(1, 0), _def);
         }
 
         [TearDown]
@@ -46,6 +46,15 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(lockout.CanSocket(_towerB, RunStateId.Combat));
             Assert.AreEqual(3f, lockout.Remaining(_towerA), 1e-4f);
             lockout.Tick(3f);
+            Assert.IsTrue(lockout.CanSocket(_towerA, RunStateId.Combat));
+            Assert.AreEqual(0f, lockout.Remaining(_towerA), 1e-4f);
+        }
+
+        [Test]
+        public void DurationZero_NeverLocks()
+        {
+            var lockout = new SocketLockdown(0f);
+            lockout.NotifyChanged(_towerA, RunStateId.Combat);
             Assert.IsTrue(lockout.CanSocket(_towerA, RunStateId.Combat));
             Assert.AreEqual(0f, lockout.Remaining(_towerA), 1e-4f);
         }

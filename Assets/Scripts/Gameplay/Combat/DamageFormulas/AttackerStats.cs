@@ -2,7 +2,7 @@ namespace GemTD.Gameplay.Combat.DamageFormulas
 {
     /// <summary>
     /// Snapshot of a tower's resolved offensive stats passed to IDamageFormula.
-    /// Populated from TowerRuntime + AttackSpec after gem modifiers are applied.
+    /// Populated from TowerInstance + SkillSpec after gem modifiers are applied.
     /// Add fields here as new stats are introduced (e.g. SpellPower, CritMultiplier).
     /// </summary>
     public readonly struct AttackerStats

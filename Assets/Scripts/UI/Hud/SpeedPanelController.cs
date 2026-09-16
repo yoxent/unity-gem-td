@@ -38,9 +38,21 @@ namespace GemTD.UI
             _root = root;
             if (_root == null) return;
 
-            if (speed1Button != null) speed1Button.onClick.AddListener(() => _root.Speed?.SetSpeed(1f));
-            if (speed2Button != null) speed2Button.onClick.AddListener(() => _root.Speed?.SetSpeed(2f));
-            if (speed4Button != null) speed4Button.onClick.AddListener(() => _root.Speed?.SetSpeed(4f));
+            if (speed1Button != null) speed1Button.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root.Speed?.SetSpeed(1f);
+            });
+            if (speed2Button != null) speed2Button.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root.Speed?.SetSpeed(2f);
+            });
+            if (speed4Button != null) speed4Button.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root.Speed?.SetSpeed(4f);
+            });
             if (pauseChip != null) pauseChip.SetActive(false);
 
             OnSpeedChanged(_root.Speed != null ? _root.Speed.CurrentSpeed : 1f);

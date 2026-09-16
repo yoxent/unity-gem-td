@@ -15,10 +15,22 @@ namespace GemTD.UI
             return buildButton;
         }
 
+        public void BindEmpty()
+        {
+            if (buildButtonLabel != null)
+                buildButtonLabel.text = "—";
+            if (buildButtonCost != null)
+                buildButtonCost.text = "";
+            if (buildButton != null)
+                buildButton.interactable = false;
+        }
+
         public void UpdateTowerButton(string label, int cost)
         {
-            buildButtonLabel.text = label;
-            buildButtonCost.text = cost.ToString();
+            if (buildButtonLabel != null)
+                buildButtonLabel.text = label;
+            if (buildButtonCost != null)
+                buildButtonCost.text = cost.ToString();
         }
     }
 }

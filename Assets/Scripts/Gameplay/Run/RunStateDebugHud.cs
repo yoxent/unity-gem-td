@@ -11,7 +11,7 @@ namespace GemTD.Gameplay.Run
             var root = GameCompositionRoot.Instance;
             if (root == null || root.States == null) return;
 
-            var label = $"State: {root.States.Current}   |  HUD Start Wave / build bar / place   |  F5 debug advance   |  F6 fill bag   |  WASD pan  MMB drag  scroll zoom  Q/E rotate  R targeting  Ctrl+C/V copy-paste";
+            var label = $"State: {root.States.Current}   |  Build bar / place   |  F5 debug advance   |  F6 fill bag   |  WASD pan  MMB drag  scroll zoom  Q/E rotate  C codex  Ctrl+C/V copy-paste";
             GUI.Label(new Rect(12f, 12f, 1100f, 28f), label);
         }
     }

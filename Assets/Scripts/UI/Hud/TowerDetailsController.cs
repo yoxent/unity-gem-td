@@ -24,6 +24,7 @@ namespace GemTD.UI
         GameCompositionRoot _root;
         PopupManager _popup;
         bool _visible;
+        bool _lockOverlayShown;
 
         void OnEnable()
         {
@@ -60,9 +61,17 @@ namespace GemTD.UI
             }
 
             if (scopeThisButton != null)
-                scopeThisButton.onClick.AddListener(() => _root?.SetApplyScope(TargetingApplyScope.ThisTower));
+                scopeThisButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    _root?.SetApplyScope(TargetingApplyScope.ThisTower);
+                });
             if (scopeTypeButton != null)
-                scopeTypeButton.onClick.AddListener(() => _root?.SetApplyScope(TargetingApplyScope.ThisType));
+                scopeTypeButton.onClick.AddListener(() =>
+                {
+                    UiSfx.Click();
+                    _root?.SetApplyScope(TargetingApplyScope.ThisType);
+                });
             if (scopeAllButton != null)
                 scopeAllButton.onClick.AddListener(ConfirmAllThenSet);
 
@@ -73,8 +82,12 @@ namespace GemTD.UI
         {
             if (!_visible || _root == null)
                 return;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            var lockLeft = _root.SelectedSocketLockRemaining;
+            if (lockLeft > 0f)
                 RefreshDetailsText();
+            if (lockLeft > 0f || _lockOverlayShown)
+                RefreshSocketLockOverlays();
+            _lockOverlayShown = lockLeft > 0f;
         }
 
         void OnHudDirty() => Refresh();
@@ -109,9 +122,10 @@ namespace GemTD.UI
                 var showSlot = tower != null && i < socketCount;
                 socketSlots[i].gameObject.SetActive(showSlot);
                 if (!showSlot) continue;
-                var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : null;
+                var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : default;
                 socketSlots[i].Configure(_root, i, gem);
             }
+            _lockOverlayShown = _root.SelectedSocketLockRemaining > 0f;
 
             if (tower != null && priorityButtons != null)
             {
@@ -131,6 +145,16 @@ namespace GemTD.UI
                 detailsText.text = _root.BuildSelectedTowerDetailsText();
         }
 
+        void RefreshSocketLockOverlays()
+        {
+            for (var i = 0; i < socketSlots.Length; i++)
+            {
+                if (socketSlots[i] == null || !socketSlots[i].gameObject.activeSelf)
+                    continue;
+                socketSlots[i].RefreshLockOverlay();
+            }
+        }
+
         void HighlightScope(TargetingApplyScope scope)
         {
             SetScopeHighlight(scopeThisButton, scope == TargetingApplyScope.ThisTower);
@@ -148,6 +172,7 @@ namespace GemTD.UI
 
         void ConfirmAllThenSet()
         {
+            UiSfx.Click();
             if (_root == null) return;
             if (_root.CurrentApplyScope == TargetingApplyScope.AllTowers)
                 return;
@@ -172,6 +197,7 @@ namespace GemTD.UI
 
         void OnSell()
         {
+            UiSfx.Click();
             if (_root == null || !_root.HasSelectedTower) return;
 
             if (!_root.CanSellSelected)

@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 024b306d332beef4883c87fa3148e60f, type: 3}
+  m_Name: Role_Curse_Frostbite
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.CurseRoleDefinition
+  Modifiers:
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3
+    Min: 0
+    Max: 0
+  Effects: []
+  Levels:
+  - SourceLevel: 1
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 3
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -30
+      Min: 0
+      Max: 0
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 3.45
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -35
+      Min: 0
+      Max: 0
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 3.97
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -40
+      Min: 0
+      Max: 0
+  - SourceLevel: 4
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 4.56
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -45
+      Min: 0
+      Max: 0
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 5.25
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -50
+      Min: 0
+      Max: 0
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 6.03
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -55
+      Min: 0
+      Max: 0
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 6.94
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -60
+      Min: 0
+      Max: 0
+  - SourceLevel: 8
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 7.98
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -65
+      Min: 0
+      Max: 0
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 9.18
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -70
+      Min: 0
+      Max: 0
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 4
+      Operation: 0
+      ValueKind: 0
+      Value: 10.55
+      Min: 0
+      Max: 0
+    Effects:
+    - Kind: 5
+      Operation: 0
+      ValueKind: 0
+      Value: -75
+      Min: 0
+      Max: 0
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 5
+  SpreadDegrees: 0
+  SequentialIntervalSeconds: 0
+  Mix: []

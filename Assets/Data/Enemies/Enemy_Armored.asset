@@ -17,10 +17,19 @@ MonoBehaviour:
   MoveSpeed: 1.2
   Armor: 5
   ShieldMax: 0
+  FireResistance: 0
+  ColdResistance: 0
+  LightningResistance: 0
+  ChaosResistance: 0
   CanDash: 0
   KillGold: 8
   LeakDamage: 2
-  Locomotion: 0
+  Rank: 0
+  Affixes: 
+  Locomotion: 1
   HopHeight: 0.35
   HopPeriod: 0.4
+  FlyHeight: 0.45
+  FlyPeriod: 1.25
+  ViewPrefab: {fileID: 751141530060943993, guid: 6ac4caab5796a4b408cf30f8c91c7e2a, type: 3}
   PlaceholderMaterial: {fileID: 2100000, guid: 0402be9d30af2d84296616793b53195f, type: 2}

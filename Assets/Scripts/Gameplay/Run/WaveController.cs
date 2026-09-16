@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GemTD.Core;
 using GemTD.Gameplay.Enemies;
+using GemTD.Gameplay.Map;
 
 namespace GemTD.Gameplay.Run
 {
@@ -11,6 +12,9 @@ namespace GemTD.Gameplay.Run
         readonly RunStateMachine _states;
         readonly RunEconomy _economy;
         readonly int _endWaveGold;
+        readonly EnemyDefinition _bossEnemy;
+        readonly int _endWave;
+        readonly Action _beforeCampaignVictory;
         readonly List<EnemyDefinition> _spawnQueue = new List<EnemyDefinition>();
 
         int _nextWaveIndex;
@@ -21,11 +25,22 @@ namespace GemTD.Gameplay.Run
 
         public int CurrentWaveNumber { get; private set; }
 
+        public int NextWaveNumber => _nextWaveIndex + 1;
+
+        /// <summary>Bosses injected into the current wave's spawn queue by cadence (Task 6 / 8).</summary>
+        public int CurrentBossCount { get; private set; }
+
+        /// <summary>True after Victory → Endless; allows waves past EndWave and applies Endless modifiers.</summary>
+        public bool IsEndless { get; private set; }
+
         public WaveController(
             WaveDefinition[] waves,
             RunStateMachine states,
             RunEconomy economy,
-            int endWaveGold)
+            int endWaveGold,
+            EnemyDefinition bossEnemy = null,
+            int endWave = 0,
+            Action beforeCampaignVictory = null)
         {
             _waves = waves ?? throw new ArgumentNullException(nameof(waves));
             if (_waves.Length == 0)
@@ -34,18 +49,34 @@ namespace GemTD.Gameplay.Run
             _states = states ?? throw new ArgumentNullException(nameof(states));
             _economy = economy ?? throw new ArgumentNullException(nameof(economy));
             _endWaveGold = endWaveGold;
+            _bossEnemy = bossEnemy;
+            _endWave = endWave > 0 ? endWave : ExpandPickPolicy.DefaultEndWave;
+            _beforeCampaignVictory = beforeCampaignVictory;
         }
 
-        public void StartWave()
+        public void BeginEndless()
         {
-            if (_nextWaveIndex >= _waves.Length)
+            IsEndless = true;
+        }
+
+        /// <summary>
+        /// <paramref name="spawnTipCount"/> is the live tip count for the combat about to
+        /// start (from <c>PathGraph.CollectSpawnTips</c>) — used for boss cadence.
+        /// </summary>
+        public void StartWave(int spawnTipCount = 1)
+        {
+            var waveNumber = _nextWaveIndex + 1;
+            if (waveNumber > _endWave && !IsEndless)
                 throw new InvalidOperationException("Campaign complete — no more waves.");
 
             _states.StartWave();
 
-            _activeWave = _waves[_nextWaveIndex];
-            CurrentWaveNumber = _nextWaveIndex + 1;
-            BuildSpawnQueue(_activeWave);
+            _activeWave = ResolveWaveTemplate(_nextWaveIndex);
+            CurrentWaveNumber = waveNumber;
+            CurrentBossCount = _bossEnemy != null
+                ? BossCadence.BossCount(CurrentWaveNumber, spawnTipCount, IsEndless)
+                : 0;
+            BuildSpawnQueue(_activeWave, CurrentBossCount);
             _spawnIndex = 0;
             _spawnTimer = 0f;
             _waveCleared = false;
@@ -73,29 +104,67 @@ namespace GemTD.Gameplay.Run
             {
                 _waveCleared = true;
                 _nextWaveIndex++;
-                _economy.GrantEndWaveGold(_endWaveGold);
-                var offerDraft = _activeWave != null && _activeWave.OfferDraftAfterClear;
-                var endsCampaign = _activeWave != null && _activeWave.EndsCampaign;
+                _economy.GrantEndWaveGold(
+                    WaveScaling.ScaleEndWaveGold(_endWaveGold, CurrentWaveNumber, IsEndless));
+
+                var endsCampaign = !IsEndless
+                    && (CurrentWaveNumber >= _endWave
+                        || (_activeWave != null && _activeWave.EndsCampaign));
+                var offerDraft = ShouldOfferDraft(CurrentWaveNumber, _endWave, IsEndless);
+
+                if (endsCampaign)
+                    _beforeCampaignVictory?.Invoke();
+                else if (IsEndless)
+                    PlayerProfile.TryUpdateHighestWave(CurrentWaveNumber);
+
                 _states.WaveCleared(offerDraft, endsCampaign);
             }
         }
 
-        void BuildSpawnQueue(WaveDefinition wave)
+        /// <summary>
+        /// Campaign: draft after every clear except the EndWave clear (victory).
+        /// Authored <see cref="WaveDefinition.OfferDraftAfterClear"/> is ignored.
+        /// Endless: never draft.
+        /// </summary>
+        public static bool ShouldOfferDraft(int clearedWave, int endWave, bool isEndless)
+        {
+            if (isEndless)
+                return false;
+            return clearedWave > 0 && clearedWave < endWave;
+        }
+
+        WaveDefinition ResolveWaveTemplate(int waveIndex)
+        {
+            if (waveIndex < _waves.Length)
+                return _waves[waveIndex];
+            return _waves[_waves.Length - 1];
+        }
+
+        void BuildSpawnQueue(WaveDefinition wave, int bossCount)
         {
             _spawnQueue.Clear();
             var entries = wave.Entries;
-            if (entries == null)
-                return;
-
-            for (var i = 0; i < entries.Length; i++)
+            if (entries != null)
             {
-                var entry = entries[i];
-                if (entry.Enemy == null || entry.Count <= 0)
-                    continue;
+                for (var i = 0; i < entries.Length; i++)
+                {
+                    var entry = entries[i];
+                    if (entry.Enemy == null || entry.Count <= 0)
+                        continue;
 
-                for (var c = 0; c < entry.Count; c++)
-                    _spawnQueue.Add(entry.Enemy);
+                    // Cadence owns all boss placement — authored boss entries are dropped
+                    // even outside boss waves (see BossCadence / Task 6 brief).
+                    if (entry.Enemy.IsBoss)
+                        continue;
+
+                    for (var c = 0; c < entry.Count; c++)
+                        _spawnQueue.Add(entry.Enemy);
+                }
             }
+
+            // Bosses spawn after regulars — the wave's finale.
+            for (var c = 0; c < bossCount; c++)
+                _spawnQueue.Add(_bossEnemy);
         }
     }
 }

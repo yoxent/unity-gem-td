@@ -36,6 +36,8 @@ namespace GemTD.UI
         {
             if (_root == null) return;
             var open = _root.CodexPanelOpen;
+            if (!open)
+                UiSfx.Close();
             panel.SetActive(open);
             if (!open) return;
             var catalog = _root.CodexCatalog;

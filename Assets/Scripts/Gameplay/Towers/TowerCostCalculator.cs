@@ -9,7 +9,7 @@ namespace GemTD.Gameplay.Towers
     /// </summary>
     public static class TowerCostCalculator
     {
-        public static int ComputePlaceCost(TowerDefinition def, IReadOnlyList<TowerRuntime> towers)
+        public static int ComputePlaceCost(TowerDefinition def, IReadOnlyList<TowerInstance> towers)
         {
             if (def == null)
                 return 0;
