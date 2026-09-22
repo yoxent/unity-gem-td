@@ -375,6 +375,43 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(runtime.IsActive);
         }
 
+        [Test]
+        public void StationaryPulse_ImmediatePulse_ShowsNovaAndWarpVariants()
+        {
+            var visuals = new[]
+            {
+                EffectPayloadVisual.Nova,
+                EffectPayloadVisual.Warp
+            };
+
+            for (var i = 0; i < visuals.Length; i++)
+            {
+                var runtime = new EffectPayloadRuntime();
+                runtime.Init(
+                    new EffectPayloadPlan
+                    {
+                        Trigger = EffectPayloadTrigger.AfterDelay,
+                        TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
+                        HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                        Origin = Vector3.zero,
+                        LandingPoint = Vector3.zero,
+                        DamageMin = 0f,
+                        DamageMax = 0f,
+                        AoeRadius = 1f,
+                        DelaySeconds = 0f,
+                        Visual = visuals[i]
+                    },
+                    flightSeconds: EffectPayloadRuntime.MinFlightSeconds,
+                    statuses: null,
+                    sourceTower: null,
+                    recordDamage: null);
+
+                Assert.IsTrue(runtime.IsActive);
+                Assert.AreEqual(visuals[i] == EffectPayloadVisual.Nova, runtime.ShowsNovaVisual);
+                Assert.AreEqual(visuals[i] == EffectPayloadVisual.Warp, runtime.ShowsWarpVisual);
+            }
+        }
+
         static EffectPayloadRuntime MakeFountainRuntime(
             Vector3 origin,
             Vector3 landing,

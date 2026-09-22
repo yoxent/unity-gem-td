@@ -895,6 +895,37 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_WarpStrike_SpawnsWarpLandingVisual()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.WarpStrike;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.Damage, 10f)
+            };
+            _towerDef.Tags = GemTag.Attack | GemTag.Melee | GemTag.Strike;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            for (var i = 0; i < 80 && director.Projectiles.Count > 0; i++)
+                director.TickInFlight(0.05f, living);
+
+            Assert.AreEqual(0, director.Projectiles.Count);
+            Assert.AreEqual(1, director.EffectPayloads.Count);
+            Assert.AreEqual(EffectPayloadVisual.Warp, director.EffectPayloads[0].Plan.Visual);
+            Assert.IsTrue(director.EffectPayloads[0].ShowsWarpVisual);
+            Assert.AreEqual(0f, director.EffectPayloads[0].Plan.DamageMin, 1e-4f);
+            Assert.AreEqual(0f, director.EffectPayloads[0].Plan.DamageMax, 1e-4f);
+        }
+
+        [Test]
         public void Tick_WarpStrike_DirectionTurnsDownAfterApex()
         {
             _towerRole.AimMode = AimMode.Direct;
@@ -997,7 +1028,7 @@ namespace GemTD.Tests.EditMode
                     if (director.EffectPayloads.Count == 0)
                         continue;
 
-                    Assert.AreEqual(rolePayloadCount + 1, director.EffectPayloads.Count);
+                    Assert.AreEqual(rolePayloadCount + 2, director.EffectPayloads.Count);
                     observedPayloads = true;
                     break;
                 }
@@ -1215,6 +1246,33 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, director.Projectiles.Count);
             Assert.Less(primary.Hp, primaryHp);
             Assert.Less(nonPrimary.Hp, nonPrimaryHp);
+        }
+
+        [Test]
+        public void TryFireOnce_CasterNova_SpawnsNovaVisual()
+        {
+            _towerRole.AimMode = AimMode.Direct;
+            _towerRole.DeliveryPattern = DeliveryPattern.CasterNova;
+            _towerRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 5f),
+                Modifier(RoleStat.AttackTime, 1f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 2.6f)
+            };
+            _towerDef.Tags = GemTag.Spell | GemTag.Aoe;
+
+            var director = new CombatDirector(CellSize, projectileSpeed: 20f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            var enemy = CreateEnemyNearTower();
+            var living = new List<EnemyRuntime> { enemy };
+
+            Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            Assert.AreEqual(1, director.EffectPayloads.Count);
+            Assert.AreEqual(EffectPayloadVisual.Nova, director.EffectPayloads[0].Plan.Visual);
+            Assert.IsTrue(director.EffectPayloads[0].ShowsNovaVisual);
+            Assert.AreEqual(0f, director.EffectPayloads[0].Plan.DamageMin, 1e-4f);
+            Assert.AreEqual(0f, director.EffectPayloads[0].Plan.DamageMax, 1e-4f);
         }
 
         [Test]

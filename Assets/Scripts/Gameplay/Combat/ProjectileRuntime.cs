@@ -78,6 +78,7 @@ namespace GemTD.Gameplay.Combat
         const float ProlifRadius = 1.5f;
 
         public Vector3 Position { get; private set; }
+        public Vector3 ChainStart { get; private set; }
         public Vector3 Direction { get; private set; }
         public EnemyRuntime Target { get; private set; }
         public float Damage { get; private set; }
@@ -92,6 +93,7 @@ namespace GemTD.Gameplay.Combat
         public bool IsActive { get; private set; }
         public bool IsPayload { get; private set; }
         public bool IsWarpStrike { get; private set; }
+        public SkillSpec HitSpec => _hitSpec;
 
         /// <summary>Unused — kept for call-site / test compat.</summary>
         public bool SoftSeek { get; private set; }
@@ -152,6 +154,7 @@ namespace GemTD.Gameplay.Combat
             bool seeking = false)
         {
             Position = origin;
+            ChainStart = origin;
             Direction = direction.sqrMagnitude > 1e-8f ? direction.normalized : Vector3.forward;
             Target = target;
             Damage = damage;
@@ -606,6 +609,7 @@ namespace GemTD.Gameplay.Combat
                 {
                     Damage *= ChainHopFalloff;
                     ChainRemaining--;
+                    ChainStart = hit.WorldPosition;
                     Target = next;
                     Seeking = false;
                     SoftSeek = false;

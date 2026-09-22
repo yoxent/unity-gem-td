@@ -641,6 +641,15 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses,
             TowerInstance sourceTower)
         {
+            SpawnVisualPulse(
+                anchor,
+                spec.AoeRadius > 0f ? spec.AoeRadius : 1f,
+                spec,
+                statuses,
+                EffectPayloadVisual.Warp,
+                sourceTower != null ? sourceTower.Def : null,
+                sourceTower);
+
             if (sourceTower == null || sourceTower.Def == null)
                 return;
 
@@ -716,28 +725,50 @@ namespace GemTD.Gameplay.Combat
             if (spec.AoeRadius <= 0f || sourceTower == null || sourceTower.Def == null)
                 return;
 
+            SpawnVisualPulse(
+                aimPoint,
+                spec.AoeRadius,
+                spec,
+                statuses,
+                EffectPayloadVisual.Slam,
+                sourceTower.Def,
+                sourceTower);
+        }
+
+        void SpawnVisualPulse(
+            Vector3 anchor,
+            float radius,
+            SkillSpec spec,
+            StatusRuntime statuses,
+            EffectPayloadVisual visual,
+            TowerDefinition sourceTower,
+            TowerInstance owner = null)
+        {
+            if (radius <= 0f)
+                return;
+
             var plan = new EffectPayloadPlan
             {
                 Trigger = EffectPayloadTrigger.AfterDelay,
                 TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
                 HitPolicy = EffectPayloadHitPolicy.PerImpact,
-                Origin = aimPoint,
-                LandingPoint = aimPoint,
+                Origin = anchor,
+                LandingPoint = anchor,
                 DamageMin = 0f,
                 DamageMax = 0f,
-                AoeRadius = spec.AoeRadius,
+                AoeRadius = radius,
                 DelaySeconds = 0f,
                 HitSpec = spec,
-                Visual = EffectPayloadVisual.Slam
+                Visual = visual
             };
             var runtime = new EffectPayloadRuntime();
             runtime.Init(
                 plan,
                 EffectPayloadRuntime.MinFlightSeconds,
                 statuses,
-                sourceTower.Def,
+                sourceTower,
                 _recordDamage,
-                sourceTower);
+                owner);
             BindCritRng(runtime);
             _effectPayloads.Add(runtime);
         }
@@ -873,7 +904,18 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses,
             TowerDefinition sourceTower)
         {
-            if (radius <= 0f || living == null)
+            if (radius <= 0f)
+                return;
+
+            SpawnVisualPulse(
+                muzzle,
+                radius,
+                spec,
+                statuses,
+                EffectPayloadVisual.Nova,
+                sourceTower);
+
+            if (living == null)
                 return;
 
             var damage = RoleStatValue.SampleHitDamage(damageMin, damageMax);

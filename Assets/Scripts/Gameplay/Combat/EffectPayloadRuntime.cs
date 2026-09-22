@@ -39,6 +39,10 @@ namespace GemTD.Gameplay.Combat
             ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Slam;
         public bool ShowsAftershockVisual =>
             ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Aftershock;
+        public bool ShowsNovaVisual =>
+            ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Nova;
+        public bool ShowsWarpVisual =>
+            ShowsPulseVisual && _plan.Visual == EffectPayloadVisual.Warp;
         public bool ShowsFallVisual =>
             IsActive
             && _plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky

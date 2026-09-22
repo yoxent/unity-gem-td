@@ -34,6 +34,9 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] EffectView slamEffectPrefab;
         [SerializeField] EffectView aftershockEffectPrefab;
         [SerializeField] EffectView fallEffectPrefab;
+        [SerializeField] EffectView novaEffectPrefab;
+        [SerializeField] EffectView warpEffectPrefab;
+        [SerializeField] EffectView chainLightningEffectPrefab;
 
         readonly SkillLabSession _session = new SkillLabSession();
         readonly List<EffectView> _effectViews = new List<EffectView>(32);
@@ -41,6 +44,9 @@ namespace GemTD.Gameplay.SkillLab
         ViewObjectPool<EffectView> _slamEffectPool;
         ViewObjectPool<EffectView> _aftershockEffectPool;
         ViewObjectPool<EffectView> _fallEffectPool;
+        ViewObjectPool<EffectView> _novaEffectPool;
+        ViewObjectPool<EffectView> _warpEffectPool;
+        ViewObjectPool<EffectView> _chainLightningEffectPool;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -92,6 +98,30 @@ namespace GemTD.Gameplay.SkillLab
                     transform,
                     EffectViewBinder.FallPrewarm);
                 _fallEffectPool.Prewarm(EffectViewBinder.FallPrewarm);
+            }
+            if (novaEffectPrefab != null)
+            {
+                _novaEffectPool = new ViewObjectPool<EffectView>(
+                    novaEffectPrefab,
+                    transform,
+                    EffectViewBinder.NovaPrewarm);
+                _novaEffectPool.Prewarm(EffectViewBinder.NovaPrewarm);
+            }
+            if (warpEffectPrefab != null)
+            {
+                _warpEffectPool = new ViewObjectPool<EffectView>(
+                    warpEffectPrefab,
+                    transform,
+                    EffectViewBinder.WarpPrewarm);
+                _warpEffectPool.Prewarm(EffectViewBinder.WarpPrewarm);
+            }
+            if (chainLightningEffectPrefab != null)
+            {
+                _chainLightningEffectPool = new ViewObjectPool<EffectView>(
+                    chainLightningEffectPrefab,
+                    transform,
+                    EffectViewBinder.ChainLightningPrewarm);
+                _chainLightningEffectPool.Prewarm(EffectViewBinder.ChainLightningPrewarm);
             }
 
             _session.BindCatalog(draftGems);
@@ -288,7 +318,10 @@ namespace GemTD.Gameplay.SkillLab
                 _projectilePool,
                 _slamEffectPool,
                 _aftershockEffectPool,
-                _fallEffectPool);
+                _fallEffectPool,
+                _novaEffectPool,
+                _warpEffectPool,
+                _chainLightningEffectPool);
         }
 
         void TickDrag()

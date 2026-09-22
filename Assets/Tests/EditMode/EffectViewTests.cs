@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using GemTD.Gameplay.Combat;
+using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Map;
 using GemTD.Gameplay.Towers;
 
@@ -203,6 +204,48 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void BindNova_PlaysParticles_StopsOnClear()
+        {
+            var (view, particles) = MakeParticleView<NovaEffectView>();
+            try
+            {
+                view.Bind(MakeVisualPayload(
+                    new Vector3(3f, 0.5f, 4f),
+                    aoeRadius: 1.8f,
+                    EffectPayloadVisual.Nova));
+                Assert.IsTrue(particles.isPlaying);
+
+                view.Clear();
+                Assert.IsFalse(particles.isPlaying);
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
+        public void BindWarp_PlaysParticles_StopsOnClear()
+        {
+            var (view, particles) = MakeParticleView<WarpEffectView>();
+            try
+            {
+                view.Bind(MakeVisualPayload(
+                    new Vector3(3f, 0.5f, 4f),
+                    aoeRadius: 1f,
+                    EffectPayloadVisual.Warp));
+                Assert.IsTrue(particles.isPlaying);
+
+                view.Clear();
+                Assert.IsFalse(particles.isPlaying);
+            }
+            finally
+            {
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
         public void BindFountain_PlaysParticles_StopsOnClear()
         {
             var (view, particles) = MakeParticleView<BoltEffectView>();
@@ -217,6 +260,60 @@ namespace GemTD.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
+        public void BindChainLightning_DrawsFlatWrinkledParticleBeam()
+        {
+            var go = new GameObject("ChainLightning");
+            var scale = new GameObject("Scale");
+            scale.transform.SetParent(go.transform, false);
+            var particles = go.AddComponent<ParticleSystem>();
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            var view = go.AddComponent<ChainLightningEffectView>();
+            var viewProperties = new SerializedObject(view);
+            viewProperties.FindProperty("scaleRoot").objectReferenceValue = scale.transform;
+            viewProperties.FindProperty("lightningParticles").objectReferenceValue = particles;
+            viewProperties.FindProperty("lightningRenderer").objectReferenceValue = renderer;
+            viewProperties.ApplyModifiedPropertiesWithoutUndo();
+
+            var enemyDefinition = ScriptableObject.CreateInstance<EnemyDefinition>();
+            enemyDefinition.MaxHealth = 100f;
+            var enemy = new EnemyRuntime();
+            enemy.Init(enemyDefinition, new[] { new Vector3(3f, 0f, 0f) });
+            var runtime = new ProjectileRuntime();
+            runtime.Init(
+                new Vector3(0f, 2f, 0f),
+                Vector3.forward,
+                enemy,
+                damage: 1f,
+                chainCount: 1,
+                speed: 20f,
+                chainRange: ProjectileRuntime.DefaultChainRange,
+                hitSpec: SkillSpec.FromBase(1f));
+
+            try
+            {
+                view.Bind(runtime);
+
+                Assert.AreEqual(6, particles.particleCount);
+                Assert.AreEqual(ParticleSystemRenderMode.Stretch, renderer.renderMode);
+                var beamParticles = new ParticleSystem.Particle[6];
+                Assert.AreEqual(6, particles.GetParticles(beamParticles));
+                for (var i = 0; i < beamParticles.Length; i++)
+                {
+                    Assert.AreEqual(0f, beamParticles[i].position.y, 0.0001f);
+                    Assert.AreEqual(0f, beamParticles[i].velocity.y, 0.0001f);
+                }
+
+                view.Clear();
+                Assert.AreEqual(0, particles.particleCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+                Object.DestroyImmediate(enemyDefinition);
             }
         }
 
@@ -318,29 +415,13 @@ namespace GemTD.Tests.EditMode
 
         static EffectPayloadRuntime MakeSlamPayload(Vector3 landing, float aoeRadius)
         {
-            var runtime = new EffectPayloadRuntime();
-            runtime.Init(
-                new EffectPayloadPlan
-                {
-                    Trigger = EffectPayloadTrigger.AfterDelay,
-                    TravelPattern = EffectPayloadTravelPattern.StationaryPulse,
-                    HitPolicy = EffectPayloadHitPolicy.PerImpact,
-                    Origin = landing,
-                    LandingPoint = landing,
-                    DamageMin = 0f,
-                    DamageMax = 0f,
-                    AoeRadius = aoeRadius,
-                    DelaySeconds = 0f,
-                    Visual = EffectPayloadVisual.Slam
-                },
-                flightSeconds: 0.08f,
-                statuses: null,
-                sourceTower: null,
-                recordDamage: null);
-            return runtime;
+            return MakeVisualPayload(landing, aoeRadius, EffectPayloadVisual.Slam);
         }
 
-        static EffectPayloadRuntime MakeAftershockPayload(Vector3 landing, float aoeRadius)
+        static EffectPayloadRuntime MakeVisualPayload(
+            Vector3 landing,
+            float aoeRadius,
+            EffectPayloadVisual visual)
         {
             var runtime = new EffectPayloadRuntime();
             runtime.Init(
@@ -355,13 +436,18 @@ namespace GemTD.Tests.EditMode
                     DamageMax = 0f,
                     AoeRadius = aoeRadius,
                     DelaySeconds = 0f,
-                    Visual = EffectPayloadVisual.Aftershock
+                    Visual = visual
                 },
                 flightSeconds: 0.08f,
                 statuses: null,
                 sourceTower: null,
                 recordDamage: null);
             return runtime;
+        }
+
+        static EffectPayloadRuntime MakeAftershockPayload(Vector3 landing, float aoeRadius)
+        {
+            return MakeVisualPayload(landing, aoeRadius, EffectPayloadVisual.Aftershock);
         }
 
         static EffectPayloadRuntime MakeFountainPayload(Vector3 origin, Vector3 landing)

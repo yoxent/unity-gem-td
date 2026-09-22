@@ -121,6 +121,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4209562371136343467}
+  - {fileID: 4900000000000000002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6558561485013009353
@@ -136,4 +137,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Combat.BoltEffectView
   scaleRoot: {fileID: 4209562371136343467}
-  particles: {fileID: 0}
+  particles: {fileID: 4900000000000000003}
+  boltRenderer: {fileID: 4316081604650818584}
+  fireColor: {r: 1, g: 0.25, b: 0.05, a: 1}
+  iceColor: {r: 0.25, g: 0.75, b: 1, a: 1}
+  lightningColor: {r: 1, g: 0.9, b: 0.15, a: 1}
+  waterColor: {r: 0.1, g: 0.45, b: 1, a: 1}
+--- !u!1001 &4900000000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3341899622786192328}
+    m_Modifications: []
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bc142210df3ec4545a4e3e1f21e00da7, type: 3}
+--- !u!4 &4900000000000000002 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4559080999636468818, guid: bc142210df3ec4545a4e3e1f21e00da7, type: 3}
+  m_PrefabInstance: {fileID: 4900000000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &4900000000000000003 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 2423806116100273067, guid: bc142210df3ec4545a4e3e1f21e00da7, type: 3}
+  m_PrefabInstance: {fileID: 4900000000000000001}
+  m_PrefabAsset: {fileID: 0}

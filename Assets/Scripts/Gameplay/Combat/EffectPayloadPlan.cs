@@ -35,6 +35,8 @@ namespace GemTD.Gameplay.Combat
     {
         None = 0,
         Slam = 1,
-        Aftershock = 2
+        Aftershock = 2,
+        Nova = 3,
+        Warp = 4
     }
 }

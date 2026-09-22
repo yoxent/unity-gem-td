@@ -42,6 +42,9 @@ namespace GemTD.Gameplay
         [SerializeField] EffectView slamEffectPrefab;
         [SerializeField] EffectView aftershockEffectPrefab;
         [SerializeField] EffectView fallEffectPrefab;
+        [SerializeField] EffectView novaEffectPrefab;
+        [SerializeField] EffectView warpEffectPrefab;
+        [SerializeField] EffectView chainLightningEffectPrefab;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] TowerView spellTowerPrefab;
         [SerializeField] TowerView slamTowerPrefab;
@@ -266,6 +269,9 @@ namespace GemTD.Gameplay
         ViewObjectPool<EffectView> _slamEffectPool;
         ViewObjectPool<EffectView> _aftershockEffectPool;
         ViewObjectPool<EffectView> _fallEffectPool;
+        ViewObjectPool<EffectView> _novaEffectPool;
+        ViewObjectPool<EffectView> _warpEffectPool;
+        ViewObjectPool<EffectView> _chainLightningEffectPool;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
@@ -342,6 +348,9 @@ namespace GemTD.Gameplay
             _slamEffectPool?.Clear();
             _aftershockEffectPool?.Clear();
             _fallEffectPool?.Clear();
+            _novaEffectPool?.Clear();
+            _warpEffectPool?.Clear();
+            _chainLightningEffectPool?.Clear();
         }
 
         void Update()
@@ -647,6 +656,30 @@ namespace GemTD.Gameplay
                     parent,
                     EffectViewBinder.FallPrewarm);
                 _fallEffectPool.Prewarm(EffectViewBinder.FallPrewarm);
+            }
+            if (novaEffectPrefab != null)
+            {
+                _novaEffectPool = new ViewObjectPool<EffectView>(
+                    novaEffectPrefab,
+                    parent,
+                    EffectViewBinder.NovaPrewarm);
+                _novaEffectPool.Prewarm(EffectViewBinder.NovaPrewarm);
+            }
+            if (warpEffectPrefab != null)
+            {
+                _warpEffectPool = new ViewObjectPool<EffectView>(
+                    warpEffectPrefab,
+                    parent,
+                    EffectViewBinder.WarpPrewarm);
+                _warpEffectPool.Prewarm(EffectViewBinder.WarpPrewarm);
+            }
+            if (chainLightningEffectPrefab != null)
+            {
+                _chainLightningEffectPool = new ViewObjectPool<EffectView>(
+                    chainLightningEffectPrefab,
+                    parent,
+                    EffectViewBinder.ChainLightningPrewarm);
+                _chainLightningEffectPool.Prewarm(EffectViewBinder.ChainLightningPrewarm);
             }
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
@@ -1664,7 +1697,10 @@ namespace GemTD.Gameplay
                 _projectilePool,
                 _slamEffectPool,
                 _aftershockEffectPool,
-                _fallEffectPool);
+                _fallEffectPool,
+                _novaEffectPool,
+                _warpEffectPool,
+                _chainLightningEffectPool);
         }
 
         void EnsureHomeMarker()
