@@ -133,7 +133,14 @@ namespace GemTD.Editor
             Array.Copy(matched, ordered, matched.Length);
             Array.Sort(ordered, CompareGemIds);
 
-            pool.Gems = ordered;
+            var draftEligible = new List<GemDefinition>(ordered.Length);
+            for (var i = 0; i < ordered.Length; i++)
+            {
+                if (DraftPoolEligibility.HasResolvedCombatModifier(ordered[i].Modifiers))
+                    draftEligible.Add(ordered[i]);
+            }
+
+            pool.Gems = draftEligible.ToArray();
             campaign.RarityTable = rarityTable;
             EditorUtility.SetDirty(pool);
             EditorUtility.SetDirty(campaign);
@@ -151,6 +158,8 @@ namespace GemTD.Editor
             Debug.Log(
                 "[Gem TD] Support-gem catalog imported. source=" + results.Length
                 + " matched=" + matched.Length
+                + " draftEligible=" + pool.Count
+                + " draftExcluded=" + (matched.Length - pool.Count)
                 + " skipped=" + skipped
                 + " rarityTable=" + RarityTablePath);
         }
