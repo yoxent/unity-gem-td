@@ -35,6 +35,11 @@ namespace GemTD.Gameplay.Combat
             ClearParticleBeam();
         }
 
+        protected override void AfterSync()
+        {
+            // SetParticles owns this beam. PlayAssigned would StopEmittingAndClear it.
+        }
+
         protected override void OnClear()
         {
             base.OnClear();
@@ -90,6 +95,9 @@ namespace GemTD.Gameplay.Combat
                 particle.startColor = Color.white;
                 _beamParticles[i] = particle;
             }
+
+            if (!lightningParticles.isPlaying)
+                lightningParticles.Play(false);
 
             lightningParticles.SetParticles(_beamParticles, SegmentCount);
         }

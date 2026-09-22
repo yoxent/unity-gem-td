@@ -185,7 +185,7 @@ namespace GemTD.Tests.EditMode
             var expectedLandings = CollectMagmaLandings(session.LastTrace);
 
             Assert.AreEqual(4, expectedLandings.Count, "overlay magma landings");
-            Assert.AreEqual(4, session.EffectPayloads.Count, "runtime magma payloads");
+            Assert.AreEqual(4, CountMagmaPayloads(session.EffectPayloads), "runtime magma payloads");
             AssertLandingsMatchPayloads(expectedLandings, session.EffectPayloads);
         }
 
@@ -848,9 +848,29 @@ namespace GemTD.Tests.EditMode
             return landings;
         }
 
+        static int CountMagmaPayloads(IReadOnlyList<EffectPayloadRuntime> payloads)
+        {
+            var count = 0;
+            if (payloads == null)
+                return 0;
+            for (var i = 0; i < payloads.Count; i++)
+            {
+                if (IsMagmaPayload(payloads[i]))
+                    count++;
+            }
+
+            return count;
+        }
+
+        static bool IsMagmaPayload(EffectPayloadRuntime payload)
+        {
+            return payload != null
+                && payload.Plan.TravelPattern == EffectPayloadTravelPattern.Fountain;
+        }
+
         static void WaitForMagmaPayloads(SkillLabSession session, int count)
         {
-            for (var i = 0; i < 120 && session.EffectPayloads.Count < count; i++)
+            for (var i = 0; i < 120 && CountMagmaPayloads(session.EffectPayloads) < count; i++)
                 session.TickVolley(0.02f);
         }
 
@@ -861,6 +881,9 @@ namespace GemTD.Tests.EditMode
             var remaining = new List<Vector3>(expectedLandings);
             for (var i = 0; i < payloads.Count; i++)
             {
+                if (!IsMagmaPayload(payloads[i]))
+                    continue;
+
                 var actual = payloads[i].LandingPoint;
                 var matched = false;
                 for (var j = 0; j < remaining.Count; j++)

@@ -24,7 +24,8 @@ namespace GemTD.Gameplay.Combat
         protected override void OnClear()
         {
             base.OnClear();
-            boltRenderer?.SetPropertyBlock(null);
+            if (boltRenderer != null)
+                boltRenderer.SetPropertyBlock(null);
         }
 
         void ApplyElementColor()

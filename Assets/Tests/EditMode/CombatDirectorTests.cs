@@ -914,6 +914,7 @@ namespace GemTD.Tests.EditMode
             var living = new List<EnemyRuntime> { enemy };
 
             Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            CompleteCast(director, living);
             for (var i = 0; i < 80 && director.Projectiles.Count > 0; i++)
                 director.TickInFlight(0.05f, living);
 
@@ -1268,6 +1269,7 @@ namespace GemTD.Tests.EditMode
             var living = new List<EnemyRuntime> { enemy };
 
             Assert.IsTrue(director.TryFireOnce(tower, Vector3.zero, living, _pipeline));
+            CompleteCast(director, living);
             Assert.AreEqual(1, director.EffectPayloads.Count);
             Assert.AreEqual(EffectPayloadVisual.Nova, director.EffectPayloads[0].Plan.Visual);
             Assert.IsTrue(director.EffectPayloads[0].ShowsNovaVisual);
