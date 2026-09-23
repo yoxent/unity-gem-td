@@ -801,7 +801,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2010664425}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1395327585
@@ -821,6 +822,70 @@ MonoBehaviour:
   towerHeight0: {fileID: 2100000, guid: c8e4a71b9d2f4c6a8b3e5f1a7c9d0e2b, type: 2}
   towerHeight1: {fileID: 2100000, guid: d9f5b82c0e3a5d7b9c4f6a2b8d0e1f3c, type: 2}
   towerHeight2: {fileID: 2100000, guid: e0a6c93d1f4b6e8c0d5a7b3c9e1f2a4d, type: 2}
+  grassRendererTemplate: {fileID: 2010664426}
+  grassPatchPalette: {fileID: 2010664427}
+  grassSurfaceOffset: 0.01
+--- !u!1 &1537983142
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1537983144}
+  - component: {fileID: 1537983143}
+  - component: {fileID: 1537983145}
+  m_Layer: 0
+  m_Name: PointGrassRuntime
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1537983143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1537983142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5a5033f7080c5549a9cc007d2df0a29, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MicahW.PointGrassRenderer.Runtime::MicahW.PointGrass.PointGrassDisplacementManager
+--- !u!4 &1537983144
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1537983142}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1537983145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1537983142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d938393f58ae1e844b929a6d939683ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  windScale: 0.25
+  noiseRange: {x: -0.45, y: 1}
+  windDirection: {x: 0.35, y: -0.1, z: 0.75}
+  windScroll: {x: 0.35, y: -0.1, z: 0.75}
 --- !u!1 &1614033743
 GameObject:
   m_ObjectHideFlags: 0
@@ -1602,6 +1667,114 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d387cad713882e144b1070b3bf92905b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GemTD.UI::GemTD.UI.SpeedPanelController
+--- !u!1 &2010664424
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2010664425}
+  - component: {fileID: 2010664426}
+  - component: {fileID: 2010664427}
+  m_Layer: 0
+  m_Name: GrassRendererTemplate
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &2010664425
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2010664424}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1395327584}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2010664426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2010664424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb257b300d8d9d748bf8d0eeb8190b52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MicahW.PointGrassRenderer.Runtime::MicahW.PointGrass.PointGrassRenderer
+  distSource: 0
+  baseMesh: {fileID: 0}
+  terrain: {fileID: 0}
+  terrainLayers: []
+  chunkCount: {x: 8, y: 8}
+  sceneFilters: []
+  bladeType: 2
+  multipleMeshes: 1
+  grassBladeMesh: {fileID: 331367184874445098, guid: 002bf449675252849a29782b177a97f2, type: 3}
+  grassBladeMeshes:
+  - {fileID: 331367184874445098, guid: 002bf449675252849a29782b177a97f2, type: 3}
+  - {fileID: 6348799516623258005, guid: 002bf449675252849a29782b177a97f2, type: 3}
+  - {fileID: 4768935795143599982, guid: 002bf449675252849a29782b177a97f2, type: 3}
+  meshDensityValues:
+  - 1
+  - 0.005
+  - 0.005
+  multipleMaterials: 1
+  material: {fileID: 2100000, guid: a902199487b36cb4197368addc1655fc, type: 2}
+  materials:
+  - {fileID: 2100000, guid: a902199487b36cb4197368addc1655fc, type: 2}
+  - {fileID: 2100000, guid: a902199487b36cb4197368addc1655fc, type: 2}
+  - {fileID: 2100000, guid: a902199487b36cb4197368addc1655fc, type: 2}
+  shadowMode: 0
+  renderLayer:
+    m_LayerIndex: 0
+  pointCount: 20
+  multiplyByArea: 1
+  pointLODFactor: 1
+  randomiseSeed: 1
+  seed: 406531377
+  overwriteNormalDirection: 1
+  forcedNormal: {x: 0, y: 1, z: 0}
+  useDensity: 0
+  densityCutoff: 0
+  useLength: 0
+  lengthMapping: {x: 0.6396396, y: 0.99999994}
+  projectType: 0
+  projectMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  boundingBoxOffset:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.25, y: 1, z: 0.25}
+--- !u!114 &2010664427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2010664424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5684a141975093c448456543bf46b1cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Map.GrassPatchPalette
+  tints:
+  - {r: 0.35, g: 0.65, b: 0.16, a: 1}
+  - {r: 0.48, g: 0.78, b: 0.22, a: 1}
+  - {r: 0.25, g: 0.48, b: 0.1, a: 1}
+  - {r: 0.62, g: 0.72, b: 0.2, a: 1}
+  patchSize: 1
+  seed: 173
 --- !u!1 &2120868594
 GameObject:
   m_ObjectHideFlags: 0
@@ -5116,3 +5289,4 @@ SceneRoots:
   - {fileID: 93467385}
   - {fileID: 1935270089}
   - {fileID: 2120868596}
+  - {fileID: 1537983144}
