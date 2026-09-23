@@ -113,17 +113,24 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0.075f, TileHeightVisual.LocalPosY(0), 1e-5f);
             Assert.AreEqual(0.275f, TileHeightVisual.LocalPosY(1), 1e-5f);
             Assert.AreEqual(0.475f, TileHeightVisual.LocalPosY(2), 1e-5f);
-            Assert.AreEqual(0.20f, TileHeightVisual.TopY(0), 1e-5f);
-            Assert.AreEqual(0.60f, TileHeightVisual.TopY(1), 1e-5f);
-            Assert.AreEqual(1.00f, TileHeightVisual.TopY(2), 1e-5f);
         }
 
         [Test]
-        public void ShortestPad_TopY_IsPathTopPlusLift()
+        public void TopY_MatchesCliffBlockTops()
         {
-            var pathTop = TileHeightVisual.PathScaleY * 0.5f;
-            Assert.AreEqual(0.15f, TileHeightVisual.PadLift, 1e-5f);
-            Assert.AreEqual(pathTop + TileHeightVisual.PadLift, TileHeightVisual.TopY(0), 1e-5f);
+            Assert.AreEqual(0.25f, TileHeightVisual.TopY(0), 1e-5f);
+            Assert.AreEqual(0.5f, TileHeightVisual.TopY(1), 1e-5f);
+            Assert.AreEqual(1f, TileHeightVisual.TopY(2), 1e-5f);
+        }
+
+        [Test]
+        public void PadHeight_MapsLayersToCliffTiers()
+        {
+            Assert.AreEqual(1, TileHeightVisual.PadHeight(0));
+            Assert.AreEqual(2, TileHeightVisual.PadHeight(1));
+            Assert.AreEqual(3, TileHeightVisual.PadHeight(2));
+            Assert.AreEqual("PadHeight1", TileHeightVisual.PadChildName(0));
+            Assert.AreEqual("PadHeight3", TileHeightVisual.PadChildName(2));
         }
 
         [Test]

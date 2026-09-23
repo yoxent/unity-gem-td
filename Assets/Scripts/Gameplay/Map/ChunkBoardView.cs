@@ -48,10 +48,14 @@ namespace GemTD.Gameplay.Map
             if (Mathf.Abs(_tileSpacing - spacing) < 1e-5f)
                 return;
             _tileSpacing = spacing;
-            foreach (var instance in _instances.Values)
+            foreach (var pair in _instances)
             {
-                if (instance != null)
-                    ApplyFootprints(instance.transform);
+                if (pair.Value == null)
+                    continue;
+                if (_grid != null && _grid.TryGet(pair.Key.x, pair.Key.y, out var slot))
+                    ApplyFootprints(pair.Value.transform, slot);
+                else
+                    ApplyFootprints(pair.Value.transform, default);
             }
 
             RebuildAllGrass();
@@ -67,18 +71,28 @@ namespace GemTD.Gameplay.Map
             instance.transform.localRotation = Quaternion.Euler(0f, slot.Yaw * 90f, 0f);
             instance.transform.localPosition = ChunkInstanceLocalPosition(coord, slot.Yaw, cellSize);
             _instances[coord] = instance.gameObject;
-            ApplyFootprints(instance.transform);
+            ApplyFootprints(instance.transform, slot);
             ApplyTileHeights(instance.transform, coord, slot);
             RebuildGrass(coord, instance.transform, slot);
         }
 
-        void ApplyFootprints(Transform instance)
+        void ApplyFootprints(Transform instance, ChunkSlot slot)
         {
+            // Baked path meshes stay at the set's scale so corridors meet across cells.
+            var skipPath = slot.Prefab != null;
             for (var i = 0; i < instance.childCount; i++)
             {
                 var child = instance.GetChild(i);
-                if (!TileHeightVisual.TryParseTileName(child.name, out _, out _))
+                if (!TileHeightVisual.TryParseTileName(child.name, out var px, out var py))
                     continue;
+                if (TileHeightVisual.HasPad(child))
+                    continue;
+                if (skipPath)
+                {
+                    var worldLocal = RotateLocalCw(px, py, slot.Yaw);
+                    if (slot.Mask.IsPath(worldLocal.x, worldLocal.y))
+                        continue;
+                }
                 TileHeightVisual.ApplyFootprint(child, cellSize, _tileSpacing);
             }
         }
@@ -101,6 +115,9 @@ namespace GemTD.Gameplay.Map
                 var wx = coord.x * ChunkMask.Size + worldLocal.x;
                 var wy = coord.y * ChunkMask.Size + worldLocal.y;
                 var layer = _heights.Get(wx, wy);
+                if (TileHeightVisual.TryActivatePad(child, layer))
+                    continue;
+
                 var renderer = child.GetComponent<MeshRenderer>();
                 var mat = ResolveHeightMaterial(layer, renderer != null ? renderer.sharedMaterial : null);
                 TileHeightVisual.ApplyPad(child, layer, mat);

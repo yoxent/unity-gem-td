@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7819c725198778a488a6a8e0e2b71355, type: 3}
+  m_Name: PathTileSet
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Map.PathTileSet
+  catalog: {fileID: 11400000, guid: 023e5156a863e5a438aef101044e8367, type: 2}
+  uniformScale: 1
+  bend:
+    Prefab: {fileID: 7110354876301187545, guid: e19a58f32d449fb4982b686e4249a1b3, type: 3}
+    OpenEdges: 6
+  cross:
+    Prefab: {fileID: 6467628670681113303, guid: 9722d19b7ee0ad94fa4fb2a45ff4f83d, type: 3}
+    OpenEdges: 15
+  end:
+    Prefab: {fileID: 410356942565705424, guid: 595227e24022e034387340e71bf6bcd4, type: 3}
+    OpenEdges: 4
+  split:
+    Prefab: {fileID: 5129774047579850871, guid: 61920ca494fc8c24b823bef52481db0a, type: 3}
+    OpenEdges: 14
+  straight:
+    Prefab: {fileID: 8269007651558609818, guid: 7ba3e93b1402faf46a71c6428e241db8, type: 3}
+    OpenEdges: 5
+  padHeight1: {fileID: 5422982077544666684, guid: 078ef2911352e4a40989072f473f944f, type: 3}
+  padHeight2: {fileID: 1898362135601801575, guid: 7480bea81fe95194baad9f6140d0edca, type: 3}
+  padHeight3: {fileID: 4610028169736548064, guid: 7bb75badc9d0dfb4fa2c1f752b34292f, type: 3}

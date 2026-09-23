@@ -38,7 +38,52 @@ namespace GemTD.Gameplay.Map
 
         public static float LocalPosY(byte layer) => (ScaleY(layer) - PathScaleY) * 0.5f;
 
-        public static float TopY(byte layer) => ScaleY(layer) * 0.5f + LocalPosY(layer);
+        public const string PadPrefix = "PadHeight";
+
+        /// <summary>Layer 0/1/2 are cliff tiers height 1/2/3. Tops match the Kenney blocks.</summary>
+        public static int PadHeight(byte layer)
+        {
+            if (layer >= 2) return 3;
+            return layer + 1;
+        }
+
+        public static string PadChildName(byte layer) => PadPrefix + PadHeight(layer);
+
+        public static float TopY(byte layer)
+        {
+            if (layer >= 2) return 1f;
+            if (layer == 1) return 0.5f;
+            return 0.25f;
+        }
+
+        public static bool HasPad(Transform tile)
+        {
+            if (tile == null)
+                return false;
+            for (var i = 0; i < tile.childCount; i++)
+            {
+                if (tile.GetChild(i).name.StartsWith(PadPrefix))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>Shows the baked cliff for this layer. False when the tile has no pad children.</summary>
+        public static bool TryActivatePad(Transform tile, byte layer)
+        {
+            if (!HasPad(tile))
+                return false;
+
+            var target = PadChildName(layer);
+            for (var i = 0; i < tile.childCount; i++)
+            {
+                var child = tile.GetChild(i);
+                if (!child.name.StartsWith(PadPrefix))
+                    continue;
+                child.gameObject.SetActive(child.name == target);
+            }
+            return true;
+        }
 
         public static bool TryParseTileName(string name, out int x, out int y)
         {
