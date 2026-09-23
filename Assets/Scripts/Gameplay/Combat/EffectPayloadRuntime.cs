@@ -246,9 +246,12 @@ namespace GemTD.Gameplay.Combat
 
             if (_plan.TravelPattern == EffectPayloadTravelPattern.FallFromSky)
             {
-                _visualRemaining = hitEnemy
+                var linger = hitEnemy
                     ? FallEnemyHitVisualSeconds
                     : FallLandVisualSeconds;
+                if (_plan.StormAreaLingerSeconds > linger)
+                    linger = _plan.StormAreaLingerSeconds;
+                _visualRemaining = linger;
             }
         }
 

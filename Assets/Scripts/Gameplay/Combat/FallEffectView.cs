@@ -5,8 +5,23 @@ namespace GemTD.Gameplay.Combat
 {
     public sealed class FallEffectView : EffectView
     {
+        /// <summary>
+        /// <c>circular_08</c> luminance peaks at 47.8% of the texture half-width.
+        /// The ground billboard is scaled so that peak sits on the storm radius.
+        /// </summary>
+        public const float StormRingPeakFraction = 0.478f;
+        public const float StormAreaGroundLift = 0.05f;
+
         [SerializeField] ParticleSystem fallDrop;
         [SerializeField] ParticleSystem[] fallImpacts;
+        [SerializeField] ParticleSystem stormArea;
+
+        public static float StormAreaScale(float radius)
+        {
+            if (radius <= 0f)
+                return 0f;
+            return radius * 2f / StormRingPeakFraction;
+        }
 
         bool _fallDropPlayed;
         bool _fallImpactPlayed;
@@ -21,11 +36,13 @@ namespace GemTD.Gameplay.Combat
         protected override void AfterSync()
         {
             SyncFallVfx();
+            SyncStormArea();
         }
 
         protected override void OnClear()
         {
             StopFallVfx();
+            HideStormArea();
         }
 
         protected override void ApplyTransform(Vector3 position, Vector3 direction)
@@ -109,6 +126,40 @@ namespace GemTD.Gameplay.Combat
                 return;
             for (var i = 0; i < fallImpacts.Length; i++)
                 StopIsolated(fallImpacts[i]);
+        }
+
+        void SyncStormArea()
+        {
+            if (stormArea == null)
+                return;
+
+            var radius = Payload != null ? Payload.Plan.StormRadius : 0f;
+            if (radius <= 0.01f)
+            {
+                HideStormArea();
+                return;
+            }
+
+            var landing = Payload.LandingPoint;
+            var area = stormArea.transform;
+            area.position = new Vector3(landing.x, landing.y + StormAreaGroundLift, landing.z);
+            area.rotation = Quaternion.identity;
+            var scale = StormAreaScale(radius);
+            area.localScale = new Vector3(scale, scale, scale);
+            if (!stormArea.gameObject.activeSelf)
+            {
+                stormArea.gameObject.SetActive(true);
+                PlayIsolated(stormArea);
+            }
+        }
+
+        void HideStormArea()
+        {
+            if (stormArea == null || !stormArea.gameObject.activeSelf)
+                return;
+
+            StopIsolated(stormArea);
+            stormArea.gameObject.SetActive(false);
         }
     }
 }

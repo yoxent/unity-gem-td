@@ -26,6 +26,10 @@ namespace GemTD.Gameplay.Combat
         public float KnockbackDistance;
         public SkillSpec HitSpec;
         public EffectPayloadVisual Visual;
+        /// <summary>Landing-disk radius for the aim-point bolt. 0 hides the ground ring.</summary>
+        public float StormRadius;
+        /// <summary>Minimum post-impact linger for the aim-point bolt so the ground ring lasts until the last bolt lands.</summary>
+        public float StormAreaLingerSeconds;
 
         public float HorizontalDistance =>
             new Vector3(LandingPoint.x - Origin.x, 0f, LandingPoint.z - Origin.z).magnitude;

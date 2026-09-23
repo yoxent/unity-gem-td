@@ -382,6 +382,83 @@ namespace GemTD.Tests.EditMode
             }
         }
 
+        [Test]
+        public void BindFallFromSky_StormAreaSitsOnAimDisk_HidesWhenRadiusIsZero()
+        {
+            var go = new GameObject("Fall");
+            var scale = new GameObject("Scale");
+            scale.transform.SetParent(go.transform, false);
+            var areaGo = new GameObject("StormArea");
+            areaGo.transform.SetParent(go.transform, false);
+            areaGo.SetActive(false);
+            var storm = areaGo.AddComponent<ParticleSystem>();
+            storm.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var view = go.AddComponent<FallEffectView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("scaleRoot").objectReferenceValue = scale.transform;
+            so.FindProperty("stormArea").objectReferenceValue = storm;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            try
+            {
+                var landing = new Vector3(3f, 1f, 4f);
+                var runtime = new EffectPayloadRuntime();
+                runtime.Init(
+                    new EffectPayloadPlan
+                    {
+                        TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                        Origin = landing + Vector3.up * 3f,
+                        LandingPoint = landing,
+                        AoeRadius = 0.5f,
+                        StormRadius = 2f
+                    },
+                    flightSeconds: 0.2f,
+                    statuses: null,
+                    sourceTower: null,
+                    recordDamage: null);
+                runtime.Tick(0.05f, null);
+                view.Bind(runtime);
+
+                Assert.IsTrue(areaGo.activeSelf);
+                Assert.IsTrue(storm.isPlaying);
+                var expected = landing + Vector3.up * FallEffectView.StormAreaGroundLift;
+                Assert.AreEqual(expected.x, storm.transform.position.x, 1e-4f);
+                Assert.AreEqual(expected.y, storm.transform.position.y, 1e-4f);
+                Assert.AreEqual(expected.z, storm.transform.position.z, 1e-4f);
+                var scaleAmount = FallEffectView.StormAreaScale(2f);
+                Assert.AreEqual(scaleAmount, storm.transform.localScale.x, 1e-4f);
+                Assert.AreEqual(scaleAmount, storm.transform.localScale.y, 1e-4f);
+                Assert.AreEqual(scaleAmount, storm.transform.localScale.z, 1e-4f);
+                Assert.AreNotEqual(go.transform.position, storm.transform.position);
+
+                view.Clear();
+                Assert.IsFalse(areaGo.activeSelf);
+                Assert.IsFalse(storm.isPlaying);
+
+                runtime = new EffectPayloadRuntime();
+                runtime.Init(
+                    new EffectPayloadPlan
+                    {
+                        TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                        Origin = landing + Vector3.up * 3f,
+                        LandingPoint = landing,
+                        AoeRadius = 0.5f
+                    },
+                    flightSeconds: 0.2f,
+                    statuses: null,
+                    sourceTower: null,
+                    recordDamage: null);
+                runtime.Tick(0.05f, null);
+                view.Bind(runtime);
+                Assert.IsFalse(areaGo.activeSelf);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         static (T view, Transform scaleRoot) MakeView<T>(Vector3 authoredScale) where T : EffectView
         {
             var go = new GameObject("Payload");

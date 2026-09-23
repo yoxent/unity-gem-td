@@ -112,6 +112,7 @@ namespace GemTD.Gameplay.Combat
                 var ailments = AilmentTune.FromSkillSpec(spec);
                 var drop = def.ArcHeight > 0f ? def.ArcHeight : 3f;
                 var interval = def.IntervalSeconds;
+                var stormLinger = count > 1 ? (count - 1) * interval : 0f;
 
                 for (var i = 0; i < count; i++)
                 {
@@ -145,6 +146,8 @@ namespace GemTD.Gameplay.Combat
                         DelaySeconds = i * interval,
                         IntervalSeconds = interval,
                         RepeatCount = def.RepeatCount,
+                        StormRadius = i == 0 ? def.MaxDistance : 0f,
+                        StormAreaLingerSeconds = i == 0 ? stormLinger : 0f,
                         Ailments = ailments,
                         Proliferate = spec.Proliferate,
                         KnockbackChance = spec.KnockbackChance,

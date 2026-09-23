@@ -311,6 +311,41 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void FallFromSky_StormAreaLinger_OutlastsEnemyHitVisual_WithoutExtraDamage()
+        {
+            var landing = new Vector3(2f, 0f, 0f);
+            var enemy = MakeEnemy(landing);
+            var living = Living(enemy);
+            var plan = new EffectPayloadPlan
+            {
+                TravelPattern = EffectPayloadTravelPattern.FallFromSky,
+                HitPolicy = EffectPayloadHitPolicy.PerImpact,
+                Origin = landing + Vector3.up * 3f,
+                LandingPoint = landing,
+                DamageMin = 5f,
+                DamageMax = 5f,
+                AoeRadius = 1f,
+                StormRadius = 2f,
+                StormAreaLingerSeconds = 0.9f
+            };
+            var runtime = new EffectPayloadRuntime();
+            runtime.Init(plan, flightSeconds: 0.2f, statuses: null, sourceTower: null, recordDamage: null);
+
+            runtime.Tick(0.2f, living);
+            var hpAfterHit = enemy.Hp;
+            Assert.Less(hpAfterHit, 100f);
+
+            runtime.Tick(EffectPayloadRuntime.FallEnemyHitVisualSeconds, living);
+            Assert.IsTrue(runtime.IsActive);
+            Assert.IsTrue(runtime.ShowsFallVisual);
+            Assert.AreEqual(hpAfterHit, enemy.Hp, 1e-4f);
+
+            runtime.Tick(0.9f - EffectPayloadRuntime.FallEnemyHitVisualSeconds + 0.02f, living);
+            Assert.IsFalse(runtime.IsActive);
+            Assert.AreEqual(hpAfterHit, enemy.Hp, 1e-4f);
+        }
+
+        [Test]
         public void StationaryPulse_WaitsDelayThenHits()
         {
             var enemy = MakeEnemy(Vector3.zero);

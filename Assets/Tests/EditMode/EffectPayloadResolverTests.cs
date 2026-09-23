@@ -253,6 +253,16 @@ namespace GemTD.Tests.EditMode
                 var dx = into[i].LandingPoint.x - aim.x;
                 var dz = into[i].LandingPoint.z - aim.z;
                 Assert.LessOrEqual(dx * dx + dz * dz, 2.5f * 2.5f + 1e-3f);
+                if (i == 0)
+                {
+                    Assert.AreEqual(2.5f, into[i].StormRadius, 1e-4f);
+                    Assert.AreEqual(9f * 0.15f, into[i].StormAreaLingerSeconds, 1e-4f);
+                }
+                else
+                {
+                    Assert.AreEqual(0f, into[i].StormRadius, 1e-4f);
+                    Assert.AreEqual(0f, into[i].StormAreaLingerSeconds, 1e-4f);
+                }
             }
         }
 
