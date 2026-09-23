@@ -502,15 +502,11 @@ namespace GemTD.Gameplay
 
                 EnsurePlacementGhost();
                 var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
-                var plane = new Plane(Vector3.up, Vector3.zero);
-                if (!plane.Raycast(ray, out var enter))
+                if (!chunkBoardView.TryPickCell(ray, out var cell))
                 {
                     _placementGhost.Hide();
                     return;
                 }
-
-                var world = ray.GetPoint(enter);
-                var cell = chunkBoardView.WorldToCell(world);
                 var valid = Placement.CanPlace(_placeDef, cell, phase, ComputePlaceCost(_placeDef));
                 var range = _placeDef != null
                     ? _placeDef.GetPlacementTowerRadius(TowerInstance.DefaultLevel) * HeightRangeMul(cell)
@@ -948,6 +944,15 @@ namespace GemTD.Gameplay
             _path.RankTipsByHopDescending(_spawnTips, _rankedTipsScratch);
             for (var i = 0; i < bossCount && i < _rankedTipsScratch.Count; i++)
                 _bossSpawnTips.Add(_rankedTipsScratch[i]);
+        }
+
+        public bool TryPickBoard(Ray ray, out Vector3 world)
+        {
+            world = default;
+            if (chunkBoardView == null || !chunkBoardView.TryPickCell(ray, out var cell))
+                return false;
+            world = chunkBoardView.CellToWorld(cell);
+            return true;
         }
 
         public void TryPlaceAtWorld(Vector3 world, bool keepPlacementSelected = false)

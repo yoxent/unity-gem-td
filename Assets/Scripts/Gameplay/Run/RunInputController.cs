@@ -138,11 +138,12 @@ namespace GemTD.Gameplay.Run
                 }
             }
 
-            var plane = new Plane(Vector3.up, Vector3.zero);
-            if (!plane.Raycast(ray, out var enter))
+            if (!_root.TryPickBoard(ray, out var world))
+            {
+                if (!_root.HasPlaceTowerSelected)
+                    _root.ClearTowerSelection();
                 return;
-
-            var world = ray.GetPoint(enter);
+            }
             var kb = Keyboard.current;
             var shift = kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed);
 

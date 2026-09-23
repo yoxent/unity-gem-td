@@ -473,6 +473,30 @@ namespace GemTD.Gameplay.Map
             return new Vector2Int(x, y);
         }
 
+        /// <summary>Cell whose pad the ray hits. Falls back to the y=0 plane before heights are bound.</summary>
+        public bool TryPickCell(Ray worldRay, out Vector2Int cell)
+        {
+            if (_heights == null)
+                return TryPickFlatPlane(worldRay, out cell);
+
+            var origin = transform.InverseTransformPoint(worldRay.origin);
+            var direction = transform.InverseTransformVector(worldRay.direction);
+            return BoardCellPick.TryPick(new Ray(origin, direction), cellSize, _heights, out cell);
+        }
+
+        bool TryPickFlatPlane(Ray worldRay, out Vector2Int cell)
+        {
+            var plane = new Plane(Vector3.up, Vector3.zero);
+            if (!plane.Raycast(worldRay, out var enter))
+            {
+                cell = default;
+                return false;
+            }
+
+            cell = WorldToCell(worldRay.GetPoint(enter));
+            return true;
+        }
+
         public Vector3 ChunkCenterWorld(Vector2Int coord)
         {
             var halfChunk = ChunkMask.Size * cellSize * 0.5f;
