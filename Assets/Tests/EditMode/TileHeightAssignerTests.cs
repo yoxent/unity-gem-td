@@ -197,5 +197,71 @@ namespace GemTD.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(mats[i]);
             UnityEngine.Object.DestroyImmediate(tile);
         }
+
+        [Test]
+        public void RollIndex_IsStableAndInRange()
+        {
+            Assert.AreEqual(-1, TileHeightVisual.RollIndex(0, 4, 9, 1));
+            Assert.AreEqual(0, TileHeightVisual.RollIndex(1, 4, 9, 1));
+            var index = TileHeightVisual.RollIndex(5, 2, 8, 3);
+            Assert.AreEqual(index, TileHeightVisual.RollIndex(5, 2, 8, 3));
+            Assert.GreaterOrEqual(index, 0);
+            Assert.Less(index, 5);
+        }
+
+        [Test]
+        public void RollIndex_TopAndSideSaltsCoverAllPairs()
+        {
+            var seen = new bool[3, 3];
+            var count = 0;
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var top = TileHeightVisual.RollIndex(3, x, y, TileHeightVisual.PadTopSalt);
+                    var side = TileHeightVisual.RollIndex(3, x, y, TileHeightVisual.PadSideSalt);
+                    if (seen[top, side])
+                        continue;
+                    seen[top, side] = true;
+                    count++;
+                }
+            }
+
+            Assert.AreEqual(9, count);
+        }
+
+        [Test]
+        public void ApplyPadLook_AssignsTopAndSideOnActivePadOnly()
+        {
+            var tile = new GameObject("Tile_0_0");
+            var active = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            active.name = "PadHeight1";
+            active.transform.SetParent(tile.transform, false);
+            var hidden = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            hidden.name = "PadHeight2";
+            hidden.transform.SetParent(tile.transform, false);
+            hidden.SetActive(false);
+
+            var activeRenderer = active.GetComponent<MeshRenderer>();
+            var hiddenRenderer = hidden.GetComponent<MeshRenderer>();
+            var original = activeRenderer.sharedMaterial;
+            activeRenderer.sharedMaterials = new[] { original, original };
+            hiddenRenderer.sharedMaterials = new[] { original, original };
+            var top = new Material(original);
+            var side = new Material(original);
+
+            TileHeightVisual.ApplyPadLook(tile.transform, top, side);
+
+            var activeMats = activeRenderer.sharedMaterials;
+            var hiddenMats = hiddenRenderer.sharedMaterials;
+            Assert.AreSame(top, activeMats[0]);
+            Assert.AreSame(side, activeMats[1]);
+            Assert.AreSame(original, hiddenMats[0]);
+            Assert.AreSame(original, hiddenMats[1]);
+
+            UnityEngine.Object.DestroyImmediate(top);
+            UnityEngine.Object.DestroyImmediate(side);
+            UnityEngine.Object.DestroyImmediate(tile);
+        }
     }
 }

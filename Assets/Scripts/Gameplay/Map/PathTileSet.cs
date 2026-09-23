@@ -10,6 +10,14 @@ namespace GemTD.Gameplay.Map
         public EdgeFlags OpenEdges;
     }
 
+    /// <summary>Tops and sides roll separately, so every top can pair with every side.</summary>
+    [Serializable]
+    public sealed class PadMaterialRoll
+    {
+        public Material[] Tops;
+        public Material[] Sides;
+    }
+
     /// <summary>
     /// One swappable path kit. OpenEdges are the edges open at identity rotation.
     /// An editor apply writes the pieces into chunk prefabs.
@@ -26,8 +34,11 @@ namespace GemTD.Gameplay.Map
         [SerializeField] PathTilePiece straight;
         [Header("Tower pads — height 1, 2, 3")]
         [SerializeField] GameObject padHeight1;
+        [SerializeField] PadMaterialRoll padMaterials1;
         [SerializeField] GameObject padHeight2;
+        [SerializeField] PadMaterialRoll padMaterials2;
         [SerializeField] GameObject padHeight3;
+        [SerializeField] PadMaterialRoll padMaterials3;
 
         public ChunkCatalog Catalog => catalog;
         public float UniformScale => uniformScale < 0.01f ? 0.01f : uniformScale;
@@ -69,6 +80,43 @@ namespace GemTD.Gameplay.Map
                 case 3: return padHeight3;
                 default: return null;
             }
+        }
+
+        /// <summary>
+        /// Picks one top and one side for this height. Either can be null when that list is empty.
+        /// </summary>
+        public bool TryRollPadMaterials(int height, int wx, int wy, out Material top, out Material sides)
+        {
+            top = null;
+            sides = null;
+            var roll = MaterialsFor(height);
+            if (roll == null)
+                return false;
+
+            top = Pick(roll.Tops, wx, wy, TileHeightVisual.PadTopSalt);
+            sides = Pick(roll.Sides, wx, wy, TileHeightVisual.PadSideSalt);
+            return top != null || sides != null;
+        }
+
+        PadMaterialRoll MaterialsFor(int height)
+        {
+            switch (height)
+            {
+                case 1: return padMaterials1;
+                case 2: return padMaterials2;
+                case 3: return padMaterials3;
+                default: return null;
+            }
+        }
+
+        static Material Pick(Material[] list, int wx, int wy, int salt)
+        {
+            if (list == null || list.Length == 0)
+                return null;
+            var index = TileHeightVisual.RollIndex(list.Length, wx, wy, salt);
+            if (index < 0 || index >= list.Length)
+                return null;
+            return list[index];
         }
 
         public PathTilePiece GetPiece(int index)

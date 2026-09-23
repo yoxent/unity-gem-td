@@ -822,6 +822,8 @@ MonoBehaviour:
   towerHeight0: {fileID: 2100000, guid: c8e4a71b9d2f4c6a8b3e5f1a7c9d0e2b, type: 2}
   towerHeight1: {fileID: 2100000, guid: d9f5b82c0e3a5d7b9c4f6a2b8d0e1f3c, type: 2}
   towerHeight2: {fileID: 2100000, guid: e0a6c93d1f4b6e8c0d5a7b3c9e1f2a4d, type: 2}
+  pathTiles: {fileID: 11400000, guid: 4e65525d8199e1741b6c878580d3639e, type: 2}
+  useGrassRenderer: 1
   grassRendererTemplate: {fileID: 2010664426}
   grassPatchPalette: {fileID: 2010664427}
   grassSurfaceOffset: 0.01
@@ -897,12 +899,12 @@ GameObject:
   - component: {fileID: 1614033745}
   - component: {fileID: 1614033744}
   m_Layer: 0
-  m_Name: Global Volume
+  m_Name: Global Volume_Mute
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1614033744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1101,6 +1103,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 980fc8e9c9be62343b4f0fbd9632a043, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GemTD.UI::GemTD.UI.CodexController
+--- !u!1 &1830887215
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1830887217}
+  - component: {fileID: 1830887216}
+  m_Layer: 0
+  m_Name: Global Volume_Bright
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1830887216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1830887215}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: e974481b18f85b74ea695309ae4bdb27, type: 2}
+--- !u!4 &1830887217
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1830887215}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1879044280
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1747,8 +1798,8 @@ MonoBehaviour:
   forcedNormal: {x: 0, y: 1, z: 0}
   useDensity: 0
   densityCutoff: 0
-  useLength: 0
-  lengthMapping: {x: 0.6396396, y: 0.99999994}
+  useLength: 1
+  lengthMapping: {x: 0.37952402, y: 0.9999999}
   projectType: 0
   projectMask:
     serializedVersion: 2
@@ -5283,6 +5334,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 48385511}
   - {fileID: 1614033745}
+  - {fileID: 1830887217}
   - {fileID: 1111381372}
   - {fileID: 484406976}
   - {fileID: 1395327584}
