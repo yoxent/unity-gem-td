@@ -13,7 +13,9 @@ namespace GemTD.Gameplay.Map
         [SerializeField] Material towerHeight0;
         [SerializeField] Material towerHeight1;
         [SerializeField] Material towerHeight2;
+        [SerializeField] PathTileSet pathTiles;
         [Header("Grass")]
+        [SerializeField] bool useGrassRenderer = true;
         [SerializeField] PointGrassRenderer grassRendererTemplate;
         [SerializeField] GrassPatchPalette grassPatchPalette;
         [Tooltip("Small lift applied to the generated chunk distribution surface.")]
@@ -26,7 +28,10 @@ namespace GemTD.Gameplay.Map
         float _tileSpacing = 0.05f;
         Material[] _tintedFallback;
         bool _loggedMissingAuthoredMats;
+        bool _loggedMissingPathTiles;
         bool _loggedMissingGrassTemplate;
+        bool _hasAppliedGrassUse;
+        bool _appliedUseGrassRenderer;
         readonly Dictionary<Vector2Int, GameObject> _instances = new Dictionary<Vector2Int, GameObject>(32);
         readonly Dictionary<Vector2Int, PointGrassRenderer> _grassRenderers =
             new Dictionary<Vector2Int, PointGrassRenderer>(32);
@@ -116,12 +121,33 @@ namespace GemTD.Gameplay.Map
                 var wy = coord.y * ChunkMask.Size + worldLocal.y;
                 var layer = _heights.Get(wx, wy);
                 if (TileHeightVisual.TryActivatePad(child, layer))
+                {
+                    ApplyRolledPadMaterials(child, layer, wx, wy);
                     continue;
+                }
 
                 var renderer = child.GetComponent<MeshRenderer>();
                 var mat = ResolveHeightMaterial(layer, renderer != null ? renderer.sharedMaterial : null);
                 TileHeightVisual.ApplyPad(child, layer, mat);
             }
+        }
+
+        void ApplyRolledPadMaterials(Transform tile, byte layer, int wx, int wy)
+        {
+            if (pathTiles == null)
+            {
+                if (_loggedMissingPathTiles)
+                    return;
+                _loggedMissingPathTiles = true;
+                Debug.LogWarning(
+                    "[GemTD] ChunkBoardView has no Path Tile Set — pad materials stay on the cliff prefab.");
+                return;
+            }
+
+            var height = TileHeightVisual.PadHeight(layer);
+            if (!pathTiles.TryRollPadMaterials(height, wx, wy, out var top, out var sides))
+                return;
+            TileHeightVisual.ApplyPadLook(tile, top, sides);
         }
 
         Material ResolveHeightMaterial(byte layer, Material source)
@@ -154,8 +180,35 @@ namespace GemTD.Gameplay.Map
             return towerHeight0;
         }
 
+        void LateUpdate()
+        {
+            if (!_hasAppliedGrassUse)
+            {
+                _hasAppliedGrassUse = true;
+                _appliedUseGrassRenderer = useGrassRenderer;
+                if (!useGrassRenderer)
+                    ClearAllGrass();
+                return;
+            }
+
+            if (_appliedUseGrassRenderer == useGrassRenderer)
+                return;
+
+            _appliedUseGrassRenderer = useGrassRenderer;
+            if (useGrassRenderer)
+                RebuildAllGrass();
+            else
+                ClearAllGrass();
+        }
+
         void RebuildAllGrass()
         {
+            if (!useGrassRenderer)
+            {
+                ClearAllGrass();
+                return;
+            }
+
             if (_grid == null || grassRendererTemplate == null)
             {
                 WarnMissingGrassTemplate();
@@ -172,6 +225,12 @@ namespace GemTD.Gameplay.Map
 
         void RebuildGrass(Vector2Int coord, Transform instance, ChunkSlot slot)
         {
+            if (!useGrassRenderer)
+            {
+                ClearGrass(coord);
+                return;
+            }
+
             if (grassRendererTemplate == null || instance == null)
             {
                 WarnMissingGrassTemplate();
@@ -209,6 +268,46 @@ namespace GemTD.Gameplay.Map
                 mesh,
                 grassPatchPalette != null);
             renderer.enabled = true;
+        }
+
+        void ClearAllGrass()
+        {
+            foreach (var renderer in _grassRenderers.Values)
+                ReleaseRenderer(renderer);
+
+            foreach (var mesh in _grassMeshes.Values)
+                DisposeGrassMesh(mesh);
+
+            _grassRenderers.Clear();
+            _grassMeshes.Clear();
+        }
+
+        void ClearGrass(Vector2Int coord)
+        {
+            if (_grassRenderers.TryGetValue(coord, out var renderer))
+            {
+                ReleaseRenderer(renderer);
+                _grassRenderers.Remove(coord);
+            }
+
+            if (_grassMeshes.TryGetValue(coord, out var mesh))
+            {
+                DisposeGrassMesh(mesh);
+                _grassMeshes.Remove(coord);
+            }
+        }
+
+        static void ReleaseRenderer(PointGrassRenderer renderer)
+        {
+            if (renderer == null)
+                return;
+
+            renderer.enabled = false;
+            renderer.baseMesh = null;
+            if (Application.isPlaying)
+                Destroy(renderer);
+            else
+                DestroyImmediate(renderer);
         }
 
         void WarnMissingGrassTemplate()

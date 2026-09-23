@@ -1,4 +1,5 @@
 using System;
+using MicahW.PointGrass;
 using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
@@ -9,6 +10,7 @@ namespace GemTD.Gameplay.Towers
         [SerializeField] TowerAnimatorView animatorView;
         [Tooltip("World Y above pad top where bolts, warp, and caster nova originate.")]
         [SerializeField] [Min(0f)] float muzzleLocalY = DefaultMuzzleLocalY;
+        [SerializeField] PointGrassDisplacer grassDisplacer;
 
         public const float DefaultMuzzleLocalY = 1.2f;
 
@@ -18,6 +20,7 @@ namespace GemTD.Gameplay.Towers
         {
             Runtime = runtime;
             PlaceOnPad(worldPosition);
+            AlignGrassDisplacer();
             if (runtime != null)
                 runtime.MuzzleLocalY = muzzleLocalY < 0f ? 0f : muzzleLocalY;
             if (animatorView != null)
@@ -30,6 +33,14 @@ namespace GemTD.Gameplay.Towers
         public void PlaceOnPad(Vector3 padTop)
         {
             TowerPadSnap.SitOnWorldPad(transform, padTop);
+        }
+
+        public void AlignGrassDisplacer()
+        {
+            if (grassDisplacer == null)
+                return;
+
+            grassDisplacer.localPosition = TowerPadSnap.FootLocalPoint(transform);
         }
 
         public void TickAnimator(float dt, float simSpeed)

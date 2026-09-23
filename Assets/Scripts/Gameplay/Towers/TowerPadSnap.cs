@@ -26,6 +26,20 @@ namespace GemTD.Gameplay.Towers
             structure.localPosition = pos;
         }
 
+        /// <summary>Point on <paramref name="root"/> at the mesh bottom, centered on the root's XZ.</summary>
+        public static Vector3 FootLocalPoint(Transform root)
+        {
+            if (root == null)
+                return Vector3.zero;
+
+            var minWorldY = MinMeshY(root, null, worldSpace: true);
+            if (minWorldY >= float.MaxValue)
+                return Vector3.zero;
+
+            var footWorld = new Vector3(root.position.x, minWorldY, root.position.z);
+            return root.InverseTransformPoint(footWorld);
+        }
+
         public static void SitOnWorldPad(Transform root, Vector3 padTop)
         {
             if (root == null)

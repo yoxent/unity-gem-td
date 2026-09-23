@@ -58,12 +58,14 @@ namespace GemTD.Gameplay.Towers
                 _towerVisual = visual.transform;
 
                 var towerView = visual.GetComponent<TowerView>();
-                if (towerView != null)
-                    DestroySafe(towerView);
-
                 HideOccupants(visual);
                 StripColliders(visual);
                 TowerPadSnap.ApplyFootOnParentOrigin(_towerVisual);
+                if (towerView != null)
+                {
+                    towerView.AlignGrassDisplacer();
+                    DestroySafe(towerView);
+                }
                 _towerRenderers = visual.GetComponentsInChildren<MeshRenderer>(false);
             }
             else

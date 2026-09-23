@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5918877022978656449}
   - component: {fileID: 7165835671526304426}
   - component: {fileID: 5203358293962714052}
+  - component: {fileID: 7101000000000000003}
   m_Layer: 0
   m_Name: Tower_Spell
   m_TagString: Untagged
@@ -72,6 +73,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerView
   animatorView: {fileID: 7165835671526304426}
   muzzleLocalY: 1.2
+  grassDisplacer: {fileID: 7101000000000000003}
+--- !u!114 &7101000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3640395455571933543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af95da0ba5b14044a99b36556a6e5b43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MicahW.PointGrassRenderer.Runtime::MicahW.PointGrass.PointGrassDisplacer
+  localPosition: {x: 0, y: 0, z: 0}
+  radius: 0.6
+  strength: 1
 --- !u!114 &7165835671526304426
 MonoBehaviour:
   m_ObjectHideFlags: 0

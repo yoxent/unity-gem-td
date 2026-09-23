@@ -13,7 +13,7 @@ namespace MicahW.PointGrass {
         private ComputeBuffer objectsBuffer;
         private List<PointGrassDisplacer> displacers;
 
-        private static readonly int maxDisplacerCount = 32;
+        private static readonly int maxDisplacerCount = 128;
         private int DisplacerCount => Mathf.Min(displacers.Count, maxDisplacerCount);
 
         public delegate void DisplacementDelegate(PointGrassDisplacementManager manager);
