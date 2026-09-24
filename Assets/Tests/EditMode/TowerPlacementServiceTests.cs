@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using UnityEngine;
+using System.Collections.Generic;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Grid;
 using GemTD.Gameplay.Run;
@@ -86,6 +87,51 @@ namespace GemTD.Tests.EditMode
             Assert.IsNotNull(tower);
             Assert.AreEqual(50, _economy.Gold);
             Assert.IsTrue(_placement.IsOccupied(cell));
+        }
+
+        [Test]
+        public void OccupancyChanged_RaisesPlacedAndSoldCell()
+        {
+            var cell = new Vector2Int(3, 4);
+            var changes = new List<Vector2Int>();
+            _placement.OccupancyChanged += changes.Add;
+
+            try
+            {
+                Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
+                Assert.IsTrue(_placement.TrySell(tower, RunStateId.Plan, new GemInventory(2)));
+            }
+            finally
+            {
+                _placement.OccupancyChanged -= changes.Add;
+            }
+
+            Assert.AreEqual(2, changes.Count);
+            Assert.AreEqual(cell, changes[0]);
+            Assert.AreEqual(cell, changes[1]);
+        }
+
+        [Test]
+        public void OccupancyChanged_DoesNotRaiseWhenPlaceOrSellFails()
+        {
+            var cell = new Vector2Int(3, 4);
+            var changes = new List<Vector2Int>();
+            _placement.OccupancyChanged += changes.Add;
+
+            try
+            {
+                Assert.IsTrue(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out var tower));
+                changes.Clear();
+
+                Assert.IsFalse(_placement.TryPlace(_tower, cell, RunStateId.Plan, _tower.Cost, out _));
+                Assert.IsFalse(_placement.TrySell(tower, RunStateId.Draft, new GemInventory(2)));
+            }
+            finally
+            {
+                _placement.OccupancyChanged -= changes.Add;
+            }
+
+            Assert.Zero(changes.Count);
         }
 
         [Test]

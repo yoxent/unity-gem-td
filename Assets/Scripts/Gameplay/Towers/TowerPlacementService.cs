@@ -14,6 +14,7 @@ namespace GemTD.Gameplay.Towers
         readonly RunEconomy _economy;
 
         public TowerInstance Selected { get; set; }
+        public event System.Action<Vector2Int> OccupancyChanged;
 
         public TowerPlacementService(
             GridBoard board,
@@ -61,7 +62,8 @@ namespace GemTD.Gameplay.Towers
                 return false;
 
             tower = new TowerInstance(cell, def, placeCost);
-            _occupied.Add(cell);
+            if (_occupied.Add(cell))
+                OccupancyChanged?.Invoke(cell);
             return true;
         }
 
@@ -96,7 +98,8 @@ namespace GemTD.Gameplay.Towers
             _economy.AddGold(RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend));
 
             var cell = tower.Cell;
-            _occupied.Remove(cell);
+            if (_occupied.Remove(cell))
+                OccupancyChanged?.Invoke(cell);
 
             if (Selected == tower)
                 Selected = null;

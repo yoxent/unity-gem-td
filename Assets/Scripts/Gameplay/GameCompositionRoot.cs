@@ -581,6 +581,8 @@ namespace GemTD.Gameplay
 
             _expand = new ChunkExpandService(_chunkGrid, _path, _board, _stamp, chunkCatalog, _rng, runConfig);
             Placement = new TowerPlacementService(_board, _path, Economy);
+            if (chunkBoardView != null)
+                chunkBoardView.BindGrassOccupancy(Placement);
             _registry = new EnemyRegistry();
             var cellSize = chunkBoardView != null ? chunkBoardView.CellSize : 1f;
             _combat = new CombatDirector(cellSize, projectileSpeed, _runStats.RecordDamage, _tileHeights);
