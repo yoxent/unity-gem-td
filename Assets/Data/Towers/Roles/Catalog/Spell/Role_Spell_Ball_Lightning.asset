@@ -33,10 +33,10 @@ MonoBehaviour:
     Max: 0
   - Stat: 6
     Operation: 0
-    ValueKind: 0
-    Value: 8
-    Min: 0
-    Max: 0
+    ValueKind: 1
+    Value: 0
+    Min: 5
+    Max: 87
   - Stat: 8
     Operation: 0
     ValueKind: 0
@@ -52,94 +52,88 @@ MonoBehaviour:
   Effects: []
   Levels:
   - SourceLevel: 1
-    Modifiers:
-    - Stat: 6
-      Operation: 0
-      ValueKind: 1
-      Value: 0
-      Min: 5
-      Max: 87
+    Modifiers: []
     Effects: []
   - SourceLevel: 2
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 8
-      Max: 153
+      Min: 3
+      Max: 66
     Effects: []
   - SourceLevel: 3
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 13
-      Max: 247
+      Min: 8
+      Max: 160
     Effects: []
   - SourceLevel: 4
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 21
-      Max: 393
+      Min: 16
+      Max: 306
     Effects: []
   - SourceLevel: 5
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 32
-      Max: 617
+      Min: 27
+      Max: 530
     Effects: []
   - SourceLevel: 6
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 51
-      Max: 961
+      Min: 46
+      Max: 874
     Effects: []
   - SourceLevel: 7
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 78
-      Max: 1483
+      Min: 73
+      Max: 1396
     Effects: []
   - SourceLevel: 8
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 108
-      Max: 2044
+      Min: 103
+      Max: 1957
     Effects: []
   - SourceLevel: 9
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 133
-      Max: 2527
+      Min: 128
+      Max: 2440
     Effects: []
   - SourceLevel: 10
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 164
-      Max: 3119
+      Min: 159
+      Max: 3032
     Effects: []
   EffectPayloads: []
   PierceBehavior: 0

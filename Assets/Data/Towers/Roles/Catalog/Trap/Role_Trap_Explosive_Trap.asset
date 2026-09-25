@@ -33,160 +33,154 @@ MonoBehaviour:
     Max: 0
   - Stat: 6
     Operation: 0
+    ValueKind: 1
+    Value: 0
+    Min: 10
+    Max: 15
+  - Stat: 5
+    Operation: 0
     ValueKind: 0
-    Value: 8
+    Value: 1.3
     Min: 0
     Max: 0
   Effects: []
   Levels:
   - SourceLevel: 1
-    Modifiers:
-    - Stat: 5
-      Operation: 0
-      ValueKind: 0
-      Value: 1.3
-      Min: 0
-      Max: 0
-    - Stat: 6
-      Operation: 0
-      ValueKind: 1
-      Value: 0
-      Min: 10
-      Max: 15
+    Modifiers: []
     Effects: []
   - SourceLevel: 2
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 1.4
+      Value: 0.1
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 37
-      Max: 55
+      Min: 27
+      Max: 40
     Effects: []
   - SourceLevel: 3
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 1.6
+      Value: 0.3
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 95
-      Max: 143
+      Min: 85
+      Max: 128
     Effects: []
   - SourceLevel: 4
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 1.7
+      Value: 0.4
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 221
-      Max: 331
+      Min: 211
+      Max: 316
     Effects: []
   - SourceLevel: 5
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 1.8
+      Value: 0.5
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 437
-      Max: 655
+      Min: 427
+      Max: 640
     Effects: []
   - SourceLevel: 6
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 2
+      Value: 0.7
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 635
-      Max: 953
+      Min: 625
+      Max: 938
     Effects: []
   - SourceLevel: 7
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 2.1
+      Value: 0.8
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 917
-      Max: 1376
+      Min: 907
+      Max: 1361
     Effects: []
   - SourceLevel: 8
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 2.2
+      Value: 0.9
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 1202
-      Max: 1804
+      Min: 1192
+      Max: 1789
     Effects: []
   - SourceLevel: 9
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 2.3
+      Value: 1
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 1437
-      Max: 2156
+      Min: 1427
+      Max: 2141
     Effects: []
   - SourceLevel: 10
     Modifiers:
     - Stat: 5
-      Operation: 0
+      Operation: 1
       ValueKind: 0
-      Value: 2.3
+      Value: 1
       Min: 0
       Max: 0
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 1716
-      Max: 2574
+      Min: 1706
+      Max: 2559
     Effects: []
   PierceBehavior: 0

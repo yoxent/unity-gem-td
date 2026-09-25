@@ -33,101 +33,95 @@ MonoBehaviour:
     Max: 0
   - Stat: 6
     Operation: 0
-    ValueKind: 0
-    Value: 8
-    Min: 0
-    Max: 0
+    ValueKind: 1
+    Value: 0
+    Min: 5.5
+    Max: 8.25
   Effects: []
   Levels:
   - SourceLevel: 1
-    Modifiers:
-    - Stat: 6
-      Operation: 0
-      ValueKind: 1
-      Value: 0
-      Min: 5.5
-      Max: 8.25
+    Modifiers: []
     Effects: []
   - SourceLevel: 2
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 10.125
-      Max: 15.125
+      Min: 4.625
+      Max: 6.875
     Effects: []
   - SourceLevel: 3
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 16.875
-      Max: 25.25
+      Min: 11.375
+      Max: 17
     Effects: []
   - SourceLevel: 4
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 27.75
-      Max: 41.625
+      Min: 22.25
+      Max: 33.375
     Effects: []
   - SourceLevel: 5
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 45.125
-      Max: 67.625
+      Min: 39.625
+      Max: 59.375
     Effects: []
   - SourceLevel: 6
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 72.625
-      Max: 109
+      Min: 67.125
+      Max: 100.75
     Effects: []
   - SourceLevel: 7
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 115.875
-      Max: 173.875
+      Min: 110.375
+      Max: 165.625
     Effects: []
   - SourceLevel: 8
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 163.875
-      Max: 245.75
+      Min: 158.375
+      Max: 237.5
     Effects: []
   - SourceLevel: 9
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 206
-      Max: 309
+      Min: 200.5
+      Max: 300.75
     Effects: []
   - SourceLevel: 10
     Modifiers:
     - Stat: 6
-      Operation: 0
+      Operation: 1
       ValueKind: 1
       Value: 0
-      Min: 258.5
-      Max: 387.875
+      Min: 253
+      Max: 379.625
     Effects: []
   EffectPayloads:
   - Trigger: 1

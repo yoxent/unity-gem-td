@@ -443,6 +443,12 @@ namespace GemTD.Gameplay.Towers
             for (var i = 0; i < result.RoleKinds.Length; i++)
             {
                 var kind = result.RoleKinds[i];
+                var initialSplash = ResolveInitialSplash(
+                    levels,
+                    radiusByLevel,
+                    radiusValue,
+                    kind,
+                    result.Slug);
                 payloads[i] = new RolePayload
                 {
                     Kind = kind,
@@ -452,14 +458,16 @@ namespace GemTD.Gameplay.Towers
                         header,
                         radiusValue,
                         result.Damage,
-                        result.Slug),
+                        result.Slug,
+                        initialSplash),
                     Effects = Array.Empty<RoleEffectModifier>(),
                     Levels = MapLevelDefinitions(
                         levels,
                         radiusByLevel,
                         radiusValue,
                         kind,
-                        result),
+                        result,
+                        initialSplash),
                     EffectPayloads = MapEffectPayloads(kind, result.Slug)
                 };
             }
@@ -473,7 +481,8 @@ namespace GemTD.Gameplay.Towers
             JObject header,
             float? radiusValue,
             float baseDamage,
-            string slug)
+            string slug,
+            float? initialSplash)
         {
             var modifiers = new List<RoleStatModifier>(6);
             switch (kind)
@@ -579,6 +588,9 @@ namespace GemTD.Gameplay.Towers
             if (kind == RoleKind.Attack && IsEarthquake(slug))
                 AddSet(modifiers, RoleStat.SplashRadius, EarthquakeSlamRadius);
 
+            if (initialSplash.HasValue)
+                AddSet(modifiers, RoleStat.SplashRadius, initialSplash.Value);
+
             return modifiers.ToArray();
         }
 
@@ -660,7 +672,8 @@ namespace GemTD.Gameplay.Towers
             JObject radiusByLevel,
             float? defaultRadius,
             RoleKind kind,
-            Result result)
+            Result result,
+            float? initialSplash)
         {
             var sourceLevels = ReadSourceLevels(levels);
             if (sourceLevels.Length == 0)
@@ -681,7 +694,8 @@ namespace GemTD.Gameplay.Towers
                     defaultRadius,
                     kind,
                     result.Slug,
-                    sourceLevel);
+                    sourceLevel,
+                    initialSplash);
                 AddLevelDamage(modifiers, values, kind, result.Slug);
                 AddLevelChain(modifiers, values, result.Slug);
                 AddLevelProjectileCount(modifiers, values, result.Slug);
@@ -707,11 +721,53 @@ namespace GemTD.Gameplay.Towers
             float? defaultRadius,
             RoleKind kind,
             string slug,
-            int sourceLevel)
+            int sourceLevel,
+            float? initialSplash)
         {
             if (!IsClassifiedSplashSource(kind, slug))
                 return;
 
+            var bonus = FindRadiusValue(values, IsRadiusBonusHeader);
+            if (bonus.HasValue)
+            {
+                AddSet(modifiers, RoleStat.SplashRadius, RoleModifierOperation.Add, bonus.Value);
+                return;
+            }
+
+            var splash = ResolveSplashAtLevel(values, radiusByLevel, defaultRadius, sourceLevel);
+            if (!splash.HasValue || !initialSplash.HasValue)
+                return;
+
+            var increase = splash.Value - initialSplash.Value;
+            if (!ApproxEqual(increase, 0f))
+                AddSet(modifiers, RoleStat.SplashRadius, RoleModifierOperation.Add, increase);
+        }
+
+        static float? ResolveInitialSplash(
+            JObject levels,
+            JObject radiusByLevel,
+            float? defaultRadius,
+            RoleKind kind,
+            string slug)
+        {
+            if (!IsClassifiedSplashSource(kind, slug))
+                return null;
+
+            var sourceLevels = ReadSourceLevels(levels);
+            if (sourceLevels.Length == 0)
+                return ResolveSplashAtLevel(null, radiusByLevel, defaultRadius, 1);
+
+            var first = sourceLevels[0];
+            var values = levels[first.ToString()] as JObject;
+            return ResolveSplashAtLevel(values, radiusByLevel, defaultRadius, first);
+        }
+
+        static float? ResolveSplashAtLevel(
+            JObject values,
+            JObject radiusByLevel,
+            float? defaultRadius,
+            int sourceLevel)
+        {
             var absolute = FindRadiusValue(values, IsAbsoluteSplashRadiusHeader);
             var bonus = FindRadiusValue(values, IsRadiusBonusHeader);
             float? byLevel = null;
@@ -729,11 +785,7 @@ namespace GemTD.Gameplay.Towers
             if (!splash.HasValue)
                 splash = defaultRadius;
 
-            if (splash.HasValue)
-                AddSet(modifiers, RoleStat.SplashRadius, splash.Value);
-
-            if (bonus.HasValue)
-                AddSet(modifiers, RoleStat.SplashRadius, RoleModifierOperation.Add, bonus.Value);
+            return splash;
         }
 
         static bool IsClassifiedSplashSource(RoleKind kind, string slug)

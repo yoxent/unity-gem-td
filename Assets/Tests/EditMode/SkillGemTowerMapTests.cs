@@ -104,8 +104,12 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue((r.Tags & GemTag.Melee) != 0);
             Assert.AreEqual(10f, r.Damage, 0.001f);
             Assert.AreEqual(20, r.Cost);
+            Assert.AreEqual(1f, FindModifier(attack.Modifiers, RoleStat.SplashRadius).Value, 0.001f);
             Assert.AreEqual(
-                1f,
+                RoleModifierOperation.Add,
+                FindModifier(attack.Levels[0].Modifiers, RoleStat.SplashRadius).Operation);
+            Assert.AreEqual(
+                0.2f,
                 FindModifier(attack.Levels[0].Modifiers, RoleStat.SplashRadius).Value,
                 0.001f);
             Assert.AreEqual(
@@ -165,8 +169,10 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(28f, FindModifier(spell.Levels[0], RoleStat.Damage).Max, 0.001f);
             Assert.AreEqual(11041f, FindModifier(spell.Levels[9], RoleStat.Damage).Min, 0.001f);
             Assert.AreEqual(16562f, FindModifier(spell.Levels[9], RoleStat.Damage).Max, 0.001f);
-            Assert.AreEqual(1.1f, FindModifier(spell.Levels[0], RoleStat.SplashRadius).Value, 0.001f);
-            Assert.AreEqual(2.4f, FindModifier(spell.Levels[9], RoleStat.SplashRadius).Value, 0.001f);
+            Assert.AreEqual(1.1f, FindModifier(spell.Modifiers, RoleStat.SplashRadius).Value, 0.001f);
+            Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.SplashRadius));
+            Assert.AreEqual(RoleModifierOperation.Add, FindModifier(spell.Levels[9], RoleStat.SplashRadius).Operation);
+            Assert.AreEqual(1.3f, FindModifier(spell.Levels[9], RoleStat.SplashRadius).Value, 0.001f);
             Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.CastTime));
             Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.CastSpeed));
             Assert.IsFalse(HasModifier(spell.Levels[0], RoleStat.ProjectileSpeed));
@@ -469,7 +475,8 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(3.5f, FindModifier(trap.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
             Assert.AreEqual(1f, FindModifier(trap.Modifiers, RoleStat.CastTime).Value, 0.001f);
             Assert.AreEqual(8f, r.Damage, 0.001f);
-            Assert.AreEqual(1.3f, FindModifier(trap.Levels[0], RoleStat.SplashRadius).Value, 0.001f);
+            Assert.AreEqual(1.3f, FindModifier(trap.Modifiers, RoleStat.SplashRadius).Value, 0.001f);
+            Assert.IsFalse(HasModifier(trap.Levels[0], RoleStat.SplashRadius));
             Assert.AreEqual(10f, FindModifier(trap.Levels[0], RoleStat.Damage).Min, 0.001f);
             Assert.AreEqual(15f, FindModifier(trap.Levels[0], RoleStat.Damage).Max, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Trap, r.RoleKinds[0]);
