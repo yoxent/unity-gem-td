@@ -12,20 +12,55 @@ namespace GemTD.Gameplay.Combat
         [SerializeField] Color waterColor = new Color(0.1f, 0.45f, 1f, 1f);
 
         MaterialPropertyBlock _propertyBlock;
+        int _seenImpact;
 
         protected override ParticleSystem AssignedParticles => particles;
+
+        public bool TryConsumeImpact(out Vector3 position)
+        {
+            position = default;
+            var runtime = Runtime;
+            if (runtime == null || runtime.ImpactGeneration == _seenImpact)
+                return false;
+
+            _seenImpact = runtime.ImpactGeneration;
+            position = runtime.Position;
+            return true;
+        }
 
         protected override void OnBind()
         {
             base.OnBind();
+            _seenImpact = Runtime != null ? Runtime.ImpactGeneration : 0;
             ApplyElementColor();
+            StripAutoDestroy(particles);
         }
 
         protected override void OnClear()
         {
             base.OnClear();
+            _seenImpact = 0;
             if (boltRenderer != null)
                 boltRenderer.SetPropertyBlock(null);
+        }
+
+        internal static void StripAutoDestroy(ParticleSystem system)
+        {
+            if (system == null)
+                return;
+
+            var behaviours = system.GetComponentsInParent<MonoBehaviour>(true);
+            for (var i = 0; i < behaviours.Length; i++)
+            {
+                var behaviour = behaviours[i];
+                if (behaviour == null || behaviour.GetType().Name != "AllIn1VfxAutoDestroy")
+                    continue;
+
+                if (Application.isPlaying)
+                    Destroy(behaviour);
+                else
+                    DestroyImmediate(behaviour);
+            }
         }
 
         void ApplyElementColor()

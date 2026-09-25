@@ -45,6 +45,7 @@ namespace GemTD.Gameplay
         [SerializeField] EffectView novaEffectPrefab;
         [SerializeField] EffectView warpEffectPrefab;
         [SerializeField] EffectView chainLightningEffectPrefab;
+        [SerializeField] ProjectileVisual[] projectileVisuals;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] TowerView spellTowerPrefab;
         [SerializeField] TowerView slamTowerPrefab;
@@ -272,6 +273,7 @@ namespace GemTD.Gameplay
         ViewObjectPool<EffectView> _novaEffectPool;
         ViewObjectPool<EffectView> _warpEffectPool;
         ViewObjectPool<EffectView> _chainLightningEffectPool;
+        ProjectileVisualPools _projectileVisuals;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
@@ -351,6 +353,7 @@ namespace GemTD.Gameplay
             _novaEffectPool?.Clear();
             _warpEffectPool?.Clear();
             _chainLightningEffectPool?.Clear();
+            _projectileVisuals?.Clear();
         }
 
         void Update()
@@ -679,6 +682,18 @@ namespace GemTD.Gameplay
                     EffectViewBinder.ChainLightningPrewarm);
                 _chainLightningEffectPool.Prewarm(EffectViewBinder.ChainLightningPrewarm);
             }
+            _projectileVisuals = new ProjectileVisualPools();
+            if (projectileVisuals != null)
+            {
+                for (var i = 0; i < projectileVisuals.Length; i++)
+                {
+                    var visual = projectileVisuals[i];
+                    if (visual == null)
+                        continue;
+                    _projectileVisuals.Add(visual.tower, visual.flightPrefab, visual.impactPrefab, parent);
+                }
+            }
+            _projectileVisuals.Prewarm();
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
         }
@@ -707,7 +722,7 @@ namespace GemTD.Gameplay
             if (IsCombatPhase(prev) && !IsCombatPhase(next))
             {
                 _combat?.ClearProjectiles();
-                SyncEffectViews();
+                SyncEffectViews(10f);
             }
 
             if (next == RunStateId.Plan)
@@ -1692,11 +1707,13 @@ namespace GemTD.Gameplay
                 _enemyViews[i]?.SyncTransform();
         }
 
-        void SyncEffectViews()
+        void SyncEffectViews(float dt = -1f)
         {
             if (_combat == null)
                 return;
 
+            if (dt < 0f)
+                dt = Clock != null ? Clock.DeltaTime : 0f;
             EffectViewBinder.SyncLive(
                 _effectViews,
                 _combat.Projectiles,
@@ -1707,7 +1724,9 @@ namespace GemTD.Gameplay
                 _fallEffectPool,
                 _novaEffectPool,
                 _warpEffectPool,
-                _chainLightningEffectPool);
+                _chainLightningEffectPool,
+                _projectileVisuals,
+                dt);
         }
 
         void EnsureHomeMarker()

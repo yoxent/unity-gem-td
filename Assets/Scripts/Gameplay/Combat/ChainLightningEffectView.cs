@@ -1,153 +1,95 @@
 using UnityEngine;
+using GemTD.Gameplay.Enemies;
 
 namespace GemTD.Gameplay.Combat
 {
     public sealed class ChainLightningEffectView : EffectView
     {
-        static readonly float[] WrinkleOffsets =
-        {
-            0f,
-            0.65f,
-            -0.45f,
-            0.75f,
-            -0.6f,
-            0.4f,
-            0f
-        };
+        [SerializeField] ParticleSystem strikeParticles;
 
-        const int SegmentCount = 6;
-
-        [SerializeField] ParticleSystem lightningParticles;
-        [SerializeField] ParticleSystemRenderer lightningRenderer;
-        [SerializeField] float wrinkleAmplitude = 0.16f;
-        [SerializeField] float beamThickness = 0.12f;
-        [SerializeField] float beamStretch = 1f;
-
-        readonly ParticleSystem.Particle[] _beamParticles = new ParticleSystem.Particle[SegmentCount];
+        EnemyRuntime _struckTarget;
 
         public override bool IsChainLightningEffect => true;
-        protected override ParticleSystem AssignedParticles => lightningParticles;
+        protected override ParticleSystem AssignedParticles => strikeParticles;
 
         protected override void OnBind()
         {
             base.OnBind();
-            ConfigureParticleBeam();
-            ClearParticleBeam();
+            _struckTarget = null;
+            StripAutoDestroy();
         }
 
         protected override void AfterSync()
         {
-            // SetParticles owns this beam. PlayAssigned would StopEmittingAndClear it.
+            var target = Runtime != null ? Runtime.Target : null;
+            if (target == null || !target.IsAlive)
+            {
+                StopStrike();
+                _struckTarget = null;
+                return;
+            }
+
+            if (ReferenceEquals(_struckTarget, target))
+                return;
+
+            _struckTarget = target;
+            PlayStrike();
         }
 
         protected override void OnClear()
         {
             base.OnClear();
-            ClearParticleBeam();
+            _struckTarget = null;
+            StopStrike();
         }
 
         protected override void ApplyTransform(Vector3 position, Vector3 direction)
         {
-            if (Runtime == null || Runtime.Target == null || !Runtime.Target.IsAlive)
+            var target = Runtime != null ? Runtime.Target : null;
+            if (target == null || !target.IsAlive)
             {
-                ClearParticleBeam();
                 base.ApplyTransform(position, direction);
                 return;
             }
 
-            var start = Runtime.ChainStart;
-            var end = Runtime.Target.WorldPosition;
-            var beamHeight = (start.y + end.y) * 0.5f;
-            start.y = beamHeight;
-            end.y = beamHeight;
-            var delta = end - start;
-            var length = delta.magnitude;
-            if (length <= 0.001f)
-            {
-                ClearParticleBeam();
-                return;
-            }
-
-            transform.position = (start + end) * 0.5f;
+            transform.position = target.WorldPosition;
             transform.rotation = Quaternion.identity;
+        }
 
-            if (lightningParticles == null)
+        void PlayStrike()
+        {
+            if (strikeParticles == null)
                 return;
 
-            var forward = delta / length;
-            var side = Vector3.Cross(forward, Vector3.up);
-            if (side.sqrMagnitude <= 0.001f)
-                side = Vector3.Cross(forward, Vector3.right);
-            side.Normalize();
-
-            for (var i = 0; i < SegmentCount; i++)
-            {
-                var startT = i / (float)SegmentCount;
-                var endT = (i + 1) / (float)SegmentCount;
-                var startPoint = BeamPoint(start, end, side, startT, wrinkleAmplitude);
-                var endPoint = BeamPoint(start, end, side, endT, wrinkleAmplitude);
-                var particle = _beamParticles[i];
-                particle.position = ((startPoint + endPoint) * 0.5f) - transform.position;
-                particle.velocity = endPoint - startPoint;
-                particle.startLifetime = 1f;
-                particle.remainingLifetime = 1f;
-                particle.startSize = beamThickness;
-                particle.startColor = Color.white;
-                _beamParticles[i] = particle;
-            }
-
-            if (!lightningParticles.isPlaying)
-                lightningParticles.Play(false);
-
-            lightningParticles.SetParticles(_beamParticles, SegmentCount);
+            strikeParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            strikeParticles.Play(true);
         }
 
-        void ConfigureParticleBeam()
+        void StopStrike()
         {
-            if (lightningParticles != null)
-            {
-                var main = lightningParticles.main;
-                main.loop = true;
-                main.playOnAwake = false;
-                main.simulationSpace = ParticleSystemSimulationSpace.Local;
-                main.simulationSpeed = 0f;
-                main.startLifetime = 1f;
-                main.startSpeed = 0f;
-                main.maxParticles = SegmentCount;
+            if (strikeParticles == null)
+                return;
 
-                var emission = lightningParticles.emission;
-                emission.enabled = false;
-            }
-
-            if (lightningRenderer != null)
-            {
-                lightningRenderer.renderMode = ParticleSystemRenderMode.Stretch;
-                lightningRenderer.velocityScale = 1f;
-                lightningRenderer.lengthScale = beamStretch;
-            }
+            strikeParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
-        void ClearParticleBeam()
+        void StripAutoDestroy()
         {
-            if (lightningParticles != null)
-                lightningParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
+            if (strikeParticles == null)
+                return;
 
-        static Vector3 BeamPoint(
-            Vector3 start,
-            Vector3 end,
-            Vector3 side,
-            float t,
-            float amplitude)
-        {
-            var point = Vector3.Lerp(start, end, t);
-            if (t > 0f && t < 1f)
+            var behaviours = strikeParticles.GetComponentsInParent<MonoBehaviour>(true);
+            for (var i = 0; i < behaviours.Length; i++)
             {
-                var wrinkleIndex = Mathf.Clamp(Mathf.RoundToInt(t * (WrinkleOffsets.Length - 1)), 1, WrinkleOffsets.Length - 2);
-                point += side * (WrinkleOffsets[wrinkleIndex] * Mathf.Sin(t * Mathf.PI) * amplitude);
-            }
+                var behaviour = behaviours[i];
+                if (behaviour == null || behaviour.GetType().Name != "AllIn1VfxAutoDestroy")
+                    continue;
 
-            return point;
+                if (Application.isPlaying)
+                    Destroy(behaviour);
+                else
+                    DestroyImmediate(behaviour);
+            }
         }
     }
 }

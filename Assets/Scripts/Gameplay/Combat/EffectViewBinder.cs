@@ -15,6 +15,10 @@ namespace GemTD.Gameplay.Combat
         public const int NovaPrewarm = 16;
         public const int WarpPrewarm = 48;
         public const int ChainLightningPrewarm = 24;
+        public const int ImpactPrewarm = 16;
+
+        static readonly List<Vector3> PendingImpacts = new List<Vector3>(8);
+        static readonly List<TowerDefinition> PendingImpactTowers = new List<TowerDefinition>(8);
 
         public static void Release(
             EffectView view,
@@ -24,12 +28,16 @@ namespace GemTD.Gameplay.Combat
             ViewObjectPool<EffectView> fallPool,
             ViewObjectPool<EffectView> novaPool,
             ViewObjectPool<EffectView> warpPool,
-            ViewObjectPool<EffectView> chainLightningPool)
+            ViewObjectPool<EffectView> chainLightningPool,
+            ProjectileVisualPools visuals)
         {
             if (view == null)
                 return;
 
             view.Clear();
+            if (visuals != null && visuals.Release(view))
+                return;
+
             var pool = PoolForView(
                 view,
                 boltPool,
@@ -55,13 +63,23 @@ namespace GemTD.Gameplay.Combat
             ViewObjectPool<EffectView> fallPool,
             ViewObjectPool<EffectView> novaPool,
             ViewObjectPool<EffectView> warpPool,
-            ViewObjectPool<EffectView> chainLightningPool)
+            ViewObjectPool<EffectView> chainLightningPool,
+            ProjectileVisualPools visuals,
+            float dt)
         {
             if (views == null)
                 return;
 
+            PendingImpacts.Clear();
+            PendingImpactTowers.Clear();
             var boltCount = bolts != null ? bolts.Count : 0;
             var payloadCount = payloads != null ? payloads.Count : 0;
+
+            for (var i = 0; i < views.Count; i++)
+            {
+                if (views[i] is ImpactEffectView impact)
+                    impact.Tick(dt);
+            }
 
             for (var i = views.Count - 1; i >= 0; i--)
             {
@@ -69,6 +87,7 @@ namespace GemTD.Gameplay.Combat
                 if (view != null && IsLive(view, bolts, boltCount, payloads, payloadCount))
                     continue;
 
+                CollectImpact(view, visuals);
                 views.RemoveAt(i);
                 Release(
                     view,
@@ -78,7 +97,8 @@ namespace GemTD.Gameplay.Combat
                     fallPool,
                     novaPool,
                     warpPool,
-                    chainLightningPool);
+                    chainLightningPool,
+                    visuals);
             }
 
             for (var i = 0; i < boltCount; i++)
@@ -89,8 +109,9 @@ namespace GemTD.Gameplay.Combat
                     bolts[i],
                     boltPool,
                     warpPool,
-                    chainLightningPool);
-                var view = Take(pool);
+                    chainLightningPool,
+                    visuals);
+                var view = visuals != null ? visuals.Get(pool) : Take(pool);
                 if (view == null)
                     continue;
                 views.Add(view);
@@ -124,11 +145,44 @@ namespace GemTD.Gameplay.Combat
             }
 
             for (var i = 0; i < views.Count; i++)
+                CollectImpact(views[i], visuals);
+
+            for (var i = 0; i < PendingImpacts.Count; i++)
+            {
+                var pool = visuals != null ? visuals.ImpactPool(PendingImpactTowers[i]) : null;
+                var spawned = visuals != null ? visuals.Get(pool) : null;
+                if (spawned is not ImpactEffectView impact)
+                {
+                    if (spawned != null)
+                        visuals.Release(spawned);
+                    continue;
+                }
+
+                views.Add(impact);
+                impact.Begin(PendingImpacts[i]);
+            }
+
+            for (var i = 0; i < views.Count; i++)
             {
                 var view = views[i];
                 if (view != null)
                     view.SyncTransform();
             }
+        }
+
+        static void CollectImpact(EffectView view, ProjectileVisualPools visuals)
+        {
+            if (visuals == null || view is not BoltEffectView bolt)
+                return;
+            if (!bolt.TryConsumeImpact(out var position))
+                return;
+
+            var tower = bolt.Runtime != null ? bolt.Runtime.SourceTower : null;
+            if (visuals.ImpactPool(tower) == null)
+                return;
+
+            PendingImpacts.Add(position);
+            PendingImpactTowers.Add(tower);
         }
 
         static bool IsLive(
@@ -138,6 +192,9 @@ namespace GemTD.Gameplay.Combat
             IReadOnlyList<EffectPayloadRuntime> payloads,
             int payloadCount)
         {
+            if (view is ImpactEffectView impact)
+                return !impact.IsFinished;
+
             if (view.Runtime != null && bolts != null)
             {
                 for (var i = 0; i < boltCount; i++)
@@ -219,13 +276,15 @@ namespace GemTD.Gameplay.Combat
             ProjectileRuntime runtime,
             ViewObjectPool<EffectView> boltPool,
             ViewObjectPool<EffectView> warpPool,
-            ViewObjectPool<EffectView> chainLightningPool)
+            ViewObjectPool<EffectView> chainLightningPool,
+            ProjectileVisualPools visuals)
         {
             if (runtime != null && runtime.ChainRemaining > 0)
                 return chainLightningPool != null ? chainLightningPool : boltPool;
             if (runtime != null && runtime.IsWarpStrike)
                 return warpPool != null ? warpPool : boltPool;
-            return boltPool;
+            var tower = runtime != null ? runtime.SourceTower : null;
+            return visuals != null ? visuals.FlightPool(tower, boltPool) : boltPool;
         }
 
         static ViewObjectPool<EffectView> PoolForPayload(

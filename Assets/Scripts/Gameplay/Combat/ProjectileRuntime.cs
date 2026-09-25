@@ -93,6 +93,8 @@ namespace GemTD.Gameplay.Combat
         public bool IsActive { get; private set; }
         public bool IsPayload { get; private set; }
         public bool IsWarpStrike { get; private set; }
+        public int ImpactGeneration { get; private set; }
+        public TowerDefinition SourceTower => _sourceTower;
         public SkillSpec HitSpec => _hitSpec;
 
         /// <summary>Unused — kept for call-site / test compat.</summary>
@@ -198,6 +200,7 @@ namespace GemTD.Gameplay.Combat
             IsActive = true;
             IsPayload = false;
             IsWarpStrike = false;
+            ImpactGeneration = 0;
             _hitSpec = hitSpec;
             _critRng = null;
         }
@@ -561,6 +564,7 @@ namespace GemTD.Gameplay.Combat
             }
 
             _lastHit = hit;
+            ImpactGeneration++;
             ApplyHitDamage(hit);
             GameEvents.RaisePlaySfx(SfxKeys.HitEnemy);
             GameEvents.RaiseCameraShake(CameraShakeRequest.Hit);

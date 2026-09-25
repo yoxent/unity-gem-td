@@ -264,18 +264,19 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void BindChainLightning_DrawsFlatWrinkledParticleBeam()
+        public void BindChainLightning_PlaysStrikeOnTarget_StopsOnClear()
         {
             var go = new GameObject("ChainLightning");
             var scale = new GameObject("Scale");
             scale.transform.SetParent(go.transform, false);
-            var particles = go.AddComponent<ParticleSystem>();
-            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            var strikeGo = new GameObject("Strike");
+            strikeGo.transform.SetParent(go.transform, false);
+            var particles = strikeGo.AddComponent<ParticleSystem>();
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             var view = go.AddComponent<ChainLightningEffectView>();
             var viewProperties = new SerializedObject(view);
             viewProperties.FindProperty("scaleRoot").objectReferenceValue = scale.transform;
-            viewProperties.FindProperty("lightningParticles").objectReferenceValue = particles;
-            viewProperties.FindProperty("lightningRenderer").objectReferenceValue = renderer;
+            viewProperties.FindProperty("strikeParticles").objectReferenceValue = particles;
             viewProperties.ApplyModifiedPropertiesWithoutUndo();
 
             var enemyDefinition = ScriptableObject.CreateInstance<EnemyDefinition>();
@@ -297,18 +298,11 @@ namespace GemTD.Tests.EditMode
             {
                 view.Bind(runtime);
 
-                Assert.AreEqual(6, particles.particleCount);
-                Assert.AreEqual(ParticleSystemRenderMode.Stretch, renderer.renderMode);
-                var beamParticles = new ParticleSystem.Particle[6];
-                Assert.AreEqual(6, particles.GetParticles(beamParticles));
-                for (var i = 0; i < beamParticles.Length; i++)
-                {
-                    Assert.AreEqual(0f, beamParticles[i].position.y, 0.0001f);
-                    Assert.AreEqual(0f, beamParticles[i].velocity.y, 0.0001f);
-                }
+                Assert.AreEqual(enemy.WorldPosition, view.transform.position);
+                Assert.IsTrue(particles.isPlaying);
 
                 view.Clear();
-                Assert.AreEqual(0, particles.particleCount);
+                Assert.IsFalse(particles.isPlaying);
             }
             finally
             {

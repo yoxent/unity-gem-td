@@ -37,6 +37,7 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] EffectView novaEffectPrefab;
         [SerializeField] EffectView warpEffectPrefab;
         [SerializeField] EffectView chainLightningEffectPrefab;
+        [SerializeField] ProjectileVisual[] projectileVisuals;
 
         readonly SkillLabSession _session = new SkillLabSession();
         readonly List<EffectView> _effectViews = new List<EffectView>(32);
@@ -47,6 +48,7 @@ namespace GemTD.Gameplay.SkillLab
         ViewObjectPool<EffectView> _novaEffectPool;
         ViewObjectPool<EffectView> _warpEffectPool;
         ViewObjectPool<EffectView> _chainLightningEffectPool;
+        ProjectileVisualPools _projectileVisuals;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -123,6 +125,18 @@ namespace GemTD.Gameplay.SkillLab
                     EffectViewBinder.ChainLightningPrewarm);
                 _chainLightningEffectPool.Prewarm(EffectViewBinder.ChainLightningPrewarm);
             }
+            _projectileVisuals = new ProjectileVisualPools();
+            if (projectileVisuals != null)
+            {
+                for (var i = 0; i < projectileVisuals.Length; i++)
+                {
+                    var visual = projectileVisuals[i];
+                    if (visual == null)
+                        continue;
+                    _projectileVisuals.Add(visual.tower, visual.flightPrefab, visual.impactPrefab, transform);
+                }
+            }
+            _projectileVisuals.Prewarm();
 
             _session.BindCatalog(draftGems);
             if (towerCatalog != null)
@@ -152,7 +166,7 @@ namespace GemTD.Gameplay.SkillLab
             _escape?.Dispose();
             _escape = null;
             _session.ClearOverlay();
-            SyncEffectViews();
+            SyncEffectViews(10f);
         }
 
         void Update()
@@ -309,8 +323,10 @@ namespace GemTD.Gameplay.SkillLab
             }
         }
 
-        void SyncEffectViews()
+        void SyncEffectViews(float dt = -1f)
         {
+            if (dt < 0f)
+                dt = Time.deltaTime;
             EffectViewBinder.SyncLive(
                 _effectViews,
                 _session.Projectiles,
@@ -321,7 +337,9 @@ namespace GemTD.Gameplay.SkillLab
                 _fallEffectPool,
                 _novaEffectPool,
                 _warpEffectPool,
-                _chainLightningEffectPool);
+                _chainLightningEffectPool,
+                _projectileVisuals,
+                dt);
         }
 
         void TickDrag()
