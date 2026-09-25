@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d58eaa9bb5eec44c9718c97df04697c, type: 3}
+  m_Name: Gem_Combustion
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Gems.GemDefinition
+  Id: 9
+  DisplayName: Combustion
+  Description: Strengthens ignite and reduces fire resistance. Direct hit fire damage
+    is reduced.
+  DraftWeight: 1
+  LesserRarityWeight: 0
+  NormalRarityWeight: 0
+  GreaterRarityWeight: 0
+  tags: 2097408
+  Modifiers:
+  - Stat: 0
+    Operation: 2
+    ValueKind: 0
+    Value: 1.19
+    Min: 0
+    Max: 0
+    Lesser: 1.15
+    Normal: 1.19
+    Greater: 1.23
+    Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
+  - Stat: 14
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    Lesser: 1
+    Normal: 1
+    Greater: 1
+    Falloff: 0
+    LesserFalloff: 0
+    NormalFalloff: 0
+    GreaterFalloff: 0
+    LesserMin: 0
+    LesserMax: 0
+    NormalMin: 0
+    NormalMax: 0
+    GreaterMin: 0
+    GreaterMax: 0
+  EffectPayloads: []

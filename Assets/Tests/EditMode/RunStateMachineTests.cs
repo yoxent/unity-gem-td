@@ -76,5 +76,44 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(RunStateId.Plan, fsm.Current);
             Assert.IsFalse(fsm.ExpandSatisfiedThisCycle);
         }
+
+        [Test]
+        public void EnterEndless_FromVictory_GoesPlan_ExpandWaived()
+        {
+            var fsm = ReadyCombat();
+            fsm.WaveCleared(offerDraft: false, endsCampaign: true);
+            Assert.AreEqual(RunStateId.VictorySummary, fsm.Current);
+
+            fsm.EnterEndless();
+            Assert.IsTrue(fsm.IsEndless);
+            Assert.AreEqual(RunStateId.Plan, fsm.Current);
+            Assert.IsTrue(fsm.ExpandSatisfiedThisCycle);
+        }
+
+        [Test]
+        public void Endless_WaveCleared_NoDraft_KeepsExpandWaived()
+        {
+            var fsm = ReadyCombat();
+            fsm.WaveCleared(offerDraft: false, endsCampaign: true);
+            fsm.EnterEndless();
+            fsm.StartWave();
+            fsm.WaveCleared(offerDraft: false);
+            Assert.AreEqual(RunStateId.Plan, fsm.Current);
+            Assert.IsTrue(fsm.ExpandSatisfiedThisCycle);
+        }
+
+        [Test]
+        public void Endless_DraftResolved_KeepsExpandWaived()
+        {
+            var fsm = ReadyCombat();
+            fsm.WaveCleared(offerDraft: false, endsCampaign: true);
+            fsm.EnterEndless();
+            fsm.StartWave();
+            fsm.WaveCleared(offerDraft: true);
+            Assert.AreEqual(RunStateId.Draft, fsm.Current);
+            fsm.DraftResolved();
+            Assert.AreEqual(RunStateId.Plan, fsm.Current);
+            Assert.IsTrue(fsm.ExpandSatisfiedThisCycle);
+        }
     }
 }

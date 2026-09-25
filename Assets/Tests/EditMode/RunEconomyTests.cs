@@ -131,9 +131,11 @@ namespace GemTD.Tests.EditMode
             var config = ScriptableObject.CreateInstance<RunConfig>();
             Assert.AreEqual(100, config.StartingGold);
             Assert.AreEqual(20, config.StartingLives);
-            Assert.AreEqual(25, config.EndWaveGold);
+            Assert.AreEqual(50, config.EndWaveGold);
+            Assert.AreEqual(50, config.EndWave);
             Assert.AreEqual(10, config.InventoryCapacity);
             Assert.AreEqual(1, config.OpenArmCount);
+            Assert.AreEqual(1, config.LaneCount);
             Object.DestroyImmediate(config);
         }
 

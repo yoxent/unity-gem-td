@@ -18,11 +18,11 @@ namespace GemTD.UI
         public static SourceKind Kind { get; private set; } = SourceKind.None;
         public static int InventoryIndex { get; private set; } = -1;
         public static int SocketIndex { get; private set; } = -1;
-        public static GemDefinition Gem { get; private set; }
+        public static GemInstance Gem { get; private set; }
 
         public static bool HasDrag => Kind != SourceKind.None;
 
-        public static void SetInventory(int inventoryIndex, GemDefinition gem)
+        public static void SetInventory(int inventoryIndex, GemInstance gem)
         {
             Kind = SourceKind.Inventory;
             InventoryIndex = inventoryIndex;
@@ -30,7 +30,7 @@ namespace GemTD.UI
             Gem = gem;
         }
 
-        public static void SetSocket(int socketIndex, GemDefinition gem)
+        public static void SetSocket(int socketIndex, GemInstance gem)
         {
             Kind = SourceKind.Socket;
             SocketIndex = socketIndex;
@@ -43,7 +43,7 @@ namespace GemTD.UI
             Kind = SourceKind.None;
             InventoryIndex = -1;
             SocketIndex = -1;
-            Gem = null;
+            Gem = default;
         }
     }
 }
