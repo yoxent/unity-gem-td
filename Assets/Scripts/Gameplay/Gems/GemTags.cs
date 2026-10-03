@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using GemTD.Gameplay.Towers;
@@ -177,58 +178,81 @@ namespace GemTD.Gameplay.Gems
             return (towerTags & required) == required;
         }
 
+        static readonly List<string> FormatNames = new List<string>(8);
+
         public static string Format(GemTag tags)
         {
             if (tags == GemTag.None)
                 return "—";
 
+            CollectNames(tags, FormatNames);
+            if (FormatNames.Count == 0)
+                return "—";
+
             var sb = new StringBuilder(128);
-            Append(sb, tags, GemTag.Attack, "Attack");
-            Append(sb, tags, GemTag.Projectile, "Projectile");
-            Append(sb, tags, GemTag.Aoe, "AoE");
-            Append(sb, tags, GemTag.Slam, "Slam");
-            Append(sb, tags, GemTag.Spell, "Spell");
-            Append(sb, tags, GemTag.Aura, "Aura");
-            Append(sb, tags, GemTag.Melee, "Melee");
-            Append(sb, tags, GemTag.Strike, "Strike");
-            Append(sb, tags, GemTag.Chaining, "Chaining");
-            Append(sb, tags, GemTag.Support, "Support");
-            Append(sb, tags, GemTag.Arcane, "Arcane");
-            Append(sb, tags, GemTag.Blink, "Blink");
-            Append(sb, tags, GemTag.Bow, "Bow");
-            Append(sb, tags, GemTag.Brand, "Brand");
-            Append(sb, tags, GemTag.Channeling, "Channeling");
-            Append(sb, tags, GemTag.Chaos, "Chaos");
-            Append(sb, tags, GemTag.Cold, "Cold");
-            Append(sb, tags, GemTag.Critical, "Critical");
-            Append(sb, tags, GemTag.Curse, "Curse");
-            Append(sb, tags, GemTag.Duration, "Duration");
-            Append(sb, tags, GemTag.Exceptional, "Exceptional");
-            Append(sb, tags, GemTag.Fire, "Fire");
-            Append(sb, tags, GemTag.Golem, "Golem");
-            Append(sb, tags, GemTag.Guard, "Guard");
-            Append(sb, tags, GemTag.Herald, "Herald");
-            Append(sb, tags, GemTag.Hex, "Hex");
-            Append(sb, tags, GemTag.Lightning, "Lightning");
-            Append(sb, tags, GemTag.Link, "Link");
-            Append(sb, tags, GemTag.Mark, "Mark");
-            Append(sb, tags, GemTag.Mine, "Mine");
-            Append(sb, tags, GemTag.Minion, "Minion");
-            Append(sb, tags, GemTag.Movement, "Movement");
-            Append(sb, tags, GemTag.Nova, "Nova");
-            Append(sb, tags, GemTag.Orb, "Orb");
-            Append(sb, tags, GemTag.Pact, "Pact");
-            Append(sb, tags, GemTag.Physical, "Physical");
-            Append(sb, tags, GemTag.Prismatic, "Prismatic");
-            Append(sb, tags, GemTag.Retaliation, "Retaliation");
-            Append(sb, tags, GemTag.Stance, "Stance");
-            Append(sb, tags, GemTag.Totem, "Totem");
-            Append(sb, tags, GemTag.Trap, "Trap");
-            Append(sb, tags, GemTag.Travel, "Travel");
-            Append(sb, tags, GemTag.Trigger, "Trigger");
-            Append(sb, tags, GemTag.Vaal, "Vaal");
-            Append(sb, tags, GemTag.Warcry, "Warcry");
-            return sb.Length > 0 ? sb.ToString() : "—";
+            for (var i = 0; i < FormatNames.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+                sb.Append(FormatNames[i]);
+            }
+
+            return sb.ToString();
+        }
+
+        public static void CollectNames(GemTag tags, List<string> dest)
+        {
+            if (dest == null)
+                return;
+            dest.Clear();
+            if (tags == GemTag.None)
+                return;
+
+            TryAdd(dest, tags, GemTag.Attack, "Attack");
+            TryAdd(dest, tags, GemTag.Projectile, "Projectile");
+            TryAdd(dest, tags, GemTag.Aoe, "AoE");
+            TryAdd(dest, tags, GemTag.Slam, "Slam");
+            TryAdd(dest, tags, GemTag.Spell, "Spell");
+            TryAdd(dest, tags, GemTag.Aura, "Aura");
+            TryAdd(dest, tags, GemTag.Melee, "Melee");
+            TryAdd(dest, tags, GemTag.Strike, "Strike");
+            TryAdd(dest, tags, GemTag.Chaining, "Chaining");
+            TryAdd(dest, tags, GemTag.Support, "Support");
+            TryAdd(dest, tags, GemTag.Arcane, "Arcane");
+            TryAdd(dest, tags, GemTag.Blink, "Blink");
+            TryAdd(dest, tags, GemTag.Bow, "Bow");
+            TryAdd(dest, tags, GemTag.Brand, "Brand");
+            TryAdd(dest, tags, GemTag.Channeling, "Channeling");
+            TryAdd(dest, tags, GemTag.Chaos, "Chaos");
+            TryAdd(dest, tags, GemTag.Cold, "Cold");
+            TryAdd(dest, tags, GemTag.Critical, "Critical");
+            TryAdd(dest, tags, GemTag.Curse, "Curse");
+            TryAdd(dest, tags, GemTag.Duration, "Duration");
+            TryAdd(dest, tags, GemTag.Exceptional, "Exceptional");
+            TryAdd(dest, tags, GemTag.Fire, "Fire");
+            TryAdd(dest, tags, GemTag.Golem, "Golem");
+            TryAdd(dest, tags, GemTag.Guard, "Guard");
+            TryAdd(dest, tags, GemTag.Herald, "Herald");
+            TryAdd(dest, tags, GemTag.Hex, "Hex");
+            TryAdd(dest, tags, GemTag.Lightning, "Lightning");
+            TryAdd(dest, tags, GemTag.Link, "Link");
+            TryAdd(dest, tags, GemTag.Mark, "Mark");
+            TryAdd(dest, tags, GemTag.Mine, "Mine");
+            TryAdd(dest, tags, GemTag.Minion, "Minion");
+            TryAdd(dest, tags, GemTag.Movement, "Movement");
+            TryAdd(dest, tags, GemTag.Nova, "Nova");
+            TryAdd(dest, tags, GemTag.Orb, "Orb");
+            TryAdd(dest, tags, GemTag.Pact, "Pact");
+            TryAdd(dest, tags, GemTag.Physical, "Physical");
+            TryAdd(dest, tags, GemTag.Prismatic, "Prismatic");
+            TryAdd(dest, tags, GemTag.Retaliation, "Retaliation");
+            TryAdd(dest, tags, GemTag.Stance, "Stance");
+            TryAdd(dest, tags, GemTag.Totem, "Totem");
+            TryAdd(dest, tags, GemTag.Trap, "Trap");
+            TryAdd(dest, tags, GemTag.Travel, "Travel");
+            TryAdd(dest, tags, GemTag.Trigger, "Trigger");
+            TryAdd(dest, tags, GemTag.Vaal, "Vaal");
+            TryAdd(dest, tags, GemTag.Warcry, "Warcry");
         }
 
         static GemTag InferGemTags(GemId id)
@@ -258,13 +282,11 @@ namespace GemTD.Gameplay.Gems
             }
         }
 
-        static void Append(StringBuilder sb, GemTag tags, GemTag flag, string label)
+        static void TryAdd(List<string> dest, GemTag tags, GemTag flag, string label)
         {
             if ((tags & flag) == 0)
                 return;
-            if (sb.Length > 0)
-                sb.Append(", ");
-            sb.Append(label);
+            dest.Add(label);
         }
     }
 

@@ -267,6 +267,31 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void FormatOfferLevel_NewIs1_UpgradeIsNext()
+        {
+            var roster = new TowerRoster();
+            var card = DraftOfferCard.FromTower(_a);
+
+            Assert.AreEqual("Lv. 1", TowerRoster.FormatOfferLevel(card, roster));
+
+            roster.ApplyPick(_a);
+            Assert.AreEqual("Lv. 2", TowerRoster.FormatOfferLevel(card, roster));
+
+            roster.ApplyPick(_a);
+            Assert.AreEqual("Lv. 3", TowerRoster.FormatOfferLevel(card, roster));
+        }
+
+        [Test]
+        public void FormatOfferLevel_GemIsEmpty()
+        {
+            var gem = ScriptableObject.CreateInstance<GemDefinition>();
+            gem.DisplayName = "Chain";
+            var card = DraftOfferCard.FromGem(GemInstance.FromDefinition(gem));
+            Assert.AreEqual("", TowerRoster.FormatOfferLevel(card, null));
+            Object.DestroyImmediate(gem);
+        }
+
+        [Test]
         public void FormatOfferStatus_GemHasNoStatus()
         {
             var gem = ScriptableObject.CreateInstance<GemDefinition>();

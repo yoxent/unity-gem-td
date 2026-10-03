@@ -8,9 +8,10 @@ using GemTD.Gameplay.Run;
 
 namespace GemTD.UI
 {
-    /// <summary>Lives on InventoryPanel prefab. Manages 10 InventoryGemSlot instances + hint text.</summary>
+    /// <summary>Lives on InventoryPanel prefab. Manages 10 InventoryGemSlot instances, occupancy count, and hint text.</summary>
     public sealed class InventoryController : MonoBehaviour
     {
+        [SerializeField] TMP_Text inventoryCountText;
         [SerializeField] TMP_Text inventoryHintText;
         [SerializeField] GameObject panel;
         [SerializeField] List<InventoryGemSlot> slots = new List<InventoryGemSlot>();
@@ -65,16 +66,19 @@ namespace GemTD.UI
                               && _root.Draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick;
             var inPlan = _root.States.Current == RunStateId.Plan;
 
+            if (inventoryCountText != null)
+                inventoryCountText.text = $"{inv.OccupiedCount}/{inv.Capacity}";
+
             if (inventoryHintText != null)
             {
                 if (replacePick)
-                    inventoryHintText.text = "Inventory — click a gem to DESTROY & take draft card";
+                    inventoryHintText.text = "click a gem to DESTROY & take draft card";
                 else if (canSocket)
-                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity} — click=socket | Shift+click=discard (Plan)";
+                    inventoryHintText.text = "click=socket | Shift+click=discard (Plan)";
                 else if (inPlan)
-                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity} — select a tower to socket";
+                    inventoryHintText.text = "select a tower to socket";
                 else
-                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity}";
+                    inventoryHintText.text = string.Empty;
             }
 
             for (var i = 0; i < slots.Count && i < inv.Slots.Count; i++)

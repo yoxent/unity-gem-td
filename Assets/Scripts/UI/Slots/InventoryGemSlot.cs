@@ -15,7 +15,6 @@ namespace GemTD.UI
     public sealed class InventoryGemSlot : MonoBehaviour
     {
         static readonly Color FilledColor = new Color(0.28f, 0.42f, 0.32f, 1f);
-        static readonly Color EmptyColor = new Color(0.16f, 0.17f, 0.2f, 1f);
 
         [SerializeField] Image icon;
         [SerializeField] TMP_Text nameLabel;
@@ -47,8 +46,6 @@ namespace GemTD.UI
             _gem = gem;
             if (icon != null) icon.color = !gem.IsEmpty ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
             if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : "—";
-            if (slotEvents != null)
-                slotEvents.SetBaseColor(!gem.IsEmpty ? FilledColor : EmptyColor);
             RefreshDisabledOverlay();
             RefreshXVisible();
         }

@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using GemTD.Core;
 using GemTD.Gameplay;
+using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace GemTD.UI
     {
         [SerializeField] GameObject panel;
         [SerializeField] TMP_Text titleText;
+        [SerializeField] TMP_Text subTitleText;
         [SerializeField] List<DraftPick> picks = new List<DraftPick>();
         [SerializeField] LayoutElement selectCardLayoutElement;
         [SerializeField] List<Button> selectButtons = new List<Button>();
@@ -62,11 +64,11 @@ namespace GemTD.UI
                 {
                     var idx = i;
                     if (picks[i] != null)
-                    picks[i].GetButton().onClick.AddListener(() =>
-                    {
-                        UiSfx.Click();
-                        _root?.RequestDraftSelect(idx);
-                    });
+                        picks[i].GetButton().onClick.AddListener(() =>
+                        {
+                            UiSfx.Click();
+                            _root?.RequestDraftSelect(idx);
+                        });
                 }
             }
 
@@ -132,7 +134,9 @@ namespace GemTD.UI
 
             var draft = _root.Draft;
             if (draft == null) return;
-            if (titleText != null) titleText.text = "Draft";
+            if (titleText != null) titleText.text = "Draft Phase";
+            if (subTitleText != null)
+                subTitleText.text = FormatHint(draft);
 
             for (var i = 0; i < picks.Count; i++)
             {
@@ -144,7 +148,9 @@ namespace GemTD.UI
                     picks[i].UpdateLabel(
                         TowerRoster.FormatOfferLabel(card, roster),
                         card.Description,
-                        TowerRoster.FormatOfferStatus(card, roster));
+                        TowerRoster.FormatOfferStatus(card, roster),
+                        TowerRoster.FormatOfferLevel(card, roster));
+                    picks[i].SetTags(card.Tags);
                     picks[i].SetSelected(i == draft.SelectedIndex);
                     var btn = picks[i].GetButton();
                     if (btn != null)
@@ -156,6 +162,7 @@ namespace GemTD.UI
                 else
                 {
                     picks[i].SetSelected(false);
+                    picks[i].SetTags(GemTag.None);
                     picks[i].GetButton()?.gameObject.SetActive(false);
                 }
             }
@@ -246,6 +253,19 @@ namespace GemTD.UI
             }
 
             _lastReplacePhase = phase;
+        }
+
+        static string FormatHint(DraftService draft)
+        {
+            if (draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick)
+                return "Click an inventory gem to destroy it, or Esc to cancel.";
+            if (draft.ReplacePhase == DraftReplacePhase.AwaitingConfirm)
+                return "Bag is full. Replace a gem to take this card.";
+            if (draft.SelectedIndex >= 0)
+                return "Select to confirm this pick.";
+            if (!draft.AllowSkip)
+                return "Choose a tower.";
+            return "Choose a card, or skip for gold.";
         }
     }
 }

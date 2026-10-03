@@ -131,7 +131,18 @@ namespace GemTD.Gameplay.Towers
                 return "";
             if (roster != null && roster.Contains(card.Tower))
                 return "Upgrade";
-            return "New";
+            return "NEW!";
+        }
+
+        /// <summary>Level this pick would grant. New towers are Lv. 1; an owned tower shows the next level.</summary>
+        public static string FormatOfferLevel(DraftOfferCard card, TowerRoster roster)
+        {
+            if (!card.IsTower)
+                return "";
+            var level = 1;
+            if (roster != null && roster.Contains(card.Tower))
+                level = roster.GetDisplayLevel(card.Tower) + 1;
+            return "Lv. " + level;
         }
 
         public static string FormatBarLabel(TowerDefinition def, TowerRoster roster)

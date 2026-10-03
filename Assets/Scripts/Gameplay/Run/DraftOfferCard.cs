@@ -24,6 +24,18 @@ namespace GemTD.Gameplay.Run
         public bool IsTower => Tower != null;
         public bool IsFilled => IsGem || IsTower;
 
+        public GemTag Tags
+        {
+            get
+            {
+                if (IsGem)
+                    return GemTags.EffectiveGemTags(Gem.Def);
+                if (IsTower)
+                    return GemTags.EffectiveTowerTags(Tower);
+                return GemTag.None;
+            }
+        }
+
         public string DisplayName =>
             IsGem ? Gem.DisplayName : IsTower ? Tower.DisplayName : "";
 
