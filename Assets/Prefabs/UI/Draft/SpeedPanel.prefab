@@ -79,7 +79,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 6
+  m_PixelsPerUnitMultiplier: 10
 --- !u!114 &6561985136128846757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -463,6 +463,10 @@ MonoBehaviour:
   speed2Label: {fileID: 8251644649374313639}
   speed4Label: {fileID: 3136527099206432648}
   pauseChip: {fileID: 3471563972907017770}
+  activeSprite: {fileID: 21300000, guid: f73b6abdcb5ae534694ddf777364969c, type: 3}
+  inactiveSprite: {fileID: 21300000, guid: 98c09d9dbce5dff43afa9427f1e4fcb4, type: 3}
+  activeTextColor: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+  inactiveTextColor: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
 --- !u!114 &3900620526072598623
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -238,7 +238,7 @@ namespace GemTD.UI
                 if (replaceHintText != null)
                 {
                     replaceHintText.gameObject.SetActive(true);
-                    replaceHintText.text = "Replace mode — click an inventory gem to destroy it, or Esc to cancel.";
+                    replaceHintText.text = "Replace mode — Click an inventory gem to destroy it, or Esc to cancel.";
                 }
             }
             else

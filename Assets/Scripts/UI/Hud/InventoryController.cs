@@ -72,11 +72,11 @@ namespace GemTD.UI
             if (inventoryHintText != null)
             {
                 if (replacePick)
-                    inventoryHintText.text = "click a gem to DESTROY & take draft card";
+                    inventoryHintText.text = "Click a gem to destroy & take draft card";
                 else if (canSocket)
-                    inventoryHintText.text = "click=socket | Shift+click=discard (Plan)";
+                    inventoryHintText.text = "Click=socket | Shift+click=discard (Plan)";
                 else if (inPlan)
-                    inventoryHintText.text = "select a tower to socket";
+                    inventoryHintText.text = "Select a tower to socket";
                 else
                     inventoryHintText.text = string.Empty;
             }
