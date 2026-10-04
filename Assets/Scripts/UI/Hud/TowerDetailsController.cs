@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Combat;
+using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 
 namespace GemTD.UI
@@ -11,7 +13,13 @@ namespace GemTD.UI
     /// <summary>Lives on TowerDetailsPanel prefab. Stats, sockets, targeting rows, Sell.</summary>
     public sealed class TowerDetailsController : MonoBehaviour
     {
+        const int TagsPerRow = 3;
+
         [SerializeField] GameObject panel;
+        [SerializeField] GameObject tagsPanel;
+        [SerializeField] Transform tagSubParentTemplate;
+        [SerializeField] DraftTagLabel tagLabelPrefab;
+        [SerializeField] List<DraftTagLabel> tagLabels = new List<DraftTagLabel>();
         [SerializeField] TMP_Text detailsText;
         [SerializeField] TowerGemSlot[] socketSlots = new TowerGemSlot[3];
         [SerializeField] Button sellButton;
@@ -25,6 +33,15 @@ namespace GemTD.UI
         PopupManager _popup;
         bool _visible;
         bool _lockOverlayShown;
+
+        readonly List<string> _tagNames = new List<string>(8);
+        readonly List<Transform> _tagRows = new List<Transform>(4);
+
+        void Awake()
+        {
+            if (tagSubParentTemplate != null)
+                tagSubParentTemplate.gameObject.SetActive(false);
+        }
 
         void OnEnable()
         {
@@ -112,6 +129,9 @@ namespace GemTD.UI
                 sellButton.gameObject.SetActive(planOrCombat);
 
             var tower = _root.Placement?.Selected;
+            SetTags(tower != null && tower.Def != null
+                ? GemTags.EffectiveTowerTags(tower.Def)
+                : GemTag.None);
             if (sellLabel != null && planOrCombat && tower != null)
                 sellLabel.text = $"Sell {RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend)}";
 
@@ -143,6 +163,90 @@ namespace GemTD.UI
         {
             if (detailsText != null && _root != null)
                 detailsText.text = _root.BuildSelectedTowerDetailsText();
+        }
+
+        void SetTags(GemTag tags)
+        {
+            if (tagsPanel == null)
+            {
+                Debug.LogError("TowerDetailsController: assign tagsPanel on the prefab.", this);
+                return;
+            }
+
+            if (tagSubParentTemplate == null)
+            {
+                Debug.LogError("TowerDetailsController: assign tagSubParentTemplate on the prefab.", this);
+                return;
+            }
+
+            tagSubParentTemplate.gameObject.SetActive(false);
+            GemTags.CollectNames(tags, _tagNames);
+
+            var rowsNeeded = _tagNames.Count == 0
+                ? 0
+                : (_tagNames.Count + TagsPerRow - 1) / TagsPerRow;
+            for (var row = 0; row < rowsNeeded; row++)
+            {
+                var rowTransform = GetOrCreateRow(row);
+                if (rowTransform != null)
+                    rowTransform.gameObject.SetActive(true);
+            }
+
+            for (var row = rowsNeeded; row < _tagRows.Count; row++)
+            {
+                if (_tagRows[row] != null)
+                    _tagRows[row].gameObject.SetActive(false);
+            }
+
+            for (var i = 0; i < _tagNames.Count; i++)
+            {
+                var label = GetOrCreateTag(i);
+                if (label == null)
+                    continue;
+                var rowTransform = _tagRows[i / TagsPerRow];
+                if (label.transform.parent != rowTransform)
+                    label.transform.SetParent(rowTransform, false);
+                label.gameObject.SetActive(true);
+                label.Bind(_tagNames[i]);
+            }
+
+            for (var i = _tagNames.Count; i < tagLabels.Count; i++)
+            {
+                if (tagLabels[i] != null)
+                    tagLabels[i].gameObject.SetActive(false);
+            }
+        }
+
+        Transform GetOrCreateRow(int index)
+        {
+            while (_tagRows.Count <= index)
+            {
+                var row = Instantiate(tagSubParentTemplate, tagsPanel.transform);
+                row.gameObject.SetActive(false);
+                row.SetAsLastSibling();
+                _tagRows.Add(row);
+            }
+
+            return _tagRows[index];
+        }
+
+        DraftTagLabel GetOrCreateTag(int index)
+        {
+            while (tagLabels.Count <= index)
+            {
+                if (tagLabelPrefab == null)
+                {
+                    Debug.LogError("TowerDetailsController: assign tagLabelPrefab (DraftTagLabel) on the prefab.", this);
+                    return null;
+                }
+
+                var row = GetOrCreateRow(index / TagsPerRow);
+                var label = Instantiate(tagLabelPrefab, row);
+                label.gameObject.SetActive(false);
+                tagLabels.Add(label);
+            }
+
+            return tagLabels[index];
         }
 
         void RefreshSocketLockOverlays()

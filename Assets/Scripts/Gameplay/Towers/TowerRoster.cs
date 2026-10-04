@@ -145,16 +145,6 @@ namespace GemTD.Gameplay.Towers
             return "Lv. " + level;
         }
 
-        public static string FormatBarLabel(TowerDefinition def, TowerRoster roster)
-        {
-            if (def == null)
-                return "?";
-            var name = !string.IsNullOrEmpty(def.DisplayName) ? def.DisplayName : def.name;
-            if (roster == null || !roster.Contains(def))
-                return name;
-            return name + "  Lv " + roster.GetDisplayLevel(def);
-        }
-
         int IndexOf(TowerDefinition def)
         {
             if (def == null)

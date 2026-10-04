@@ -5,6 +5,7 @@ using GemTD.Gameplay;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 using System.Collections.Generic;
+using TMPro;
 
 namespace GemTD.UI
 {
@@ -12,6 +13,7 @@ namespace GemTD.UI
     public sealed class BuildBarController : MonoBehaviour
     {
         [SerializeField] GameObject panel;
+        [SerializeField] TMP_Text towerCountLabel;
         [SerializeField] Transform buildButtonsParent;
         [SerializeField] BuildTowerButton buttonPrefab;
         [SerializeField] List<BuildTowerButton> buildButtons = new List<BuildTowerButton>();
@@ -123,6 +125,8 @@ namespace GemTD.UI
             var maxSlots = _root.Draft != null && _root.Draft.Roster != null
                 ? _root.Draft.Roster.MaxSlots
                 : 0;
+            if (towerCountLabel != null)
+                towerCountLabel.text = $"{filledCount}/{maxSlots}";
             if (maxSlots <= 0)
             {
                 for (var i = 0; i < buildButtons.Count; i++)
@@ -144,7 +148,10 @@ namespace GemTD.UI
 
                 if (i < filledCount)
                 {
-                    buildButtons[i].UpdateTowerButton(_root.GetPlaceTowerName(i), _root.GetPlaceTowerCost(i));
+                    buildButtons[i].UpdateTowerButton(
+                        _root.GetPlaceTowerName(i),
+                        _root.GetPlaceTowerCost(i),
+                        _root.GetPlaceTowerLevel(i));
                     var btn = buildButtons[i].GetButton();
                     if (btn != null)
                         btn.interactable = gold >= _root.GetPlaceTowerCost(i);

@@ -93,9 +93,17 @@ namespace GemTD.Gameplay
 
         public string GetPlaceTowerName(int index)
         {
-            if (!TryGetBuildBarTower(index, out var def))
+            if (!TryGetBuildBarTower(index, out var def) || def == null)
                 return "?";
-            return TowerRoster.FormatBarLabel(def, Draft != null ? Draft.Roster : null);
+            return !string.IsNullOrEmpty(def.DisplayName) ? def.DisplayName : def.name;
+        }
+
+        public int GetPlaceTowerLevel(int index)
+        {
+            if (!TryGetBuildBarTower(index, out var def) || def == null)
+                return 1;
+            var roster = Draft != null ? Draft.Roster : null;
+            return roster != null ? roster.GetDisplayLevel(def) : 1;
         }
 
         public int GetPlaceTowerCost(int index)
