@@ -511,6 +511,7 @@ GameObject:
   m_Component:
   - component: {fileID: 763961157039569287}
   - component: {fileID: 4539143620000143110}
+  - component: {fileID: 4651170047164766113}
   - component: {fileID: 3900620526072598623}
   - component: {fileID: 7454253012526995702}
   m_Layer: 0
@@ -563,6 +564,28 @@ MonoBehaviour:
   inactiveSprite: {fileID: 21300000, guid: 98c09d9dbce5dff43afa9427f1e4fcb4, type: 3}
   activeTextColor: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
   inactiveTextColor: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+--- !u!114 &4651170047164766113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2173105421748997115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets:
+  - texts:
+    - {fileID: 6516957808109666463}
+    styleId: accent-22
+  - texts:
+    - {fileID: 6815067852929350930}
+    - {fileID: 8251644649374313639}
+    - {fileID: 3136527099206432648}
+    styleId: secondary-22
 --- !u!114 &3900620526072598623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -677,8 +700,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4294111999
+  m_fontColor: {r: 1, g: 0.9490196, b: 0.9490196, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1360,8 +1383,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4283707694
-  m_fontColor: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    rgba: 4287589995
+  m_fontColor: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

@@ -3,16 +3,16 @@ using UnityEngine;
 
 namespace GemTD.UI
 {
-    public class DraftTagLabel : MonoBehaviour
+    public class TagLabel : MonoBehaviour
     {
-        [SerializeField] TMP_Text draftTagText;
+        [SerializeField] TMP_Text tagText;
 
         public void Bind(string tagName)
         {
-            if (draftTagText != null)
-                draftTagText.text = tagName ?? "";
+            if (tagText != null)
+                tagText.text = tagName ?? "";
             else
-                Debug.LogError("DraftTagLabel: assign draftTagText on the prefab.", this);
+                Debug.LogError("TagLabel: assign tagText on the prefab.", this);
         }
     }
 }

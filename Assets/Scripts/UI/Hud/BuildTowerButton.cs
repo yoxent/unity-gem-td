@@ -43,7 +43,7 @@ namespace GemTD.UI
             if (buildButtonLabel != null)
                 buildButtonLabel.text = label;
             if (buildButtonCost != null)
-                buildButtonCost.text = cost.ToString();
+                buildButtonCost.text = $"{cost}g";
             if (towerLevelLabel != null)
                 towerLevelLabel.text = $"Lv. {level}";
             ApplySlot(hasTower: true);

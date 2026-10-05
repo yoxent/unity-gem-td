@@ -698,6 +698,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5580213974312436291}
   - component: {fileID: 7373738893796480575}
+  - component: {fileID: 7158820589451722343}
   - component: {fileID: 953207777288237266}
   - component: {fileID: 1310764653998645397}
   m_Layer: 0
@@ -744,6 +745,26 @@ MonoBehaviour:
   sliderLabel: {fileID: 5188077034906178175}
   slider: {fileID: 6811991931399593525}
   valueLabel: {fileID: 2544269954407321800}
+--- !u!114 &7158820589451722343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6506617874230116238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets:
+  - texts:
+    - {fileID: 5188077034906178175}
+    styleId: primary-26
+  - texts:
+    - {fileID: 2544269954407321800}
+    styleId: secondary-26
 --- !u!114 &953207777288237266
 MonoBehaviour:
   m_ObjectHideFlags: 0

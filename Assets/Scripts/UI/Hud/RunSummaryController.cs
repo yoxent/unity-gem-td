@@ -27,22 +27,24 @@ namespace GemTD.UI
         [SerializeField] TMP_Text totalKillsText;
         [SerializeField] TMP_Text totalGoldText;
         [SerializeField] TMP_Text totalBuiltText;
-        [SerializeField] TMP_Text skillsText;
-        [SerializeField] TMP_Text newBestText;
-        [SerializeField] Transform towerSectionsParent;
+        [SerializeField] LayoutElement towerSectionsLayoutElement;
+        [SerializeField] Transform towerSectionsContent;
         [SerializeField] RunSummarySection towerSummarySectionPrefab;
         [SerializeField] Button endlessButton;
         [SerializeField] Button mainMenuButton;
 
+        const float MaxTowerSectionsHeight = 380f;
+
         readonly List<RunSummarySection> _sectionPool = new List<RunSummarySection>(4);
 
         GameCompositionRoot _root;
+        bool _towerSectionsHeightCapped;
 
         void Awake()
         {
             if (panel == null)
                 Debug.LogError("RunSummaryController: panel is not assigned.", this);
-            if (towerSectionsParent == null)
+            if (towerSectionsContent == null)
                 Debug.LogError("RunSummaryController: towerSectionsParent is not assigned.", this);
             if (towerSummarySectionPrefab == null)
                 Debug.LogError("RunSummaryController: towerSummarySectionPrefab is not assigned.", this);
@@ -66,6 +68,8 @@ namespace GemTD.UI
 
             if (panel != null)
                 panel.SetActive(false);
+
+            ResetTowerSectionsHeight();
         }
 
         void OnEnable() => GameEvents.RunStateChanged += Refresh;
@@ -107,23 +111,14 @@ namespace GemTD.UI
                 outcomeText.text = victory ? "Victory" : "Defeat";
             if (waveText != null)
                 waveText.text = $"Wave {snapshot.WaveReached}";
-            if (newBestText != null)
-            {
-                var showNewBest = PlayerProfile.LastUpdateWasNewBest;
-                newBestText.gameObject.SetActive(showNewBest);
-                if (showNewBest)
-                    newBestText.text = "New best!";
-            }
             if (totalDamageText != null)
-                totalDamageText.text = $"Total damage: {Mathf.RoundToInt(snapshot.TotalDamage)}";
+                totalDamageText.text = Mathf.RoundToInt(snapshot.TotalDamage).ToString();
             if (totalKillsText != null)
-                totalKillsText.text = $"Total kills: {snapshot.TotalKills}";
+                totalKillsText.text = snapshot.TotalKills.ToString();
             if (totalGoldText != null)
-                totalGoldText.text = $"Gold earned: {snapshot.TotalGoldEarned}";
+                totalGoldText.text = snapshot.TotalGoldEarned.ToString();
             if (totalBuiltText != null)
-                totalBuiltText.text = $"Towers built: {snapshot.TotalBuilt}";
-            if (skillsText != null)
-                skillsText.text = $"Skills: {snapshot.SkillsCount}";
+                totalBuiltText.text = snapshot.TotalBuilt.ToString();
 
             ClearSections();
 
@@ -137,6 +132,20 @@ namespace GemTD.UI
                     GetTowerColor(i),
                     entries[i]);
             }
+
+            var widestValue = 0f;
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var width = _sectionPool[i].WidestSummaryValueWidth;
+                if (width > widestValue)
+                    widestValue = width;
+            }
+
+            for (var i = 0; i < entries.Length; i++)
+            {
+                _sectionPool[i].SetSummaryValueWidth(widestValue);
+                IncludeSectionHeight(_sectionPool[i]);
+            }
         }
 
         void ClearSections()
@@ -146,13 +155,46 @@ namespace GemTD.UI
                 if (_sectionPool[i] != null)
                     _sectionPool[i].gameObject.SetActive(false);
             }
+
+            ResetTowerSectionsHeight();
+        }
+
+        void ResetTowerSectionsHeight()
+        {
+            _towerSectionsHeightCapped = false;
+            if (towerSectionsLayoutElement != null)
+                towerSectionsLayoutElement.preferredHeight = 0f;
+        }
+
+        void IncludeSectionHeight(RunSummarySection section)
+        {
+            if (_towerSectionsHeightCapped || towerSectionsLayoutElement == null || section == null)
+                return;
+
+            var height = towerSectionsLayoutElement.preferredHeight;
+            if (height > 0f && towerSectionsContent != null)
+            {
+                var group = towerSectionsContent.GetComponent<VerticalLayoutGroup>();
+                if (group != null)
+                    height += group.spacing;
+            }
+
+            height += section.PreferredHeight;
+            if (height >= MaxTowerSectionsHeight)
+            {
+                towerSectionsLayoutElement.preferredHeight = MaxTowerSectionsHeight;
+                _towerSectionsHeightCapped = true;
+                return;
+            }
+
+            towerSectionsLayoutElement.preferredHeight = height;
         }
 
         RunSummarySection GetOrCreateSection(int index)
         {
             while (_sectionPool.Count <= index)
             {
-                var section = Instantiate(towerSummarySectionPrefab, towerSectionsParent);
+                var section = Instantiate(towerSummarySectionPrefab, towerSectionsContent);
                 section.gameObject.SetActive(false);
                 _sectionPool.Add(section);
             }

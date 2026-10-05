@@ -9,6 +9,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text summaryLabel;
         [SerializeField] Image summaryBar;
         [SerializeField] TMP_Text summaryValue;
+        [SerializeField] LayoutElement summaryValueLayoutElement;
 
         public void Bind(string label, float value, float percent, Color barColor)
         {
@@ -29,6 +30,29 @@ namespace GemTD.UI
             summaryBar.fillOrigin = (int)Image.OriginHorizontal.Left;
             summaryBar.fillAmount = percentClamped;
             summaryBar.color = barColor;
+        }
+
+        public float SummaryValueWidth
+        {
+            get
+            {
+                if (summaryValue == null)
+                    return 0f;
+
+                summaryValue.ForceMeshUpdate();
+                return summaryValue.preferredWidth;
+            }
+        }
+
+        public void SetSummaryValueWidth(float width)
+        {
+            if (summaryValueLayoutElement == null)
+            {
+                Debug.LogError("RunSummaryElement: summaryValueLayoutElement is not assigned.", this);
+                return;
+            }
+
+            summaryValueLayoutElement.preferredWidth = width;
         }
     }
 }

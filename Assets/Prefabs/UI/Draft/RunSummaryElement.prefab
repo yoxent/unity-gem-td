@@ -168,6 +168,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7690173436524013254}
   - component: {fileID: 3815787031097348303}
+  - component: {fileID: 6701316429097599504}
   - component: {fileID: 6114926245692729575}
   - component: {fileID: 2925957161005617916}
   m_Layer: 0
@@ -197,7 +198,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 340, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3815787031097348303
 MonoBehaviour:
@@ -214,6 +215,27 @@ MonoBehaviour:
   summaryLabel: {fileID: 4903479652688138175}
   summaryBar: {fileID: 9184594519515311587}
   summaryValue: {fileID: 3005110638683256521}
+  summaryValueLayoutElement: {fileID: 112403599010554988}
+--- !u!114 &6701316429097599504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 364348363310550729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets:
+  - texts:
+    - {fileID: 4903479652688138175}
+    styleId: primary-16
+  - texts:
+    - {fileID: 3005110638683256521}
+    styleId: secondary-14
 --- !u!114 &6114926245692729575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -413,7 +435,7 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: 96
+  m_PreferredWidth: -1
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1

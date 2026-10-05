@@ -130,6 +130,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5667938515073159727}
   - component: {fileID: 8644929721119563712}
+  - component: {fileID: 1163245496479243776}
   - component: {fileID: 3276137121248535432}
   - component: {fileID: 3035154637477087833}
   - component: {fileID: 2518987976251747123}
@@ -175,6 +176,23 @@ MonoBehaviour:
   cycleLeft: {fileID: 5811631522860500008}
   cycleRight: {fileID: 3078722607861986014}
   priorityLabel: {fileID: 8860841860567166241}
+--- !u!114 &1163245496479243776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3493452895531975603}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets:
+  - texts:
+    - {fileID: 8860841860567166241}
+    styleId: primary-14
 --- !u!114 &3276137121248535432
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -13,14 +13,11 @@ namespace GemTD.UI
     /// <summary>Lives on TowerDetailsPanel prefab. Stats, sockets, targeting rows, Sell.</summary>
     public sealed class TowerDetailsController : MonoBehaviour
     {
-        const int TagsPerRow = 3;
-
         [SerializeField] GameObject panel;
         [SerializeField] GameObject tagsPanel;
         [SerializeField] Transform tagSubParentTemplate;
-        [SerializeField] DraftTagLabel tagLabelPrefab;
-        [SerializeField] List<DraftTagLabel> tagLabels = new List<DraftTagLabel>();
-        [SerializeField] TMP_Text detailsText;
+        [SerializeField] TagLabel tagLabelPrefab;
+        [SerializeField] List<TagLabel> tagLabels = new List<TagLabel>();
         [SerializeField] TowerGemSlot[] socketSlots = new TowerGemSlot[3];
         [SerializeField] Button sellButton;
         [SerializeField] TMP_Text sellLabel;
@@ -29,13 +26,21 @@ namespace GemTD.UI
         [SerializeField] Button scopeTypeButton;
         [SerializeField] Button scopeAllButton;
 
+        [Header("Tower Info")]
+        [SerializeField] TMP_Text towerNameText;
+        [SerializeField] TMP_Text towerLevelText;
+        [SerializeField] TMP_Text towerDamageValueText;
+        [SerializeField] TMP_Text towerAttackSpeedValueText;
+        [SerializeField] TMP_Text towerAttackRangeValueText;
+        [SerializeField] TMP_Text towerCriticalChanceValue;
+        [SerializeField] TMP_Text towerCriticalDamageValue;
+
         GameCompositionRoot _root;
         PopupManager _popup;
         bool _visible;
         bool _lockOverlayShown;
 
         readonly List<string> _tagNames = new List<string>(8);
-        readonly List<Transform> _tagRows = new List<Transform>(4);
 
         void Awake()
         {
@@ -100,8 +105,6 @@ namespace GemTD.UI
             if (!_visible || _root == null)
                 return;
             var lockLeft = _root.SelectedSocketLockRemaining;
-            if (lockLeft > 0f)
-                RefreshDetailsText();
             if (lockLeft > 0f || _lockOverlayShown)
                 RefreshSocketLockOverlays();
             _lockOverlayShown = lockLeft > 0f;
@@ -114,13 +117,14 @@ namespace GemTD.UI
             if (_root == null) return;
 
             _visible = _root.HasSelectedTower && _root.States != null
+                       && _root.States.Current != RunStateId.Draft
                        && _root.States.Current != RunStateId.Defeat
                        && _root.States.Current != RunStateId.VictorySummary;
 
             panel.SetActive(_visible);
             if (!_visible) return;
 
-            RefreshDetailsText();
+            RefreshTowerInfo();
 
             var planOrCombat = _root.States != null
                                && (_root.States.Current == RunStateId.Plan
@@ -133,7 +137,7 @@ namespace GemTD.UI
                 ? GemTags.EffectiveTowerTags(tower.Def)
                 : GemTag.None);
             if (sellLabel != null && planOrCombat && tower != null)
-                sellLabel.text = $"Sell {RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend)}";
+                sellLabel.text = $"Sell · {RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend)}g";
 
             var socketCount = tower?.Def != null ? tower.Def.SocketCount : 0;
             for (var i = 0; i < socketSlots.Length; i++)
@@ -159,10 +163,53 @@ namespace GemTD.UI
             HighlightScope(_root.CurrentApplyScope);
         }
 
-        void RefreshDetailsText()
+        void RefreshTowerInfo()
         {
-            if (detailsText != null && _root != null)
-                detailsText.text = _root.BuildSelectedTowerDetailsText();
+            var tower = _root?.Placement?.Selected;
+            if (tower == null || tower.Def == null || _root == null)
+                return;
+
+            var spec = _root.ResolveLiveSpec(tower);
+            var interval = tower.Def.FireInterval(spec, tower.Level);
+            var attackRate = interval > 0.01f ? 1f / interval : 0f;
+
+            SetInfo(towerNameText, tower.Def.DisplayName);
+            SetInfo(towerLevelText, $"Lv. {tower.LevelIndex + 1}");
+            SetInfo(towerDamageValueText, FormatDamage(spec));
+            SetInfo(towerAttackSpeedValueText, attackRate.ToString("0.##"));
+            SetInfo(towerAttackRangeValueText, _root.GetEffectiveAttackRange(tower).ToString("0.#"));
+            SetInfo(towerCriticalChanceValue, FormatPercent(spec.CritChance));
+            var critMultiplier = spec.CritMultiplier > 0f ? spec.CritMultiplier : 1.5f;
+            SetInfo(towerCriticalDamageValue, $"{critMultiplier:0.##}x");
+        }
+
+        static string FormatDamage(SkillSpec spec)
+        {
+            var text = spec.DamageMax > spec.DamageMin + 0.01f
+                ? $"{spec.DamageMin:0.#}–{spec.DamageMax:0.#}"
+                : spec.Damage.ToString("0.#");
+            if (spec.ProjectileCount > 1)
+                text = $"{text} ×{spec.ProjectileCount}";
+            return text;
+        }
+
+        static string FormatPercent(float fraction)
+        {
+            var percent = fraction * 100f;
+            if (Mathf.Abs(percent - Mathf.Round(percent)) < 0.05f)
+                return $"{Mathf.RoundToInt(percent)}%";
+            return $"{percent:0.#}%";
+        }
+
+        void SetInfo(TMP_Text label, string value)
+        {
+            if (label == null)
+            {
+                Debug.LogError("TowerDetailsController: assign Tower Info text on the prefab.", this);
+                return;
+            }
+
+            label.text = value;
         }
 
         void SetTags(GemTag tags)
@@ -182,30 +229,14 @@ namespace GemTD.UI
             tagSubParentTemplate.gameObject.SetActive(false);
             GemTags.CollectNames(tags, _tagNames);
 
-            var rowsNeeded = _tagNames.Count == 0
-                ? 0
-                : (_tagNames.Count + TagsPerRow - 1) / TagsPerRow;
-            for (var row = 0; row < rowsNeeded; row++)
-            {
-                var rowTransform = GetOrCreateRow(row);
-                if (rowTransform != null)
-                    rowTransform.gameObject.SetActive(true);
-            }
-
-            for (var row = rowsNeeded; row < _tagRows.Count; row++)
-            {
-                if (_tagRows[row] != null)
-                    _tagRows[row].gameObject.SetActive(false);
-            }
-
             for (var i = 0; i < _tagNames.Count; i++)
             {
                 var label = GetOrCreateTag(i);
                 if (label == null)
                     continue;
-                var rowTransform = _tagRows[i / TagsPerRow];
-                if (label.transform.parent != rowTransform)
-                    label.transform.SetParent(rowTransform, false);
+                if (label.transform.parent != tagsPanel.transform)
+                    label.transform.SetParent(tagsPanel.transform, false);
+                label.transform.SetSiblingIndex(i);
                 label.gameObject.SetActive(true);
                 label.Bind(_tagNames[i]);
             }
@@ -215,22 +246,11 @@ namespace GemTD.UI
                 if (tagLabels[i] != null)
                     tagLabels[i].gameObject.SetActive(false);
             }
+
+            LayoutRebuilder.MarkLayoutForRebuild((RectTransform)tagsPanel.transform);
         }
 
-        Transform GetOrCreateRow(int index)
-        {
-            while (_tagRows.Count <= index)
-            {
-                var row = Instantiate(tagSubParentTemplate, tagsPanel.transform);
-                row.gameObject.SetActive(false);
-                row.SetAsLastSibling();
-                _tagRows.Add(row);
-            }
-
-            return _tagRows[index];
-        }
-
-        DraftTagLabel GetOrCreateTag(int index)
+        TagLabel GetOrCreateTag(int index)
         {
             while (tagLabels.Count <= index)
             {
@@ -240,8 +260,7 @@ namespace GemTD.UI
                     return null;
                 }
 
-                var row = GetOrCreateRow(index / TagsPerRow);
-                var label = Instantiate(tagLabelPrefab, row);
+                var label = Instantiate(tagLabelPrefab, tagsPanel.transform);
                 label.gameObject.SetActive(false);
                 tagLabels.Add(label);
             }
@@ -321,12 +340,15 @@ namespace GemTD.UI
                 return;
             }
 
+            var tower = _root.Placement.Selected;
+            var refund = RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend);
+            var body = _root.SelectedHasSocketedGems
+                ? $"You get {refund}g back. Gems in this tower return to your inventory."
+                : $"You get {refund}g back.";
             _popup.ShowConfirmOnceSuppressed(
                 id: "SellConfirm",
                 title: "Sell tower?",
-                body: _root.SelectedHasSocketedGems
-                    ? "Socketed gems return to inventory. Full refund of purchase + upgrade spend."
-                    : "Full refund of purchase + upgrade spend.",
+                body: body,
                 onConfirm: () => _root.RequestSellSelected(),
                 pauseForFairness: false,
                 yesText: "Yes", noText: "No");

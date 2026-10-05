@@ -417,6 +417,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2665785430000260053}
   - component: {fileID: 138398863853256100}
+  - component: {fileID: 7522603355014334681}
   - component: {fileID: 8305816501499234194}
   - component: {fileID: 2727731494272809773}
   - component: {fileID: 2860498907420926876}
@@ -473,6 +474,20 @@ MonoBehaviour:
   slotHover: {fileID: 138398863853256201}
   xHover: {fileID: 138398863853256202}
   dropSfxKey: Drop
+--- !u!114 &7522603355014334681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5915829770668613982}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets: []
 --- !u!222 &8305816501499234194
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -595,8 +610,8 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: 80
-  m_PreferredHeight: 80
+  m_PreferredWidth: 84
+  m_PreferredHeight: 84
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1

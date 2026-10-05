@@ -122,7 +122,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 93, y: -30}
+  m_AnchoredPosition: {x: 80, y: -30}
   m_SizeDelta: {x: 70.07, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &35742524955567628
@@ -819,7 +819,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 93, y: -30}
+  m_AnchoredPosition: {x: 80, y: -30}
   m_SizeDelta: {x: 51.31, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6685761493497753557
@@ -2355,7 +2355,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 88, y: -30}
+  m_AnchoredPosition: {x: 80, y: -30}
   m_SizeDelta: {x: 45.4, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &690726643514222845
@@ -2647,8 +2647,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 500, y: -406.82}
-  m_SizeDelta: {x: 960, y: 40}
+  m_AnchoredPosition: {x: 708, y: -614}
+  m_SizeDelta: {x: 1376, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &9093801254008106444
 MonoBehaviour:
@@ -2693,7 +2693,7 @@ MonoBehaviour:
   m_MinHeight: -1
   m_PreferredWidth: -1
   m_PreferredHeight: -1
-  m_FlexibleWidth: -1
+  m_FlexibleWidth: 1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
 --- !u!1 &5658180679733542566
@@ -2941,6 +2941,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6568137612445742015}
   - component: {fileID: 4272069083702820653}
+  - component: {fileID: 3582723133569821879}
   m_Layer: 0
   m_Name: DraftPanel
   m_TagString: Untagged
@@ -3001,6 +3002,33 @@ MonoBehaviour:
   banButton: {fileID: 3156002055344815487}
   banText: {fileID: 4119183434400329281}
   replaceHintText: {fileID: 8651158627604416457}
+--- !u!114 &3582723133569821879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7032268563523015392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets:
+  - texts:
+    - {fileID: 4003900552396151087}
+    styleId: header
+  - texts:
+    - {fileID: 5140254770678707056}
+    styleId: secondary-18
+  - texts:
+    - {fileID: 1767106446591103176}
+    - {fileID: 7302793481747391115}
+    styleId: gold-26
+  - texts:
+    - {fileID: 4119183434400329281}
+    styleId: red-26
 --- !u!1 &7319031459568706493
 GameObject:
   m_ObjectHideFlags: 0

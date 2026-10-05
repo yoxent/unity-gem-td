@@ -8,21 +8,18 @@ namespace GemTD.UI
 {
     public class DraftPick : MonoBehaviour
     {
-        const int TagsPerRow = 3;
-
         [SerializeField] Button draftButton;
         [SerializeField] TMP_Text draftLabel;
         [SerializeField] Transform tagsParent;
         [SerializeField] Transform tagSubParentTemplate;
-        [SerializeField] DraftTagLabel tagLabelPrefab;
-        [SerializeField] List<DraftTagLabel> tagLabels = new List<DraftTagLabel>();
+        [SerializeField] TagLabel tagLabelPrefab;
+        [SerializeField] List<TagLabel> tagLabels = new List<TagLabel>();
         [SerializeField] TMP_Text draftDescription;
         [SerializeField] CanvasGroup draftStatusGroup;
         [SerializeField] TMP_Text draftStatus;
         [SerializeField] TMP_Text levelLabel;
 
         readonly List<string> _tagNames = new List<string>(8);
-        readonly List<Transform> _tagRows = new List<Transform>(4);
 
         void Awake()
         {
@@ -84,30 +81,14 @@ namespace GemTD.UI
             tagSubParentTemplate.gameObject.SetActive(false);
             GemTags.CollectNames(tags, _tagNames);
 
-            var rowsNeeded = _tagNames.Count == 0
-                ? 0
-                : (_tagNames.Count + TagsPerRow - 1) / TagsPerRow;
-            for (var row = 0; row < rowsNeeded; row++)
-            {
-                var rowTransform = GetOrCreateRow(row);
-                if (rowTransform != null)
-                    rowTransform.gameObject.SetActive(true);
-            }
-
-            for (var row = rowsNeeded; row < _tagRows.Count; row++)
-            {
-                if (_tagRows[row] != null)
-                    _tagRows[row].gameObject.SetActive(false);
-            }
-
             for (var i = 0; i < _tagNames.Count; i++)
             {
                 var label = GetOrCreateTag(i);
                 if (label == null)
                     continue;
-                var rowTransform = _tagRows[i / TagsPerRow];
-                if (label.transform.parent != rowTransform)
-                    label.transform.SetParent(rowTransform, false);
+                if (label.transform.parent != tagsParent)
+                    label.transform.SetParent(tagsParent, false);
+                label.transform.SetSiblingIndex(i);
                 label.gameObject.SetActive(true);
                 label.Bind(_tagNames[i]);
             }
@@ -117,22 +98,11 @@ namespace GemTD.UI
                 if (tagLabels[i] != null)
                     tagLabels[i].gameObject.SetActive(false);
             }
+
+            LayoutRebuilder.MarkLayoutForRebuild((RectTransform)tagsParent);
         }
 
-        Transform GetOrCreateRow(int index)
-        {
-            while (_tagRows.Count <= index)
-            {
-                var row = Instantiate(tagSubParentTemplate, tagsParent);
-                row.gameObject.SetActive(false);
-                row.SetAsLastSibling();
-                _tagRows.Add(row);
-            }
-
-            return _tagRows[index];
-        }
-
-        DraftTagLabel GetOrCreateTag(int index)
+        TagLabel GetOrCreateTag(int index)
         {
             while (tagLabels.Count <= index)
             {
@@ -142,8 +112,7 @@ namespace GemTD.UI
                     return null;
                 }
 
-                var row = GetOrCreateRow(index / TagsPerRow);
-                var label = Instantiate(tagLabelPrefab, row);
+                var label = Instantiate(tagLabelPrefab, tagsParent);
                 label.gameObject.SetActive(false);
                 tagLabels.Add(label);
             }

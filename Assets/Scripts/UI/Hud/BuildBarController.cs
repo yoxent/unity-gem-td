@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Run;
@@ -15,8 +14,15 @@ namespace GemTD.UI
         [SerializeField] GameObject panel;
         [SerializeField] TMP_Text towerCountLabel;
         [SerializeField] Transform buildButtonsParent;
-        [SerializeField] BuildTowerButton buttonPrefab;
+        [SerializeField] TMP_Text[] categoryLabels;
         [SerializeField] List<BuildTowerButton> buildButtons = new List<BuildTowerButton>();
+
+        static readonly TowerRosterCategory[] CategoryOrder =
+        {
+            TowerRosterCategory.Damaging,
+            TowerRosterCategory.Curse,
+            TowerRosterCategory.Aura
+        };
 
         GameCompositionRoot _root;
         bool _buttonsBound;
@@ -40,22 +46,10 @@ namespace GemTD.UI
         public void Bind(GameCompositionRoot root)
         {
             _root = root;
-            BindExistingButtons();
-            _buttonsBound = true;
-            Refresh();
-        }
-
-        void BindExistingButtons()
-        {
             if (buildButtons == null)
                 buildButtons = new List<BuildTowerButton>();
-
-            for (var i = 0; i < buildButtons.Count; i++)
-            {
-                if (buildButtons[i] == null)
-                    continue;
-                WireClick(buildButtons[i], i);
-            }
+            _buttonsBound = true;
+            Refresh();
         }
 
         void WireClick(BuildTowerButton button, int index)
@@ -70,38 +64,6 @@ namespace GemTD.UI
                 UiSfx.Click();
                 _root?.SetPlaceTower(idx);
             });
-        }
-
-        void EnsureButtonCount(int needed)
-        {
-            if (needed <= 0)
-                return;
-
-            while (buildButtons.Count < needed)
-            {
-                BuildTowerButton extra = null;
-                var parent = buildButtonsParent != null
-                    ? buildButtonsParent
-                    : (buildButtons.Count > 0 && buildButtons[0] != null
-                        ? buildButtons[0].transform.parent
-                        : transform);
-
-                if (buttonPrefab != null)
-                    extra = Instantiate(buttonPrefab, parent);
-                else if (buildButtons.Count > 0 && buildButtons[0] != null)
-                    extra = Instantiate(buildButtons[0], parent);
-
-                if (extra == null)
-                {
-                    Debug.LogError("BuildBarController: assign buttonPrefab (or seed BuildTowerButton refs) on the prefab.", this);
-                    return;
-                }
-
-                extra.name = "BuildTowerButton_" + buildButtons.Count;
-                var idx = buildButtons.Count;
-                WireClick(extra, idx);
-                buildButtons.Add(extra);
-            }
         }
 
         void OnGoldChanged(int _) => Refresh();
@@ -134,30 +96,105 @@ namespace GemTD.UI
                     if (buildButtons[i] != null)
                         buildButtons[i].gameObject.SetActive(false);
                 }
+
                 return;
             }
 
-            EnsureButtonCount(maxSlots);
+            ApplyCategoryLabels();
+
+            var roster = _root.Draft.Roster;
+            var damageCap = roster.CountIn(TowerRosterCategory.Damaging) + roster.Remaining(TowerRosterCategory.Damaging);
+            var curseCap = roster.CountIn(TowerRosterCategory.Curse) + roster.Remaining(TowerRosterCategory.Curse);
+            var auraCap = roster.CountIn(TowerRosterCategory.Aura) + roster.Remaining(TowerRosterCategory.Aura);
+            if (buildButtons.Count < damageCap + curseCap + auraCap)
+                Debug.LogError("BuildBarController: pre-place one empty slot per roster cap, in Damage, Curse, Aura order.", this);
 
             for (var i = 0; i < buildButtons.Count; i++)
             {
-                if (buildButtons[i] == null) continue;
+                if (buildButtons[i] == null)
+                    continue;
                 var show = i < maxSlots;
                 buildButtons[i].gameObject.SetActive(show);
-                if (!show) continue;
+                if (!show)
+                    continue;
+                buildButtons[i].BindEmpty();
+                var emptyButton = buildButtons[i].GetButton();
+                if (emptyButton != null)
+                    emptyButton.onClick.RemoveAllListeners();
+            }
 
-                if (i < filledCount)
-                {
-                    buildButtons[i].UpdateTowerButton(
-                        _root.GetPlaceTowerName(i),
-                        _root.GetPlaceTowerCost(i),
-                        _root.GetPlaceTowerLevel(i));
-                    var btn = buildButtons[i].GetButton();
-                    if (btn != null)
-                        btn.interactable = gold >= _root.GetPlaceTowerCost(i);
-                }
-                else
-                    buildButtons[i].BindEmpty();
+            var towers = _root.GetBuildBarTowers();
+            var filledInCategory = new int[CategoryOrder.Length];
+            for (var i = 0; i < filledCount && i < towers.Length; i++)
+            {
+                var category = TowerRosterCategoryRules.Of(towers[i]);
+                var categoryIndex = CategoryIndex(category);
+                var slot = SlotIndex(category, filledInCategory[categoryIndex], damageCap, curseCap);
+                filledInCategory[categoryIndex]++;
+                if (slot < 0 || slot >= buildButtons.Count || buildButtons[slot] == null)
+                    continue;
+
+                var button = buildButtons[slot];
+                button.gameObject.SetActive(true);
+                button.UpdateTowerButton(
+                    _root.GetPlaceTowerName(i),
+                    _root.GetPlaceTowerCost(i),
+                    _root.GetPlaceTowerLevel(i));
+                WireClick(button, i);
+                var click = button.GetButton();
+                if (click != null)
+                    click.interactable = gold >= _root.GetPlaceTowerCost(i);
+            }
+        }
+
+        void ApplyCategoryLabels()
+        {
+            if (categoryLabels == null)
+                return;
+
+            for (var i = 0; i < categoryLabels.Length && i < CategoryOrder.Length; i++)
+            {
+                if (categoryLabels[i] == null)
+                    continue;
+                categoryLabels[i].text = CategoryLabel(CategoryOrder[i]);
+                categoryLabels[i].gameObject.SetActive(true);
+            }
+        }
+
+        static int CategoryIndex(TowerRosterCategory category)
+        {
+            for (var i = 0; i < CategoryOrder.Length; i++)
+            {
+                if (CategoryOrder[i] == category)
+                    return i;
+            }
+
+            return 0;
+        }
+
+        static int SlotIndex(TowerRosterCategory category, int indexInCategory, int damageCap, int curseCap)
+        {
+            switch (category)
+            {
+                case TowerRosterCategory.Curse:
+                    return damageCap + indexInCategory;
+                case TowerRosterCategory.Aura:
+                    return damageCap + curseCap + indexInCategory;
+                default:
+                    return indexInCategory;
+            }
+        }
+
+        static string CategoryLabel(TowerRosterCategory category)
+        {
+            switch (category)
+            {
+                case TowerRosterCategory.Curse:
+                    return "Curse";
+                case TowerRosterCategory.Aura:
+                    return "Aura";
+                default:
+                    return "Damage";
             }
         }
     }

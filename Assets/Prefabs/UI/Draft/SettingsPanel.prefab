@@ -726,7 +726,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
-  m_MinHeight: 44
+  m_MinHeight: 74
   m_PreferredWidth: 340
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
@@ -1058,6 +1058,7 @@ GameObject:
   m_Component:
   - component: {fileID: 963202160675545198}
   - component: {fileID: 2829823525175765024}
+  - component: {fileID: 8123456789012345001}
   m_Layer: 0
   m_Name: SettingsPanel
   m_TagString: Untagged
@@ -1106,6 +1107,32 @@ MonoBehaviour:
   quitToMenuButton: {fileID: 9112202569581111610}
   showQuitToMenu: 1
   popup: {fileID: 0}
+--- !u!114 &8123456789012345001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4450237733187028325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4e8b2d6f49a0b3c5e7d91f04a862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeApplicator
+  theme: {fileID: 11400000, guid: e00fd4150ec14ce478bed41d5065a8cb, type: 2}
+  targets:
+  - texts:
+    - {fileID: 8401192756307265968}
+    styleId: header
+  - texts:
+    - {fileID: 791837830279351257}
+    styleId: primary-26
+  - texts:
+    - {fileID: 236626317283841907}
+    styleId: secondary-26
+  - texts:
+    - {fileID: 7471641861093696324}
+    styleId: gold-26
 --- !u!1 &4571075865464970331
 GameObject:
   m_ObjectHideFlags: 0
@@ -1482,7 +1509,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
-  m_MinHeight: 44
+  m_MinHeight: 74
   m_PreferredWidth: 340
   m_PreferredHeight: -1
   m_FlexibleWidth: -1

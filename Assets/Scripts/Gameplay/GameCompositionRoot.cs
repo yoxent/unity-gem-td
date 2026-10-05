@@ -161,59 +161,15 @@ namespace GemTD.Gameplay
             return true;
         }
 
-        public string BuildSelectedTowerDetailsText()
+        /// <summary>Socket gems and nearby auras included. Same spec combat uses.</summary>
+        public SkillSpec ResolveLiveSpec(TowerInstance tower)
         {
-            var tower = Placement?.Selected;
-            if (tower == null || tower.Def == null)
-                return "No tower selected";
+            return ResolveTowerSpec(tower, includeAuras: true);
+        }
 
-            var def = tower.Def;
-            var sb = new System.Text.StringBuilder(128);
-            sb.Append(def.DisplayName);
-            sb.Append("\nLevel ");
-            sb.Append(tower.LevelIndex + 1);
-            sb.Append('\n');
-
-            SkillSpec spec;
-            if (_pipeline != null)
-            {
-                spec = _pipeline.Resolve(tower, _socketModScratch);
-                AuraInfluenceRuntime.Apply(
-                    tower,
-                    _towers,
-                    ref spec,
-                    chunkBoardView != null ? chunkBoardView.CellSize : 1f);
-            }
-            else
-            {
-                var damage = def.GetDamageRange(tower.Level);
-                spec = SkillSpec.FromBase(
-                    damage.Min,
-                    damage.Max,
-                    def.GetProjectileCount(tower.Level),
-                    def.GetSplashRadius(tower.Level),
-                    def.GetChainCount(tower.Level),
-                    def.GetForkCount(tower.Level));
-            }
-            var interval = def.FireInterval(spec, tower.Level);
-            var attackRate = interval > 0.01f ? 1f / interval : 0f;
-            var tags = GemTags.EffectiveTowerTags(def);
-            if (spec.DamageMax > spec.DamageMin + 0.01f)
-                sb.Append($"Damage {spec.DamageMin:0.#}–{spec.DamageMax:0.#}");
-            else
-                sb.Append($"Damage {spec.Damage:0.#}");
-            if (spec.ProjectileCount > 1)
-                sb.Append($" ×{spec.ProjectileCount}");
-            sb.Append('\n');
-            sb.Append(def.UsesAttackSpeed ? $"Attack rate {attackRate:0.##}/s\n" : $"Cast rate {attackRate:0.##}/s\n");
-            sb.Append($"Attack range {EffectiveAttackRange(tower):0.#}\n");
-            sb.Append($"Tags {GemTags.Format(tags)}");
-
-            var lockLeft = SelectedSocketLockRemaining;
-            if (lockLeft > 0f)
-                sb.Append($"\nLOCK {lockLeft:0.0}s");
-
-            return sb.ToString();
+        public float GetEffectiveAttackRange(TowerInstance tower)
+        {
+            return EffectiveAttackRange(tower);
         }
 
         public void ToggleCodexPanel()
@@ -445,27 +401,46 @@ namespace GemTD.Gameplay
                 spellTowerPrefab);
         }
 
-        float EffectiveAttackRange(TowerInstance tower)
+        SkillSpec ResolveTowerSpec(TowerInstance tower, bool includeAuras)
         {
-            if (tower == null || tower.Def == null)
-                return 0f;
+            if (tower?.Def == null)
+                return SkillSpec.FromBase(0f);
 
             SkillSpec spec;
             if (_pipeline != null)
             {
                 spec = _pipeline.Resolve(tower, _socketModScratch);
+                if (includeAuras)
+                {
+                    AuraInfluenceRuntime.Apply(
+                        tower,
+                        _towers,
+                        ref spec,
+                        chunkBoardView != null ? chunkBoardView.CellSize : 1f);
+                }
             }
             else
             {
-                var damage = tower.Def.GetDamageRange(tower.Level);
+                var def = tower.Def;
+                var damage = def.GetDamageRange(tower.Level);
                 spec = SkillSpec.FromBase(
                     damage.Min,
                     damage.Max,
-                    tower.Def.GetProjectileCount(tower.Level),
-                    tower.Def.GetSplashRadius(tower.Level),
-                    tower.Def.GetChainCount(tower.Level),
-                    tower.Def.GetForkCount(tower.Level));
+                    def.GetProjectileCount(tower.Level),
+                    def.GetSplashRadius(tower.Level),
+                    def.GetChainCount(tower.Level),
+                    def.GetForkCount(tower.Level));
             }
+
+            return spec;
+        }
+
+        float EffectiveAttackRange(TowerInstance tower)
+        {
+            if (tower == null || tower.Def == null)
+                return 0f;
+
+            var spec = ResolveTowerSpec(tower, includeAuras: false);
             var rangeMul = spec.RangeMultiplier > 0.01f ? spec.RangeMultiplier : 1f;
             var range = tower.Def.IsFireable
                 ? tower.Def.GetFireTowerRadius(tower.Level)
