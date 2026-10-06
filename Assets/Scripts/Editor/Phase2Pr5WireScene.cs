@@ -125,14 +125,6 @@ namespace GemTD.Editor
             EditorUtility.SetDirty(draftCatalog);
 
             var so = new SerializedObject(root);
-            var draftProp = so.FindProperty("draftPoolCatalog");
-            if (draftProp == null)
-            {
-                Debug.LogError("[PR5 Wire] draftPoolCatalog property missing.");
-                return;
-            }
-
-            draftProp.objectReferenceValue = draftCatalog;
             so.FindProperty("runConfig").objectReferenceValue = cfg;
             so.FindProperty("codexCatalog").objectReferenceValue = catalog;
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -145,7 +137,7 @@ namespace GemTD.Editor
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[PR5 Wire] draftPoolCatalog={pool.Length}, Hydra off.");
+            Debug.Log($"[PR5 Wire] gem pool={pool.Length}, Hydra off.");
         }
 
         static GemDefinition EnsureGem(string fileName, GemId id, string displayName, string description, float weight)

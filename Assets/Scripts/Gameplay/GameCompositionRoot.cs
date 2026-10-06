@@ -25,7 +25,6 @@ namespace GemTD.Gameplay
         [SerializeField] RunConfig runConfig;
         [SerializeField] WaveCatalog waveCatalog;
         [SerializeField] EnemyDefinition bossEnemy;
-        [SerializeField] DraftPoolCatalog draftPoolCatalog;
         [SerializeField] DraftCatalog initialDraftCatalog;
         [SerializeField] DraftCatalog campaignDraftCatalog;
         [SerializeField] CodexCatalog codexCatalog;
@@ -1792,7 +1791,7 @@ namespace GemTD.Gameplay
             var filler = ResolveDebugFillGem();
             if (filler.IsEmpty)
             {
-                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or DraftPoolCatalog.");
+                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or the campaign draft gem pool.");
                 return;
             }
 
@@ -1820,12 +1819,15 @@ namespace GemTD.Gameplay
                 }
             }
 
-            if (draftPoolCatalog != null && draftPoolCatalog.Gems != null)
+            var gems = campaignDraftCatalog != null && campaignDraftCatalog.GemPool != null
+                ? campaignDraftCatalog.GemPool.Gems
+                : null;
+            if (gems != null)
             {
-                for (var i = 0; i < draftPoolCatalog.Gems.Length; i++)
+                for (var i = 0; i < gems.Length; i++)
                 {
-                    if (draftPoolCatalog.Gems[i] != null)
-                        return GemInstance.FromDefinition(draftPoolCatalog.Gems[i]);
+                    if (gems[i] != null)
+                        return GemInstance.FromDefinition(gems[i]);
                 }
             }
 

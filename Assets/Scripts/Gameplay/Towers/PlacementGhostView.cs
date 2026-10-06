@@ -62,10 +62,7 @@ namespace GemTD.Gameplay.Towers
                 StripColliders(visual);
                 TowerPadSnap.ApplyFootOnParentOrigin(_towerVisual);
                 if (towerView != null)
-                {
-                    towerView.AlignGrassDisplacer();
                     DestroySafe(towerView);
-                }
                 _towerRenderers = visual.GetComponentsInChildren<MeshRenderer>(false);
             }
             else
