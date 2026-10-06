@@ -17,11 +17,15 @@ namespace GemTD.Gameplay.Run
         readonly Action _beforeCampaignVictory;
         readonly List<EnemyDefinition> _spawnQueue = new List<EnemyDefinition>();
 
+        public const float ClearHoldSeconds = 2f;
+
         int _nextWaveIndex;
         int _spawnIndex;
         float _spawnTimer;
         WaveDefinition _activeWave;
         bool _waveCleared;
+        bool _clearHoldActive;
+        float _clearHoldRemaining;
 
         public int CurrentWaveNumber { get; private set; }
 
@@ -80,6 +84,8 @@ namespace GemTD.Gameplay.Run
             _spawnIndex = 0;
             _spawnTimer = 0f;
             _waveCleared = false;
+            _clearHoldActive = false;
+            _clearHoldRemaining = 0f;
         }
 
         public void Tick(float dt, EnemySpawnerGate spawner)
@@ -102,6 +108,19 @@ namespace GemTD.Gameplay.Run
 
             if (_spawnIndex >= _spawnQueue.Count && spawner.LiveEnemyCount == 0)
             {
+                if (!_clearHoldActive)
+                {
+                    _clearHoldActive = true;
+                    _clearHoldRemaining = ClearHoldSeconds;
+                    GameEvents.RaiseWaveClearHoldChanged(true);
+                }
+
+                _clearHoldRemaining -= dt;
+                if (_clearHoldRemaining > 0f)
+                    return;
+
+                _clearHoldActive = false;
+                GameEvents.RaiseWaveClearHoldChanged(false);
                 _waveCleared = true;
                 _nextWaveIndex++;
                 _economy.GrantEndWaveGold(
@@ -118,6 +137,11 @@ namespace GemTD.Gameplay.Run
                     PlayerProfile.TryUpdateHighestWave(CurrentWaveNumber);
 
                 _states.WaveCleared(offerDraft, endsCampaign);
+            }
+            else if (_clearHoldActive)
+            {
+                _clearHoldActive = false;
+                GameEvents.RaiseWaveClearHoldChanged(false);
             }
         }
 

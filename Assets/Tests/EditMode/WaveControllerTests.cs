@@ -71,7 +71,7 @@ namespace GemTD.Tests.EditMode
             controller.Tick(0f, gate.Gate);
             controller.Tick(1f, gate.Gate);
             gate.ClearLive();
-            controller.Tick(0f, gate.Gate);
+            controller.Tick(WaveController.ClearHoldSeconds, gate.Gate);
 
             Assert.AreEqual(2, controller.NextWaveNumber);
         }
@@ -107,7 +107,11 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(RunStateId.Combat, _states.Current);
 
             gate.ClearLive();
-            controller.Tick(0f, gate.Gate);
+            controller.Tick(WaveController.ClearHoldSeconds - 0.01f, gate.Gate);
+            Assert.AreEqual(RunStateId.Combat, _states.Current);
+            Assert.AreEqual(0, _economy.Gold);
+
+            controller.Tick(0.01f, gate.Gate);
 
             Assert.AreEqual(25, _economy.Gold);
             Assert.AreEqual(RunStateId.Draft, _states.Current);
@@ -549,7 +553,7 @@ namespace GemTD.Tests.EditMode
             }
 
             gate.ClearLive();
-            controller.Tick(0f, gate.Gate);
+            controller.Tick(WaveController.ClearHoldSeconds, gate.Gate);
         }
 
         /// <summary>

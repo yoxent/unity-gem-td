@@ -259,7 +259,7 @@ namespace GemTD.Tests.EditMode
             var card = DraftOfferCard.FromTower(_a);
 
             Assert.AreEqual("Alpha", TowerRoster.FormatOfferLabel(card, roster));
-            Assert.AreEqual("New", TowerRoster.FormatOfferStatus(card, roster));
+            Assert.AreEqual("NEW!", TowerRoster.FormatOfferStatus(card, roster));
 
             roster.ApplyPick(_a);
             Assert.AreEqual("Alpha", TowerRoster.FormatOfferLabel(card, roster));

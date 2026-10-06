@@ -20,6 +20,7 @@ namespace GemTD.Core
         public static event Action<Vector2Int> ChunkPlaced;
 
         public static event Action RunStateChanged;
+        public static event Action<bool> WaveClearHoldChanged;
         public static event Action TowerSelectionChanged;
         public static event Action InventoryChanged;
         public static event Action TargetingChanged;
@@ -44,6 +45,7 @@ namespace GemTD.Core
         public static void RaiseChunkPlaced(Vector2Int coord) => ChunkPlaced?.Invoke(coord);
 
         public static void RaiseRunStateChanged() => RunStateChanged?.Invoke();
+        public static void RaiseWaveClearHoldChanged(bool showing) => WaveClearHoldChanged?.Invoke(showing);
         public static void RaiseTowerSelectionChanged() => TowerSelectionChanged?.Invoke();
         public static void RaiseInventoryChanged() => InventoryChanged?.Invoke();
         public static void RaiseTargetingChanged() => TargetingChanged?.Invoke();
@@ -82,6 +84,7 @@ namespace GemTD.Core
             RequestTargetingAllConfirm = null;
             ChunkPlaced = null;
             RunStateChanged = null;
+            WaveClearHoldChanged = null;
             TowerSelectionChanged = null;
             InventoryChanged = null;
             TargetingChanged = null;

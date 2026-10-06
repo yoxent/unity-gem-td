@@ -58,7 +58,16 @@ namespace GemTD.UI
             _root = root;
             _socketIndex = socketIndex;
             _gem = gem;
-            if (icon != null) icon.color = !gem.IsEmpty ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
+            if (icon != null)
+            {
+                var filled = !gem.IsEmpty;
+                icon.gameObject.SetActive(filled);
+                if (filled)
+                {
+                    icon.sprite = gem.Def.Icon;
+                    icon.preserveAspect = true;
+                }
+            }
             if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : "—";
             if (xButton != null && (_root == null || !_root.CanUnsocketSelected(_socketIndex)))
                 xButton.gameObject.SetActive(false);

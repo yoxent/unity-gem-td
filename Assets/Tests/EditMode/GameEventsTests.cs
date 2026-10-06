@@ -133,6 +133,25 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void WaveClearHoldChanged_RaisesAndClears()
+        {
+            var showing = false;
+            var count = 0;
+            GameEvents.WaveClearHoldChanged += value =>
+            {
+                showing = value;
+                count++;
+            };
+            GameEvents.RaiseWaveClearHoldChanged(true);
+            Assert.IsTrue(showing);
+            Assert.AreEqual(1, count);
+            GameEvents.ClearAll();
+            GameEvents.RaiseWaveClearHoldChanged(false);
+            Assert.IsTrue(showing);
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
         public void CameraShakeContinuous_RaisesContinuousKind()
         {
             CameraShakeRequest received = default;

@@ -9,6 +9,8 @@ namespace GemTD.Gameplay.Gems
     {
         public GemId Id = GemId.None;
         public string DisplayName = "Gem";
+        [Tooltip("Family icon. Lesser / Normal / Greater share this sprite.")]
+        public Sprite Icon;
         [TextArea] public string Description;
 
         [Header("Draft")]
