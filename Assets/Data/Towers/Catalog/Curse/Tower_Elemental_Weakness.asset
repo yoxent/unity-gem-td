@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Elemental_Weakness
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Elemental Weakness
+  Description: 
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
   - {fileID: 11400000, guid: 2080b3ac0c41a69d29fb79e8666f2672, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 18
+  viewPrefab: {fileID: 0}
+  tags: 18

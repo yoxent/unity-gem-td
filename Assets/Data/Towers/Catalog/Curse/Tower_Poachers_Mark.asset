@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Poachers_Mark
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Poacher's Mark
+  Description: 
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
   - {fileID: 11400000, guid: c0eb5c43edc3c9be2b7cd28315168fba, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 16
+  viewPrefab: {fileID: 0}
+  tags: 16

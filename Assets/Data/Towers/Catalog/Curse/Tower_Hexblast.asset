@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Hexblast
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Hexblast
+  Description: 
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
   - {fileID: 11400000, guid: 82bca5e1c481f7492c9866983639bd67, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 18
+  viewPrefab: {fileID: 0}
+  tags: 18

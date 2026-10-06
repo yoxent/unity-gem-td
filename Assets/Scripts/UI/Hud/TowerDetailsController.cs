@@ -143,9 +143,14 @@ namespace GemTD.UI
             for (var i = 0; i < socketSlots.Length; i++)
             {
                 if (socketSlots[i] == null) continue;
-                var showSlot = tower != null && i < socketCount;
-                socketSlots[i].gameObject.SetActive(showSlot);
-                if (!showSlot) continue;
+                socketSlots[i].gameObject.SetActive(true);
+                var hasSocket = tower != null && i < socketCount;
+                if (!hasSocket)
+                {
+                    socketSlots[i].SetDisabled();
+                    continue;
+                }
+
                 var gem = tower.Sockets != null && i < tower.Sockets.Length ? tower.Sockets[i] : default;
                 socketSlots[i].Configure(_root, i, gem);
             }

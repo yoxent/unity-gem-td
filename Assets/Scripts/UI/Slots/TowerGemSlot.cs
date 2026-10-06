@@ -25,6 +25,7 @@ namespace GemTD.UI
         GameCompositionRoot _root;
         int _socketIndex = -1;
         GemInstance _gem;
+        bool _available;
 
         static TowerGemSlot s_dragSource;
         static RectTransform s_ghost;
@@ -50,11 +51,12 @@ namespace GemTD.UI
                 slotHover,
                 xHover,
                 xButton != null ? xButton.gameObject : null,
-                () => _root != null && _root.CanUnsocketSelected(_socketIndex));
+                () => _available && _root != null && _root.CanUnsocketSelected(_socketIndex));
         }
 
         public void Configure(GameCompositionRoot root, int socketIndex, GemInstance gem)
         {
+            _available = true;
             _root = root;
             _socketIndex = socketIndex;
             _gem = gem;
@@ -74,9 +76,24 @@ namespace GemTD.UI
             RefreshLockOverlay();
         }
 
+        /// <summary>Socket this tower does not have. Stay visible, show the lock icon, and block input.</summary>
+        public void SetDisabled()
+        {
+            _available = false;
+            _socketIndex = -1;
+            _gem = default;
+            if (icon != null)
+                icon.gameObject.SetActive(false);
+            if (nameLabel != null)
+                nameLabel.text = "—";
+            if (xButton != null)
+                xButton.gameObject.SetActive(false);
+            RefreshLockOverlay();
+        }
+
         public void RefreshLockOverlay()
         {
-            var locked = _root != null && _root.SelectedSocketsLocked;
+            var locked = !_available || (_root != null && _root.SelectedSocketsLocked);
             if (lockedIcon != null && lockedIcon.activeSelf != locked)
                 lockedIcon.SetActive(locked);
             if (slotButton != null)
@@ -115,7 +132,7 @@ namespace GemTD.UI
 
         public void OnDrop(PointerEventData eventData)
         {
-            if (_root == null || _root.States == null)
+            if (!_available || _root == null || _root.States == null)
                 return;
 
             if (!(_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat))
@@ -162,7 +179,7 @@ namespace GemTD.UI
 
         bool CanBeginDrag()
         {
-            if (_root == null || _gem.IsEmpty)
+            if (!_available || _root == null || _gem.IsEmpty)
                 return false;
             if (_socketIndex < 0)
                 return false;

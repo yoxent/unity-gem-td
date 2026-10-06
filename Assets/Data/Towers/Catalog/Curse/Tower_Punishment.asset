@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Punishment
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Punishment
+  Description: 
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
   - {fileID: 11400000, guid: ef0170bfbb82d17d8dd3d60102257c95, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 18
+  viewPrefab: {fileID: 0}
+  tags: 18

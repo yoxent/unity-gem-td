@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Herald_of_Ash
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Herald of Ash
+  Description: 
   Cost: 25
   BuildIncrement: 15
   Damage: 8
   Roles:
   - {fileID: 11400000, guid: 189840b73f1d2ef17f7964e4ded33d81, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 18
+  viewPrefab: {fileID: 0}
+  tags: 18

@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Bane
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Bane
+  Description: 
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
   - {fileID: 11400000, guid: 0bc393a276091c3e5ae8110b9b655e23, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 18
+  viewPrefab: {fileID: 0}
+  tags: 18

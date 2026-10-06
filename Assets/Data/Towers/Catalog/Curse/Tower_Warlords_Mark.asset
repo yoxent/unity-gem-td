@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: Tower_Warlords_Mark
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
   DisplayName: Warlord's Mark
+  Description: 
   Cost: 30
   BuildIncrement: 15
   Damage: 0
   Roles:
   - {fileID: 11400000, guid: 82451c785344714b32049ebcbecaa735, type: 2}
-  SocketCount: 3
+  SocketCount: 2
   AllowsHydraEvolution: 0
-  Tags: 16
+  viewPrefab: {fileID: 0}
+  tags: 16
