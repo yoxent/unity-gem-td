@@ -134,12 +134,14 @@ namespace GemTD.Gameplay.Map
                     continue;
 
                 var worldLocal = RotateLocalCw(px, py, slot.Yaw);
-                if (slot.Mask.IsElevationLocked(worldLocal.x, worldLocal.y))
-                    continue;
-
                 var wx = coord.x * ChunkMask.Size + worldLocal.x;
                 var wy = coord.y * ChunkMask.Size + worldLocal.y;
-                var layer = _heights.Get(wx, wy);
+                var locked = slot.Mask.IsElevationLocked(worldLocal.x, worldLocal.y);
+                // Lock freezes height at layer 0. Path and home stay baked path meshes.
+                if (locked && slot.Mask.IsPath(worldLocal.x, worldLocal.y))
+                    continue;
+
+                var layer = locked ? (byte)0 : _heights.Get(wx, wy);
                 if (TileHeightVisual.TryActivatePad(child, layer))
                 {
                     ApplyRolledPadMaterials(child, layer, wx, wy);
@@ -148,6 +150,13 @@ namespace GemTD.Gameplay.Map
 
                 var renderer = child.GetComponent<MeshRenderer>();
                 var mat = ResolveHeightMaterial(layer, renderer != null ? renderer.sharedMaterial : null);
+                if (locked)
+                {
+                    if (renderer != null && mat != null)
+                        renderer.sharedMaterial = mat;
+                    continue;
+                }
+
                 TileHeightVisual.ApplyPad(child, layer, mat);
             }
         }
