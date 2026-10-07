@@ -15,6 +15,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text inventoryHintText;
         [SerializeField] GameObject panel;
         [SerializeField] List<InventoryGemSlot> slots = new List<InventoryGemSlot>();
+        [SerializeField] InventoryGemTooltip inventoryGemTooltip;
 
         GameCompositionRoot _root;
         PopupManager _popup;
@@ -43,6 +44,11 @@ namespace GemTD.UI
             if (slots == null || slots.Count == 0)
                 Debug.LogError("InventoryController: assign InventoryGemSlot refs on the prefab.", this);
             _buttonsBound = slots != null && slots.Count > 0;
+            for (var i = 0; slots != null && i < slots.Count; i++)
+            {
+                if (slots[i] != null)
+                    slots[i].SetTooltip(inventoryGemTooltip);
+            }
             Refresh();
         }
 

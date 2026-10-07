@@ -11,23 +11,21 @@ using GemTD.Core;
 
 namespace GemTD.UI
 {
-    /// <summary>Inventory bar slot. Pointer/drag lives on child Slot via <see cref="SlotEventHandler"/>.</summary>
-    public sealed class InventoryGemSlot : MonoBehaviour
+    /// <summary>Inventory bar slot. Pointer/drag is handled on this composite root via
+    /// <see cref="SlotEventHandler"/> so its child controls share one hover boundary.</summary>
+    public sealed class InventoryGemSlot : MonoBehaviour,
+        IPointerEnterHandler, IPointerExitHandler
     {
-        static readonly Color FilledColor = new Color(0.28f, 0.42f, 0.32f, 1f);
-
         [SerializeField] Image icon;
         [SerializeField] TMP_Text nameLabel;
-        [SerializeField] Button xButton;
+        [SerializeField] Button discardButton;
         [SerializeField] SlotEventHandler slotEvents;
         [SerializeField] CanvasGroup canvasGroup;
-        [SerializeField] HoverPointerRelay xHover;
+        [SerializeField] InventoryDragGhost dragGhostPrefab;
         [SerializeField] GameObject disabledOverlay;
         [SerializeField] string dropSfxKey = SfxKeys.Drop;
 
         static InventoryGemSlot s_dragSource;
-        static RectTransform s_ghost;
-        static Canvas s_ghostCanvas;
 
         public int SlotIndex => _slotIndex;
 
@@ -36,7 +34,8 @@ namespace GemTD.UI
         int _slotIndex = -1;
         GemInstance _gem;
         bool _pointerOverSlot;
-        bool _pointerOverX;
+        bool _pointerInteractable;
+        InventoryGemTooltip _tooltip;
 
         public void Configure(GameCompositionRoot root, PopupManager popup, int slotIndex, GemInstance gem)
         {
@@ -56,7 +55,8 @@ namespace GemTD.UI
             }
             if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : "—";
             RefreshDisabledOverlay();
-            RefreshXVisible();
+            RefreshDiscardButtonVisible();
+            RefreshGemTooltip();
         }
 
         public static bool ShouldShowDisabledOverlay(
@@ -81,8 +81,20 @@ namespace GemTD.UI
 
         public void SetPointerInteractable(bool interactable)
         {
+            _pointerInteractable = interactable;
             if (slotEvents != null)
                 slotEvents.SetInteractable(interactable);
+        }
+
+        public void SetTooltip(InventoryGemTooltip tooltip)
+        {
+            if (_tooltip == tooltip)
+                return;
+
+            if (_pointerOverSlot)
+                _tooltip?.Hide();
+            _tooltip = tooltip;
+            RefreshGemTooltip();
         }
 
         void Awake()
@@ -95,8 +107,8 @@ namespace GemTD.UI
                 return;
             }
 
-            if (xButton != null)
-                xButton.onClick.AddListener(OnXClicked);
+            if (discardButton != null)
+                discardButton.onClick.AddListener(OnDiscardClicked);
 
             slotEvents.CanBeginDrag = CanStartDrag;
             slotEvents.Clicked = OnSlotClicked;
@@ -105,44 +117,51 @@ namespace GemTD.UI
             slotEvents.Drag = OnDrag;
             slotEvents.EndDrag = OnEndDrag;
             slotEvents.Drop = OnDrop;
-            slotEvents.HoverChanged = OnHoverChanged;
 
-            if (xHover != null)
-            {
-                xHover.OnEnter = () => { _pointerOverX = true; RefreshXVisible(); };
-                xHover.OnExit = () => { _pointerOverX = false; RefreshXVisible(); };
-            }
-            else if (xButton != null)
-            {
-                Debug.LogError(
-                    "InventoryGemSlot: assign X Hover (HoverPointerRelay on XButton) on the prefab.",
-                    this);
-            }
-
-            if (xButton != null)
-                xButton.gameObject.SetActive(false);
+            if (discardButton != null)
+                discardButton.gameObject.SetActive(false);
         }
 
-        void OnHoverChanged(bool over)
+        public void OnPointerEnter(PointerEventData eventData)
         {
-            _pointerOverSlot = over;
-            RefreshXVisible();
+            _pointerOverSlot = true;
+            RefreshDiscardButtonVisible();
+            RefreshGemTooltip();
         }
 
-        void RefreshXVisible()
+        public void OnPointerExit(PointerEventData eventData)
         {
-            if (xButton == null)
+            _pointerOverSlot = false;
+            RefreshDiscardButtonVisible();
+            _tooltip?.Hide();
+        }
+
+        void RefreshGemTooltip()
+        {
+            if (!_pointerOverSlot)
+                return;
+
+            if (!_gem.IsEmpty)
+                _tooltip?.Show(_gem);
+            else
+                _tooltip?.Hide();
+        }
+
+        void RefreshDiscardButtonVisible()
+        {
+            if (discardButton == null)
                 return;
             var dragging = slotEvents != null && slotEvents.DragStarted;
-            var show = (_pointerOverSlot || _pointerOverX)
+            var show = _pointerOverSlot
                        && _root != null && _root.States != null
                        && _root.States.Current == RunStateId.Plan
                        && !_gem.IsEmpty
                        && !dragging;
-            xButton.gameObject.SetActive(show);
+            if (discardButton.gameObject.activeSelf != show)
+                discardButton.gameObject.SetActive(show);
         }
 
-        void OnXClicked()
+        void OnDiscardClicked()
         {
             UiSfx.Click();
             if (_root == null || _popup == null || _gem.IsEmpty)
@@ -189,10 +208,10 @@ namespace GemTD.UI
         void OnBeginDrag(PointerEventData eventData)
         {
             s_dragSource = this;
-            GemDragState.SetInventory(_slotIndex, _gem);
+            GemDragState.SetInventory(_slotIndex);
             canvasGroup.alpha = 0.35f;
             canvasGroup.blocksRaycasts = false;
-            RefreshXVisible();
+            RefreshDiscardButtonVisible();
             ShowGhost(eventData);
         }
 
@@ -200,17 +219,31 @@ namespace GemTD.UI
         {
             if (s_dragSource != this)
                 return;
-            MoveGhost(eventData);
+            GemDragGhostPool.Move(eventData);
         }
 
         void OnEndDrag(PointerEventData eventData)
         {
             canvasGroup.alpha = 1f;
             canvasGroup.blocksRaycasts = true;
-            DestroyGhost();
+            GemDragGhostPool.Release();
             s_dragSource = null;
             GemDragState.Clear();
-            RefreshXVisible();
+            RefreshDiscardButtonVisible();
+        }
+
+        void OnDisable()
+        {
+            if (_pointerOverSlot)
+                _tooltip?.Hide();
+            _pointerOverSlot = false;
+
+            if (s_dragSource != this)
+                return;
+
+            GemDragGhostPool.Release();
+            s_dragSource = null;
+            GemDragState.Clear();
         }
 
         void OnDrop(PointerEventData eventData)
@@ -252,80 +285,29 @@ namespace GemTD.UI
 
         bool CanStartDrag(PointerEventData eventData)
         {
-            if (_root == null || _root.States == null)
+            if (!_pointerInteractable || _root == null || _root.States == null)
                 return false;
             if (!IsReorderState(_root.States.Current) || _gem.IsEmpty)
                 return false;
-            if (xButton != null && eventData.pointerEnter == xButton.gameObject)
+            var pointerEnter = eventData != null ? eventData.pointerEnter : null;
+            if (discardButton != null && pointerEnter != null
+                && (pointerEnter == discardButton.gameObject
+                    || pointerEnter.transform.IsChildOf(discardButton.transform)))
                 return false;
             return true;
         }
 
         void ShowGhost(PointerEventData eventData)
         {
-            DestroyGhost();
-            var canvas = GetComponentInParent<Canvas>();
-            if (canvas == null)
-                return;
-
-            s_ghostCanvas = canvas.rootCanvas != null ? canvas.rootCanvas : canvas;
-            var go = new GameObject("InventoryDragGhost", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
-            s_ghost = go.GetComponent<RectTransform>();
-            s_ghost.SetParent(s_ghostCanvas.transform, false);
-            s_ghost.SetAsLastSibling();
-            s_ghost.sizeDelta = ((RectTransform)transform).rect.size;
-
-            var group = go.GetComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-            group.interactable = false;
-            group.alpha = 0.9f;
-
-            var bg = go.GetComponent<Image>();
-            bg.raycastTarget = false;
-            bg.color = FilledColor;
-
-            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-            var labelRt = labelGo.GetComponent<RectTransform>();
-            labelRt.SetParent(s_ghost, false);
-            labelRt.anchorMin = Vector2.zero;
-            labelRt.anchorMax = Vector2.one;
-            labelRt.offsetMin = Vector2.zero;
-            labelRt.offsetMax = Vector2.zero;
-            var tmp = labelGo.GetComponent<TextMeshProUGUI>();
-            tmp.raycastTarget = false;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = nameLabel != null ? nameLabel.fontSize : 16f;
-            tmp.text = nameLabel != null ? nameLabel.text : (!_gem.IsEmpty ? _gem.DisplayName : "—");
-            if (nameLabel != null)
-                tmp.font = nameLabel.font;
-
-            MoveGhost(eventData);
-        }
-
-        static void MoveGhost(PointerEventData eventData)
-        {
-            if (s_ghost == null || s_ghostCanvas == null)
-                return;
-
-            var canvasRt = (RectTransform)s_ghostCanvas.transform;
-            Camera cam = null;
-            if (s_ghostCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-                cam = eventData.pressEventCamera != null ? eventData.pressEventCamera : s_ghostCanvas.worldCamera;
-
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvasRt, eventData.position, cam, out var local))
-                return;
-
-            s_ghost.anchoredPosition = local;
-        }
-
-        static void DestroyGhost()
-        {
-            if (s_ghost == null)
-                return;
-            Destroy(s_ghost.gameObject);
-            s_ghost = null;
-            s_ghostCanvas = null;
+            GemDragGhostPool.Show(
+                    dragGhostPrefab,
+                    this,
+                    ((RectTransform)transform).rect.size,
+                    !_gem.IsEmpty ? _gem.Def.Icon : null,
+                    nameLabel != null ? nameLabel.text : (!_gem.IsEmpty ? _gem.DisplayName : "—"),
+                    nameLabel != null ? nameLabel.font : null,
+                    nameLabel != null ? nameLabel.fontSize : 16f,
+                    eventData);
         }
     }
 }

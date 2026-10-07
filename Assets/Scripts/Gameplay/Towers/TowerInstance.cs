@@ -101,6 +101,27 @@ namespace GemTD.Gameplay.Towers
             return TrySocket(GemInstance.FromDefinition(gem), index, allowSocket);
         }
 
+        /// <summary>
+        /// Moves a socketed gem to another socket on this tower. If the destination
+        /// is occupied, the two socket contents are swapped.
+        /// </summary>
+        public bool TryMoveOrSwapSockets(int fromIndex, int toIndex)
+        {
+            if (fromIndex == toIndex
+                || fromIndex < 0 || fromIndex >= Sockets.Length
+                || toIndex < 0 || toIndex >= Sockets.Length)
+                return false;
+
+            var fromGem = Sockets[fromIndex];
+            if (fromGem.IsEmpty)
+                return false;
+
+            var toGem = Sockets[toIndex];
+            Sockets[fromIndex] = toGem;
+            Sockets[toIndex] = fromGem;
+            return true;
+        }
+
         public bool TryUnsocket(int index, out GemInstance gem, bool allowSocket, bool ignoreHydraLock = false)
         {
             if (!allowSocket || index < 0 || index >= Sockets.Length)

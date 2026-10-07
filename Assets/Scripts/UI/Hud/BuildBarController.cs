@@ -13,9 +13,9 @@ namespace GemTD.UI
     {
         [SerializeField] GameObject panel;
         [SerializeField] TMP_Text towerCountLabel;
-        [SerializeField] Transform buildButtonsParent;
         [SerializeField] TMP_Text[] categoryLabels;
         [SerializeField] List<BuildTowerButton> buildButtons = new List<BuildTowerButton>();
+        [SerializeField] BuildTowerTooltip buildTowerTooltip;
 
         static readonly TowerRosterCategory[] CategoryOrder =
         {
@@ -114,6 +114,7 @@ namespace GemTD.UI
                 if (buildButtons[i] == null)
                     continue;
                 var show = i < maxSlots;
+                buildButtons[i].SetTooltip(buildTowerTooltip);
                 buildButtons[i].gameObject.SetActive(show);
                 if (!show)
                     continue;
@@ -136,14 +137,20 @@ namespace GemTD.UI
 
                 var button = buildButtons[slot];
                 button.gameObject.SetActive(true);
+                var tower = towers[i];
+                var level = _root.GetPlaceTowerLevel(i);
+                var cost = _root.GetPlaceTowerCost(i);
                 button.UpdateTowerButton(
                     _root.GetPlaceTowerName(i),
-                    _root.GetPlaceTowerCost(i),
-                    _root.GetPlaceTowerLevel(i));
+                    cost,
+                    level);
+                if (tower != null)
+                    button.SetTooltipData(
+                        BuildTowerTooltipData.From(tower, level, button.GetTowerIconSprite()));
                 WireClick(button, i);
                 var click = button.GetButton();
                 if (click != null)
-                    click.interactable = gold >= _root.GetPlaceTowerCost(i);
+                    click.interactable = gold >= cost;
             }
         }
 

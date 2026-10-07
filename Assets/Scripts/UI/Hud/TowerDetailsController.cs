@@ -19,6 +19,7 @@ namespace GemTD.UI
         [SerializeField] TagLabel tagLabelPrefab;
         [SerializeField] List<TagLabel> tagLabels = new List<TagLabel>();
         [SerializeField] TowerGemSlot[] socketSlots = new TowerGemSlot[3];
+        [SerializeField] TowerGemTooltip towerGemTooltip;
         [SerializeField] Button sellButton;
         [SerializeField] TMP_Text sellLabel;
         [SerializeField] TowerTargetPriority[] priorityButtons = new TowerTargetPriority[3];
@@ -80,6 +81,12 @@ namespace GemTD.UI
             {
                 if (priorityButtons[i] != null)
                     priorityButtons[i].Bind(_root, i);
+            }
+
+            for (var i = 0; i < socketSlots.Length; i++)
+            {
+                if (socketSlots[i] != null)
+                    socketSlots[i].SetTooltip(towerGemTooltip);
             }
 
             if (scopeThisButton != null)

@@ -1325,6 +1325,31 @@ namespace GemTD.Gameplay
         }
 
         /// <summary>
+        /// Drag socket → socket on the selected tower. An empty destination moves
+        /// the gem; an occupied destination swaps the two socket contents.
+        /// </summary>
+        public void RequestMoveOrSwapSocketAt(int fromSocketIndex, int toSocketIndex)
+        {
+            if (States.Current != RunStateId.Plan && States.Current != RunStateId.Combat)
+                return;
+
+            var tower = Placement?.Selected;
+            if (tower == null)
+                return;
+
+            if (SelectedSocketsLocked)
+            {
+                Debug.Log("[GemTD] Tower sockets locked.");
+                return;
+            }
+
+            if (!tower.TryMoveOrSwapSockets(fromSocketIndex, toSocketIndex))
+                return;
+
+            OnSocketChanged(tower);
+        }
+
+        /// <summary>
         /// Drag socket → inventory: unsocket and place into a specific inventory slot.
         /// If the target slot is occupied, swap: the existing inventory gem sockets into
         /// the vacated socket, and the unsocketed gem lands in the target inventory slot.

@@ -1,5 +1,3 @@
-using GemTD.Gameplay.Gems;
-
 namespace GemTD.UI
 {
     /// <summary>
@@ -18,24 +16,21 @@ namespace GemTD.UI
         public static SourceKind Kind { get; private set; } = SourceKind.None;
         public static int InventoryIndex { get; private set; } = -1;
         public static int SocketIndex { get; private set; } = -1;
-        public static GemInstance Gem { get; private set; }
 
         public static bool HasDrag => Kind != SourceKind.None;
 
-        public static void SetInventory(int inventoryIndex, GemInstance gem)
+        public static void SetInventory(int inventoryIndex)
         {
             Kind = SourceKind.Inventory;
             InventoryIndex = inventoryIndex;
             SocketIndex = -1;
-            Gem = gem;
         }
 
-        public static void SetSocket(int socketIndex, GemInstance gem)
+        public static void SetSocket(int socketIndex)
         {
             Kind = SourceKind.Socket;
             SocketIndex = socketIndex;
             InventoryIndex = -1;
-            Gem = gem;
         }
 
         public static void Clear()
@@ -43,7 +38,6 @@ namespace GemTD.UI
             Kind = SourceKind.None;
             InventoryIndex = -1;
             SocketIndex = -1;
-            Gem = default;
         }
     }
 }
