@@ -41,6 +41,8 @@ namespace GemTD.Gameplay.SkillLab
 
         readonly SkillLabSession _session = new SkillLabSession();
         readonly List<EffectView> _effectViews = new List<EffectView>(32);
+        readonly Dictionary<TowerView, ViewObjectPool<TowerView>> _towerViewPools =
+            new Dictionary<TowerView, ViewObjectPool<TowerView>>(8);
         ViewObjectPool<EffectView> _projectilePool;
         ViewObjectPool<EffectView> _slamEffectPool;
         ViewObjectPool<EffectView> _aftershockEffectPool;
@@ -54,6 +56,7 @@ namespace GemTD.Gameplay.SkillLab
         int _draggingDummy = -1;
         TowerView _liveView;
         TowerView _boundPrefab;
+        ViewObjectPool<TowerView> _liveViewPool;
 
         public SkillLabSession Session => _session;
 
@@ -276,9 +279,11 @@ namespace GemTD.Gameplay.SkillLab
 
             if (_liveView == null || _boundPrefab != prefab)
             {
-                if (_liveView != null)
-                    Destroy(_liveView.gameObject);
-                _liveView = Instantiate(prefab, transform);
+                if (_liveView != null && _liveViewPool != null)
+                    _liveViewPool.Release(_liveView);
+
+                _liveViewPool = GetOrCreateTowerViewPool(prefab);
+                _liveView = _liveViewPool.Get();
                 _boundPrefab = prefab;
                 if (towerView != null)
                     towerView.gameObject.SetActive(false);
@@ -286,6 +291,16 @@ namespace GemTD.Gameplay.SkillLab
 
             _liveView.SetCombatActionHandler(_session.QueueAnimationAction);
             _liveView.Bind(_session.Tower, _session.TowerPosition);
+        }
+
+        ViewObjectPool<TowerView> GetOrCreateTowerViewPool(TowerView prefab)
+        {
+            if (_towerViewPools.TryGetValue(prefab, out var pool))
+                return pool;
+
+            pool = new ViewObjectPool<TowerView>(prefab, transform, 1, 8);
+            _towerViewPools.Add(prefab, pool);
+            return pool;
         }
 
         void FlashHitsFromDamage()

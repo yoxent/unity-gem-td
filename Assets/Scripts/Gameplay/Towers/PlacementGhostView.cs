@@ -1,17 +1,24 @@
+using System.Collections.Generic;
+using GemTD.Core;
 using UnityEngine;
 
 namespace GemTD.Gameplay.Towers
 {
     /// <summary>
     /// Bloons-style placement ghost: low-opacity tower mesh + range indicator.
-    /// Valid = green tint, invalid = red tint (tower mesh; range keeps authored material).
+    /// Valid = cyan/teal tint, invalid = red tint (tower mesh; range keeps authored material).
+    /// The shell is reused for the run; dynamic tower visuals are pooled by source prefab.
     /// </summary>
     public sealed class PlacementGhostView : MonoBehaviour
     {
-        static readonly Color ValidTower = new Color(0.42f, 0.79f, 0.47f, 0.45f);
-        static readonly Color InvalidTower = new Color(0.88f, 0.35f, 0.35f, 0.45f);
-        static readonly Color ValidRange = new Color(0.25f, 0.55f, 0.85f, 0.22f);
-        static readonly Color InvalidRange = new Color(0.85f, 0.2f, 0.2f, 0.28f);
+        [Header("Ghost Visual")]
+        [SerializeField] Transform towerVisualRoot;
+        [SerializeField] Transform rangeDisc;
+        [SerializeField] MeshRenderer rangeRenderer;
+        [SerializeField] Color validTowerColor = new Color(0.2f, 0.8f, 0.95f, 0.6f);
+        [SerializeField] Color invalidTowerColor = new Color(0.88f, 0.35f, 0.35f, 0.45f);
+        [SerializeField] Color validRangeColor = new Color(0.25f, 0.55f, 0.85f, 0.22f);
+        [SerializeField] Color invalidRangeColor = new Color(0.85f, 0.2f, 0.2f, 0.28f);
 
         /// <summary>
         /// Sit above greybox tile tops so a flat fallback disc is not z-fought / buried.
@@ -28,13 +35,26 @@ namespace GemTD.Gameplay.Towers
         float _rangeWorld = 3f;
         float _rangeHeightScale = 0.02f;
         bool _rangeUsesAuthoredMaterial;
+        bool _rangeInitialized;
+        readonly Dictionary<TowerView, ViewObjectPool<Transform>> _towerVisualPools =
+            new Dictionary<TowerView, ViewObjectPool<Transform>>(8);
+        readonly HashSet<Transform> _preparedTowerVisuals = new HashSet<Transform>();
+        ViewObjectPool<Transform> _activeTowerVisualPool;
 
         public bool IsVisible { get; private set; }
 
         public void EnsureBuilt(TowerView towerPrefab, GameObject rangeIndicatorPrefab = null)
         {
-            if (_rangeDisc == null)
-                BuildRangeIndicator(rangeIndicatorPrefab);
+            if (!_rangeInitialized)
+            {
+                _rangeDisc = rangeDisc;
+                _rangeRenderer = rangeRenderer;
+                if (_rangeDisc == null)
+                    BuildRangeIndicator(rangeIndicatorPrefab);
+                else
+                    ConfigureAuthoredRangeIndicator();
+                _rangeInitialized = true;
+            }
 
             if (_towerVisual != null && _sourcePrefab == towerPrefab)
             {
@@ -44,43 +64,80 @@ namespace GemTD.Gameplay.Towers
             }
 
             if (_towerVisual != null)
-                DestroySafe(_towerVisual.gameObject);
+                ReleaseTowerVisual();
 
             _sourcePrefab = towerPrefab;
             _towerRenderers = null;
-            _towerVisual = null;
 
             if (towerPrefab != null)
             {
-                var visual = Instantiate(towerPrefab.gameObject, transform);
-                visual.name = "GhostTowerVisual";
-                visual.transform.localRotation = Quaternion.identity;
-                _towerVisual = visual.transform;
-
-                var towerView = visual.GetComponent<TowerView>();
-                HideOccupants(visual);
-                StripColliders(visual);
-                TowerPadSnap.ApplyFootOnParentOrigin(_towerVisual);
-                if (towerView != null)
-                    DestroySafe(towerView);
-                _towerRenderers = visual.GetComponentsInChildren<MeshRenderer>(false);
+                var pool = GetOrCreateTowerVisualPool(towerPrefab);
+                _activeTowerVisualPool = pool;
+                _towerVisual = pool.Get();
+                if (_preparedTowerVisuals.Add(_towerVisual))
+                {
+                    PrepareTowerVisual(_towerVisual);
+                    _towerRenderers = _towerVisual.GetComponentsInChildren<MeshRenderer>(false);
+                    ApplyTransparentMaterials();
+                }
+                else
+                {
+                    _towerRenderers = _towerVisual.GetComponentsInChildren<MeshRenderer>(false);
+                }
             }
             else
             {
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = "GhostTowerFallback";
-                cube.transform.SetParent(transform, false);
+                var visualParent = towerVisualRoot != null ? towerVisualRoot : transform;
+                cube.transform.SetParent(visualParent, false);
                 cube.transform.localPosition = Vector3.zero;
                 cube.transform.localScale = new Vector3(0.7f, 1.1f, 0.7f);
                 StripColliders(cube);
                 _towerVisual = cube.transform;
                 TowerPadSnap.ApplyFootOnParentOrigin(_towerVisual);
                 _towerRenderers = cube.GetComponentsInChildren<MeshRenderer>(true);
+                ApplyTransparentMaterials();
             }
 
-            _block = new MaterialPropertyBlock();
-            ApplyTransparentMaterials();
+            _block ??= new MaterialPropertyBlock();
             SetVisible(false);
+        }
+
+        ViewObjectPool<Transform> GetOrCreateTowerVisualPool(TowerView prefab)
+        {
+            if (_towerVisualPools.TryGetValue(prefab, out var pool))
+                return pool;
+
+            var parent = towerVisualRoot != null ? towerVisualRoot : transform;
+            pool = new ViewObjectPool<Transform>(prefab.transform, parent);
+            _towerVisualPools.Add(prefab, pool);
+            return pool;
+        }
+
+        void PrepareTowerVisual(Transform visual)
+        {
+            visual.name = "GhostTowerVisual";
+            visual.localRotation = Quaternion.identity;
+
+            var towerView = visual.GetComponent<TowerView>();
+            HideOccupants(visual.gameObject);
+            StripColliders(visual.gameObject);
+            TowerPadSnap.ApplyFootOnParentOrigin(visual);
+            if (towerView != null)
+                towerView.enabled = false;
+        }
+
+        void ReleaseTowerVisual()
+        {
+            if (_activeTowerVisualPool != null)
+                _activeTowerVisualPool.Release(_towerVisual);
+            else
+                DestroySafe(_towerVisual.gameObject);
+
+            _activeTowerVisualPool = null;
+            _towerVisual = null;
+            _towerRenderers = null;
         }
 
         void BuildRangeIndicator(GameObject rangeIndicatorPrefab)
@@ -113,6 +170,18 @@ namespace GemTD.Gameplay.Towers
                 _rangeRenderer = disc.GetComponentInChildren<MeshRenderer>(true);
             if (_rangeRenderer == null)
                 _rangeUsesAuthoredMaterial = false;
+        }
+
+        void ConfigureAuthoredRangeIndicator()
+        {
+            _rangeHeightScale = _rangeDisc.localScale.y;
+            if (_rangeHeightScale < 0.01f)
+                _rangeHeightScale = 1f;
+            _rangeUsesAuthoredMaterial = true;
+            _rangeDisc.localPosition = RangeLocalPosition();
+            if (_rangeRenderer == null)
+                _rangeRenderer = _rangeDisc.GetComponentInChildren<MeshRenderer>(true);
+            StripColliders(_rangeDisc.gameObject);
         }
 
         void ApplyTransparentMaterials()
@@ -199,7 +268,7 @@ namespace GemTD.Gameplay.Towers
 
         void ApplyTint(bool valid)
         {
-            var towerColor = valid ? ValidTower : InvalidTower;
+            var towerColor = valid ? validTowerColor : invalidTowerColor;
 
             if (_towerRenderers != null)
             {
@@ -218,7 +287,7 @@ namespace GemTD.Gameplay.Towers
             if (_rangeRenderer == null || _rangeUsesAuthoredMaterial)
                 return;
 
-            var rangeColor = valid ? ValidRange : InvalidRange;
+            var rangeColor = valid ? validRangeColor : invalidRangeColor;
             _rangeRenderer.GetPropertyBlock(_block);
             _block.SetColor("_BaseColor", rangeColor);
             _block.SetColor("_Color", rangeColor);
@@ -232,12 +301,12 @@ namespace GemTD.Gameplay.Towers
             {
                 TowerPadSnap.UniformizeLocalScale(animatorView.OccupantRoot);
                 animatorView.SetOccupantVisible(false);
-                DestroySafe(animatorView);
+                animatorView.enabled = false;
                 return;
             }
 
             if (animatorView != null)
-                DestroySafe(animatorView);
+                animatorView.enabled = false;
 
             var animators = visual.GetComponentsInChildren<Animator>(true);
             for (var i = 0; i < animators.Length; i++)

@@ -54,7 +54,7 @@ namespace GemTD.Gameplay
         [SerializeField] TowerView auraTowerPrefab;
         [SerializeField] TowerView curseTowerPrefab;
         [SerializeField] ExpandMarkerView expandMarkerPrefab;
-        [SerializeField] GameObject towerRangeIndicatorPrefab;
+        [SerializeField] PlacementGhostView placementGhostPrefab;
 
         [Header("Tuning")]
         [SerializeField] float projectileSpeed = 20f;
@@ -209,6 +209,7 @@ namespace GemTD.Gameplay
         readonly List<TowerInstance> _towers = new List<TowerInstance>(16);
         readonly List<TowerView> _towerViews = new List<TowerView>(16);
         PlacementGhostView _placementGhost;
+        bool _loggedMissingPlacementGhostPrefab;
         readonly List<EnemyView> _enemyViews = new List<EnemyView>(32);
         readonly List<EffectView> _effectViews = new List<EffectView>(32);
         readonly List<ExpandMarkerView> _markers = new List<ExpandMarkerView>(16);
@@ -373,17 +374,30 @@ namespace GemTD.Gameplay
             TickPlacementGhost();
         }
 
-        void EnsurePlacementGhost()
+        bool EnsurePlacementGhost()
         {
             if (_placementGhost == null)
             {
-                var go = new GameObject("PlacementGhost");
-                go.transform.SetParent(transform, false);
-                _placementGhost = go.AddComponent<PlacementGhostView>();
+                if (placementGhostPrefab == null)
+                {
+                    if (!_loggedMissingPlacementGhostPrefab)
+                    {
+                        Debug.LogError(
+                            "GameCompositionRoot: assign Placement Ghost Prefab in the inspector.",
+                            this);
+                        _loggedMissingPlacementGhostPrefab = true;
+                    }
+                    return false;
+                }
+
+                // One shell is enough for a run; PlacementGhostView pools its tower visuals.
+                _placementGhost = Instantiate(placementGhostPrefab, transform);
+                _placementGhost.name = "PlacementGhost";
                 _placementGhost.Hide();
             }
 
-            _placementGhost.EnsureBuilt(ResolveTowerViewPrefab(_placeDef), towerRangeIndicatorPrefab);
+            _placementGhost.EnsureBuilt(ResolveTowerViewPrefab(_placeDef));
+            return true;
         }
 
         TowerView ResolveTowerViewPrefab(TowerDefinition def)
@@ -485,7 +499,8 @@ namespace GemTD.Gameplay
                     return;
                 }
 
-                EnsurePlacementGhost();
+                if (!EnsurePlacementGhost())
+                    return;
                 var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
                 if (!chunkBoardView.TryPickCell(ray, out var cell))
                 {
@@ -503,7 +518,8 @@ namespace GemTD.Gameplay
 
             if (HasSelectedTower && Placement.Selected != null)
             {
-                EnsurePlacementGhost();
+                if (!EnsurePlacementGhost())
+                    return;
                 _placementGhost.SetRange(EffectiveAttackRange(Placement.Selected));
                 _placementGhost.ShowRangeOnlyAt(chunkBoardView.TowerCellWorld(Placement.Selected.Cell));
                 return;
