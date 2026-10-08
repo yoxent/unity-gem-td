@@ -18,8 +18,8 @@ namespace GemTD.Gameplay.Towers
             TowerView attack,
             TowerView spell)
         {
-            if (def != null && def.ViewPrefab != null)
-                return def.ViewPrefab;
+            if (def != null && def.TowerViewPrefabOverride != null)
+                return def.TowerViewPrefabOverride;
 
             switch (SkillGemTowerMap.ResolveVisualFamily(def))
             {
