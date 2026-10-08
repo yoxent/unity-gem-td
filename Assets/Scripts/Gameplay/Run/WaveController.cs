@@ -147,7 +147,6 @@ namespace GemTD.Gameplay.Run
 
         /// <summary>
         /// Campaign: draft after every clear except the EndWave clear (victory).
-        /// Authored <see cref="WaveDefinition.OfferDraftAfterClear"/> is ignored.
         /// Endless: never draft.
         /// </summary>
         public static bool ShouldOfferDraft(int clearedWave, int endWave, bool isEndless)

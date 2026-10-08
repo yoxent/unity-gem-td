@@ -1191,15 +1191,8 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            NotifySocketChanged(tower, gem);
-            GameEvents.RaiseInventoryChanged();
-        }
-
-        void NotifySocketChanged(TowerInstance tower, GemInstance socketedGem)
-        {
-            if (!socketedGem.IsEmpty)
-                _runStats.RecordGemSocketed(socketedGem.Id);
             OnSocketChanged(tower);
+            GameEvents.RaiseInventoryChanged();
         }
 
         /// <summary>
@@ -1241,7 +1234,7 @@ namespace GemTD.Gameplay
             {
                 if (tower.TrySocket(gem, socketIndex, allowSocket: true))
                 {
-                    NotifySocketChanged(tower, gem);
+                    OnSocketChanged(tower);
                     GameEvents.RaiseInventoryChanged();
                     return;
                 }
@@ -1286,7 +1279,7 @@ namespace GemTD.Gameplay
                 return;
             }
 
-            NotifySocketChanged(tower, gem);
+            OnSocketChanged(tower);
             GameEvents.RaiseInventoryChanged();
         }
 
@@ -1404,7 +1397,7 @@ namespace GemTD.Gameplay
                     return;
                 }
 
-                NotifySocketChanged(tower, displaced);
+                OnSocketChanged(tower);
             }
 
             GameEvents.RaiseInventoryChanged();
@@ -1832,7 +1825,7 @@ namespace GemTD.Gameplay
             var filler = ResolveDebugFillGem();
             if (filler.IsEmpty)
             {
-                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition on SeedGems or the campaign draft gem pool.");
+                Debug.LogWarning("[GemTD] F6 fill bag: no gem definition in the campaign draft gem pool.");
                 return;
             }
 
@@ -1851,15 +1844,6 @@ namespace GemTD.Gameplay
 
         GemInstance ResolveDebugFillGem()
         {
-            if (runConfig != null && runConfig.SeedGems != null)
-            {
-                for (var i = 0; i < runConfig.SeedGems.Length; i++)
-                {
-                    if (runConfig.SeedGems[i] != null)
-                        return GemInstance.FromDefinition(runConfig.SeedGems[i]);
-                }
-            }
-
             var gems = campaignDraftCatalog != null && campaignDraftCatalog.GemPool != null
                 ? campaignDraftCatalog.GemPool.Gems
                 : null;

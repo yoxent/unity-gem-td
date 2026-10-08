@@ -295,9 +295,8 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Clear_WaveWithOfferDraft_GoesDraft()
+        public void Clear_BeforeEndWave_GoesDraft()
         {
-            _wave1.OfferDraftAfterClear = true;
             var controller = CreateController(_wave1);
             var gate = new TestSpawnerGate();
             EnterPlanReady();
@@ -356,9 +355,8 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Clear_AtEndWave_WithOfferDraft_GoesVictory_NotDraft()
+        public void Clear_AtEndWave_GoesVictory_NotDraft()
         {
-            _wave1.OfferDraftAfterClear = true;
             var capped = false;
             var controller = new WaveController(
                 new[] { _wave1 }, _states, _economy, 25, null, endWave: 1, () => capped = true);
@@ -478,13 +476,12 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void SixWaveFixture_DraftAfterEveryClear_VictoryOnLast()
+        public void SixWaveFixture_DraftAfterEveryNonFinalClear_VictoryOnLast()
         {
             var waves = new WaveDefinition[6];
             for (var i = 0; i < 6; i++)
             {
                 waves[i] = CreateWave(i + 1, _enemyDef, count: 1, interval: 0f);
-                waves[i].OfferDraftAfterClear = false;
                 waves[i].EndsCampaign = i == 5;
             }
 

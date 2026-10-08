@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Run
@@ -30,7 +29,6 @@ namespace GemTD.Gameplay.Run
         public int ChunkGridWidth = 13;
         public int ChunkGridHeight = 13;
         public float SocketLockdownSeconds = 0f;
-        public GemDefinition[] SeedGems;
 
         public DifficultyModeRow[] DifficultyModes = CreateDefaultDifficultyModes();
 

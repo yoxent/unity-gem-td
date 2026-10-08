@@ -15,7 +15,6 @@ namespace GemTD.Gameplay.Enemies
         public int ColdResistance;
         public int LightningResistance;
         public int ChaosResistance;
-        public bool CanDash;
         public int KillGold = 5;
         public int LeakDamage = 1;
         public EnemyRank Rank;
@@ -28,6 +27,5 @@ namespace GemTD.Gameplay.Enemies
         public float FlyPeriod = 1.25f;
         [Tooltip("Optional EnemyView prefab. Empty uses the composition-root enemy prefab.")]
         public EnemyView ViewPrefab;
-        public Material PlaceholderMaterial;
     }
 }

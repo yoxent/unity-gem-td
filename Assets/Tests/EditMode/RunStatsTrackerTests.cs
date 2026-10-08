@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using UnityEngine;
-using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 
@@ -46,17 +45,6 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0.666f, snapshot.TowersByType[0].BuiltPercent, 0.01f);
             Assert.AreEqual(1, snapshot.TowersByType[1].Built);
             Assert.AreEqual(0.333f, snapshot.TowersByType[1].BuiltPercent, 0.01f);
-        }
-
-        [Test]
-        public void RecordGemSocketed_CountsUniqueGemIds()
-        {
-            _tracker.RecordGemSocketed(GemId.MultipleProjectiles);
-            _tracker.RecordGemSocketed(GemId.Chain);
-            _tracker.RecordGemSocketed(GemId.MultipleProjectiles);
-
-            var snapshot = _tracker.Snapshot(1, _catalog);
-            Assert.AreEqual(2, snapshot.SkillsCount);
         }
 
         [Test]
@@ -106,7 +94,6 @@ namespace GemTD.Tests.EditMode
         public void Reset_ClearsAllStats()
         {
             _tracker.RecordTowerPlaced(_singleTarget);
-            _tracker.RecordGemSocketed(GemId.Fork);
             _tracker.RecordDamage(_singleTarget, 10f);
             _tracker.RecordKill(_singleTarget);
             _tracker.RecordGoldEarned(40);
@@ -118,7 +105,6 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(0, snapshot.TotalDamage);
             Assert.AreEqual(0, snapshot.TotalKills);
             Assert.AreEqual(0, snapshot.TotalGoldEarned);
-            Assert.AreEqual(0, snapshot.SkillsCount);
             Assert.AreEqual(0, snapshot.TowersByType[0].Damage);
             Assert.AreEqual(0, snapshot.TowersByType[0].Kills);
             Assert.AreEqual(0, snapshot.TowersByType[0].Built);

@@ -102,7 +102,6 @@ namespace GemTD.Editor
             }
 
             cfg.InventoryCapacity = 10;
-            cfg.SeedGems = new[] { multipleProjectiles, chain, fork };
             EditorUtility.SetDirty(cfg);
 
             var scene = EditorSceneManager.OpenScene(RunScenePath);

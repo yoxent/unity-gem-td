@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Run
@@ -9,14 +8,12 @@ namespace GemTD.Gameplay.Run
         readonly Dictionary<TowerDefinition, float> _damageByTower = new Dictionary<TowerDefinition, float>(4);
         readonly Dictionary<TowerDefinition, int> _killsByTower = new Dictionary<TowerDefinition, int>(4);
         readonly Dictionary<TowerDefinition, int> _builtByTower = new Dictionary<TowerDefinition, int>(4);
-        readonly HashSet<GemId> _socketedGems = new HashSet<GemId>();
         readonly List<RunStatsTowerEntry> _snapshotScratch = new List<RunStatsTowerEntry>(4);
 
         int _towersBuilt;
         int _totalGoldEarned;
 
         public int TowersBuilt => _towersBuilt;
-        public int SkillsCount => _socketedGems.Count;
         public int TotalGoldEarned => _totalGoldEarned;
 
         public void Reset()
@@ -24,7 +21,6 @@ namespace GemTD.Gameplay.Run
             _damageByTower.Clear();
             _killsByTower.Clear();
             _builtByTower.Clear();
-            _socketedGems.Clear();
             _towersBuilt = 0;
             _totalGoldEarned = 0;
         }
@@ -39,14 +35,6 @@ namespace GemTD.Gameplay.Run
                 _builtByTower[def] = count + 1;
             else
                 _builtByTower[def] = 1;
-        }
-
-        public void RecordGemSocketed(GemId id)
-        {
-            if (id == GemId.None)
-                return;
-
-            _socketedGems.Add(id);
         }
 
         public void RecordDamage(TowerDefinition sourceTower, float amount)
@@ -119,7 +107,6 @@ namespace GemTD.Gameplay.Run
 
             return new RunStatsSnapshot(
                 waveReached,
-                _socketedGems.Count,
                 totalDamage,
                 totalKills,
                 _totalGoldEarned,

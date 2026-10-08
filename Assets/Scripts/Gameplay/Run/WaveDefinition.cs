@@ -17,8 +17,6 @@ namespace GemTD.Gameplay.Run
         public int WaveNumber = 1;
         public float SpawnInterval = 0.5f;
         public WaveSpawnEntry[] Entries;
-        [Tooltip("Ignored. Campaign drafts after every wave except EndWave; Endless never drafts.")]
-        public bool OfferDraftAfterClear;
         public bool EndsCampaign;
     }
 }
