@@ -104,10 +104,15 @@ namespace GemTD.Gameplay.Enemies
 
         public static int ScaleResist(int authored, int bonus)
         {
-            if (authored <= 0)
+            if (authored == 0)
                 return 0;
+            if (authored < 0)
+                return authored;
+
             var value = authored + (bonus > 0 ? bonus : 0);
-            return value > WaveScaling.ResistCap ? WaveScaling.ResistCap : value;
+            if (value > WaveScaling.ResistCap)
+                value = WaveScaling.ResistCap;
+            return value < authored ? authored : value;
         }
 
         public void Init(
