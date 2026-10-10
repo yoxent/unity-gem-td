@@ -1,0 +1,132 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 836fc7f4a3e9fb74a94f981691bb3d89, type: 3}
+  m_Name: Role_Mine_Pyroclast_Mine
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.MineRoleDefinition
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.18
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 3.5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 1
+    Value: 0
+    Min: 59
+    Max: 89
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  Effects: []
+  Levels:
+  - SourceLevel: 1
+    Modifiers: []
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 38
+      Max: 56
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 88
+      Max: 132
+    Effects: []
+  - SourceLevel: 4
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 161
+      Max: 241
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 266
+      Max: 398
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 415
+      Max: 622
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 628
+      Max: 942
+    Effects: []
+  - SourceLevel: 8
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 844
+      Max: 1266
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 1023
+      Max: 1534
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 1235
+      Max: 1852
+    Effects: []
+  PierceBehavior: 0

@@ -1,0 +1,141 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e6db3b80c401b448a86b7a04ea2a6fe, type: 3}
+  m_Name: Role_Spell_Essence_Drain
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.SpellRoleDefinition
+  Modifiers:
+  - Stat: 2
+    Operation: 0
+    ValueKind: 0
+    Value: 0.7
+    Min: 0
+    Max: 0
+  - Stat: 3
+    Operation: 0
+    ValueKind: 0
+    Value: 100
+    Min: 0
+    Max: 0
+  - Stat: 4
+    Operation: 0
+    ValueKind: 0
+    Value: 5
+    Min: 0
+    Max: 0
+  - Stat: 6
+    Operation: 0
+    ValueKind: 1
+    Value: 0
+    Min: 31
+    Max: 46
+  - Stat: 8
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  - Stat: 9
+    Operation: 0
+    ValueKind: 0
+    Value: 1
+    Min: 0
+    Max: 0
+  Effects: []
+  Levels:
+  - SourceLevel: 1
+    Modifiers: []
+    Effects: []
+  - SourceLevel: 2
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 64
+      Max: 96
+    Effects: []
+  - SourceLevel: 3
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 185
+      Max: 278
+    Effects: []
+  - SourceLevel: 4
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 443
+      Max: 664
+    Effects: []
+  - SourceLevel: 5
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 755
+      Max: 1133
+    Effects: []
+  - SourceLevel: 6
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 1260
+      Max: 1891
+    Effects: []
+  - SourceLevel: 7
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 2073
+      Max: 3110
+    Effects: []
+  - SourceLevel: 8
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 2989
+      Max: 4485
+    Effects: []
+  - SourceLevel: 9
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 3805
+      Max: 5708
+    Effects: []
+  - SourceLevel: 10
+    Modifiers:
+    - Stat: 6
+      Operation: 1
+      ValueKind: 1
+      Value: 0
+      Min: 4834
+      Max: 7251
+    Effects: []
+  EffectPayloads: []
+  PierceBehavior: 0
+  AimMode: 0
+  DeliveryPattern: 0

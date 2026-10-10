@@ -10,6 +10,7 @@ namespace GemTD.Gameplay.CameraControl
     /// Locked look: pitched board (not top-down). See GDD / UI-SPEC.
     /// </summary>
     [RequireComponent(typeof(Camera))]
+    [RequireComponent(typeof(CameraShakeDriver))]
     public sealed class RunCameraController : MonoBehaviour
     {
         [SerializeField] float pitchDegrees = 40f;

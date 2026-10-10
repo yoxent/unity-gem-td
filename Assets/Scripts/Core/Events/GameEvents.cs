@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GemTD.Core
 {
     /// <summary>
-    /// UI-facing signals only. Prefer direct calls between gameplay services.
+    /// UI-facing signals, plus juice (SFX / camera shake). Prefer direct calls between gameplay services.
     /// </summary>
     public static class GameEvents
     {
@@ -20,12 +20,17 @@ namespace GemTD.Core
         public static event Action<Vector2Int> ChunkPlaced;
 
         public static event Action RunStateChanged;
+        public static event Action<bool> WaveClearHoldChanged;
         public static event Action TowerSelectionChanged;
         public static event Action InventoryChanged;
         public static event Action TargetingChanged;
         public static event Action PlaceModeChanged;
         public static event Action DraftOfferChanged;
         public static event Action TowerRosterChanged;
+        public static event Action<string> PlaySfx;
+        public static event Action<AudioCue> PlayBgm;
+        public static event Action StopBgm;
+        public static event Action<CameraShakeRequest> CameraShake;
 
         public static void RaiseGoldChanged(int gold) => GoldChanged?.Invoke(gold);
         public static void RaiseLivesChanged(int lives) => LivesChanged?.Invoke(lives);
@@ -40,12 +45,31 @@ namespace GemTD.Core
         public static void RaiseChunkPlaced(Vector2Int coord) => ChunkPlaced?.Invoke(coord);
 
         public static void RaiseRunStateChanged() => RunStateChanged?.Invoke();
+        public static void RaiseWaveClearHoldChanged(bool showing) => WaveClearHoldChanged?.Invoke(showing);
         public static void RaiseTowerSelectionChanged() => TowerSelectionChanged?.Invoke();
         public static void RaiseInventoryChanged() => InventoryChanged?.Invoke();
         public static void RaiseTargetingChanged() => TargetingChanged?.Invoke();
         public static void RaisePlaceModeChanged() => PlaceModeChanged?.Invoke();
         public static void RaiseDraftOfferChanged() => DraftOfferChanged?.Invoke();
         public static void RaiseTowerRosterChanged() => TowerRosterChanged?.Invoke();
+        public static void RaisePlaySfx(string eventKey) => PlaySfx?.Invoke(eventKey);
+        public static void RaisePlayBgm(AudioCue cue) => PlayBgm?.Invoke(cue);
+        public static void RaiseStopBgm() => StopBgm?.Invoke();
+        public static void RaiseCameraShake() => CameraShake?.Invoke(CameraShakeRequest.Default);
+        public static void RaiseCameraShake(float intensity) =>
+            CameraShake?.Invoke(CameraShakeRequest.Burst(intensity));
+        public static void RaiseCameraShake(CameraShakeRequest request) => CameraShake?.Invoke(request);
+        public static void RaiseCameraShakeAt(Vector3 worldPosition, float intensity = -1f) =>
+            CameraShake?.Invoke(CameraShakeRequest.At(worldPosition, intensity));
+        public static void RaiseCameraShakeBurst(float intensity = -1f, float duration = 0f) =>
+            CameraShake?.Invoke(CameraShakeRequest.Burst(intensity, duration));
+        public static void RaiseCameraShakeFor(float duration, float intensity = -1f) =>
+            CameraShake?.Invoke(CameraShakeRequest.ForDuration(duration, intensity));
+        public static void RaiseCameraShakeContinuous(float intensity = -1f) =>
+            CameraShake?.Invoke(CameraShakeRequest.Continuous(intensity));
+        public static void RaiseCameraShakeStop() => CameraShake?.Invoke(CameraShakeRequest.StopAll);
+        public static void RaiseCameraShakeStopContinuous() =>
+            CameraShake?.Invoke(CameraShakeRequest.StopContinuous);
 
         public static void ClearAll()
         {
@@ -60,12 +84,17 @@ namespace GemTD.Core
             RequestTargetingAllConfirm = null;
             ChunkPlaced = null;
             RunStateChanged = null;
+            WaveClearHoldChanged = null;
             TowerSelectionChanged = null;
             InventoryChanged = null;
             TargetingChanged = null;
             PlaceModeChanged = null;
             DraftOfferChanged = null;
             TowerRosterChanged = null;
+            PlaySfx = null;
+            PlayBgm = null;
+            StopBgm = null;
+            CameraShake = null;
         }
     }
 }

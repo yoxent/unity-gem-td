@@ -11,73 +11,48 @@ namespace GemTD.Core
         public const float DefaultMasterVolume = 1f;
         public const float DefaultBgmVolume = 1f;
         public const float DefaultSfxVolume = 1f;
+        public const bool DefaultCameraShakeEnabled = true;
 
         public static bool IsPanelOpen { get; set; }
 
-        public static float GetMasterVolume()
-        {
-            return Mathf.Clamp01(PlayerPrefs.GetFloat(MasterVolumeKey, DefaultMasterVolume));
-        }
+        public static float GetMasterVolume() => PlayerProfile.GetMasterVolume();
 
         public static void SetMasterVolume(float volume)
         {
-            var v = Mathf.Clamp01(volume);
-            PlayerPrefs.SetFloat(MasterVolumeKey, v);
-            PlayerPrefs.Save();
+            PlayerProfile.SetMasterVolume(volume);
             ApplyAudio();
         }
 
-        public static float GetBgmVolume()
-        {
-            return Mathf.Clamp01(PlayerPrefs.GetFloat(BgmVolumeKey, DefaultBgmVolume));
-        }
+        public static float GetBgmVolume() => PlayerProfile.GetBgmVolume();
 
         public static void SetBgmVolume(float volume)
         {
-            var v = Mathf.Clamp01(volume);
-            PlayerPrefs.SetFloat(BgmVolumeKey, v);
-            PlayerPrefs.Save();
+            PlayerProfile.SetBgmVolume(volume);
             ApplyAudio();
         }
 
-        public static float GetSfxVolume()
-        {
-            return Mathf.Clamp01(PlayerPrefs.GetFloat(SfxVolumeKey, DefaultSfxVolume));
-        }
+        public static float GetSfxVolume() => PlayerProfile.GetSfxVolume();
 
         public static void SetSfxVolume(float volume)
         {
-            var v = Mathf.Clamp01(volume);
-            PlayerPrefs.SetFloat(SfxVolumeKey, v);
-            PlayerPrefs.Save();
+            PlayerProfile.SetSfxVolume(volume);
             ApplyAudio();
         }
 
-        // Master multiplier affects BGM/SFX effective levels.
+        public static bool GetCameraShakeEnabled() => PlayerProfile.GetCameraShakeEnabled();
+
+        public static void SetCameraShakeEnabled(bool enabled)
+        {
+            PlayerProfile.SetCameraShakeEnabled(enabled);
+        }
+
         public static float GetEffectiveBgmVolume() => GetBgmVolume() * GetMasterVolume();
         public static float GetEffectiveSfxVolume() => GetSfxVolume() * GetMasterVolume();
 
         public static void ApplyAudio()
         {
-            var master = GetMasterVolume();
-            AudioListener.volume = master;
-
-            // Until we have a full bus system / AudioMixer, best-effort: update any AudioSources
-            // whose GameObject name includes "BGM" or "SFX". This keeps master as a true multiplier.
-            var bgmBase = GetBgmVolume();
-            var sfxBase = GetSfxVolume();
-
-            var sources = Object.FindObjectsOfType<AudioSource>();
-            for (var i = 0; i < sources.Length; i++)
-            {
-                var goName = sources[i].name;
-                if (goName == null) continue;
-                var lower = goName.ToLowerInvariant();
-                if (lower.Contains("bgm"))
-                    sources[i].volume = bgmBase;
-                else if (lower.Contains("sfx"))
-                    sources[i].volume = sfxBase;
-            }
+            AudioListener.volume = GetMasterVolume();
+            AudioPlayer.Instance?.RefreshBusVolumes();
         }
     }
 }

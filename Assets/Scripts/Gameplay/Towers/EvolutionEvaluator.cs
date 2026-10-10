@@ -3,7 +3,7 @@ using GemTD.Gameplay.Gems;
 namespace GemTD.Gameplay.Towers
 {
     /// <summary>
-    /// Live evolution checks (Hydra Ballista recipe + fire overlay yaw offsets).
+    /// Live evolution checks (Hydra recipe + fire overlay yaw offsets).
     /// </summary>
     public static class EvolutionEvaluator
     {
@@ -15,18 +15,26 @@ namespace GemTD.Gameplay.Towers
         /// <summary>World-space lateral spawn offsets (perp to aim) so multi-head stays readable while seeking.</summary>
         public static float[] HydraHeadLateralOffsets => HydraLaterals;
 
-        public static bool IsHydraBallista(TowerRuntime tower)
+        /// <summary>
+        /// Hydra is off for this pass (run and Skill Lab). Recipe math remains below for a later re-enable.
+        /// </summary>
+        public static readonly bool HydraEnabled = false;
+
+        public static bool IsHydraTower(TowerInstance tower)
         {
+            if (!HydraEnabled)
+                return false;
+
             if (tower == null || tower.Def == null)
                 return false;
 
-            if (tower.Def.Kind != TowerKind.Projectile)
+            if (!tower.Def.HasRole<AttackRoleDefinition>())
                 return false;
 
             if (!tower.Def.AllowsHydraEvolution)
                 return false;
 
-            var hasLmp = false;
+            var hasMultipleProjectiles = false;
             var hasChain = false;
             var hasFork = false;
             var sockets = tower.Sockets;
@@ -36,18 +44,18 @@ namespace GemTD.Gameplay.Towers
             for (var i = 0; i < sockets.Length; i++)
             {
                 var gem = sockets[i];
-                if (gem == null)
+                if (gem.IsEmpty)
                     continue;
 
-                if (gem.Id == GemId.Lmp)
-                    hasLmp = true;
+                if (gem.Id == GemId.MultipleProjectiles)
+                    hasMultipleProjectiles = true;
                 else if (gem.Id == GemId.Chain)
                     hasChain = true;
                 else if (gem.Id == GemId.Fork)
                     hasFork = true;
             }
 
-            return hasLmp && hasChain && hasFork;
+            return hasMultipleProjectiles && hasChain && hasFork;
         }
     }
 }

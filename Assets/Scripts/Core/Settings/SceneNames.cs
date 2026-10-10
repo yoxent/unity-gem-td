@@ -4,5 +4,6 @@ namespace GemTD.Core
     {
         public const string MainMenu = "MainMenu";
         public const string Run = "Run";
+        public const string SkillLab = "SkillLab";
     }
 }

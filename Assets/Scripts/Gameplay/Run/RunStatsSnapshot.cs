@@ -34,7 +34,6 @@ namespace GemTD.Gameplay.Run
     public readonly struct RunStatsSnapshot
     {
         public int WaveReached { get; }
-        public int SkillsCount { get; }
         public float TotalDamage { get; }
         public int TotalKills { get; }
         public int TotalGoldEarned { get; }
@@ -43,7 +42,6 @@ namespace GemTD.Gameplay.Run
 
         public RunStatsSnapshot(
             int waveReached,
-            int skillsCount,
             float totalDamage,
             int totalKills,
             int totalGoldEarned,
@@ -51,7 +49,6 @@ namespace GemTD.Gameplay.Run
             RunStatsTowerEntry[] towersByType)
         {
             WaveReached = waveReached;
-            SkillsCount = skillsCount;
             TotalDamage = totalDamage;
             TotalKills = totalKills;
             TotalGoldEarned = totalGoldEarned;

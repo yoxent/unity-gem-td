@@ -75,6 +75,9 @@ namespace GemTD.Tests.EditMode
             return s;
         }
 
+        static Vector2Int TipOnOuterEdge(Vector2Int chunk, EdgeFlags outward) =>
+            ChunkMask.EdgeMidWorldCell(chunk, outward);
+
         ChunkGrid _grid;
         PathGraph _path;
         GridBoard _board;
@@ -102,21 +105,47 @@ namespace GemTD.Tests.EditMode
                 if (_catalog.Stamps[i] != null) Object.DestroyImmediate(_catalog.Stamps[i].gameObject);
         }
 
-        [Test] public void Build_PlacesFiveChunks_KeepPlusFixedEastArm()
+        [Test]
+        public void Build_OneLane_PlacesKeepPlusOneEastStraight()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, new System.Random(1));
-            Assert.AreEqual(5, _grid.Count);
+            Assert.AreEqual(2, _grid.Count);
             Assert.IsTrue(_grid.IsOccupied(4, 4)); // keep
-            Assert.IsTrue(_grid.IsOccupied(5, 4));
-            Assert.IsTrue(_grid.IsOccupied(6, 4));
-            Assert.IsTrue(_grid.IsOccupied(7, 4));
-            Assert.IsTrue(_grid.IsOccupied(8, 4));
+            Assert.IsTrue(_grid.IsOccupied(5, 4)); // one east Straight
+            Assert.IsFalse(_grid.IsOccupied(6, 4)); // no corridor
             Assert.IsFalse(_grid.IsOccupied(4, 5)); // north empty
             Assert.IsFalse(_grid.IsOccupied(4, 3)); // south empty
             Assert.IsFalse(_grid.IsOccupied(3, 4)); // west empty
+            Assert.IsTrue(_grid.TryGet(4, 4, out var keep));
+            Assert.AreEqual(EdgeFlags.East, keep.Mask.OpenEdges);
         }
 
-        [Test] public void Build_HomeIsPaintedKeepCell()
+        [Test]
+        public void Build_FourLane_PlacesKeepPlusFourCardinalStraights()
+        {
+            _catalog.Stamps.Add(MakeKeepWithEdges(
+                EdgeFlags.North | EdgeFlags.East | EdgeFlags.South | EdgeFlags.West));
+
+            StartLayoutBuilder.Build(
+                _grid, _stamp, _path, _board, _catalog, new System.Random(1), 4);
+
+            Assert.AreEqual(5, _grid.Count);
+            Assert.IsTrue(_grid.IsOccupied(4, 4)); // keep
+            Assert.IsTrue(_grid.IsOccupied(5, 4)); // east
+            Assert.IsTrue(_grid.IsOccupied(4, 3)); // south
+            Assert.IsTrue(_grid.IsOccupied(4, 5)); // north
+            Assert.IsTrue(_grid.IsOccupied(3, 4)); // west
+            Assert.IsFalse(_grid.IsOccupied(6, 4));
+            Assert.IsFalse(_grid.IsOccupied(4, 2));
+            Assert.IsTrue(_grid.TryGet(4, 4, out var keep));
+            Assert.AreEqual(
+                EdgeFlags.East | EdgeFlags.South | EdgeFlags.North | EdgeFlags.West,
+                keep.Mask.OpenEdges);
+            Assert.IsTrue(_path.AllTipsReachHome());
+        }
+
+        [Test]
+        public void Build_HomeIsPaintedKeepCell()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, new System.Random(7));
             var keep = new Vector2Int(4, 4);
@@ -127,18 +156,18 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(_path.IsPath(_path.Home.x, _path.Home.y));
         }
 
-        [Test] public void Build_SpawnTipIsOnOuterEdgeOfFourthStraight()
+        [Test]
+        public void Build_SpawnTipIsOnOuterEdgeOfSingleEastStraight()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, new System.Random(2));
             var tips = new List<Vector2Int>();
             Assert.AreEqual(1, _path.CollectSpawnTips(tips));
-            // East arm, fourth Straight at (8,4), east-edge middle.
-            Assert.AreEqual(
-                new Vector2Int(8 * ChunkMask.Size + ChunkMask.Size - 1, 4 * ChunkMask.Size + ChunkMask.Mid),
-                tips[0]);
+            // East arm, single Straight at (5,4), east-edge middle.
+            Assert.AreEqual(TipOnOuterEdge(new Vector2Int(5, 4), EdgeFlags.East), tips[0]);
         }
 
-        [Test] public void Build_AllTipsReachHome_True()
+        [Test]
+        public void Build_AllTipsReachHome_True()
         {
             StartLayoutBuilder.Build(_grid, _stamp, _path, _board, _catalog, new System.Random(3));
             Assert.IsTrue(_path.AllTipsReachHome());
@@ -176,7 +205,7 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Build_OpenArmCountTwo_UsesTwoOpeningKeepAndPlacesEastAndSouthArms()
+        public void Build_TwoLane_UsesTwoOpeningKeepAndPlacesEastAndSouthStraights()
         {
             var two = MakeKeepWithEdges(EdgeFlags.South | EdgeFlags.East);
             _catalog.Stamps.Add(two);
@@ -184,14 +213,45 @@ namespace GemTD.Tests.EditMode
             StartLayoutBuilder.Build(
                 _grid, _stamp, _path, _board, _catalog, new System.Random(1), 2);
 
-            Assert.AreEqual(9, _grid.Count);
+            Assert.AreEqual(3, _grid.Count);
             Assert.IsTrue(_grid.TryGet(4, 4, out var slot));
             Assert.AreSame(two, slot.Prefab);
             Assert.AreEqual(EdgeFlags.East | EdgeFlags.South, slot.Mask.OpenEdges);
-            Assert.IsTrue(_grid.IsOccupied(8, 4)); // east arm
-            Assert.IsTrue(_grid.IsOccupied(4, 0)); // south arm
+            Assert.IsTrue(_grid.IsOccupied(5, 4)); // east Straight
+            Assert.IsTrue(_grid.IsOccupied(4, 3)); // south Straight
+            Assert.IsFalse(_grid.IsOccupied(6, 4));
+            Assert.IsFalse(_grid.IsOccupied(4, 2));
             Assert.IsFalse(_grid.IsOccupied(4, 5)); // north empty
             Assert.IsFalse(_grid.IsOccupied(3, 4)); // west empty
+
+            var tips = new List<Vector2Int>();
+            Assert.AreEqual(2, _path.CollectSpawnTips(tips));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    TipOnOuterEdge(new Vector2Int(5, 4), EdgeFlags.East),
+                    TipOnOuterEdge(new Vector2Int(4, 3), EdgeFlags.South)
+                },
+                tips);
+            Assert.IsTrue(_path.AllTipsReachHome());
+        }
+
+        [Test]
+        public void Build_ThreeLane_OpeningsFaceEastSouthNorth()
+        {
+            var three = MakeKeepWithEdges(EdgeFlags.South | EdgeFlags.East | EdgeFlags.North);
+            _catalog.Stamps.Add(three);
+
+            StartLayoutBuilder.Build(
+                _grid, _stamp, _path, _board, _catalog, new System.Random(1), 3);
+
+            Assert.AreEqual(4, _grid.Count);
+            Assert.IsTrue(_grid.TryGet(4, 4, out var slot));
+            Assert.AreEqual(EdgeFlags.East | EdgeFlags.South | EdgeFlags.North, slot.Mask.OpenEdges);
+            Assert.IsTrue(_grid.IsOccupied(5, 4));
+            Assert.IsTrue(_grid.IsOccupied(4, 3));
+            Assert.IsTrue(_grid.IsOccupied(4, 5));
+            Assert.IsFalse(_grid.IsOccupied(3, 4));
             Assert.IsTrue(_path.AllTipsReachHome());
         }
     }

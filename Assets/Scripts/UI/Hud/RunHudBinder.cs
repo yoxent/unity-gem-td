@@ -18,6 +18,7 @@ namespace GemTD.UI
         [SerializeField] CodexController codex;
         [SerializeField] SettingsController settings;
         [SerializeField] RunSummaryController runSummary;
+        [SerializeField] EnemyHealthBarController enemyHealthBars;
 
         void Awake()
         {
@@ -47,6 +48,7 @@ namespace GemTD.UI
             speedPanel?.Bind(root);
             codex?.Bind(root);
 
+            AudioPlayer.EnsureExists();
             GameSettings.ApplyAudio();
             if (settings != null)
             {
@@ -55,6 +57,10 @@ namespace GemTD.UI
             }
 
             runSummary?.Bind(root);
+            if (enemyHealthBars == null)
+                Debug.LogError("RunHudBinder: enemyHealthBars is not assigned.", this);
+            else
+                enemyHealthBars.Bind(root);
         }
     }
 }

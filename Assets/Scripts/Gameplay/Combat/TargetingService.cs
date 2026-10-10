@@ -8,8 +8,8 @@ namespace GemTD.Gameplay.Combat
         public static void Apply(
             TargetingRecipe recipe,
             TargetingApplyScope scope,
-            TowerRuntime selected,
-            List<TowerRuntime> allTowers)
+            TowerInstance selected,
+            List<TowerInstance> allTowers)
         {
             if (selected == null || allTowers == null)
                 return;

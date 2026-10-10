@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af3528338cd0805408957b41da8f5cb8, type: 3}
+  m_Name: GrassClump_B_Definition
+  m_EditorClassIdentifier: GemTD.GrassRenderer.Runtime::GemTD.Grass.GrassClumpDefinition
+  profileRows:
+  - normalizedHeight: 0
+    widthFactor: 1
+  - normalizedHeight: 0.2
+    widthFactor: 0.94
+  - normalizedHeight: 0.4
+    widthFactor: 0.78
+  - normalizedHeight: 0.62
+    widthFactor: 0.56
+  - normalizedHeight: 0.82
+    widthFactor: 0.3
+  - normalizedHeight: 1
+    widthFactor: 0
+  blades:
+  - basePosition: {x: -0.21, y: 0, z: -0.06}
+    yawDegrees: 350
+    height: 0.28
+    width: 0.072
+    forwardBend: 0.05
+    sideBend: -0.04
+  - basePosition: {x: -0.12, y: 0, z: 0.17}
+    yawDegrees: 28
+    height: 0.33
+    width: 0.084
+    forwardBend: 0.08
+    sideBend: -0.015
+  - basePosition: {x: -0.01, y: 0, z: -0.16}
+    yawDegrees: 74
+    height: 0.4
+    width: 0.096
+    forwardBend: 0.11
+    sideBend: 0.025
+  - basePosition: {x: 0.04, y: 0, z: 0.03}
+    yawDegrees: 128
+    height: 0.36
+    width: 0.084
+    forwardBend: 0.09
+    sideBend: 0.05
+  - basePosition: {x: 0.13, y: 0, z: 0.18}
+    yawDegrees: 196
+    height: 0.31
+    width: 0.078
+    forwardBend: 0.07
+    sideBend: 0.03
+  - basePosition: {x: 0.22, y: 0, z: -0.02}
+    yawDegrees: 252
+    height: 0.37
+    width: 0.09
+    forwardBend: 0.08
+    sideBend: -0.045
+  - basePosition: {x: 0.1, y: 0, z: -0.2}
+    yawDegrees: 306
+    height: 0.34
+    width: 0.084
+    forwardBend: 0.06
+    sideBend: -0.02
+  - basePosition: {x: -0.08, y: 0, z: 0.01}
+    yawDegrees: 164
+    height: 0.38
+    width: 0.088
+    forwardBend: 0.1
+    sideBend: 0.04
+  - basePosition: {x: 0.11, y: 0, z: -0.09}
+    yawDegrees: 320
+    height: 0.3
+    width: 0.08
+    forwardBend: 0.055
+    sideBend: -0.035
+  outputMesh: {fileID: 4300000, guid: f54570b48d44c3c4bb76c4e7271a6113, type: 2}
