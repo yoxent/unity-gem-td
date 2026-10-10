@@ -1,3 +1,4 @@
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,7 +21,7 @@ namespace GemTD.UI
             var percentLabel = Mathf.RoundToInt(percentClamped * 100f);
 
             if (summaryValue != null)
-                summaryValue.text = $"{Mathf.RoundToInt(value)} ({percentLabel}%)";
+                summaryValue.text = $"{Mathf.RoundToInt(value).ToString("N0", CultureInfo.InvariantCulture)} ({percentLabel}%)";
 
             if (summaryBar == null)
                 return;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -112,13 +113,13 @@ namespace GemTD.UI
             if (waveText != null)
                 waveText.text = $"Wave {snapshot.WaveReached}";
             if (totalDamageText != null)
-                totalDamageText.text = Mathf.RoundToInt(snapshot.TotalDamage).ToString();
+                totalDamageText.text = FormatCount(Mathf.RoundToInt(snapshot.TotalDamage));
             if (totalKillsText != null)
-                totalKillsText.text = snapshot.TotalKills.ToString();
+                totalKillsText.text = FormatCount(snapshot.TotalKills);
             if (totalGoldText != null)
-                totalGoldText.text = snapshot.TotalGoldEarned.ToString();
+                totalGoldText.text = FormatCount(snapshot.TotalGoldEarned);
             if (totalBuiltText != null)
-                totalBuiltText.text = snapshot.TotalBuilt.ToString();
+                totalBuiltText.text = FormatCount(snapshot.TotalBuilt);
 
             ClearSections();
 
@@ -208,6 +209,9 @@ namespace GemTD.UI
                 return;
             _root.BeginEndless();
         }
+
+        static string FormatCount(int value) =>
+            value.ToString("N0", CultureInfo.InvariantCulture);
 
         static string GetTowerDisplayName(TowerDefinition tower)
         {
