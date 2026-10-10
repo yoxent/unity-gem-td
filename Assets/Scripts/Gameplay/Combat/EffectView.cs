@@ -15,39 +15,8 @@ namespace GemTD.Gameplay.Combat
         Collider[] _colliders;
         bool[] _colliderDefaults;
 
-        public virtual bool IsSlamEffect => false;
-        public virtual bool IsAftershockEffect => false;
-        public virtual bool IsFallEffect => false;
-        public virtual bool IsNovaEffect => false;
-        public virtual bool IsWarpEffect => false;
-        public virtual bool IsChainLightningEffect => false;
         protected virtual bool SitsOnGround => false;
         protected virtual ParticleSystem AssignedParticles => null;
-
-        public static bool WantsSlamEffect(EffectPayloadRuntime payload)
-        {
-            return payload != null && payload.ShowsSlamVisual;
-        }
-
-        public static bool WantsAftershockEffect(EffectPayloadRuntime payload)
-        {
-            return payload != null && payload.ShowsAftershockVisual;
-        }
-
-        public static bool WantsFallEffect(EffectPayloadRuntime payload)
-        {
-            return payload != null && payload.ShowsFallVisual;
-        }
-
-        public static bool WantsNovaEffect(EffectPayloadRuntime payload)
-        {
-            return payload != null && payload.ShowsNovaVisual;
-        }
-
-        public static bool WantsWarpEffect(EffectPayloadRuntime payload)
-        {
-            return payload != null && payload.ShowsWarpVisual;
-        }
 
         public ProjectileRuntime Runtime { get; private set; }
         public EffectPayloadRuntime Payload { get; private set; }

@@ -26,6 +26,10 @@ namespace GemTD.Gameplay.Combat
         public float KnockbackDistance;
         public SkillSpec HitSpec;
         public EffectPayloadVisual Visual;
+        /// <summary>Index into the tower role payload list. <see cref="Towers.TowerVfx.UnassignedPayload"/> is the primary landing pulse.</summary>
+        public int PayloadIndex;
+        public EffectView FlightPrefab;
+        public EffectView ImpactPrefab;
         /// <summary>Landing-disk radius for the aim-point bolt. 0 hides the ground ring.</summary>
         public float StormRadius;
         /// <summary>Minimum post-impact linger for the aim-point bolt so the ground ring lasts until the last bolt lands.</summary>

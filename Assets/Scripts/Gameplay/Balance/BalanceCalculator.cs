@@ -153,7 +153,7 @@ namespace GemTD.Gameplay.Balance
             rawMax = Mathf.Max(0f, rawMax);
             var safeHealthScale = Mathf.Max(0f, healthScale);
             var scaledHealth = enemy.MaxHealth * safeHealthScale;
-            var scaledShield = enemy.ShieldMax;
+            var scaledShield = enemy.ShieldMax * safeHealthScale;
             var projectileCount = spec.ProjectileCount > 0 ? spec.ProjectileCount : 1;
             var safeInterval = Mathf.Max(0f, fireInterval);
             var safeFirstHitDelay = Mathf.Max(0f, firstHitDelay);
@@ -186,7 +186,7 @@ namespace GemTD.Gameplay.Balance
                 projectileCount);
 
             return new BalanceHitResult(
-                rawMax > 0f && enemy.MaxHealth * Mathf.Max(0f, healthScale) + enemy.ShieldMax > 0f,
+                rawMax > 0f && scaledHealth + scaledShield > 0f,
                 rawMin,
                 rawMax,
                 scaledHealth,

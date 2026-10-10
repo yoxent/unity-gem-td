@@ -15,7 +15,9 @@ namespace GemTD.Gameplay.Run
         readonly EnemyDefinition _bossEnemy;
         readonly int _endWave;
         readonly Action _beforeCampaignVictory;
+        readonly WaveDefinition[] _combos;
         readonly List<EnemyDefinition> _spawnQueue = new List<EnemyDefinition>();
+        int[] _countScratch;
 
         public const float ClearHoldSeconds = 2f;
 
@@ -44,7 +46,8 @@ namespace GemTD.Gameplay.Run
             int endWaveGold,
             EnemyDefinition bossEnemy = null,
             int endWave = 0,
-            Action beforeCampaignVictory = null)
+            Action beforeCampaignVictory = null,
+            WaveDefinition[] combos = null)
         {
             _waves = waves ?? throw new ArgumentNullException(nameof(waves));
             if (_waves.Length == 0)
@@ -56,6 +59,7 @@ namespace GemTD.Gameplay.Run
             _bossEnemy = bossEnemy;
             _endWave = endWave > 0 ? endWave : ExpandPickPolicy.DefaultEndWave;
             _beforeCampaignVictory = beforeCampaignVictory;
+            _combos = combos;
         }
 
         public void BeginEndless()
@@ -158,9 +162,28 @@ namespace GemTD.Gameplay.Run
 
         WaveDefinition ResolveWaveTemplate(int waveIndex)
         {
+            var waveNumber = waveIndex + 1;
+            if (waveNumber > WaveComboSchedule.AuthoredWaveCount)
+            {
+                var combo = ComboFor(waveNumber);
+                if (combo != null)
+                    return combo;
+            }
+
             if (waveIndex < _waves.Length)
                 return _waves[waveIndex];
             return _waves[_waves.Length - 1];
+        }
+
+        WaveDefinition ComboFor(int waveNumber)
+        {
+            if (_combos == null || _combos.Length == 0)
+                return null;
+
+            var index = (int)WaveComboSchedule.ForWave(waveNumber, IsEndless);
+            if (index < 0 || index >= _combos.Length)
+                return null;
+            return _combos[index];
         }
 
         void BuildSpawnQueue(WaveDefinition wave, int bossCount)
@@ -169,25 +192,75 @@ namespace GemTD.Gameplay.Run
             var entries = wave.Entries;
             if (entries != null)
             {
+                var regular = 0;
                 for (var i = 0; i < entries.Length; i++)
                 {
                     var entry = entries[i];
-                    if (entry.Enemy == null || entry.Count <= 0)
+                    if (entry.Enemy == null || entry.Count <= 0 || entry.Enemy.IsBoss)
                         continue;
+                    regular++;
+                }
 
-                    // Cadence owns all boss placement — authored boss entries are dropped
-                    // even outside boss waves (see BossCadence / Task 6 brief).
-                    if (entry.Enemy.IsBoss)
-                        continue;
+                if (regular > 0)
+                {
+                    if (_countScratch == null || _countScratch.Length < regular)
+                        _countScratch = new int[regular];
 
-                    for (var c = 0; c < entry.Count; c++)
-                        _spawnQueue.Add(entry.Enemy);
+                    var n = 0;
+                    for (var i = 0; i < entries.Length; i++)
+                    {
+                        var entry = entries[i];
+                        if (entry.Enemy == null || entry.Count <= 0 || entry.Enemy.IsBoss)
+                            continue;
+                        _countScratch[n] = entry.Count;
+                        n++;
+                    }
+
+                    WaveScaling.ApplyCountScale(
+                        _countScratch,
+                        regular,
+                        wave.WaveNumber,
+                        CurrentWaveNumber);
+
+                    n = 0;
+                    for (var i = 0; i < entries.Length; i++)
+                    {
+                        var entry = entries[i];
+                        // Cadence owns all boss placement — authored boss entries are dropped
+                        // even outside boss waves (see BossCadence / Task 6 brief).
+                        if (entry.Enemy == null || entry.Count <= 0 || entry.Enemy.IsBoss)
+                            continue;
+
+                        var count = _countScratch[n++];
+                        for (var c = 0; c < count; c++)
+                            _spawnQueue.Add(entry.Enemy);
+                    }
                 }
             }
 
-            // Bosses spawn after regulars — the wave's finale.
+            InsertBosses(bossCount);
+        }
+
+        void InsertBosses(int bossCount)
+        {
+            if (bossCount <= 0 || _bossEnemy == null)
+                return;
+
+            if (_spawnQueue.Count == 0)
+            {
+                for (var c = 0; c < bossCount; c++)
+                    _spawnQueue.Add(_bossEnemy);
+                return;
+            }
+
+            var index = _spawnQueue.Count / 4;
             for (var c = 0; c < bossCount; c++)
-                _spawnQueue.Add(_bossEnemy);
+            {
+                if (index > _spawnQueue.Count)
+                    index = _spawnQueue.Count;
+                _spawnQueue.Insert(index, _bossEnemy);
+                index += 7;
+            }
         }
     }
 }

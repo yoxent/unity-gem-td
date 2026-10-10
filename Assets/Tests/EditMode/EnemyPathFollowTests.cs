@@ -197,6 +197,110 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TickMove_Blink_WaitsThenJumpsAlongPath()
+        {
+            _def.Tags = EnemyTag.Runner | EnemyTag.Blink;
+            _def.BlinkDistance = 2f;
+            _def.BlinkInterval = 4f;
+            _def.MoveSpeed = 2f;
+            var waypoints = StraightPath(40);
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints);
+
+            Assert.IsFalse(enemy.TickMove(3.9f));
+            Assert.AreEqual(7.8f, enemy.Progress, 1e-3f);
+
+            Assert.IsFalse(enemy.TickMove(0.1f));
+            Assert.AreEqual(10f, enemy.Progress, 1e-3f);
+        }
+
+        [Test]
+        public void TickMove_Blink_RepeatsEachInterval()
+        {
+            _def.Tags = EnemyTag.Runner | EnemyTag.Blink;
+            _def.BlinkDistance = 2f;
+            _def.BlinkInterval = 4f;
+            _def.MoveSpeed = 2f;
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, StraightPath(40));
+
+            Assert.IsFalse(enemy.TickMove(8f));
+            Assert.AreEqual(20f, enemy.Progress, 1e-3f);
+        }
+
+        [Test]
+        public void TickMove_Blink_ReachesExitWhenTheJumpPassesTheEnd()
+        {
+            _def.Tags = EnemyTag.Runner | EnemyTag.Blink;
+            _def.BlinkDistance = 2f;
+            _def.BlinkInterval = 4f;
+            _def.MoveSpeed = 2f;
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, StraightPath(9));
+
+            Assert.IsTrue(enemy.TickMove(4f));
+            Assert.AreEqual(9f, enemy.Progress, 1e-3f);
+        }
+
+        [Test]
+        public void TickMove_BlinkTag_NonPositiveDistanceUsesDefault()
+        {
+            _def.Tags = EnemyTag.Blink;
+            _def.BlinkDistance = -1f;
+            _def.BlinkInterval = 0f;
+            _def.MoveSpeed = 2f;
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, StraightPath(40));
+
+            Assert.IsFalse(enemy.TickMove(EnemyDefinition.DefaultBlinkInterval));
+            var walked = _def.MoveSpeed * EnemyDefinition.DefaultBlinkInterval;
+            Assert.AreEqual(walked + EnemyDefinition.DefaultBlinkDistance, enemy.Progress, 1e-3f);
+        }
+
+        [Test]
+        public void TickMove_BlinkOff_IgnoresDistanceAndInterval()
+        {
+            _def.Tags = EnemyTag.Runner;
+            _def.BlinkDistance = 2f;
+            _def.BlinkInterval = 4f;
+            _def.MoveSpeed = 2f;
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, StraightPath(40));
+
+            Assert.IsFalse(enemy.TickMove(4f));
+            Assert.AreEqual(8f, enemy.Progress, 1e-3f);
+        }
+
+        [Test]
+        public void TryGetPositionAfter_Blink_MatchesSteppedMove()
+        {
+            _def.Tags = EnemyTag.Runner | EnemyTag.Blink;
+            _def.BlinkDistance = 2f;
+            _def.BlinkInterval = 4f;
+            _def.MoveSpeed = 2f;
+            var waypoints = StraightPath(40);
+            var stepped = new EnemyRuntime();
+            stepped.Init(_def, waypoints);
+            var predicted = new EnemyRuntime();
+            predicted.Init(_def, waypoints);
+
+            const float total = 4.25f;
+            const float step = 0.05f;
+            var t = 0f;
+            while (t < total - 1e-4f)
+            {
+                var dt = total - t < step ? total - t : step;
+                stepped.TickMove(dt);
+                t += dt;
+            }
+
+            Assert.IsTrue(predicted.TryGetPositionAfter(total, out var point));
+            Assert.AreEqual(stepped.WorldPosition.x, point.x, 1e-2f);
+            Assert.AreEqual(stepped.WorldPosition.z, point.z, 1e-2f);
+            Assert.AreEqual(0f, predicted.Progress, 1e-4f);
+        }
+
+        [Test]
         public void TryGetPathTangent_Eastbound_FacesPlusX()
         {
             var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(1, 0));
@@ -231,6 +335,15 @@ namespace GemTD.Tests.EditMode
             var enemy = new EnemyRuntime();
             enemy.Init(_def, waypoints);
             return enemy;
+        }
+
+        static List<Vector3> StraightPath(int cells)
+        {
+            var list = new List<Vector3>(cells + 1);
+            var half = CellSize * 0.5f;
+            for (var i = 0; i <= cells; i++)
+                list.Add(new Vector3(i * CellSize + half, 0f, half));
+            return list;
         }
 
         static List<Vector3> BuildWorldWaypoints(params Vector2Int[] cells)

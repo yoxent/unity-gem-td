@@ -9,6 +9,19 @@ using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Combat
 {
+    /// <summary>Muzzle moment when an attack is released. Views read <see cref="TowerDefinition.Vfx"/>.</summary>
+    public readonly struct CastMoment
+    {
+        public readonly TowerDefinition Tower;
+        public readonly Vector3 Position;
+
+        public CastMoment(TowerDefinition tower, Vector3 position)
+        {
+            Tower = tower;
+            Position = position;
+        }
+    }
+
     /// <summary>
     /// Domain combat tick: cooldown ready starts a cast (NotifyFired). FireInterval is the whole action.
     /// Event-enabled towers resolve their pending volley from OnCombatAction("execute");
@@ -29,6 +42,7 @@ namespace GemTD.Gameplay.Combat
         readonly List<PendingSequentialVolley> _pendingSequential = new List<PendingSequentialVolley>(8);
         readonly List<PendingStrike> _pendingStrikes = new List<PendingStrike>(8);
         readonly List<TowerInstance> _resolvedCasts = new List<TowerInstance>(8);
+        readonly List<CastMoment> _castMoments = new List<CastMoment>(4);
         readonly List<TowerInstance> _soloPlaced = new List<TowerInstance>(1);
         System.Random _payloadRng;
         readonly Action<TowerDefinition, float> _recordDamage;
@@ -36,6 +50,9 @@ namespace GemTD.Gameplay.Combat
 
         public IReadOnlyList<ProjectileRuntime> Projectiles => _projectiles;
         public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _effectPayloads;
+        public IReadOnlyList<CastMoment> CastMoments => _castMoments;
+
+        public void ClearCastMoments() => _castMoments.Clear();
         public bool HasActiveVolley =>
             _projectiles.Count > 0
             || _effectPayloads.Count > 0
@@ -87,6 +104,7 @@ namespace GemTD.Gameplay.Combat
             _payloadPlanScratch.Clear();
             _pendingStrikes.Clear();
             _resolvedCasts.Clear();
+            _castMoments.Clear();
         }
 
         /// <summary>
@@ -163,6 +181,7 @@ namespace GemTD.Gameplay.Combat
                 return;
 
             _resolvedCasts.Clear();
+            _castMoments.Clear();
             var living = ListPool<EnemyRuntime>.Get();
             enemies.CopyAlive(living);
             TickInFlight(dt, living);
@@ -445,6 +464,9 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses,
             TowerInstance tower)
         {
+            if (tower != null)
+                _castMoments.Add(new CastMoment(tower.Def, muzzle));
+
             var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
             var speed = _projectileSpeed * speedMul;
             var volleys = spec.EchoVolleyCount >= 2 ? spec.EchoVolleyCount : 1;
@@ -759,7 +781,8 @@ namespace GemTD.Gameplay.Combat
                 AoeRadius = radius,
                 DelaySeconds = 0f,
                 HitSpec = spec,
-                Visual = visual
+                Visual = visual,
+                PayloadIndex = TowerVfx.UnassignedPayload
             };
             var runtime = new EffectPayloadRuntime();
             runtime.Init(

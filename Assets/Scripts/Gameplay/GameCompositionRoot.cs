@@ -37,14 +37,6 @@ namespace GemTD.Gameplay
 
         [Header("Prefabs")]
         [SerializeField] EnemyView enemyPrefab;
-        [SerializeField] EffectView projectilePrefab;
-        [SerializeField] EffectView slamEffectPrefab;
-        [SerializeField] EffectView aftershockEffectPrefab;
-        [SerializeField] EffectView fallEffectPrefab;
-        [SerializeField] EffectView novaEffectPrefab;
-        [SerializeField] EffectView warpEffectPrefab;
-        [SerializeField] EffectView chainLightningEffectPrefab;
-        [SerializeField] ProjectileVisual[] projectileVisuals;
         [SerializeField] TowerView towerPrefab;
         [SerializeField] TowerView spellTowerPrefab;
         [SerializeField] TowerView slamTowerPrefab;
@@ -230,14 +222,7 @@ namespace GemTD.Gameplay
         readonly Dictionary<EnemyView, ViewObjectPool<EnemyView>> _enemyPoolsByPrefab =
             new Dictionary<EnemyView, ViewObjectPool<EnemyView>>(8);
         ManualMotionDispatcher _enemyHopDispatcher;
-        ViewObjectPool<EffectView> _projectilePool;
-        ViewObjectPool<EffectView> _slamEffectPool;
-        ViewObjectPool<EffectView> _aftershockEffectPool;
-        ViewObjectPool<EffectView> _fallEffectPool;
-        ViewObjectPool<EffectView> _novaEffectPool;
-        ViewObjectPool<EffectView> _warpEffectPool;
-        ViewObjectPool<EffectView> _chainLightningEffectPool;
-        ProjectileVisualPools _projectileVisuals;
+        EffectViewPoolRegistry _effectPools;
         ViewObjectPool<ExpandMarkerView> _markerPool;
 
         InputAction _debugAdvance;
@@ -310,14 +295,7 @@ namespace GemTD.Gameplay
             foreach (var pool in _enemyPoolsByPrefab.Values)
                 pool.Clear();
             _enemyPoolsByPrefab.Clear();
-            _projectilePool?.Clear();
-            _slamEffectPool?.Clear();
-            _aftershockEffectPool?.Clear();
-            _fallEffectPool?.Clear();
-            _novaEffectPool?.Clear();
-            _warpEffectPool?.Clear();
-            _chainLightningEffectPool?.Clear();
-            _projectileVisuals?.Clear();
+            _effectPools?.Clear();
         }
 
         void Update()
@@ -598,7 +576,14 @@ namespace GemTD.Gameplay
             {
                 var endWave = ExpandPickPolicy.EndWave(runConfig);
                 WaveController = new WaveController(
-                    waveDefs, States, Economy, endWaveGold, bossEnemy, endWave, CapLastTipBeforeVictory);
+                    waveDefs,
+                    States,
+                    Economy,
+                    endWaveGold,
+                    bossEnemy,
+                    endWave,
+                    CapLastTipBeforeVictory,
+                    waveCatalog.Combos);
             }
         }
 
@@ -630,68 +615,7 @@ namespace GemTD.Gameplay
         void SetupPools()
         {
             var parent = poolRoot != null ? poolRoot : transform;
-            if (projectilePrefab != null)
-            {
-                _projectilePool = new ViewObjectPool<EffectView>(projectilePrefab, parent, EffectViewBinder.BoltPrewarm);
-                _projectilePool.Prewarm(EffectViewBinder.BoltPrewarm);
-            }
-            if (slamEffectPrefab != null)
-            {
-                _slamEffectPool = new ViewObjectPool<EffectView>(slamEffectPrefab, parent, EffectViewBinder.SlamPrewarm);
-                _slamEffectPool.Prewarm(EffectViewBinder.SlamPrewarm);
-            }
-            if (aftershockEffectPrefab != null)
-            {
-                _aftershockEffectPool = new ViewObjectPool<EffectView>(
-                    aftershockEffectPrefab,
-                    parent,
-                    EffectViewBinder.AftershockPrewarm);
-                _aftershockEffectPool.Prewarm(EffectViewBinder.AftershockPrewarm);
-            }
-            if (fallEffectPrefab != null)
-            {
-                _fallEffectPool = new ViewObjectPool<EffectView>(
-                    fallEffectPrefab,
-                    parent,
-                    EffectViewBinder.FallPrewarm);
-                _fallEffectPool.Prewarm(EffectViewBinder.FallPrewarm);
-            }
-            if (novaEffectPrefab != null)
-            {
-                _novaEffectPool = new ViewObjectPool<EffectView>(
-                    novaEffectPrefab,
-                    parent,
-                    EffectViewBinder.NovaPrewarm);
-                _novaEffectPool.Prewarm(EffectViewBinder.NovaPrewarm);
-            }
-            if (warpEffectPrefab != null)
-            {
-                _warpEffectPool = new ViewObjectPool<EffectView>(
-                    warpEffectPrefab,
-                    parent,
-                    EffectViewBinder.WarpPrewarm);
-                _warpEffectPool.Prewarm(EffectViewBinder.WarpPrewarm);
-            }
-            if (chainLightningEffectPrefab != null)
-            {
-                _chainLightningEffectPool = new ViewObjectPool<EffectView>(
-                    chainLightningEffectPrefab,
-                    parent,
-                    EffectViewBinder.ChainLightningPrewarm);
-                _chainLightningEffectPool.Prewarm(EffectViewBinder.ChainLightningPrewarm);
-            }
-            _projectileVisuals = new ProjectileVisualPools();
-            if (projectileVisuals != null)
-            {
-                for (var i = 0; i < projectileVisuals.Length; i++)
-                {
-                    var visual = projectileVisuals[i];
-                    if (visual == null)
-                        continue;
-                    _projectileVisuals.Add(visual.tower, visual.flightPrefab, visual.impactPrefab, parent);
-                }
-            }
-            _projectileVisuals.Prewarm();
+            _effectPools = new EffectViewPoolRegistry(parent);
             if (expandMarkerPrefab != null)
                 _markerPool = new ViewObjectPool<ExpandMarkerView>(expandMarkerPrefab, parent);
         }
@@ -1606,11 +1530,18 @@ namespace GemTD.Gameplay
 
             var runtime = new EnemyRuntime();
             var endless = WaveController != null && WaveController.IsEndless;
+            var waveNumber = CurrentWaveNumber > 0 ? CurrentWaveNumber : 1;
             var hpScale = WaveScaling.HpScale(
-                CurrentWaveNumber > 0 ? CurrentWaveNumber : 1,
+                waveNumber,
                 runConfig != null ? runConfig.GetHpMultiplier() : 1f,
                 endless);
-            runtime.Init(def, _polylineWorld, hpScale);
+            runtime.Init(
+                def,
+                _polylineWorld,
+                hpScale,
+                WaveScaling.SpeedScale(waveNumber, endless),
+                WaveScaling.ArmorScale(waveNumber, endless),
+                WaveScaling.ResistBonus(waveNumber, endless));
             _registry.Register(runtime);
 
             var viewPrefab = EnemyViewPrefabResolver.Resolve(def, enemyPrefab);
@@ -1734,15 +1665,10 @@ namespace GemTD.Gameplay
                 _effectViews,
                 _combat.Projectiles,
                 _combat.EffectPayloads,
-                _projectilePool,
-                _slamEffectPool,
-                _aftershockEffectPool,
-                _fallEffectPool,
-                _novaEffectPool,
-                _warpEffectPool,
-                _chainLightningEffectPool,
-                _projectileVisuals,
+                _effectPools,
+                _combat.CastMoments,
                 dt);
+            _combat.ClearCastMoments();
         }
 
         void EnsureHomeMarker()

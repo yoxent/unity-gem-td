@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 
 namespace GemTD.Gameplay.Towers
@@ -90,6 +91,12 @@ namespace GemTD.Gameplay.Towers
 
         [Min(0)]
         public int RepeatCount;
+
+        [Tooltip("Traveling part of this payload. Empty uses the tower flight prefab.")]
+        public EffectView flightPrefab;
+
+        [Tooltip("Landing part. Empty uses the flight prefab when this payload is a stationary pulse.")]
+        public EffectView impactPrefab;
 
         public bool IsValid =>
             Count > 0

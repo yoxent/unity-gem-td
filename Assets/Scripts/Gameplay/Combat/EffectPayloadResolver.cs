@@ -78,7 +78,7 @@ namespace GemTD.Gameplay.Combat
                 if (allowAnyTravel && def.TravelPattern == EffectPayloadTravelPattern.StationaryPulse)
                     continue;
 
-                AppendPlans(def, spec, baseline, anchorPosition, rng, into);
+                AppendPlans(def, d, spec, baseline, anchorPosition, rng, into);
             }
         }
 
@@ -152,7 +152,10 @@ namespace GemTD.Gameplay.Combat
                         Proliferate = spec.Proliferate,
                         KnockbackChance = spec.KnockbackChance,
                         KnockbackDistance = spec.KnockbackDistance,
-                        HitSpec = spec
+                        HitSpec = spec,
+                        PayloadIndex = d,
+                        FlightPrefab = def.flightPrefab,
+                        ImpactPrefab = def.impactPrefab
                     });
                 }
             }
@@ -160,6 +163,7 @@ namespace GemTD.Gameplay.Combat
 
         static void AppendPlans(
             EffectPayloadDefinition def,
+            int payloadIndex,
             in SkillSpec spec,
             in SkillSpec baseline,
             Vector3 anchorPosition,
@@ -180,6 +184,7 @@ namespace GemTD.Gameplay.Combat
                 case EffectPayloadScatterPattern.FixedRadial:
                     AppendFixedRadial(
                         def,
+                        payloadIndex,
                         spec,
                         origin,
                         count,
@@ -193,6 +198,7 @@ namespace GemTD.Gameplay.Combat
                 case EffectPayloadScatterPattern.RandomRing:
                     AppendRandomRing(
                         def,
+                        payloadIndex,
                         spec,
                         origin,
                         count,
@@ -205,7 +211,7 @@ namespace GemTD.Gameplay.Combat
                     break;
 
                 default:
-                    AppendSingle(def, spec, origin, origin, aoeRadius, damageMin, damageMax, ailments, into);
+                    AppendSingle(def, payloadIndex, spec, origin, origin, aoeRadius, damageMin, damageMax, ailments, into);
                     break;
             }
         }
@@ -233,6 +239,7 @@ namespace GemTD.Gameplay.Combat
 
         static void AppendFixedRadial(
             EffectPayloadDefinition def,
+            int payloadIndex,
             in SkillSpec spec,
             Vector3 origin,
             int count,
@@ -253,12 +260,13 @@ namespace GemTD.Gameplay.Combat
                 var dist = (def.MinDistance + def.MaxDistance) * 0.5f;
                 var landing = origin + dir * dist;
                 landing.y = origin.y;
-                AppendSingle(def, spec, origin, landing, aoeRadius, damageMin, damageMax, ailments, into);
+                AppendSingle(def, payloadIndex, spec, origin, landing, aoeRadius, damageMin, damageMax, ailments, into);
             }
         }
 
         static void AppendRandomRing(
             EffectPayloadDefinition def,
+            int payloadIndex,
             in SkillSpec spec,
             Vector3 origin,
             int count,
@@ -282,12 +290,13 @@ namespace GemTD.Gameplay.Combat
                 var dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
                 var landing = origin + dir * dist;
                 landing.y = origin.y;
-                AppendSingle(def, spec, origin, landing, aoeRadius, damageMin, damageMax, ailments, into);
+                AppendSingle(def, payloadIndex, spec, origin, landing, aoeRadius, damageMin, damageMax, ailments, into);
             }
         }
 
         static void AppendSingle(
             EffectPayloadDefinition def,
+            int payloadIndex,
             in SkillSpec spec,
             Vector3 origin,
             Vector3 landing,
@@ -316,6 +325,9 @@ namespace GemTD.Gameplay.Combat
                 KnockbackChance = spec.KnockbackChance,
                 KnockbackDistance = spec.KnockbackDistance,
                 HitSpec = spec,
+                PayloadIndex = payloadIndex,
+                FlightPrefab = def.flightPrefab,
+                ImpactPrefab = def.impactPrefab,
                 Visual = def.Trigger == EffectPayloadTrigger.AfterDelay
                     && def.TravelPattern == EffectPayloadTravelPattern.StationaryPulse
                     ? EffectPayloadVisual.Aftershock

@@ -59,6 +59,7 @@ namespace GemTD.Gameplay.Combat
         public Vector3 LandingPoint => _plan.LandingPoint;
         public EffectPayloadPlan Plan => _plan;
         public TowerInstance Owner => _owner;
+        public TowerDefinition SourceTower => _sourceTower;
 
         public void Init(
             in EffectPayloadPlan plan,

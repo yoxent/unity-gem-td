@@ -30,27 +30,11 @@ namespace GemTD.Gameplay.SkillLab
         [SerializeField] TowerView auraTowerPrefab;
         [SerializeField] TowerView curseTowerPrefab;
         [SerializeField] SkillLabDummyView[] dummyViews;
-        [SerializeField] EffectView projectilePrefab;
-        [SerializeField] EffectView slamEffectPrefab;
-        [SerializeField] EffectView aftershockEffectPrefab;
-        [SerializeField] EffectView fallEffectPrefab;
-        [SerializeField] EffectView novaEffectPrefab;
-        [SerializeField] EffectView warpEffectPrefab;
-        [SerializeField] EffectView chainLightningEffectPrefab;
-        [SerializeField] ProjectileVisual[] projectileVisuals;
-
         readonly SkillLabSession _session = new SkillLabSession();
         readonly List<EffectView> _effectViews = new List<EffectView>(32);
         readonly Dictionary<TowerView, ViewObjectPool<TowerView>> _towerViewPools =
             new Dictionary<TowerView, ViewObjectPool<TowerView>>(8);
-        ViewObjectPool<EffectView> _projectilePool;
-        ViewObjectPool<EffectView> _slamEffectPool;
-        ViewObjectPool<EffectView> _aftershockEffectPool;
-        ViewObjectPool<EffectView> _fallEffectPool;
-        ViewObjectPool<EffectView> _novaEffectPool;
-        ViewObjectPool<EffectView> _warpEffectPool;
-        ViewObjectPool<EffectView> _chainLightningEffectPool;
-        ProjectileVisualPools _projectileVisuals;
+        EffectViewPoolRegistry _effectPools;
         InputAction _escape;
         bool _draggingTower;
         int _draggingDummy = -1;
@@ -70,76 +54,7 @@ namespace GemTD.Gameplay.SkillLab
             if (towerView == null) Debug.LogError("SkillLabController: towerView is not assigned.", this);
             if (dummyViews == null || dummyViews.Length < DummyField.PinCount)
                 Debug.LogError("SkillLabController: dummyViews must have 10 entries.", this);
-            if (projectilePrefab == null)
-                Debug.LogError("SkillLabController: projectilePrefab is not assigned.", this);
-            else
-            {
-                _projectilePool = new ViewObjectPool<EffectView>(
-                    projectilePrefab,
-                    transform,
-                    EffectViewBinder.BoltPrewarm);
-                _projectilePool.Prewarm(EffectViewBinder.BoltPrewarm);
-            }
-            if (slamEffectPrefab != null)
-            {
-                _slamEffectPool = new ViewObjectPool<EffectView>(
-                    slamEffectPrefab,
-                    transform,
-                    EffectViewBinder.SlamPrewarm);
-                _slamEffectPool.Prewarm(EffectViewBinder.SlamPrewarm);
-            }
-            if (aftershockEffectPrefab != null)
-            {
-                _aftershockEffectPool = new ViewObjectPool<EffectView>(
-                    aftershockEffectPrefab,
-                    transform,
-                    EffectViewBinder.AftershockPrewarm);
-                _aftershockEffectPool.Prewarm(EffectViewBinder.AftershockPrewarm);
-            }
-            if (fallEffectPrefab != null)
-            {
-                _fallEffectPool = new ViewObjectPool<EffectView>(
-                    fallEffectPrefab,
-                    transform,
-                    EffectViewBinder.FallPrewarm);
-                _fallEffectPool.Prewarm(EffectViewBinder.FallPrewarm);
-            }
-            if (novaEffectPrefab != null)
-            {
-                _novaEffectPool = new ViewObjectPool<EffectView>(
-                    novaEffectPrefab,
-                    transform,
-                    EffectViewBinder.NovaPrewarm);
-                _novaEffectPool.Prewarm(EffectViewBinder.NovaPrewarm);
-            }
-            if (warpEffectPrefab != null)
-            {
-                _warpEffectPool = new ViewObjectPool<EffectView>(
-                    warpEffectPrefab,
-                    transform,
-                    EffectViewBinder.WarpPrewarm);
-                _warpEffectPool.Prewarm(EffectViewBinder.WarpPrewarm);
-            }
-            if (chainLightningEffectPrefab != null)
-            {
-                _chainLightningEffectPool = new ViewObjectPool<EffectView>(
-                    chainLightningEffectPrefab,
-                    transform,
-                    EffectViewBinder.ChainLightningPrewarm);
-                _chainLightningEffectPool.Prewarm(EffectViewBinder.ChainLightningPrewarm);
-            }
-            _projectileVisuals = new ProjectileVisualPools();
-            if (projectileVisuals != null)
-            {
-                for (var i = 0; i < projectileVisuals.Length; i++)
-                {
-                    var visual = projectileVisuals[i];
-                    if (visual == null)
-                        continue;
-                    _projectileVisuals.Add(visual.tower, visual.flightPrefab, visual.impactPrefab, transform);
-                }
-            }
-            _projectileVisuals.Prewarm();
+            _effectPools = new EffectViewPoolRegistry(transform);
 
             _session.BindCatalog(draftGems);
             if (towerCatalog != null)
@@ -346,15 +261,10 @@ namespace GemTD.Gameplay.SkillLab
                 _effectViews,
                 _session.Projectiles,
                 _session.EffectPayloads,
-                _projectilePool,
-                _slamEffectPool,
-                _aftershockEffectPool,
-                _fallEffectPool,
-                _novaEffectPool,
-                _warpEffectPool,
-                _chainLightningEffectPool,
-                _projectileVisuals,
+                _effectPools,
+                _session.CastMoments,
                 dt);
+            _session.ClearCastMoments();
         }
 
         void TickDrag()

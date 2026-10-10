@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139bb0e6a3fdaeb45bc077ecc2fcb8ae, type: 3}
+  m_Name: Combo_Bulwark
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Run.WaveDefinition
+  WaveNumber: 15
+  SpawnInterval: 0.28
+  Entries:
+  - Enemy: {fileID: 11400000, guid: 32ae34bfa8ca7af48b720cfe5a9559da, type: 2}
+    Count: 10
+  - Enemy: {fileID: 11400000, guid: 0a14439b599646b4480353153b3f5774, type: 2}
+    Count: 4
+  - Enemy: {fileID: 11400000, guid: f610317b671a2a741bc004f4fe112e9d, type: 2}
+    Count: 2
+  - Enemy: {fileID: 11400000, guid: a6d9bb658bd085e4ca692bcd7353b0d2, type: 2}
+    Count: 2
+  - Enemy: {fileID: 11400000, guid: 3c0b49c545ed4b99807c80e3af754e8b, type: 2}
+    Count: 6
+  - Enemy: {fileID: 11400000, guid: 103780e903ce39844a490cf52de1bcf5, type: 2}
+    Count: 4
+  - Enemy: {fileID: 11400000, guid: 0515298f729f41fdb4dfc4d4adbb054f, type: 2}
+    Count: 6
+  EndsCampaign: 0

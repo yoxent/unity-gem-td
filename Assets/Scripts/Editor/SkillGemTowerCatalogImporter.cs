@@ -373,7 +373,7 @@ namespace GemTD.Editor
                 ? CreateLevels(payload.Levels)
                 : Array.Empty<RoleLevelDefinition>();
             role.EffectPayloads = payload != null
-                ? CopyEffectPayloads(payload.EffectPayloads)
+                ? CopyEffectPayloads(payload.EffectPayloads, role.EffectPayloads)
                 : Array.Empty<EffectPayloadDefinition>();
             EditorUtility.SetDirty(role);
             return role;
@@ -460,7 +460,9 @@ namespace GemTD.Editor
             return copy;
         }
 
-        static EffectPayloadDefinition[] CopyEffectPayloads(EffectPayloadDefinition[] payloads)
+        static EffectPayloadDefinition[] CopyEffectPayloads(
+            EffectPayloadDefinition[] payloads,
+            EffectPayloadDefinition[] previous)
         {
             if (payloads == null || payloads.Length == 0)
                 return Array.Empty<EffectPayloadDefinition>();
@@ -469,26 +471,30 @@ namespace GemTD.Editor
             for (var i = 0; i < payloads.Length; i++)
             {
                 var source = payloads[i];
-                copy[i] = source != null
-                    ? new EffectPayloadDefinition
-                    {
-                        Trigger = source.Trigger,
-                        Anchor = source.Anchor,
-                        TravelPattern = source.TravelPattern,
-                        ScatterPattern = source.ScatterPattern,
-                        HitPolicy = source.HitPolicy,
-                        Tags = source.Tags,
-                        Count = source.Count,
-                        DamageMultiplier = source.DamageMultiplier,
-                        AoeRadius = source.AoeRadius,
-                        MinDistance = source.MinDistance,
-                        MaxDistance = source.MaxDistance,
-                        ArcHeight = source.ArcHeight,
-                        DelaySeconds = source.DelaySeconds,
-                        IntervalSeconds = source.IntervalSeconds,
-                        RepeatCount = source.RepeatCount
-                    }
-                    : null;
+                if (source == null)
+                    continue;
+
+                var kept = previous != null && i < previous.Length ? previous[i] : null;
+                copy[i] = new EffectPayloadDefinition
+                {
+                    Trigger = source.Trigger,
+                    Anchor = source.Anchor,
+                    TravelPattern = source.TravelPattern,
+                    ScatterPattern = source.ScatterPattern,
+                    HitPolicy = source.HitPolicy,
+                    Tags = source.Tags,
+                    Count = source.Count,
+                    DamageMultiplier = source.DamageMultiplier,
+                    AoeRadius = source.AoeRadius,
+                    MinDistance = source.MinDistance,
+                    MaxDistance = source.MaxDistance,
+                    ArcHeight = source.ArcHeight,
+                    DelaySeconds = source.DelaySeconds,
+                    IntervalSeconds = source.IntervalSeconds,
+                    RepeatCount = source.RepeatCount,
+                    flightPrefab = kept != null ? kept.flightPrefab : null,
+                    impactPrefab = kept != null ? kept.impactPrefab : null
+                };
             }
 
             return copy;

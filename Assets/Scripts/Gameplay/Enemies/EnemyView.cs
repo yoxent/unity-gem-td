@@ -18,6 +18,7 @@ namespace GemTD.Gameplay.Enemies
             StopHop();
             Runtime = runtime;
             _hopY = 0f;
+            name = HierarchyId(runtime);
             TryStartHop(hopScheduler);
             SyncTransform();
         }
@@ -44,6 +45,18 @@ namespace GemTD.Gameplay.Enemies
         {
             StopHop();
             Runtime = null;
+        }
+
+        static string HierarchyId(EnemyRuntime runtime)
+        {
+            var def = runtime != null ? runtime.Definition : null;
+            if (def == null)
+                return "Enemy";
+            if (!string.IsNullOrEmpty(def.ShownName))
+                return def.ShownName;
+            if (!string.IsNullOrEmpty(def.DisplayName))
+                return def.DisplayName;
+            return "Enemy";
         }
 
         void OnDestroy()

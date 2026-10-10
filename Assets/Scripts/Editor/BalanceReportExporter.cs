@@ -105,7 +105,7 @@ namespace GemTD.Editor
                         report,
                         "TowerEnemy",
                         tower.DisplayName,
-                        enemy.DisplayName,
+                        EnemyLabel(enemy),
                         0,
                         0,
                         0f,
@@ -263,7 +263,7 @@ namespace GemTD.Editor
                         report,
                         "TowerWaveEnemy",
                         tower.DisplayName,
-                        enemy.DisplayName,
+                        EnemyLabel(enemy),
                         wave.WaveNumber,
                         entry.Count,
                         wave.SpawnInterval,
@@ -371,6 +371,13 @@ namespace GemTD.Editor
             AppendField(report, killGold);
             AppendField(report, leakDamage);
             report.AppendLine();
+        }
+
+        static string EnemyLabel(EnemyDefinition enemy)
+        {
+            if (enemy == null)
+                return string.Empty;
+            return string.IsNullOrEmpty(enemy.ShownName) ? enemy.DisplayName : enemy.ShownName;
         }
 
         static void AppendField(StringBuilder report, string value)

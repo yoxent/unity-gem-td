@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using GemTD.Gameplay.Combat;
+using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Enemies
@@ -28,6 +29,10 @@ namespace GemTD.Gameplay.Enemies
         public float HopPeriod { get; private set; }
         public float FlyHeight { get; private set; }
         public float FlyPeriod { get; private set; }
+        public EnemyTag Tags { get; private set; }
+        public float BlinkDistance { get; private set; }
+        public float BlinkInterval { get; private set; }
+        float _blinkTimer;
         public float Hp { get; private set; }
         public float ShieldHp { get; private set; }
         public float SpawnMaxHealth => _maxHealth;
@@ -74,7 +79,44 @@ namespace GemTD.Gameplay.Enemies
             }
         }
 
-        public void Init(EnemyDefinition def, IReadOnlyList<Vector3> worldWaypoints, float healthScale = 1f)
+        /// <summary>
+        /// Armor rating multiplier. Same three moments as health, with smaller steps.
+        /// Enemies authored at 0 armor stay at 0.
+        /// </summary>
+        public static int ScaledArmor(int armor, float armorScale)
+        {
+            if (armor <= 0 || armorScale <= 0f)
+                return 0;
+            return Mathf.RoundToInt(armor * armorScale);
+        }
+
+        static EnemyAffix[] CopyAffixes(EnemyDefinition def)
+        {
+            var source = def != null ? def.Affixes : null;
+            if (source == null || source.Length == 0)
+                return System.Array.Empty<EnemyAffix>();
+
+            var copy = new EnemyAffix[source.Length];
+            for (var i = 0; i < source.Length; i++)
+                copy[i] = source[i];
+            return copy;
+        }
+
+        public static int ScaleResist(int authored, int bonus)
+        {
+            if (authored <= 0)
+                return 0;
+            var value = authored + (bonus > 0 ? bonus : 0);
+            return value > WaveScaling.ResistCap ? WaveScaling.ResistCap : value;
+        }
+
+        public void Init(
+            EnemyDefinition def,
+            IReadOnlyList<Vector3> worldWaypoints,
+            float healthScale = 1f,
+            float speedScale = 1f,
+            float armorScale = 1f,
+            int resistBonus = 0)
         {
             _def = def;
             _alive = true;
@@ -83,19 +125,19 @@ namespace GemTD.Gameplay.Enemies
                 healthScale = 0f;
             _maxHealth = def != null ? def.MaxHealth * healthScale : 0f;
             Hp = _maxHealth;
-            _shieldMax = def != null ? def.ShieldMax : 0f;
+            _shieldMax = def != null ? def.ShieldMax * healthScale : 0f;
             ShieldHp = _shieldMax;
-            _baseArmor = def != null ? def.Armor : 0;
+            _baseArmor = ScaledArmor(def != null ? def.Armor : 0, armorScale);
             _packMaxHealth = 0f;
             _packShield = 0f;
             _packArmor = 0;
             _packMoveSpeed = 0f;
-            FireResistance = def != null ? def.FireResistance : 0;
-            ColdResistance = def != null ? def.ColdResistance : 0;
-            LightningResistance = def != null ? def.LightningResistance : 0;
-            ChaosResistance = def != null ? def.ChaosResistance : 0;
-            Affixes = CopyAffixes(def != null ? def.Affixes : null);
-            MoveSpeedMultiplier = 1f;
+            FireResistance = ScaleResist(def != null ? def.FireResistance : 0, resistBonus);
+            ColdResistance = ScaleResist(def != null ? def.ColdResistance : 0, resistBonus);
+            LightningResistance = ScaleResist(def != null ? def.LightningResistance : 0, resistBonus);
+            ChaosResistance = ScaleResist(def != null ? def.ChaosResistance : 0, resistBonus);
+            Affixes = CopyAffixes(def);
+            MoveSpeedMultiplier = speedScale > 0f ? speedScale : 0f;
             LastDamageSource = null;
             _segmentIndex = 0;
             
@@ -108,6 +150,9 @@ namespace GemTD.Gameplay.Enemies
                 HopPeriod = def.HopPeriod;
                 FlyHeight = def.FlyHeight;
                 FlyPeriod = def.FlyPeriod;
+                Tags = def.Tags;
+                BlinkDistance = def.ResolveBlinkDistance();
+                BlinkInterval = def.ResolveBlinkInterval();
             }
             else
             {
@@ -116,7 +161,12 @@ namespace GemTD.Gameplay.Enemies
                 HopPeriod = 0f;
                 FlyHeight = 0f;
                 FlyPeriod = 0f;
+                Tags = EnemyTag.None;
+                BlinkDistance = 0f;
+                BlinkInterval = 0f;
             }
+
+            _blinkTimer = 0f;
 
             if (worldWaypoints == null || worldWaypoints.Count == 0)
             {
@@ -145,25 +195,66 @@ namespace GemTD.Gameplay.Enemies
             if (seconds <= 0f)
                 return true;
 
-            var remaining = CurrentMoveSpeed * seconds;
             var pos = WorldPosition;
             var seg = _segmentIndex;
-            while (remaining > 0f && seg < _waypoints.Length - 1)
+            var timer = _blinkTimer;
+            var timeLeft = seconds;
+            var speed = CurrentMoveSpeed;
+            var blinks = BlinkReady;
+
+            while (timeLeft > 1e-6f && seg < _waypoints.Length - 1)
             {
+                var timeToBlink = float.PositiveInfinity;
+                if (blinks)
+                {
+                    timeToBlink = BlinkInterval - timer;
+                    if (timeToBlink < 0f)
+                        timeToBlink = 0f;
+                }
+
                 var target = _waypoints[seg + 1];
                 var delta = target - pos;
                 var dist = delta.magnitude;
-                if (dist <= remaining)
+                var timeToNode = speed > 1e-5f ? dist / speed : float.PositiveInfinity;
+
+                var step = timeLeft;
+                if (timeToBlink < step)
+                    step = timeToBlink;
+                if (timeToNode < step)
+                    step = timeToNode;
+                if (step < 0f)
+                    step = 0f;
+
+                if (step > 0f && dist > 1e-6f && speed > 0f)
                 {
-                    pos = target;
+                    var move = speed * step;
+                    if (move >= dist)
+                    {
+                        pos = target;
+                        seg++;
+                    }
+                    else
+                        pos += delta / dist * move;
+                }
+                else if (dist <= 1e-6f)
                     seg++;
-                    remaining -= dist;
-                }
-                else
+
+                timeLeft -= step;
+                if (blinks)
+                    timer += step;
+
+                if (blinks && timer >= BlinkInterval - 1e-4f)
                 {
-                    pos += delta / dist * remaining;
-                    remaining = 0f;
+                    timer -= BlinkInterval;
+                    if (AdvanceAlong(_waypoints, ref seg, ref pos, BlinkDistance))
+                    {
+                        point = pos;
+                        return true;
+                    }
                 }
+
+                if (step <= 1e-8f && dist > 1e-6f && !(blinks && timeToBlink <= 1e-8f))
+                    break;
             }
 
             point = pos;
@@ -175,31 +266,64 @@ namespace GemTD.Gameplay.Enemies
             if (!_alive || _waypoints == null || _waypoints.Length < 2 || dt <= 0f)
                 return false;
 
-            var remaining = CurrentMoveSpeed * dt;
-
-            while (remaining > 0f && _segmentIndex < _waypoints.Length - 1)
+            var position = WorldPosition;
+            var segment = _segmentIndex;
+            if (AdvanceAlong(_waypoints, ref segment, ref position, CurrentMoveSpeed * dt))
             {
-                var target = _waypoints[_segmentIndex + 1];
-                var delta = target - WorldPosition;
+                WorldPosition = position;
+                _segmentIndex = segment;
+                return true;
+            }
+
+            if (BlinkReady)
+            {
+                _blinkTimer += dt;
+                while (_blinkTimer >= BlinkInterval)
+                {
+                    _blinkTimer -= BlinkInterval;
+                    if (AdvanceAlong(_waypoints, ref segment, ref position, BlinkDistance))
+                    {
+                        WorldPosition = position;
+                        _segmentIndex = segment;
+                        return true;
+                    }
+                }
+            }
+
+            WorldPosition = position;
+            _segmentIndex = segment;
+            return segment >= _waypoints.Length - 1;
+        }
+
+        bool BlinkReady => EnemyTags.Has(Tags, EnemyTag.Blink);
+
+        static bool AdvanceAlong(Vector3[] waypoints, ref int segmentIndex, ref Vector3 position, float distance)
+        {
+            var remaining = distance;
+            while (remaining > 0f && segmentIndex < waypoints.Length - 1)
+            {
+                var target = waypoints[segmentIndex + 1];
+                var delta = target - position;
                 var dist = delta.magnitude;
 
                 if (dist <= remaining)
                 {
-                    WorldPosition = target;
-                    _segmentIndex++;
+                    position = target;
+                    segmentIndex++;
                     remaining -= dist;
 
-                    if (_segmentIndex >= _waypoints.Length - 1)
+                    if (segmentIndex >= waypoints.Length - 1)
                         return true;
                 }
                 else
                 {
-                    WorldPosition += delta / dist * remaining;
+                    if (dist > 1e-8f)
+                        position += delta / dist * remaining;
                     remaining = 0f;
                 }
             }
 
-            return _segmentIndex >= _waypoints.Length - 1;
+            return segmentIndex >= waypoints.Length - 1;
         }
 
         public bool TryGetPathTangent(out Vector3 tangent)
@@ -324,15 +448,5 @@ namespace GemTD.Gameplay.Enemies
             }
         }
 
-        static EnemyAffix[] CopyAffixes(EnemyAffix[] source)
-        {
-            if (source == null || source.Length == 0)
-                return System.Array.Empty<EnemyAffix>();
-
-            var copy = new EnemyAffix[source.Length];
-            for (var i = 0; i < source.Length; i++)
-                copy[i] = source[i];
-            return copy;
-        }
     }
 }

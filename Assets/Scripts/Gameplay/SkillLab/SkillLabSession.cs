@@ -38,6 +38,9 @@ namespace GemTD.Gameplay.SkillLab
         public string Status { get; private set; } = StatusIdle;
         public IReadOnlyList<ProjectileRuntime> Projectiles => _combat.Projectiles;
         public IReadOnlyList<EffectPayloadRuntime> EffectPayloads => _combat.EffectPayloads;
+        public IReadOnlyList<CastMoment> CastMoments => _combat.CastMoments;
+
+        public void ClearCastMoments() => _combat.ClearCastMoments();
         public StatusRuntime Statuses => _statuses;
         public bool HasActiveVolley => _combat.HasActiveVolley;
 

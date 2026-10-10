@@ -79,6 +79,43 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Init_HealthScale_ScalesShieldLinearly_AndArmorWithSqrt()
+        {
+            _def.MaxHealth = 20f;
+            _def.ShieldMax = 20f;
+            _def.Armor = 5;
+            var waypoints = new List<Vector3> { Vector3.zero, Vector3.right };
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints, 4f);
+
+            Assert.AreEqual(80f, enemy.MaxHealth, 1e-4f);
+            Assert.AreEqual(80f, enemy.ShieldMax, 1e-4f);
+            Assert.AreEqual(80f, enemy.ShieldHp, 1e-4f);
+            Assert.AreEqual(5, enemy.Armor);
+            Assert.AreEqual(20f, _def.ShieldMax, 1e-4f);
+            Assert.AreEqual(5, _def.Armor);
+        }
+
+        [Test]
+        public void Init_ArmorSpeedAndResist_FollowWaveScales_AndSpareZeroResist()
+        {
+            _def.MaxHealth = 20f;
+            _def.Armor = 5;
+            _def.MoveSpeed = 2f;
+            _def.FireResistance = 25;
+            _def.ColdResistance = 0;
+            var waypoints = new List<Vector3> { Vector3.zero, Vector3.right };
+            var enemy = new EnemyRuntime();
+            enemy.Init(_def, waypoints, healthScale: 1f, speedScale: 1.25f, armorScale: 2f, resistBonus: 10);
+
+            Assert.AreEqual(10, enemy.Armor);
+            Assert.AreEqual(1.25f, enemy.MoveSpeedMultiplier, 1e-4f);
+            Assert.AreEqual(35, enemy.FireResistance);
+            Assert.AreEqual(0, enemy.ColdResistance);
+            Assert.AreEqual(25, _def.FireResistance);
+        }
+
+        [Test]
         public void ArmoredDefinition_LeakDamageIsReadable()
         {
             _def.LeakDamage = 2;

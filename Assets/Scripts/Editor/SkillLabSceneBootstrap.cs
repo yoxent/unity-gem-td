@@ -6,7 +6,6 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using GemTD.Gameplay.CameraControl;
-using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Enemies;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.SkillLab;
@@ -25,10 +24,6 @@ namespace GemTD.Editor
         {
             var catalog = Load<TowerCatalog>("Assets/Data/Towers/GameplayReadyTowersCatalog.asset");
             var dummyDef = Load<EnemyDefinition>("Assets/Data/Enemies/Enemy_Arrow.asset");
-            var projectilePrefab = Load<EffectView>("Assets/Prefabs/Phase2/Projectile_Bolt.prefab");
-            var slamEffectPrefab = Load<EffectView>("Assets/Prefabs/Phase2/Effect_Slam.prefab");
-            var aftershockEffectPrefab = Load<EffectView>("Assets/Prefabs/Phase2/Effect_Aftershock.prefab");
-            var fallEffectPrefab = Load<EffectView>("Assets/Prefabs/Effects/Effect_Fall.prefab");
             var towerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Default.prefab");
             var spellTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Spell.prefab");
             var slamTowerPrefab = Load<TowerView>("Assets/Prefabs/Towers/Tower_Slam.prefab");
@@ -110,10 +105,6 @@ namespace GemTD.Editor
             ctrlSo.FindProperty("attackTowerPrefab").objectReferenceValue = attackTowerPrefab;
             ctrlSo.FindProperty("auraTowerPrefab").objectReferenceValue = auraTowerPrefab;
             ctrlSo.FindProperty("curseTowerPrefab").objectReferenceValue = curseTowerPrefab;
-            ctrlSo.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
-            ctrlSo.FindProperty("slamEffectPrefab").objectReferenceValue = slamEffectPrefab;
-            ctrlSo.FindProperty("aftershockEffectPrefab").objectReferenceValue = aftershockEffectPrefab;
-            ctrlSo.FindProperty("fallEffectPrefab").objectReferenceValue = fallEffectPrefab;
             var gemsProp = ctrlSo.FindProperty("draftGems");
             gemsProp.arraySize = gems.Length;
             for (var i = 0; i < gems.Length; i++)
@@ -124,7 +115,7 @@ namespace GemTD.Editor
                 viewsProp.GetArrayElementAtIndex(i).objectReferenceValue = dummyViews[i];
             ctrlSo.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(controller);
-            if (catalog == null || dummyDef == null || gems[0] == null || projectilePrefab == null)
+            if (catalog == null || dummyDef == null || gems[0] == null)
                 Debug.LogError("[Gem TD] Skill Lab bootstrap: one or more data assets failed to load — Fire/gems will not work.");
 
             BuildHud(controller);

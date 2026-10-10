@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 612fc8c0802b25e43ad0d640727e9a6a, type: 3}
   m_Name: Enemy_Shield_Shaded
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Enemies.EnemyDefinition
-  DisplayName: Shaded Shield
+  DisplayName: Shield
+  ShownName: Shaded Shield
   MaxHealth: 25
   MoveSpeed: 1.8
   Armor: 0
@@ -24,6 +25,7 @@ MonoBehaviour:
   KillGold: 11
   LeakDamage: 2
   Rank: 1
+  Tags: 264
   Affixes: 14000000
   Locomotion: 0
   HopHeight: 0.35

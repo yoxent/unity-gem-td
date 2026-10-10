@@ -7,7 +7,6 @@ namespace GemTD.Gameplay.Combat
     {
         [SerializeField] ParticleSystem particles;
 
-        public override bool IsWarpEffect => true;
         protected override bool SitsOnGround => true;
         protected override ParticleSystem AssignedParticles => particles;
     }

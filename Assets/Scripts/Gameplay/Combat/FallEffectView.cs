@@ -26,8 +26,6 @@ namespace GemTD.Gameplay.Combat
         bool _fallDropPlayed;
         bool _fallImpactPlayed;
 
-        public override bool IsFallEffect => true;
-
         protected override void OnBind()
         {
             ResetFallVfxFlags();

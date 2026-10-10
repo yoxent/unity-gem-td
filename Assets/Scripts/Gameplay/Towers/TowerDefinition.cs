@@ -21,11 +21,16 @@ namespace GemTD.Gameplay.Towers
         [Tooltip("Optional per-tower TowerView prefab override. Empty uses the resolved visual family prefab.")]
         [FormerlySerializedAs("viewPrefab")]
         [SerializeField] TowerView towerViewPrefabOverride;
+
+        [Tooltip("Art for this tower's attack. Empty slots play nothing.")]
+        [SerializeField] TowerVfx vfx;
         [Tooltip("PoE-style tags. None = infer from the assigned role types.")]
         [SerializeField, FormerlySerializedAs("Tags"), GemTagMask]
         long tags;
 
         public TowerView TowerViewPrefabOverride => towerViewPrefabOverride;
+
+        public TowerVfx Vfx => vfx;
 
         public GemTag Tags
         {

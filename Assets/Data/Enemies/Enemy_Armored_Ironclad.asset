@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 612fc8c0802b25e43ad0d640727e9a6a, type: 3}
   m_Name: Enemy_Armored_Ironclad
   m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Enemies.EnemyDefinition
-  DisplayName: Ironclad Armored
+  DisplayName: Armored
+  ShownName: Ironclad Armored
   MaxHealth: 40
   MoveSpeed: 1.2
   Armor: 5
@@ -24,6 +25,7 @@ MonoBehaviour:
   KillGold: 11
   LeakDamage: 2
   Rank: 1
+  Tags: 130
   Affixes: 13000000
   Locomotion: 0
   HopHeight: 0.35

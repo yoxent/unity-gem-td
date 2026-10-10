@@ -9,7 +9,6 @@ namespace GemTD.Gameplay.Combat
 
         EnemyRuntime _struckTarget;
 
-        public override bool IsChainLightningEffect => true;
         protected override ParticleSystem AssignedParticles => strikeParticles;
 
         protected override void OnBind()

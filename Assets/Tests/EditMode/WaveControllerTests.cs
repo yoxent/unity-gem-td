@@ -230,11 +230,11 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void StartWave_BossWaveTen_InjectsOneCadenceBossAfterRegulars()
+        public void StartWave_BossWaveTen_PlacesTheBossAQuarterIn()
         {
             var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
             boss.Rank = EnemyRank.Boss;
-            var waves = BuildWaveArrayUpTo(10, regularCountForLastWave: 2);
+            var waves = BuildWaveArrayUpTo(10, regularCountForLastWave: 8);
 
             try
             {
@@ -249,10 +249,11 @@ namespace GemTD.Tests.EditMode
                 gate.ResetCounts();
                 controller.Tick(0f, gate.Gate); // interval 0 — one Tick drains the queue
 
-                Assert.AreEqual(3, gate.SpawnCount); // 2 regulars + 1 boss
+                Assert.AreEqual(9, gate.SpawnCount); // 8 regulars + 1 boss
                 Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[0]);
                 Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[1]);
                 Assert.AreEqual(boss, gate.SpawnedEnemies[2]);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[3]);
             }
             finally
             {
@@ -284,7 +285,43 @@ namespace GemTD.Tests.EditMode
                 controller.Tick(0f, gate.Gate);
 
                 Assert.AreEqual(2, gate.SpawnCount); // 1 regular + 1 boss (capped)
-                Assert.AreEqual(boss, gate.SpawnedEnemies[1]);
+                Assert.AreEqual(boss, gate.SpawnedEnemies[0]);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[1]);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(boss);
+                for (var i = 0; i < waves.Length; i++)
+                    UnityEngine.Object.DestroyImmediate(waves[i]);
+            }
+        }
+
+        [Test]
+        public void StartWave_TwoBosses_AreSevenSlotsApart()
+        {
+            var boss = ScriptableObject.CreateInstance<EnemyDefinition>();
+            boss.Rank = EnemyRank.Boss;
+            var waves = BuildWaveArrayUpTo(20, regularCountForLastWave: 12);
+
+            try
+            {
+                var controller = CreateController(waves, endWaveGold: 25, bossEnemy: boss);
+                var gate = new TestSpawnerGate();
+                AdvanceThroughWaves(controller, gate, waveCount: 19);
+
+                EnterPlanReady();
+                controller.StartWave(spawnTipCount: 2);
+                Assert.AreEqual(2, controller.CurrentBossCount);
+
+                gate.ResetCounts();
+                controller.Tick(0f, gate.Gate);
+
+                Assert.AreEqual(14, gate.SpawnCount);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[2]);
+                Assert.AreEqual(boss, gate.SpawnedEnemies[3]);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[4]);
+                Assert.AreEqual(boss, gate.SpawnedEnemies[10]);
+                Assert.AreEqual(_enemyDef, gate.SpawnedEnemies[11]);
             }
             finally
             {
@@ -343,12 +380,12 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(RunStateId.Draft, _states.Current);
 
             EnterPlanReady();
-            ClearWave(controller, gate, expectedSpawns: 3); // wave 3 (reuse wave2)
+            ClearWave(controller, gate, expectedSpawns: 4); // wave 3 reuses wave 2, +1 headcount
             Assert.AreEqual(3, controller.CurrentWaveNumber);
             Assert.AreEqual(RunStateId.Draft, _states.Current);
 
             EnterPlanReady();
-            ClearWave(controller, gate, expectedSpawns: 3); // wave 4 → Victory
+            ClearWave(controller, gate, expectedSpawns: 5); // wave 4 → Victory
             Assert.AreEqual(4, controller.CurrentWaveNumber);
             Assert.AreEqual(RunStateId.VictorySummary, _states.Current);
             Assert.Throws<InvalidOperationException>(() => controller.StartWave());
@@ -387,8 +424,8 @@ namespace GemTD.Tests.EditMode
                 _states.EnterEndless();
                 Assert.IsTrue(controller.IsEndless);
 
-                // Wave 2 past EndWave=1 — default tipCount 1 → 1 boss + 2 regulars.
-                ClearWave(controller, gate, expectedSpawns: 2 + 1);
+                // Wave 2 past EndWave=1 — default tipCount 1 → 1 boss + grown regulars.
+                ClearWave(controller, gate, expectedSpawns: 3 + 1);
                 Assert.AreEqual(2, controller.CurrentWaveNumber);
                 Assert.AreEqual(1, controller.CurrentBossCount);
                 Assert.AreNotEqual(RunStateId.VictorySummary, _states.Current);
@@ -413,7 +450,7 @@ namespace GemTD.Tests.EditMode
 
             controller.BeginEndless();
             _states.EnterEndless();
-            ClearWave(controller, gate, expectedSpawns: 2);
+            ClearWave(controller, gate, expectedSpawns: 3);
             // Wave 2 endless: ScaleEndWaveGold(100,2)=108, then ×0.5 → 54
             Assert.AreEqual(100 + 54, _economy.Gold);
             Assert.AreEqual(RunStateId.Plan, _states.Current);
@@ -436,7 +473,7 @@ namespace GemTD.Tests.EditMode
 
                 controller.BeginEndless();
                 _states.EnterEndless();
-                ClearWave(controller, gate, expectedSpawns: 2);
+                ClearWave(controller, gate, expectedSpawns: 3);
                 Assert.AreEqual(2, PlayerProfile.GetHighestWaveCleared());
                 Assert.IsTrue(PlayerProfile.LastUpdateWasNewBest);
             }
@@ -468,7 +505,7 @@ namespace GemTD.Tests.EditMode
                 if (_states.Current == RunStateId.Draft)
                     _states.DraftResolved();
                 EnterPlanReady();
-                ClearWave(controller, gate, expectedSpawns: 2);
+                ClearWave(controller, gate, expectedSpawns: w + 1);
             }
 
             Assert.AreEqual(4, controller.CurrentWaveNumber);
