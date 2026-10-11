@@ -11,7 +11,7 @@ namespace GemTD.Editor
     public static class SupportGemCatalogImporter
     {
         const string PrefsJsonDir = "GemTD.SkillGemJsonDir";
-        const string DefaultJsonDir = @"E:\Projects\Docs\project-docs\Unity\unity-gem-td\sources";
+        const string DefaultJsonDir = @"E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td\sources";
         const string SupportJsonFile = "poe1_inspired_tower_support_gems.json";
         const string GemRoot = "Assets/Data/Gems";
         const string GemPoolPath = "Assets/Data/Gems/DraftPoolCatalog.asset";

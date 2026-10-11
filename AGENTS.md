@@ -6,7 +6,9 @@ Solo Steam Windows roguelite TD — build-crafting via universal support gems + 
 
 **Always check the docs repo** before assuming something is missing — designs, plans, SDD ledgers, and status live there, not in this Unity project.
 
-`E:\Projects\Docs\project-docs\Unity\unity-gem-td`
+Docs checkout: `E:\Projects\Docs\project-docs-unity-gem-td` on branch `docs/unity-gem-td`.
+
+Gem TD tree: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 
 | Path | Contents |
 | --- | --- |

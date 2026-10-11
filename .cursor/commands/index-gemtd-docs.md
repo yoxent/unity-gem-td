@@ -6,7 +6,7 @@ Re-index Gem TD design docs into Context Mode for this project only.
 
 | Arg | Value |
 | --- | --- |
-| `path` | `E:\Projects\Docs\project-docs\Unity\unity-gem-td` |
+| `path` | `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td` |
 | `source` | `GemTD-docs` |
 | `extensions` | `[".md", ".txt"]` |
 | `exclude` | `["**/sources/**"]` |

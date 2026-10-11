@@ -11,7 +11,7 @@ namespace GemTD.Editor
     public static class WikiTowerCatalogExporter
     {
         const string PrefsDocsRoot = "GemTD.WikiDocsRoot";
-        const string DefaultDocsRoot = @"E:\Projects\Docs\project-docs\Unity\unity-gem-td";
+        const string DefaultDocsRoot = @"E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td";
         const string TowerAssetRoot = "Assets/Data/Towers/Catalog";
 
         [MenuItem("Gem TD/Export Wiki Tower Catalog (Completed)")]

@@ -12,7 +12,7 @@ namespace GemTD.Editor
     public static class SkillGemTowerCatalogImporter
     {
         const string PrefsJsonDir = "GemTD.SkillGemJsonDir";
-        const string DefaultJsonDir = @"E:\Projects\Docs\project-docs\Unity\unity-gem-td\sources";
+        const string DefaultJsonDir = @"E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td\sources";
         const string TowerCatalogPath = "Assets/Data/Towers/TowerCatalog.asset";
         const string TowerRoot = "Assets/Data/Towers/Catalog";
         const string RoleRoot = "Assets/Data/Towers/Roles/Catalog";
