@@ -16,7 +16,7 @@ Gem TD tree: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 | `GDD.md` / `ARCHITECTURE.md` / `UI-SPEC.md` / `DAMAGE-MODEL.md` | Canonical design |
 | `wiki/catalog/` | Generated per-tower (and later per-gem) reference |
 | `planning/` | Phase designs, implementation plans, STATUS. **Phase 2 is closed** — do not execute `phase2-*` or PR6 plans. |
-| `planning/handoff.md` | Demo / Early Access set: 29 towers. Full catalog is out of this version. On `feat/phase3-campaign`, custom grass is the only grass system. Attack VFX prefabs are assigned on the tower and payload assets. Delivery timing and damage stay as accepted. Pending play check is a full wave-50 playthrough. VFX art and SFX clips are later. |
+| `planning/handoff.md` | Demo / Early Access set: 29 towers. Full catalog is out of this version. On `feat/phase3-campaign`, custom grass is the only grass system. Attack VFX prefabs are assigned on the tower and payload assets. Delivery timing and damage stay as accepted. The wave-50 Play Mode playthrough is a pass for now (2026-10-15; the run ended in a loss before wave 50). Bloom + Vignette were retuned the same day. Playable bow ice, fire, and physical shots use AllIn1 wrappers; Fireball is unchanged; Lightning Arrow stays on the generic bolt. Other VFX art and SFX clips are later. |
 | `planning/sdd/` | Superpowers / SDD session ledger (briefs, reports, `progress.md`) |
 
 **Do not use Notion.** The July 2026 Gem TD Notion tree is retired and is not a source.
