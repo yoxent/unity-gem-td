@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139bb0e6a3fdaeb45bc077ecc2fcb8ae, type: 3}
+  m_Name: Combo_Ward
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Run.WaveDefinition
+  WaveNumber: 15
+  SpawnInterval: 0.26
+  Entries:
+  - Enemy: {fileID: 11400000, guid: 32ae34bfa8ca7af48b720cfe5a9559da, type: 2}
+    Count: 10
+  - Enemy: {fileID: 11400000, guid: 0a14439b599646b4480353153b3f5774, type: 2}
+    Count: 4
+  - Enemy: {fileID: 11400000, guid: 77541d5c224b7b44289d1ea7fe7b61ae, type: 2}
+    Count: 2
+  - Enemy: {fileID: 11400000, guid: 0515298f729f41fdb4dfc4d4adbb054f, type: 2}
+    Count: 6
+  - Enemy: {fileID: 11400000, guid: b8ee669cfa907734893ffa51be4839c9, type: 2}
+    Count: 4
+  - Enemy: {fileID: 11400000, guid: 47c734b26fba9444c90bbe5ecff481ad, type: 2}
+    Count: 4
+  - Enemy: {fileID: 11400000, guid: 68097d4dcfb40f847b4aa315e59e20ad, type: 2}
+    Count: 2
+  - Enemy: {fileID: 11400000, guid: f484d3a14a222da458901dee4d5a3d64, type: 2}
+    Count: 2
+  EndsCampaign: 0

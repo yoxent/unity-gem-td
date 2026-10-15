@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GemTD.Gameplay.Grid;
+using GemTD.Gameplay.Run;
 using UnityEngine;
 
 namespace GemTD.Gameplay.Map
@@ -18,12 +19,17 @@ namespace GemTD.Gameplay.Map
         readonly List<Vector2Int> _candidates = new List<Vector2Int>(8);
         readonly List<(MapChunkStamp prefab, int yaw)> _passing = new List<(MapChunkStamp, int)>(16);
         readonly List<Vector2Int> _tipScratch = new List<Vector2Int>(8);
-        readonly List<int> _pickTipCounts = new List<int>(16);
-        readonly List<int> _bestPickIndices = new List<int>(16);
+        readonly List<int> _lengthen = new List<int>(16);
+        readonly List<int> _splitT = new List<int>(16);
+        readonly List<int> _splitCross = new List<int>(16);
         readonly EdgeFlags[] _dirs = { EdgeFlags.North, EdgeFlags.East, EdgeFlags.South, EdgeFlags.West };
 
+        public RunConfig Config { get; set; }
+        public int UpcomingWaveNumber { get; set; } = 1;
+
         public ChunkExpandService(ChunkGrid grid, PathGraph path, GridBoard board,
-            ChunkStampService stamp, IChunkCatalog catalog, System.Random rng)
+            ChunkStampService stamp, IChunkCatalog catalog, System.Random rng,
+            RunConfig config = null)
         {
             _grid = grid;
             _path = path;
@@ -31,6 +37,21 @@ namespace GemTD.Gameplay.Map
             _stamp = stamp;
             _catalog = catalog;
             _rng = rng;
+            Config = config;
+            WarmMaskCache();
+        }
+
+        void WarmMaskCache()
+        {
+            if (_catalog == null)
+                return;
+            _catalog.CopyAll(_all);
+            for (var i = 0; i < _all.Count; i++)
+            {
+                var stamp = _all[i];
+                if (stamp != null)
+                    stamp.GetRotatedMask(0);
+            }
         }
 
         public int CollectLegalExpands(List<Vector2Int> into)
@@ -42,7 +63,7 @@ namespace GemTD.Gameplay.Map
             for (var i = 0; i < _candidates.Count; i++)
             {
                 var coord = _candidates[i];
-                if (AnyPassingCombo(coord, _all))
+                if (HasPolicyLegalPick(coord, _all))
                     into.Add(coord);
             }
             return into.Count;
@@ -58,8 +79,10 @@ namespace GemTD.Gameplay.Map
             CollectPassing(coord, _all, _passing);
             if (_passing.Count == 0) return false;
 
-            DropOptionalDeadEnds(_passing);
-            var pick = PickHighestTipCountIndex(coord, _passing);
+            ApplyPickFilters(coord, _passing);
+            if (_passing.Count == 0) return false;
+
+            var pick = PickPolicyIndex(_passing);
             var (prefab, yaw) = _passing[pick];
             var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
             if (!_path.AllTipsReachHome())
@@ -69,6 +92,39 @@ namespace GemTD.Gameplay.Map
             }
             _stamp.Commit(coord, prefab, yaw, res.Mask, _grid);
             return true;
+        }
+
+        /// <summary>
+        /// Force a DeadEnd on the first legal tip expand slot (ignores tip-count lottery /
+        /// optional-DeadEnd drop). Used after EndWave clear to cap the last open tip before
+        /// Victory (Task 7). Returns false if no DeadEnd combo fits.
+        /// </summary>
+        public bool TryForceDeadEndCap()
+        {
+            _catalog.CopyAll(_all);
+            CollectCandidates();
+            for (var i = 0; i < _candidates.Count; i++)
+            {
+                var coord = _candidates[i];
+                _passing.Clear();
+                CollectPassing(coord, _all, _passing);
+                KeepOnlyDeadEnds(_passing);
+                if (_passing.Count == 0)
+                    continue;
+
+                var (prefab, yaw) = _passing[0];
+                var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
+                if (!_path.AllTipsReachHome())
+                {
+                    _stamp.Rollback(coord, res, _path, _board);
+                    continue;
+                }
+
+                _stamp.Commit(coord, prefab, yaw, res.Mask, _grid);
+                return true;
+            }
+
+            return false;
         }
 
         void CollectCandidates()
@@ -92,23 +148,13 @@ namespace GemTD.Gameplay.Map
                 }
         }
 
-        bool AnyPassingCombo(Vector2Int coord, List<MapChunkStamp> all)
+        bool HasPolicyLegalPick(Vector2Int coord, List<MapChunkStamp> all)
         {
-            for (var i = 0; i < all.Count; i++)
-            {
-                var prefab = all[i];
-                if (prefab == null) continue;
-                var baseMask = prefab.GetMask();
-                for (var yaw = 0; yaw < 4; yaw++)
-                {
-                    var mask = baseMask.Rotated(yaw);
-                    if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
-                    if (!KeepsTreeSeparation(coord, mask)) continue;
-                    if (TentativeReachesHome(coord, prefab, yaw))
-                        return true;
-                }
-            }
-            return false;
+            _passing.Clear();
+            CollectPassing(coord, all, _passing);
+            if (_passing.Count == 0) return false;
+            ApplyPickFilters(coord, _passing);
+            return _passing.Count > 0;
         }
 
         void CollectPassing(Vector2Int coord, List<MapChunkStamp> all, List<(MapChunkStamp, int)> into)
@@ -117,14 +163,14 @@ namespace GemTD.Gameplay.Map
             {
                 var prefab = all[i];
                 if (prefab == null) continue;
-                var baseMask = prefab.GetMask();
                 for (var yaw = 0; yaw < 4; yaw++)
                 {
-                    var mask = baseMask.Rotated(yaw);
+                    var mask = prefab.GetRotatedMask(yaw);
                     if (!EdgesAgreeWithNeighbors(coord, mask)) continue;
                     if (!KeepsTreeSeparation(coord, mask)) continue;
-                    if (TentativeReachesHome(coord, prefab, yaw))
-                        into.Add((prefab, yaw));
+                    if (!TryUniqueIncoming(coord, out var incoming)) continue;
+                    if (!mask.AllPathTilesReachEdge(incoming)) continue;
+                    into.Add((prefab, yaw));
                 }
             }
         }
@@ -272,13 +318,40 @@ namespace GemTD.Gameplay.Map
             return count == 1;
         }
 
-        bool TentativeReachesHome(Vector2Int coord, MapChunkStamp prefab, int yaw)
+        void ApplyPickFilters(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
         {
-            var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
-            var ok = _path.AllTipsReachHome();
-            _stamp.Rollback(coord, res, _path, _board);
-            return ok;
+            if (ExpandPickPolicy.IsClosingWindow(
+                UpcomingWaveNumber, CurrentTipCount(), ExpandPickPolicy.EndWave(Config)))
+            {
+                KeepOnlyDeadEnds(passing);
+                return;
+            }
+
+            DropOptionalDeadEnds(passing);
+            DropOptionalSplitTypes(coord, passing);
+            ForceCavityT(coord, passing);
         }
+
+        void KeepOnlyDeadEnds(List<(MapChunkStamp prefab, int yaw)> passing)
+        {
+            var n = 0;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (passing[i].prefab.GetMask().Type != ChunkType.DeadEnd)
+                    continue;
+                passing[n] = passing[i];
+                n++;
+            }
+            if (n == 0)
+            {
+                passing.Clear();
+                return;
+            }
+            for (var i = passing.Count - 1; i >= n; i--)
+                passing.RemoveAt(i);
+        }
+
+        int CurrentTipCount() => _path.CollectSpawnTips(_tipScratch);
 
         /// <summary>
         /// DeadEnds never win a random tip-count tie. Drop them whenever any
@@ -310,33 +383,125 @@ namespace GemTD.Gameplay.Map
                 passing.RemoveAt(i);
         }
 
-        /// <summary>
-        /// Among passing prefab+yaws, prefer the most spawn tips after stamp (keep branches open).
-        /// Ties broken uniformly at random.
-        /// </summary>
-        int PickHighestTipCountIndex(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
+        void DropOptionalSplitTypes(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
         {
-            _pickTipCounts.Clear();
-            var maxTips = -1;
+            var wave = UpcomingWaveNumber;
+            var tips = CurrentTipCount();
+            var allowsT = ExpandPickPolicy.AllowsTJunction(wave, tips, Config);
+            var allowsCross = ExpandPickPolicy.AllowsCross(wave, tips, Config);
+            if (allowsT && allowsCross)
+                return;
+
+            var n = 0;
             for (var i = 0; i < passing.Count; i++)
             {
-                var (prefab, yaw) = passing[i];
-                var res = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
-                var tips = _path.CollectSpawnTips(_tipScratch);
-                _stamp.Rollback(coord, res, _path, _board);
-                _pickTipCounts.Add(tips);
-                if (tips > maxTips)
-                    maxTips = tips;
+                var type = passing[i].prefab.GetMask().Type;
+                if (type == ChunkType.TJunction && !allowsT)
+                {
+                    if (OpensIntoForcedPocket(coord, passing[i]))
+                    {
+                        passing[n] = passing[i];
+                        n++;
+                    }
+                    continue;
+                }
+                if (type == ChunkType.Cross && !allowsCross)
+                    continue;
+                passing[n] = passing[i];
+                n++;
             }
+            if (n == 0)
+                return;
 
-            _bestPickIndices.Clear();
-            for (var i = 0; i < passing.Count; i++)
-            {
-                if (_pickTipCounts[i] == maxTips)
-                    _bestPickIndices.Add(i);
-            }
-
-            return _bestPickIndices[_rng.Next(_bestPickIndices.Count)];
+            for (var i = passing.Count - 1; i >= n; i--)
+                passing.RemoveAt(i);
         }
+
+        void ForceCavityT(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
+        {
+            var hasCavityT = false;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (passing[i].prefab.GetMask().Type != ChunkType.TJunction)
+                    continue;
+                if (!OpensIntoForcedPocket(coord, passing[i]))
+                    continue;
+                hasCavityT = true;
+                break;
+            }
+            if (!hasCavityT)
+                return;
+
+            var n = 0;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (passing[i].prefab.GetMask().Type != ChunkType.TJunction)
+                    continue;
+                if (!OpensIntoForcedPocket(coord, passing[i]))
+                    continue;
+                passing[n] = passing[i];
+                n++;
+            }
+            for (var i = passing.Count - 1; i >= n; i--)
+                passing.RemoveAt(i);
+        }
+
+        bool OpensIntoForcedPocket(Vector2Int coord, (MapChunkStamp prefab, int yaw) pick)
+        {
+            var mask = pick.prefab.GetRotatedMask(pick.yaw);
+            if (!TryUniqueIncoming(coord, out var incoming))
+                return false;
+            for (var d = 0; d < _dirs.Length; d++)
+            {
+                var dir = _dirs[d];
+                if (dir == incoming)
+                    continue;
+                if ((mask.OpenEdges & dir) == 0)
+                    continue;
+                var one = _grid.NeighborCoord(coord, dir);
+                if (IsForcedDeadEndPocket(one, coord))
+                    return true;
+            }
+            return false;
+        }
+
+        int PickPolicyIndex(List<(MapChunkStamp prefab, int yaw)> passing)
+        {
+            _lengthen.Clear();
+            _splitT.Clear();
+            _splitCross.Clear();
+            for (var i = 0; i < passing.Count; i++)
+            {
+                var type = passing[i].prefab.GetMask().Type;
+                if (type == ChunkType.Straight || type == ChunkType.Corner)
+                    _lengthen.Add(i);
+                else if (type == ChunkType.TJunction)
+                    _splitT.Add(i);
+                else if (type == ChunkType.Cross)
+                    _splitCross.Add(i);
+            }
+
+            var splitTotal = _splitT.Count + _splitCross.Count;
+            if (splitTotal == 0)
+                return _lengthen.Count > 0 ? PickUniform(_lengthen) : _rng.Next(passing.Count);
+            if (_lengthen.Count == 0)
+                return PickSplitIndex();
+            if (_rng.NextDouble() < ExpandPickPolicy.SplitP(Config))
+                return PickSplitIndex();
+            return PickUniform(_lengthen);
+        }
+
+        int PickSplitIndex()
+        {
+            if (_splitCross.Count == 0)
+                return PickUniform(_splitT);
+            if (_splitT.Count == 0)
+                return PickUniform(_splitCross);
+            if (_rng.NextDouble() < ExpandPickPolicy.CrossRamp(UpcomingWaveNumber, Config))
+                return PickUniform(_splitCross);
+            return PickUniform(_splitT);
+        }
+
+        int PickUniform(List<int> indices) => indices[_rng.Next(indices.Count)];
     }
 }

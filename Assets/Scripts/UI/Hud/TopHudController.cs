@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using TMPro;
 using GemTD.Core;
 using GemTD.Gameplay;
-using GemTD.Gameplay.Run;
 
 namespace GemTD.UI
 {
@@ -27,6 +26,14 @@ namespace GemTD.UI
             GameEvents.WaveChanged += OnWaveChanged;
             GameEvents.RunStateChanged += RefreshRunState;
             GameEvents.RequestCloseTopMost += OnRequestCloseTopMost;
+            RefreshEconomy();
+            RefreshWave();
+        }
+
+        void Start()
+        {
+            RefreshEconomy();
+            RefreshWave();
         }
 
         void OnDisable()
@@ -44,24 +51,36 @@ namespace GemTD.UI
             _popup = popup;
             if (_root == null) return;
 
-            OnGoldChanged(_root.Economy != null ? _root.Economy.Gold : 0);
-            OnLivesChanged(_root.Economy != null ? _root.Economy.Lives : 0);
-            OnWaveChanged(_root.CurrentWaveNumber);
+            RefreshEconomy();
+            RefreshWave();
             RefreshRunState();
         }
 
-        void OnGoldChanged(int gold) { if (goldText != null) goldText.text = $"Gold {gold}"; }
-        void OnLivesChanged(int lives) { if (livesText != null) livesText.text = $"Lives {lives}"; }
-        void OnWaveChanged(int wave) { if (waveText != null) waveText.text = wave > 0 ? $"Wave {wave}" : ""; }
+        void RefreshEconomy()
+        {
+            if (_root == null || _root.Economy == null) return;
+            OnGoldChanged(_root.Economy.Gold);
+            OnLivesChanged(_root.Economy.Lives);
+        }
+
+        void RefreshWave()
+        {
+            if (_root == null) return;
+            var wave = _root.CurrentWaveNumber;
+            if (wave <= 0 && _root.WaveController != null)
+                wave = _root.WaveController.NextWaveNumber;
+            OnWaveChanged(wave);
+        }
+
+        void OnGoldChanged(int gold) { if (goldText != null) goldText.text = gold.ToString(); }
+        void OnLivesChanged(int lives) { if (livesText != null) livesText.text = lives.ToString(); }
+        void OnWaveChanged(int wave) { if (waveText != null) waveText.text = wave.ToString(); }
 
         void RefreshRunState()
         {
             if (_root == null) return;
             if (stateText != null && _root.States != null)
-            {
-                var planLocked = _root.States.Current == RunStateId.Plan && !_root.States.ExpandSatisfiedThisCycle;
-                stateText.text = $"State: {_root.States.Current}" + (planLocked ? " (expand)" : "");
-            }
+                stateText.text = $"{_root.States.Current} Phase";
             if (defeatText != null)
                 defeatText.gameObject.SetActive(false);
         }

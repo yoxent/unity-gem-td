@@ -45,6 +45,7 @@ namespace GemTD.UI
 
         void OnCycleLeft()
         {
+            UiSfx.Click();
             if (_root == null || _slot < 0)
                 return;
             _root.CyclePriority(_slot, -1);
@@ -52,6 +53,7 @@ namespace GemTD.UI
 
         void OnCycleRight()
         {
+            UiSfx.Click();
             if (_root == null || _slot < 0)
                 return;
             _root.CyclePriority(_slot, 1);

@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e8a1d27b6f4c0e9a5d3f18b2e70461, type: 3}
+  m_Name: Theme_Main
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.ThemeManager
+  styles:
+  - id: header
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 40
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: primary-28
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 28
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: primary-26
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 26
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: primary-22
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 22
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: primary-18
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 18
+    font: {fileID: 11400000, guid: 0cea79885957571468cb9d682d99ff4d, type: 2}
+  - id: primary-16
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 16
+    font: {fileID: 11400000, guid: 0cea79885957571468cb9d682d99ff4d, type: 2}
+  - id: primary-14
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 14
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: primary-12
+    color: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
+    fontSize: 12
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: secondary-26
+    color: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+    fontSize: 26
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: secondary-22
+    color: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+    fontSize: 22
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: secondary-18
+    color: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+    fontSize: 18
+    font: {fileID: 11400000, guid: 0cea79885957571468cb9d682d99ff4d, type: 2}
+  - id: secondary-16
+    color: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+    fontSize: 16
+    font: {fileID: 11400000, guid: 0cea79885957571468cb9d682d99ff4d, type: 2}
+  - id: secondary-14
+    color: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+    fontSize: 14
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: secondary-12
+    color: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+    fontSize: 12
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: gold-40
+    color: {r: 0.31764707, g: 0.21960784, b: 0.06666667, a: 1}
+    fontSize: 40
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: gold-26
+    color: {r: 0.31764707, g: 0.21960784, b: 0.06666667, a: 1}
+    fontSize: 26
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: red-26
+    color: {r: 1, g: 0.9490196, b: 0.9490196, a: 1}
+    fontSize: 26
+    font: {fileID: 11400000, guid: 250a7453155121b4bb52c02fa9e531eb, type: 2}
+  - id: red-22
+    color: {r: 1, g: 0.9490196, b: 0.9490196, a: 1}
+    fontSize: 22
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: accent-22
+    color: {r: 1, g: 0.9490196, b: 0.9490196, a: 1}
+    fontSize: 22
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}
+  - id: accent-16
+    color: {r: 1, g: 0.9490196, b: 0.9490196, a: 1}
+    fontSize: 16
+    font: {fileID: 11400000, guid: 0a1090f8ad92fd54aad9e84819c4011c, type: 2}

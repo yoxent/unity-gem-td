@@ -17,9 +17,12 @@ namespace GemTD.UI
         [SerializeField] TMP_Text speed4Label;
         [SerializeField] GameObject pauseChip;
 
+        [SerializeField] Sprite activeSprite;
+        [SerializeField] Sprite inactiveSprite;
+        [SerializeField] Color activeTextColor = Color.white;
+        [SerializeField] Color inactiveTextColor = Color.white;
+
         GameCompositionRoot _root;
-        static readonly Color Dim = new Color(0.6f, 0.6f, 0.62f, 1f);
-        static readonly Color Lit = new Color(0.88f, 0.71f, 0.29f, 1f);
 
         void OnEnable()
         {
@@ -38,9 +41,21 @@ namespace GemTD.UI
             _root = root;
             if (_root == null) return;
 
-            if (speed1Button != null) speed1Button.onClick.AddListener(() => _root.Speed?.SetSpeed(1f));
-            if (speed2Button != null) speed2Button.onClick.AddListener(() => _root.Speed?.SetSpeed(2f));
-            if (speed4Button != null) speed4Button.onClick.AddListener(() => _root.Speed?.SetSpeed(4f));
+            if (speed1Button != null) speed1Button.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root.Speed?.SetSpeed(1f);
+            });
+            if (speed2Button != null) speed2Button.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root.Speed?.SetSpeed(2f);
+            });
+            if (speed4Button != null) speed4Button.onClick.AddListener(() =>
+            {
+                UiSfx.Click();
+                _root.Speed?.SetSpeed(4f);
+            });
             if (pauseChip != null) pauseChip.SetActive(false);
 
             OnSpeedChanged(_root.Speed != null ? _root.Speed.CurrentSpeed : 1f);
@@ -48,9 +63,17 @@ namespace GemTD.UI
 
         void OnSpeedChanged(float scale)
         {
-            if (speed1Label != null) speed1Label.color = Mathf.Approximately(scale, 1f) ? Lit : Dim;
-            if (speed2Label != null) speed2Label.color = Mathf.Approximately(scale, 2f) ? Lit : Dim;
-            if (speed4Label != null) speed4Label.color = Mathf.Approximately(scale, 4f) ? Lit : Dim;
+            ApplySpeedButton(speed1Button, speed1Label, Mathf.Approximately(scale, 1f));
+            ApplySpeedButton(speed2Button, speed2Label, Mathf.Approximately(scale, 2f));
+            ApplySpeedButton(speed4Button, speed4Label, Mathf.Approximately(scale, 4f));
+        }
+
+        void ApplySpeedButton(Button button, TMP_Text label, bool active)
+        {
+            if (button != null && button.image != null)
+                button.image.sprite = active ? activeSprite : inactiveSprite;
+            if (label != null)
+                label.color = active ? activeTextColor : inactiveTextColor;
         }
 
         void OnPauseChanged(bool paused)

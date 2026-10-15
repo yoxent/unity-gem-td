@@ -104,6 +104,38 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(mask.AreOpeningsConnected());
         }
 
+        [Test] public void StraightCorridor_AllPathTilesReachEdge_TrueForBothEnds()
+        {
+            var cells = new (int x, int y)[Size];
+            for (var y = 0; y < Size; y++) cells[y] = (Mid, y);
+            var mask = new ChunkMask(Set(cells));
+            Assert.IsTrue(mask.AllPathTilesReachEdge(EdgeFlags.South));
+            Assert.IsTrue(mask.AllPathTilesReachEdge(EdgeFlags.North));
+        }
+
+        [Test] public void DisconnectedOpenings_AllPathTilesReachEdge_False()
+        {
+            var mask = new ChunkMask(Set((Mid, 0), (Mid, Size - 1)));
+            Assert.IsFalse(mask.AllPathTilesReachEdge(EdgeFlags.South));
+            Assert.IsFalse(mask.AllPathTilesReachEdge(EdgeFlags.North));
+        }
+
+        [Test] public void DeadEndWithIsland_AllPathTilesReachEdge_False()
+        {
+            var cells = new (int x, int y)[Mid + 2];
+            for (var y = 0; y <= Mid; y++) cells[y] = (Mid, y);
+            cells[Mid + 1] = (0, Size - 1);
+            var mask = new ChunkMask(Set(cells));
+            Assert.IsTrue((mask.OpenEdges & EdgeFlags.South) != 0);
+            Assert.IsFalse(mask.AllPathTilesReachEdge(EdgeFlags.South));
+        }
+
+        [Test] public void Land_AllPathTilesReachEdge_False()
+        {
+            var mask = new ChunkMask(Empty());
+            Assert.IsFalse(mask.AllPathTilesReachEdge(EdgeFlags.South));
+        }
+
         [Test] public void HomeCell_IsForcedPath_AndTypeIsHomebase()
         {
             var home = Mid * Size + Mid;

@@ -19,6 +19,7 @@ namespace GemTD.Editor
         }
 
         const string DefaultCatalogPath = "Assets/Data/Map/ChunkCatalog.asset";
+        const string DefaultPathTileSetPath = "Assets/Data/Map/PathTileSet.asset";
         static readonly ChunkType[] GeneratableTypes =
         {
             ChunkType.DeadEnd,
@@ -48,6 +49,7 @@ namespace GemTD.Editor
         int _genSeed;
         int _lastGenSeed;
         [SerializeField] ChunkCatalog _chunkIndex;
+        [SerializeField] PathTileSet _pathTiles;
         [SerializeField] ChunkTypeCatalog _compareCatalog;
         [SerializeField] ChunkType _generateType = ChunkType.Corner;
         ChunkType _lastGridType = ChunkType.Land;
@@ -67,6 +69,7 @@ namespace GemTD.Editor
             EnsureMaterials();
             EnsureCellBuffers();
             EnsureDefaultIndex();
+            EnsureDefaultPathTiles();
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
@@ -89,6 +92,8 @@ namespace GemTD.Editor
             _homeMat  = (Material)EditorGUILayout.ObjectField("Home Material", _homeMat, typeof(Material), false);
             _lockMat  = (Material)EditorGUILayout.ObjectField("Elevation Lock Material", _lockMat, typeof(Material), false);
             _cellSize = EditorGUILayout.Slider("Cell Size", _cellSize, 0.5f, 2f);
+            _pathTiles = (PathTileSet)EditorGUILayout.ObjectField(
+                "Path Tile Set", _pathTiles, typeof(PathTileSet), false);
 
             DrawDerivedInfo();
 
@@ -200,6 +205,12 @@ namespace GemTD.Editor
             _chunkIndex = AssetDatabase.LoadAssetAtPath<ChunkCatalog>(DefaultCatalogPath);
             if (_chunkIndex != null && _compareCatalog == null)
                 BindCompareFromIndex(_generateType);
+        }
+
+        void EnsureDefaultPathTiles()
+        {
+            if (_pathTiles != null) return;
+            _pathTiles = AssetDatabase.LoadAssetAtPath<PathTileSet>(DefaultPathTileSetPath);
         }
 
         void EnsureSavedIndex()
@@ -400,6 +411,12 @@ namespace GemTD.Editor
             var stamp = root.AddComponent<MapChunkStamp>();
             stamp.ApplyMask(new ChunkMask(_cells, _homeIndex, _elevationLocked));
             stamp.BuildVisuals(_pathMat, _towerMat, _cellSize, _homeMat, _lockMat);
+            EnsureDefaultPathTiles();
+            if (_pathTiles != null)
+                PathTileBaker.Apply(_pathTiles, stamp);
+            else
+                Debug.LogWarning(
+                    "[ChunkPainter] No Path Tile Set assigned; path cubes were left in place.");
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             DestroyImmediate(root);
             AssetDatabase.Refresh();

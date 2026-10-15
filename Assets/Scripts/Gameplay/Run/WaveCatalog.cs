@@ -8,6 +8,9 @@ namespace GemTD.Gameplay.Run
     {
         public WaveDefinition[] Waves;
 
+        /// <summary>Rush, Bulwark, Ward, Full mix. Used from wave 16 on.</summary>
+        public WaveDefinition[] Combos;
+
         public int Count => Waves != null ? Waves.Length : 0;
 
         public WaveDefinition[] GetWavesOrEmpty() =>

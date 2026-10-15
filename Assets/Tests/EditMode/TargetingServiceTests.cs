@@ -10,10 +10,10 @@ namespace GemTD.Tests.EditMode
     {
         TowerDefinition _sharedDef;
         TowerDefinition _otherDef;
-        TowerRuntime _towerA;
-        TowerRuntime _towerB;
-        TowerRuntime _towerC;
-        List<TowerRuntime> _allTowers;
+        TowerInstance _towerA;
+        TowerInstance _towerB;
+        TowerInstance _towerC;
+        List<TowerInstance> _allTowers;
 
         [SetUp]
         public void SetUp()
@@ -24,11 +24,11 @@ namespace GemTD.Tests.EditMode
             _otherDef = ScriptableObject.CreateInstance<TowerDefinition>();
             _otherDef.DisplayName = "Other";
 
-            _towerA = new TowerRuntime(new Vector2Int(0, 0), _sharedDef);
-            _towerB = new TowerRuntime(new Vector2Int(1, 0), _sharedDef);
-            _towerC = new TowerRuntime(new Vector2Int(2, 0), _otherDef);
+            _towerA = new TowerInstance(new Vector2Int(0, 0), _sharedDef);
+            _towerB = new TowerInstance(new Vector2Int(1, 0), _sharedDef);
+            _towerC = new TowerInstance(new Vector2Int(2, 0), _otherDef);
 
-            _allTowers = new List<TowerRuntime> { _towerA, _towerB, _towerC };
+            _allTowers = new List<TowerInstance> { _towerA, _towerB, _towerC };
         }
 
         [TearDown]

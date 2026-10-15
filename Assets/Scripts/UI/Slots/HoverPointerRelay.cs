@@ -12,6 +12,7 @@ namespace GemTD.UI
         public Action OnExit;
 
         public void OnPointerEnter(PointerEventData eventData) => OnEnter?.Invoke();
+
         public void OnPointerExit(PointerEventData eventData) => OnExit?.Invoke();
     }
 }

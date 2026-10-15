@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GemTD.Gameplay.Run;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GemTD.UI
 {
@@ -39,6 +40,51 @@ namespace GemTD.UI
 
             for (var i = StatRowCount; i < _elementPool.Count; i++)
                 _elementPool[i].gameObject.SetActive(false);
+        }
+
+        public float WidestSummaryValueWidth
+        {
+            get
+            {
+                var widest = 0f;
+                for (var i = 0; i < StatRowCount && i < _elementPool.Count; i++)
+                {
+                    var element = _elementPool[i];
+                    if (element == null || !element.gameObject.activeSelf)
+                        continue;
+
+                    var width = element.SummaryValueWidth;
+                    if (width > widest)
+                        widest = width;
+                }
+
+                return widest;
+            }
+        }
+
+        public void SetSummaryValueWidth(float width)
+        {
+            for (var i = 0; i < StatRowCount && i < _elementPool.Count; i++)
+            {
+                var element = _elementPool[i];
+                if (element == null || !element.gameObject.activeSelf)
+                    continue;
+
+                element.SetSummaryValueWidth(width);
+            }
+        }
+
+        public float PreferredHeight
+        {
+            get
+            {
+                var rect = transform as RectTransform;
+                if (rect == null)
+                    return 0f;
+
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+                return LayoutUtility.GetPreferredHeight(rect);
+            }
         }
 
         void BindElement(int index, string label, float value, float percent, Color barColor)

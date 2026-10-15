@@ -28,6 +28,18 @@ namespace GemTD.Gameplay.Map
             _ => 0
         };
 
+        /// <summary>Clockwise quarter-turns. North → East → South → West.</summary>
+        public static EdgeFlags RotatedCW(this EdgeFlags edges, int quarterTurns)
+        {
+            var turns = ((quarterTurns % 4) + 4) % 4;
+            if (turns == 0)
+                return edges;
+
+            var bits = (byte)edges & 0xF;
+            bits = (byte)(((bits << turns) | (bits >> (4 - turns))) & 0xF);
+            return (EdgeFlags)bits;
+        }
+
         public static int Count(this EdgeFlags e)
         {
             var n = 0;

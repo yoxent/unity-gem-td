@@ -11,7 +11,7 @@ namespace GemTD.Tests.EditMode
         {
             var entry = ScriptableObject.CreateInstance<CodexEntry>();
             entry.Id = "hydra-ballista";
-            entry.DisplayName = "Hydra Ballista";
+            entry.DisplayName = "Hydra";
 
             var catalog = ScriptableObject.CreateInstance<CodexCatalog>();
             catalog.Entries = new[] { entry };

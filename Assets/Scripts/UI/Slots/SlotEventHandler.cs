@@ -5,8 +5,9 @@ using UnityEngine.EventSystems;
 
 namespace GemTD.UI
 {
-    /// <summary>Pointer/drag sink on the raycast Graphic (usually child Slot).
-    /// Implements EventSystem interfaces directly. Prefab assigns <see cref="targetGraphic"/>
+    /// <summary>Pointer/drag sink for a serialized raycast Graphic.
+    /// The handler may live on the target or its parent so a composite UI item
+    /// shares one pointer boundary. Prefab assigns <see cref="targetGraphic"/>
     /// and tint <see cref="colors"/> — no Button required.</summary>
     public sealed class SlotEventHandler : MonoBehaviour,
         IPointerEnterHandler, IPointerExitHandler,
@@ -30,7 +31,6 @@ namespace GemTD.UI
         public Action<PointerEventData> Drag;
         public Action<PointerEventData> EndDrag;
         public Action<PointerEventData> Drop;
-        public Action<bool> HoverChanged;
 
         public bool DragStarted => _dragStarted;
 
@@ -65,7 +65,6 @@ namespace GemTD.UI
         {
             _hovered = true;
             ApplyVisual();
-            HoverChanged?.Invoke(true);
         }
 
         public void OnPointerExit(PointerEventData eventData)
@@ -73,7 +72,6 @@ namespace GemTD.UI
             _hovered = false;
             _pressed = false;
             ApplyVisual();
-            HoverChanged?.Invoke(false);
         }
 
         public void OnPointerDown(PointerEventData eventData)

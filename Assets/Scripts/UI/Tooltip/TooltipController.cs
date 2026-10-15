@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 using TMPro;
 
 namespace GemTD.UI
@@ -17,7 +18,7 @@ namespace GemTD.UI
         [SerializeField] float yOffset = 16f;
 
         PointerEventData _eventData;
-        readonly System.Collections.Generic.List<RaycastResult> _hits = new System.Collections.Generic.List<RaycastResult>(8);
+        readonly List<RaycastResult> _hits = new List<RaycastResult>(8);
 
         private void Start()
         {

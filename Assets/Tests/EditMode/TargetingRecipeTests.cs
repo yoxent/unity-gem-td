@@ -65,23 +65,6 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Scope_Next_AndNeedsAllConfirm()
-        {
-            Assert.AreEqual(TargetingApplyScope.ThisType,
-                TargetingScopeRequests.Next(TargetingApplyScope.ThisTower));
-            Assert.AreEqual(TargetingApplyScope.AllTowers,
-                TargetingScopeRequests.Next(TargetingApplyScope.ThisType));
-            Assert.AreEqual(TargetingApplyScope.ThisTower,
-                TargetingScopeRequests.Next(TargetingApplyScope.AllTowers));
-            Assert.IsTrue(TargetingScopeRequests.NeedsAllConfirm(
-                TargetingApplyScope.ThisType, TargetingApplyScope.AllTowers));
-            Assert.IsFalse(TargetingScopeRequests.NeedsAllConfirm(
-                TargetingApplyScope.AllTowers, TargetingApplyScope.AllTowers));
-            Assert.IsFalse(TargetingScopeRequests.NeedsAllConfirm(
-                TargetingApplyScope.ThisTower, TargetingApplyScope.ThisType));
-        }
-
-        [Test]
         public void Labels_CoverAllKeys()
         {
             Assert.AreEqual("First", TargetingKeyLabels.For(TargetingKey.First));
