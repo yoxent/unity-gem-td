@@ -17,19 +17,19 @@ namespace GemTD.UI
         [SerializeField] TMP_Text titleText;
         [SerializeField] TMP_Text subTitleText;
         [SerializeField] List<DraftPick> picks = new List<DraftPick>();
-        [SerializeField] LayoutElement selectCardLayoutElement;
-        [SerializeField] List<Button> selectButtons = new List<Button>();
         [SerializeField] Button skipButton;
         [SerializeField] TMP_Text skipText;
         [SerializeField] Button rerollButton;
+        [SerializeField] Image rerollButtonBG;
         [SerializeField] TMP_Text rerollText;
         [SerializeField] Button banButton;
+        [SerializeField] Image banButtonBG;
         [SerializeField] TMP_Text banText;
         [SerializeField] TMP_Text replaceHintText;
+        [SerializeField] Button lockInButton;
 
         GameCompositionRoot _root;
         PopupManager _popup;
-        readonly List<CanvasGroup> _selectGroups = new List<CanvasGroup>(4);
         bool _replacePopupShown;
         bool _buttonsBound;
         DraftReplacePhase _lastReplacePhase = DraftReplacePhase.None;
@@ -72,31 +72,6 @@ namespace GemTD.UI
                 }
             }
 
-            _selectGroups.Clear();
-            if (selectButtons != null)
-            {
-                for (var i = 0; i < selectButtons.Count; i++)
-                {
-                    var idx = i;
-                    var btn = selectButtons[i];
-                    if (btn == null)
-                    {
-                        _selectGroups.Add(null);
-                        continue;
-                    }
-
-                    var group = btn.GetComponent<CanvasGroup>();
-                    if (group == null)
-                        Debug.LogError("DraftController: SelectButton is missing a CanvasGroup.", btn);
-                    _selectGroups.Add(group);
-                    btn.onClick.AddListener(() =>
-                    {
-                        GameEvents.RaisePlaySfx(SfxKeys.DraftPick);
-                        _root?.RequestDraftPick(idx);
-                    });
-                }
-            }
-
             if (skipButton != null) skipButton.onClick.AddListener(() =>
             {
                 UiSfx.Click();
@@ -112,6 +87,14 @@ namespace GemTD.UI
                 UiSfx.Click();
                 _root?.RequestDraftBan();
             });
+            if (lockInButton != null) lockInButton.onClick.AddListener(() =>
+            {
+                GameEvents.RaisePlaySfx(SfxKeys.DraftPick);
+                if (_root != null && _root.Draft != null)
+                    _root.RequestDraftPick(_root.Draft.SelectedIndex);
+            });
+            else
+                Debug.LogError("DraftController: assign lockInButton on the prefab.", this);
             if (replaceHintText != null) replaceHintText.gameObject.SetActive(false);
 
             _buttonsBound = picks != null && picks.Count > 0;
@@ -129,6 +112,8 @@ namespace GemTD.UI
             {
                 _replacePopupShown = false;
                 _lastReplacePhase = DraftReplacePhase.None;
+                if (lockInButton != null)
+                    lockInButton.gameObject.SetActive(false);
                 return;
             }
 
@@ -151,44 +136,25 @@ namespace GemTD.UI
                         TowerRoster.FormatOfferStatus(card, roster),
                         TowerRoster.FormatOfferLevel(card, roster));
                     picks[i].SetTags(card.Tags);
+                    picks[i].ApplyElements(card.Tags);
                     picks[i].SetSelected(i == draft.SelectedIndex);
+                    picks[i].gameObject.SetActive(true);
                     var btn = picks[i].GetButton();
                     if (btn != null)
-                    {
                         btn.interactable = draft.IsActive && draft.ReplacePhase == DraftReplacePhase.None;
-                        btn.gameObject.SetActive(true);
-                    }
+                    else
+                        Debug.LogError("DraftController: assign draftButton on the DraftPick prefab.", picks[i]);
                 }
                 else
                 {
                     picks[i].SetSelected(false);
                     picks[i].SetTags(GemTag.None);
-                    picks[i].GetButton()?.gameObject.SetActive(false);
+                    picks[i].gameObject.SetActive(false);
                 }
             }
 
             var idle = draft.IsActive && draft.ReplacePhase == DraftReplacePhase.None;
-            var selected = draft.SelectedIndex;
-            var hasSelection = selected >= 0;
             var gold = _root.Economy != null ? _root.Economy.Gold : 0;
-
-            if (selectCardLayoutElement != null)
-                selectCardLayoutElement.ignoreLayout = !hasSelection;
-
-            var selectCount = selectButtons != null ? selectButtons.Count : 0;
-            for (var i = 0; i < selectCount; i++)
-            {
-                var show = idle && i == selected;
-                if (i < _selectGroups.Count && _selectGroups[i] != null)
-                {
-                    _selectGroups[i].alpha = show ? 1f : 0f;
-                    _selectGroups[i].interactable = show;
-                    _selectGroups[i].blocksRaycasts = show;
-                }
-
-                if (selectButtons[i] != null)
-                    selectButtons[i].interactable = show;
-            }
 
             if (skipButton != null)
             {
@@ -207,7 +173,12 @@ namespace GemTD.UI
             if (rerollButton != null)
             {
                 rerollButton.gameObject.SetActive(true);
-                rerollButton.interactable = idle && gold >= draft.NextRerollCost;
+                var canReroll = idle && gold >= draft.NextRerollCost;
+                rerollButton.interactable = canReroll;
+                if (rerollButtonBG != null)
+                    rerollButtonBG.gameObject.SetActive(canReroll);
+                else
+                    Debug.LogError("DraftController: assign rerollButtonBG on the prefab.", this);
             }
 
             if (banText != null)
@@ -215,7 +186,19 @@ namespace GemTD.UI
             if (banButton != null)
             {
                 banButton.gameObject.SetActive(true);
-                banButton.interactable = idle && _root.Economy != null && draft.CanBan(_root.Economy);
+                var canBan = idle && _root.Economy != null && draft.CanBan(_root.Economy);
+                banButton.interactable = canBan;
+                if (banButtonBG != null)
+                    banButtonBG.gameObject.SetActive(canBan);
+                else
+                    Debug.LogError("DraftController: assign banButtonBG on the prefab.", this);
+            }
+
+            if (lockInButton != null)
+            {
+                var canLockIn = idle && draft.SelectedIndex >= 0;
+                lockInButton.gameObject.SetActive(canLockIn);
+                lockInButton.interactable = canLockIn;
             }
 
             var phase = draft.ReplacePhase;
@@ -261,11 +244,9 @@ namespace GemTD.UI
                 return "Click an inventory gem to destroy it, or Esc to cancel.";
             if (draft.ReplacePhase == DraftReplacePhase.AwaitingConfirm)
                 return "Bag is full. Replace a gem to take this card.";
-            if (draft.SelectedIndex >= 0)
-                return "Select to confirm this pick.";
             if (!draft.AllowSkip)
-                return "Choose a tower.";
-            return "Choose a card, or skip for gold.";
+                return "Choose a tower, then lock it in.";
+            return "Choose a card, then lock it in, or skip for gold.";
         }
     }
 }

@@ -1,0 +1,14 @@
+---
+description: LitMotion-only code animation rule for Gem TD
+globs: Assets/Scripts/**/*.cs
+alwaysApply: false
+---
+
+# Code animation
+
+- Value changes over time in C# use LitMotion.
+- Do not tween with a coroutine, `Update`, `LateUpdate`, or DOTween.
+- Keep animation in presentation code. Do not use animation timing to implement
+  combat, economy, wave, save, or damage rules.
+- Cancel or complete an existing motion before starting a replacement when the
+  view can be refreshed or disabled.

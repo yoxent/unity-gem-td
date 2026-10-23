@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GemTD.Gameplay.Gems;
+using LitMotion;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,8 @@ namespace GemTD.UI
 {
     public class DraftPick : MonoBehaviour
     {
+        [SerializeField] DraftElementColors elementColors;
+        [SerializeField] ElementColorTargets colorTargets;
         [SerializeField] Button draftButton;
         [SerializeField] TMP_Text draftLabel;
         [SerializeField] Transform tagsParent;
@@ -18,8 +21,18 @@ namespace GemTD.UI
         [SerializeField] CanvasGroup draftStatusGroup;
         [SerializeField] TMP_Text draftStatus;
         [SerializeField] TMP_Text levelLabel;
+        [SerializeField] Transform cardPanel;
+        [SerializeField] float selectMoveSeconds = 0.2f;
+        [SerializeField] float selectedCardY = 14f;
+        [SerializeField] GameObject selectedGroupPanel;
+        [SerializeField] Color selectedHighlightColor;
 
         readonly List<string> _tagNames = new List<string>(8);
+        MotionHandle _cardMove;
+        DraftElementColors.Palette _palette;
+        bool _havePalette;
+        bool _hasSelection;
+        bool _selected;
 
         void Awake()
         {
@@ -27,8 +40,11 @@ namespace GemTD.UI
                 tagSubParentTemplate.gameObject.SetActive(false);
         }
 
-        Color _normalColor = Color.white;
-        bool _haveNormalColor;
+        void OnDisable()
+        {
+            if (_cardMove.IsActive())
+                _cardMove.Complete();
+        }
 
         public void UpdateLabel(string label, string description, string status, string level)
         {
@@ -62,6 +78,22 @@ namespace GemTD.UI
             }
             else
                 Debug.LogError("DraftPick: assign levelLabel on the prefab.", this);
+        }
+
+        public void ApplyElements(GemTag tags)
+        {
+            if (elementColors == null)
+            {
+                Debug.LogError("DraftPick: assign elementColors on the prefab.", this);
+                return;
+            }
+
+            _palette = elementColors.Resolve(tags);
+            _havePalette = true;
+            if (!colorTargets.Apply(_palette))
+                Debug.LogError("DraftPick: assign colorTargets on the prefab.", this);
+            if (_selected)
+                PaintSelectionHighlight(true);
         }
 
         public void SetTags(GemTag tags)
@@ -127,17 +159,63 @@ namespace GemTD.UI
 
         public void SetSelected(bool selected)
         {
-            if (draftButton == null || draftButton.targetGraphic == null)
-                return;
-            if (!_haveNormalColor)
+            if (selectedGroupPanel != null)
+                selectedGroupPanel.SetActive(selected);
+            else
+                Debug.LogError("DraftPick: assign selectedGroupPanel on the prefab.", this);
+
+            var changed = !_hasSelection || selected != _selected;
+            _selected = selected;
+            _hasSelection = true;
+            PaintSelectionHighlight(selected);
+            if (changed)
+                MoveCard(selected ? selectedCardY : -selectedCardY);
+        }
+
+        void PaintSelectionHighlight(bool selected)
+        {
+            var graphic = colorTargets.selectedHighlight;
+            if (graphic == null)
             {
-                _normalColor = draftButton.targetGraphic.color;
-                _haveNormalColor = true;
+                Debug.LogError("DraftPick: assign colorTargets.selectedHighlight on the prefab.", this);
+                return;
             }
 
-            draftButton.targetGraphic.color = selected
-                ? new Color(1f, 0.82f, 0.35f, 1f)
-                : _normalColor;
+            if (selected)
+                graphic.color = selectedHighlightColor;
+            else if (_havePalette)
+                graphic.color = _palette.normal;
+        }
+
+        void MoveCard(float targetY)
+        {
+            if (cardPanel is not RectTransform rect)
+            {
+                Debug.LogError("DraftPick: assign cardPanel on the prefab.", this);
+                return;
+            }
+
+            if (_cardMove.IsActive())
+                _cardMove.Cancel();
+
+            var pos = rect.anchoredPosition;
+            if (selectMoveSeconds <= 0f || Mathf.Approximately(pos.y, targetY))
+            {
+                pos.y = targetY;
+                rect.anchoredPosition = pos;
+                return;
+            }
+
+            _cardMove = LMotion.Create(pos.y, targetY, selectMoveSeconds)
+                .WithEase(Ease.OutQuad)
+                .Bind(rect, static (y, rt) =>
+                {
+                    if (rt == null)
+                        return;
+                    var p = rt.anchoredPosition;
+                    p.y = y;
+                    rt.anchoredPosition = p;
+                });
         }
     }
 }

@@ -54,6 +54,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GemTD.UI::GemTD.UI.DraftTagLabel
   tagText: {fileID: 1603990407010351312}
+  elementColors: {fileID: 11400000, guid: 9b884f7cc1bf88648b04015440ec527f, type: 2}
+  colorTargets:
+    dimmed: []
+    normal:
+    - {fileID: 4696994019478394523}
 --- !u!114 &482289709643546430
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70,7 +75,7 @@ MonoBehaviour:
   targets:
   - texts:
     - {fileID: 1603990407010351312}
-    styleId: secondary-14
+    styleId: accent-14
 --- !u!222 &7737294971183106000
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -147,7 +152,7 @@ GameObject:
   - component: {fileID: 8676274228047984368}
   - component: {fileID: 1603990407010351312}
   m_Layer: 0
-  m_Name: TagLabel
+  m_Name: TagLabelText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -209,8 +214,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4294111999
+  m_fontColor: {r: 1, g: 0.9490196, b: 0.9490196, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -233,7 +238,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 16
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535

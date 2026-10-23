@@ -17,8 +17,8 @@ namespace GemTD.UI
         [SerializeField] TMP_Text speed4Label;
         [SerializeField] GameObject pauseChip;
 
-        [SerializeField] Sprite activeSprite;
-        [SerializeField] Sprite inactiveSprite;
+        [SerializeField] Color activeSpriteColor;
+        [SerializeField] Color inactiveSpriteColor;
         [SerializeField] Color activeTextColor = Color.white;
         [SerializeField] Color inactiveTextColor = Color.white;
 
@@ -71,7 +71,7 @@ namespace GemTD.UI
         void ApplySpeedButton(Button button, TMP_Text label, bool active)
         {
             if (button != null && button.image != null)
-                button.image.sprite = active ? activeSprite : inactiveSprite;
+                button.image.color = active ? activeSpriteColor : inactiveSpriteColor;
             if (label != null)
                 label.color = active ? activeTextColor : inactiveTextColor;
         }

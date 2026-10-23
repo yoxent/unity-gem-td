@@ -70,7 +70,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: a25f71239c9cf9f448acb3f1b71d6bb1, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 3be5547b19f28ea4e8d869683c45ba4c, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -79,7 +79,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 10
+  m_PixelsPerUnitMultiplier: 1.2
 --- !u!114 &6561985136128846757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,9 +120,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
-  m_MinHeight: -1
+  m_MinHeight: 80
   m_PreferredWidth: 200
-  m_PreferredHeight: 64
+  m_PreferredHeight: 80
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
@@ -290,7 +290,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 98c09d9dbce5dff43afa9427f1e4fcb4, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4435c775125d5c34da11bbac254aa787, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -357,8 +357,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
-  m_MinWidth: -1
-  m_MinHeight: -1
+  m_MinWidth: 64
+  m_MinHeight: 64
   m_PreferredWidth: 72
   m_PreferredHeight: 64
   m_FlexibleWidth: -1
@@ -560,10 +560,10 @@ MonoBehaviour:
   speed2Label: {fileID: 8251644649374313639}
   speed4Label: {fileID: 3136527099206432648}
   pauseChip: {fileID: 3471563972907017770}
-  activeSprite: {fileID: 21300000, guid: f73b6abdcb5ae534694ddf777364969c, type: 3}
-  inactiveSprite: {fileID: 21300000, guid: 98c09d9dbce5dff43afa9427f1e4fcb4, type: 3}
-  activeTextColor: {r: 0.18039216, g: 0.19215687, b: 0.32941177, a: 1}
-  inactiveTextColor: {r: 0.41960785, g: 0.43137255, b: 0.56078434, a: 1}
+  activeSpriteColor: {r: 1, g: 0.7607843, b: 0.23921569, a: 1}
+  inactiveSpriteColor: {r: 1, g: 1, b: 1, a: 1}
+  activeTextColor: {r: 0.31764707, g: 0.21960784, b: 0.06666667, a: 1}
+  inactiveTextColor: {r: 0.34117648, g: 0.3529412, b: 0.48235294, a: 1}
 --- !u!114 &4651170047164766113
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1093,7 +1093,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f73b6abdcb5ae534694ddf777364969c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4435c775125d5c34da11bbac254aa787, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1160,8 +1160,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
-  m_MinWidth: -1
-  m_MinHeight: -1
+  m_MinWidth: 64
+  m_MinHeight: 64
   m_PreferredWidth: 72
   m_PreferredHeight: 64
   m_FlexibleWidth: -1
@@ -1235,7 +1235,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 98c09d9dbce5dff43afa9427f1e4fcb4, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4435c775125d5c34da11bbac254aa787, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1302,8 +1302,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
-  m_MinWidth: -1
-  m_MinHeight: -1
+  m_MinWidth: 64
+  m_MinHeight: 64
   m_PreferredWidth: 72
   m_PreferredHeight: 64
   m_FlexibleWidth: -1

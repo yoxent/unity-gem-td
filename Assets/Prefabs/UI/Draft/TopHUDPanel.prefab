@@ -567,7 +567,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fa42913996ed3ee4d834776f0f759276, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 70b670eecc1e79f4db5b41f4c40e68ca, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -576,7 +576,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1.4
+  m_PixelsPerUnitMultiplier: 1
 --- !u!114 &8953357822823337480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1581,7 +1581,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fa42913996ed3ee4d834776f0f759276, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 70b670eecc1e79f4db5b41f4c40e68ca, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1637,6 +1637,41 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!1 &4341950275123214380
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3507990799786794345}
+  m_Layer: 0
+  m_Name: Bottom
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3507990799786794345
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4341950275123214380}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4365261743324309627}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 100}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!1 &4696349474334377364
 GameObject:
   m_ObjectHideFlags: 0
@@ -1993,6 +2028,7 @@ RectTransform:
   - {fileID: 4171890844702797660}
   - {fileID: 6967479528699457958}
   - {fileID: 7102494830388179668}
+  - {fileID: 3507990799786794345}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2017,6 +2053,7 @@ MonoBehaviour:
   waveText: {fileID: 3061781353870833552}
   stateText: {fileID: 7998977544478707842}
   defeatText: {fileID: 6108252714020465133}
+  selectedDraftCardButton: {fileID: 0}
 --- !u!114 &3118655067118410887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2046,6 +2083,9 @@ MonoBehaviour:
   - texts:
     - {fileID: 3061781353870833552}
     styleId: header
+  - texts:
+    - {fileID: 0}
+    styleId: gold-36
 --- !u!1 &5985656661926229339
 GameObject:
   m_ObjectHideFlags: 0
