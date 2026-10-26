@@ -1,22 +1,25 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using System.Collections.Generic;
 using GemTD.Core;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
 using GemTD.Gameplay.Towers;
-using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace GemTD.UI
 {
     /// <summary>Lives on DraftPanel prefab. 4 DraftPick children + Skip + Replace popup routing.</summary>
     public sealed class DraftController : MonoBehaviour
     {
+        [Header("Panel")]
         [SerializeField] GameObject panel;
         [SerializeField] TMP_Text titleText;
         [SerializeField] TMP_Text subTitleText;
         [SerializeField] List<DraftPick> picks = new List<DraftPick>();
+
+        [Header("Actions")]
         [SerializeField] Button skipButton;
         [SerializeField] TMP_Text skipText;
         [SerializeField] Button rerollButton;
@@ -25,13 +28,13 @@ namespace GemTD.UI
         [SerializeField] Button banButton;
         [SerializeField] Image banButtonBG;
         [SerializeField] TMP_Text banText;
-        [SerializeField] TMP_Text replaceHintText;
         [SerializeField] Button lockInButton;
+        [SerializeField] TMP_Text replaceHintText;
 
         GameCompositionRoot _root;
         PopupManager _popup;
-        bool _replacePopupShown;
         bool _buttonsBound;
+        bool _replacePopupShown;
         DraftReplacePhase _lastReplacePhase = DraftReplacePhase.None;
 
         void OnEnable()
@@ -129,7 +132,7 @@ namespace GemTD.UI
                 if (i < draft.CurrentOffer.Count && draft.CurrentOffer[i].IsFilled)
                 {
                     var card = draft.CurrentOffer[i];
-                    var roster = _root.Draft != null ? _root.Draft.Roster : null;
+                    var roster = draft.Roster;
                     picks[i].UpdateLabel(
                         TowerRoster.FormatOfferLabel(card, roster),
                         card.Description,

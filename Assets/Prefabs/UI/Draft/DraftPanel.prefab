@@ -305,7 +305,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 47a610d6719d66a43ac2a9181c88c54f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6b3cfd6e889b4634195451f4c9626ed9, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -330,8 +330,8 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: 40
   m_MinHeight: 40
-  m_PreferredWidth: -1
-  m_PreferredHeight: -1
+  m_PreferredWidth: 40
+  m_PreferredHeight: 40
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
@@ -392,7 +392,7 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 4
+  m_ChildAlignment: 1
   m_Spacing: -14
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
@@ -415,7 +415,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
-  m_MinHeight: 120
+  m_MinHeight: 90
   m_PreferredWidth: -1
   m_PreferredHeight: -1
   m_FlexibleWidth: 1
@@ -1525,10 +1525,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
   m_Padding:
-    m_Left: 20
-    m_Right: 20
-    m_Top: 20
-    m_Bottom: 20
+    m_Left: 24
+    m_Right: 24
+    m_Top: 24
+    m_Bottom: 24
   m_ChildAlignment: 4
   m_Spacing: 24
   m_ChildForceExpandWidth: 0
@@ -1565,9 +1565,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
-  m_MinWidth: -1
+  m_MinWidth: 1400
   m_MinHeight: -1
-  m_PreferredWidth: 1416
+  m_PreferredWidth: -1
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
@@ -2504,8 +2504,8 @@ MonoBehaviour:
   banButton: {fileID: 3156002055344815487}
   banButtonBG: {fileID: 6824062452178452453}
   banText: {fileID: 4119183434400329281}
-  replaceHintText: {fileID: 8651158627604416457}
   lockInButton: {fileID: 9114986805413914219}
+  replaceHintText: {fileID: 8651158627604416457}
 --- !u!114 &3582723133569821879
 MonoBehaviour:
   m_ObjectHideFlags: 0
