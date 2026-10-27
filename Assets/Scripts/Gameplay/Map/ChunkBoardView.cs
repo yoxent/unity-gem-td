@@ -110,8 +110,6 @@ namespace GemTD.Gameplay.Map
                 var child = instance.GetChild(i);
                 if (!TileHeightVisual.TryParseTileName(child.name, out var px, out var py))
                     continue;
-                if (TileHeightVisual.HasPad(child))
-                    continue;
                 if (skipPath)
                 {
                     var worldLocal = RotateLocalCw(px, py, slot.Yaw);
