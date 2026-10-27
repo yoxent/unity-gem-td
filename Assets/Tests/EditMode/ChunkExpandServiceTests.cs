@@ -140,6 +140,7 @@ namespace GemTD.Tests.EditMode
             _catalog = new FakeCatalog();
             _rng = new System.Random(0);
             _config = ScriptableObject.CreateInstance<RunConfig>();
+            _config.EndWave = 0;
             _expand = new ChunkExpandService(_grid, _path, _board, _stamp, _catalog, _rng, _config);
         }
 
@@ -263,18 +264,30 @@ namespace GemTD.Tests.EditMode
             _catalog.Stamps.Add(MakeDeadEnd());
             _catalog.Stamps.Add(MakeCorner());
             _catalog.Stamps.Add(MakeCross());
+            _config.EndWave = 3;
+            _expand.UpcomingWaveNumber = 1;
 
             var cells = _path.Width * _path.Height;
             var before = new bool[cells];
+            var buildableBefore = new bool[cells];
             for (var y = 0; y < _path.Height; y++)
                 for (var x = 0; x < _path.Width; x++)
+                {
                     before[y * _path.Width + x] = _path.IsPath(x, y);
+                    buildableBefore[y * _path.Width + x] = _board.IsBuildable(x, y);
+                }
 
+            var gridCountBefore = _grid.Count;
             _expand.CollectLegalExpands(new List<Vector2Int>());
 
             for (var y = 0; y < _path.Height; y++)
                 for (var x = 0; x < _path.Width; x++)
+                {
                     Assert.AreEqual(before[y * _path.Width + x], _path.IsPath(x, y), $"path mutated at {x},{y}");
+                    Assert.AreEqual(buildableBefore[y * _path.Width + x], _board.IsBuildable(x, y),
+                        $"buildability mutated at {x},{y}");
+                }
+            Assert.AreEqual(gridCountBefore, _grid.Count);
         }
 
         [Test] public void TryExpand_LegalSlot_PicksPassingComboAndCommits()
@@ -680,6 +693,80 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void TryExpand_TopologyBudget_ForcesDeadEndOnFinalExpansion()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeTJunction());
+            _catalog.Stamps.Add(MakeDeadEnd());
+
+            var row = _config.DifficultyModes[0];
+            row.SplitP = 1f;
+            _config.DifficultyModes[0] = row;
+            _config.EndWave = 21;
+            _expand.UpcomingWaveNumber = 20;
+
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(4, 6)));
+            Assert.IsTrue(_grid.TryGet(4, 6, out var slot));
+            Assert.AreEqual(ChunkType.DeadEnd, slot.Mask.Type);
+        }
+
+        [Test]
+        public void CollectLegalExpands_TopologyBudgetFailsClosedWhenFrontiersExceedTurns()
+        {
+            StampCrossCorridorWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _config.EndWave = 2;
+            _expand.UpcomingWaveNumber = 1;
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.AreEqual(0, into.Count);
+        }
+
+        [Test]
+        public void CollectLegalExpands_TopologyDryRunRejectsWhenNoValidDeadEndCanClose()
+        {
+            StampCorridorNorthWithHome();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeStraight());
+            _config.EndWave = 3;
+            _expand.UpcomingWaveNumber = 1;
+
+            var into = new List<Vector2Int>();
+            _expand.CollectLegalExpands(into);
+
+            Assert.AreEqual(0, into.Count);
+        }
+
+        [Test]
+        public void TryExpand_FinalTurn_CavityPrefersDeadEndOverBudgetIllegalT()
+        {
+            // ForceCavityT normally keeps only the pocket T. On the final expansion
+            // turn that T fails topology budget; DeadEnd must remain legal so the
+            // frontier is closable without waiting for TryForceDeadEndCap.
+            StampHorseshoeDeadEndPocket();
+            _catalog.Stamps.Clear();
+            _catalog.Stamps.Add(MakeDeadEnd());
+            _catalog.Stamps.Add(MakeStraight());
+            _catalog.Stamps.Add(MakeCorner());
+            _catalog.Stamps.Add(MakeTJunction());
+            _config.EndWave = 2;
+            _expand.UpcomingWaveNumber = 1;
+
+            var into = new List<Vector2Int>();
+            Assert.Greater(_expand.CollectLegalExpands(into), 0);
+            Assert.IsTrue(into.Contains(new Vector2Int(5, 5)));
+            Assert.IsTrue(_expand.TryExpand(new Vector2Int(5, 5)));
+            Assert.IsTrue(_grid.TryGet(5, 5, out var slot));
+            Assert.AreEqual(ChunkType.DeadEnd, slot.Mask.Type);
+        }
+
+        [Test]
         public void TryExpand_AfterCrossStopWave_DoesNotPickOptionalCross()
         {
             StampCorridorNorthWithHome();
@@ -716,7 +803,7 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void TryExpand_ClosingWindow_PicksDeadEndOverStraight()
         {
-            StampCrossCorridorWithHome();
+            StampCorridorNorthWithHome();
             _catalog.Stamps.Clear();
             _catalog.Stamps.Add(MakeDeadEnd());
             _catalog.Stamps.Add(MakeStraight());

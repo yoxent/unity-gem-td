@@ -3,6 +3,16 @@ using GemTD.Gameplay.Run;
 
 namespace GemTD.Gameplay.Map
 {
+    /// <summary>
+    /// When the run offers a chunk expand relative to the upcoming wave number.
+    /// Default preserves today's one-expand-per-pre-final-wave schedule.
+    /// </summary>
+    public enum ExpansionCadence
+    {
+        EveryPreFinalWave = 0,
+        OddUpcomingWaves = 1
+    }
+
     public static class ExpandPickPolicy
     {
         public const int CrossStopWave = 35;
@@ -71,10 +81,59 @@ namespace GemTD.Gameplay.Map
         }
 
         /// <summary>
-        /// Wave <paramref name="endWave"/> has no expand phase — combat on the last open tip,
-        /// then auto-DeadEnd after clear (Task 7).
+        /// True when the upcoming wave should offer a chunk expand under
+        /// <paramref name="cadence"/>. The end wave never expands.
         /// </summary>
-        public static bool SkipExpand(int upcomingWave, int endWave) =>
-            endWave > 0 && upcomingWave >= endWave;
+        public static bool ShouldExpand(
+            int upcomingWave,
+            int endWave,
+            ExpansionCadence cadence = ExpansionCadence.EveryPreFinalWave)
+        {
+            if (endWave <= 0 || upcomingWave <= 0 || upcomingWave >= endWave)
+                return false;
+            if (cadence == ExpansionCadence.OddUpcomingWaves)
+                return (upcomingWave & 1) == 1;
+            return true;
+        }
+
+        /// <summary>
+        /// Counts expansion turns from <paramref name="upcomingWave"/> through the
+        /// wave before <paramref name="endWave"/>, respecting <paramref name="cadence"/>.
+        /// The end wave has no expand phase. Default cadence remains one expansion
+        /// per pre-final wave so topology budgeting stays independent of callers.
+        /// </summary>
+        public static int ExpansionTurnsRemaining(
+            int upcomingWave,
+            int endWave,
+            ExpansionCadence cadence = ExpansionCadence.EveryPreFinalWave)
+        {
+            if (endWave <= 0 || upcomingWave <= 0 || upcomingWave >= endWave)
+                return 0;
+            if (cadence == ExpansionCadence.EveryPreFinalWave)
+                return endWave - upcomingWave;
+
+            var count = 0;
+            for (var wave = upcomingWave; wave < endWave; wave++)
+            {
+                if (ShouldExpand(wave, endWave, cadence))
+                    count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// True when the upcoming wave should skip expand (end wave, or cadence gap).
+        /// An unset <paramref name="endWave"/> never skips (matches historical callers).
+        /// Default cadence only skips at/after a configured end wave.
+        /// </summary>
+        public static bool SkipExpand(
+            int upcomingWave,
+            int endWave,
+            ExpansionCadence cadence = ExpansionCadence.EveryPreFinalWave)
+        {
+            if (endWave <= 0)
+                return false;
+            return !ShouldExpand(upcomingWave, endWave, cadence);
+        }
     }
 }

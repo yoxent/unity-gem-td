@@ -18,6 +18,10 @@ namespace GemTD.Gameplay.Map
         readonly HashSet<Vector2Int> _candidateSet = new HashSet<Vector2Int>();
         readonly List<Vector2Int> _candidates = new List<Vector2Int>(8);
         readonly List<(MapChunkStamp prefab, int yaw)> _passing = new List<(MapChunkStamp, int)>(16);
+        readonly List<(MapChunkStamp prefab, int yaw)> _deadEndScratch = new List<(MapChunkStamp, int)>(8);
+        readonly List<Vector2Int> _frontierAfterScratch = new List<Vector2Int>(8);
+        readonly List<Vector2Int> _openingScratch = new List<Vector2Int>(4);
+        readonly List<EdgeFlags> _openingDirectionScratch = new List<EdgeFlags>(4);
         readonly List<Vector2Int> _tipScratch = new List<Vector2Int>(8);
         readonly List<int> _lengthen = new List<int>(16);
         readonly List<int> _splitT = new List<int>(16);
@@ -27,9 +31,16 @@ namespace GemTD.Gameplay.Map
         public RunConfig Config { get; set; }
         public int UpcomingWaveNumber { get; set; } = 1;
 
+        /// <summary>
+        /// Expansion schedule used by topology budgeting. Default matches live
+        /// campaign behavior (one expand before every pre-final wave).
+        /// </summary>
+        public ExpansionCadence Cadence { get; set; } = ExpansionCadence.EveryPreFinalWave;
+
         public ChunkExpandService(ChunkGrid grid, PathGraph path, GridBoard board,
             ChunkStampService stamp, IChunkCatalog catalog, System.Random rng,
-            RunConfig config = null)
+            RunConfig config = null,
+            bool warmMaskCache = true)
         {
             _grid = grid;
             _path = path;
@@ -38,8 +49,15 @@ namespace GemTD.Gameplay.Map
             _catalog = catalog;
             _rng = rng;
             Config = config;
-            WarmMaskCache();
+            if (warmMaskCache)
+                WarmMaskCache();
         }
+
+        /// <summary>
+        /// Counts expandable chunk frontiers (not spawn tips). Safe for diagnostics
+        /// and simulation harnesses.
+        /// </summary>
+        public int CountOpenFrontiers() => CollectOpenFrontiers(_frontierAfterScratch);
 
         void WarmMaskCache()
         {
@@ -320,16 +338,64 @@ namespace GemTD.Gameplay.Map
 
         void ApplyPickFilters(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
         {
-            if (ExpandPickPolicy.IsClosingWindow(
-                UpcomingWaveNumber, CurrentTipCount(), ExpandPickPolicy.EndWave(Config)))
+            CaptureDeadEnds(passing, _deadEndScratch);
+
+            // Final expansion turn must leave zero frontiers. Skip cavity-T forcing
+            // (it adds frontiers) and keep only DeadEnds that the budget accepts.
+            if (IsFinalExpansionTurn())
             {
                 KeepOnlyDeadEnds(passing);
+                if (passing.Count == 0)
+                    CopyPairs(_deadEndScratch, passing);
+                FilterTopologyBudget(coord, passing);
                 return;
             }
 
-            DropOptionalDeadEnds(passing);
             DropOptionalSplitTypes(coord, passing);
             ForceCavityT(coord, passing);
+            FilterTopologyBudget(coord, passing);
+            DropOptionalDeadEnds(passing);
+
+            // ForceCavityT + budget can wipe every combo while a CollectPassing
+            // DeadEnd would still close the frontier (same cases TryForceDeadEndCap
+            // recovers). Restore budget-legal DeadEnds so normal expand can close.
+            if (passing.Count == 0 && _deadEndScratch.Count > 0)
+            {
+                CopyPairs(_deadEndScratch, passing);
+                FilterTopologyBudget(coord, passing);
+            }
+        }
+
+        bool IsFinalExpansionTurn()
+        {
+            if (Config == null || Config.EndWave <= 0)
+                return false;
+            var turnsRemaining = ExpandPickPolicy.ExpansionTurnsRemaining(
+                UpcomingWaveNumber,
+                ExpandPickPolicy.EndWave(Config),
+                Cadence);
+            return turnsRemaining == 1;
+        }
+
+        static void CaptureDeadEnds(
+            List<(MapChunkStamp prefab, int yaw)> passing,
+            List<(MapChunkStamp prefab, int yaw)> into)
+        {
+            into.Clear();
+            for (var i = 0; i < passing.Count; i++)
+            {
+                if (passing[i].prefab.GetMask().Type == ChunkType.DeadEnd)
+                    into.Add(passing[i]);
+            }
+        }
+
+        static void CopyPairs(
+            List<(MapChunkStamp prefab, int yaw)> from,
+            List<(MapChunkStamp prefab, int yaw)> into)
+        {
+            into.Clear();
+            for (var i = 0; i < from.Count; i++)
+                into.Add(from[i]);
         }
 
         void KeepOnlyDeadEnds(List<(MapChunkStamp prefab, int yaw)> passing)
@@ -350,8 +416,6 @@ namespace GemTD.Gameplay.Map
             for (var i = passing.Count - 1; i >= n; i--)
                 passing.RemoveAt(i);
         }
-
-        int CurrentTipCount() => _path.CollectSpawnTips(_tipScratch);
 
         /// <summary>
         /// DeadEnds never win a random tip-count tie. Drop them whenever any
@@ -382,6 +446,177 @@ namespace GemTD.Gameplay.Map
             for (var i = passing.Count - 1; i >= n; i--)
                 passing.RemoveAt(i);
         }
+
+        void FilterTopologyBudget(
+            Vector2Int coord,
+            List<(MapChunkStamp prefab, int yaw)> passing)
+        {
+            // An unset campaign end means this service is being used without a
+            // closure schedule (for example, an isolated map-tool test).
+            if (Config == null || Config.EndWave <= 0)
+                return;
+
+            var turnsRemaining = ExpandPickPolicy.ExpansionTurnsRemaining(
+                UpcomingWaveNumber,
+                ExpandPickPolicy.EndWave(Config),
+                Cadence);
+            var turnsAfterPlacement = turnsRemaining > 0 ? turnsRemaining - 1 : 0;
+
+            // Same rotated OpenEdges at the same slot produce the same frontier
+            // outcome — cache by edge mask to avoid repeating board clones.
+            var edgeCache = new bool[16];
+            var edgeKnown = new bool[16];
+
+            var n = 0;
+            for (var i = 0; i < passing.Count; i++)
+            {
+                var mask = passing[i].prefab.GetRotatedMask(passing[i].yaw);
+                var key = (int)mask.OpenEdges & 0xF;
+                if (!edgeKnown[key])
+                {
+                    edgeCache[key] = CanCloseTopologyAfter(
+                        coord,
+                        passing[i].prefab,
+                        passing[i].yaw,
+                        turnsAfterPlacement);
+                    edgeKnown[key] = true;
+                }
+
+                if (!edgeCache[key])
+                    continue;
+
+                passing[n] = passing[i];
+                n++;
+            }
+
+            for (var i = passing.Count - 1; i >= n; i--)
+                passing.RemoveAt(i);
+        }
+
+        bool CanCloseTopologyAfter(
+            Vector2Int coord,
+            MapChunkStamp prefab,
+            int yaw,
+            int turnsAfterPlacement)
+        {
+            var result = _stamp.StampTentative(coord, prefab, yaw, _path, _board);
+            _grid.Place(coord, new ChunkSlot(prefab, yaw, result.Mask));
+            try
+            {
+                var simulation = CloneForTopologyDryRun();
+                return simulation.CanCloseWithDeadEnds(turnsAfterPlacement);
+            }
+            finally
+            {
+                _grid.Remove(coord);
+                _stamp.Rollback(coord, result, _path, _board);
+            }
+        }
+
+        ChunkExpandService CloneForTopologyDryRun()
+        {
+            var board = new GridBoard(_board.Width, _board.Height);
+            var path = new PathGraph(_path.Width, _path.Height);
+            path.BindBoard(board);
+            path.SetHome(_path.Home.x, _path.Home.y);
+
+            var grid = new ChunkGrid(_grid.ChunksW, _grid.ChunksH);
+            // Copy only occupied chunk cells. Empty void stays unbuildable/no-path.
+            for (var cy = 0; cy < _grid.ChunksH; cy++)
+            {
+                for (var cx = 0; cx < _grid.ChunksW; cx++)
+                {
+                    if (!_grid.TryGet(cx, cy, out var slot))
+                        continue;
+
+                    grid.Place(new Vector2Int(cx, cy), slot);
+                    for (var ly = 0; ly < ChunkMask.Size; ly++)
+                    {
+                        for (var lx = 0; lx < ChunkMask.Size; lx++)
+                        {
+                            var wx = cx * ChunkMask.Size + lx;
+                            var wy = cy * ChunkMask.Size + ly;
+                            path.SetPathTile(wx, wy, _path.IsPath(wx, wy));
+                            board.SetBuildable(wx, wy, _board.IsBuildable(wx, wy));
+                        }
+                    }
+                }
+            }
+
+            // Skip WarmMaskCache — parent already warmed the shared catalog stamps.
+            var simulation = new ChunkExpandService(
+                grid,
+                path,
+                board,
+                new ChunkStampService(),
+                _catalog,
+                new System.Random(0),
+                Config,
+                warmMaskCache: false);
+            simulation.UpcomingWaveNumber = UpcomingWaveNumber;
+            simulation.Cadence = Cadence;
+            return simulation;
+        }
+
+        bool CanCloseWithDeadEnds(int turnsRemaining)
+        {
+            for (var turn = 0; turn < turnsRemaining; turn++)
+            {
+                if (CollectOpenFrontiers(_frontierAfterScratch) == 0)
+                    return true;
+                if (!TryForceDeadEndCap())
+                    return false;
+            }
+
+            return CollectOpenFrontiers(_frontierAfterScratch) == 0;
+        }
+
+        /// <summary>
+        /// Counts expandable chunk frontiers. This is intentionally separate from
+        /// PathGraph.CollectSpawnTips: a DeadEnd retains a degree-one spawn portal
+        /// while removing its outward expansion frontier.
+        /// </summary>
+        int CollectOpenFrontiers(List<Vector2Int> into)
+        {
+            into.Clear();
+            _candidateSet.Clear();
+
+            for (var cy = 0; cy < _grid.ChunksH; cy++)
+            {
+                for (var cx = 0; cx < _grid.ChunksW; cx++)
+                {
+                    if (!_grid.TryGet(cx, cy, out var slot))
+                        continue;
+
+                    for (var d = 0; d < _dirs.Length; d++)
+                    {
+                        var dir = _dirs[d];
+                        if ((slot.Mask.OpenEdges & dir) == 0)
+                            continue;
+
+                        var nb = _grid.NeighborCoord(new Vector2Int(cx, cy), dir);
+                        if (!_grid.InBounds(nb.x, nb.y) || _grid.IsOccupied(nb.x, nb.y))
+                            continue;
+
+                        _candidateSet.Add(nb);
+                    }
+                }
+            }
+
+            foreach (var candidate in _candidateSet)
+            {
+                var openingCount = _grid.CollectOpeningsInto(
+                    candidate,
+                    _openingScratch,
+                    _openingDirectionScratch);
+                if (openingCount == 1)
+                    into.Add(candidate);
+            }
+
+            return into.Count;
+        }
+
+        int CurrentTipCount() => _path.CollectSpawnTips(_tipScratch);
 
         void DropOptionalSplitTypes(Vector2Int coord, List<(MapChunkStamp prefab, int yaw)> passing)
         {

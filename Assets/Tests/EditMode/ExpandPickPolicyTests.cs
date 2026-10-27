@@ -92,5 +92,43 @@ namespace GemTD.Tests.EditMode
             Assert.IsTrue(ExpandPickPolicy.SkipExpand(51, 50));
             Assert.IsFalse(ExpandPickPolicy.SkipExpand(50, 0));
         }
+
+        [Test]
+        public void ExpansionTurnsRemaining_ExcludesFinalWave()
+        {
+            Assert.AreEqual(3, ExpandPickPolicy.ExpansionTurnsRemaining(47, 50));
+            Assert.AreEqual(1, ExpandPickPolicy.ExpansionTurnsRemaining(49, 50));
+            Assert.AreEqual(0, ExpandPickPolicy.ExpansionTurnsRemaining(50, 50));
+        }
+
+        [Test]
+        public void ShouldExpand_EveryPreFinalWave_MatchesSkipExpand()
+        {
+            Assert.IsTrue(ExpandPickPolicy.ShouldExpand(1, 50));
+            Assert.IsTrue(ExpandPickPolicy.ShouldExpand(49, 50));
+            Assert.IsFalse(ExpandPickPolicy.ShouldExpand(50, 50));
+            Assert.IsTrue(ExpandPickPolicy.SkipExpand(50, 50));
+        }
+
+        [Test]
+        public void ShouldExpand_OddUpcomingWaves_SkipsEvenWaves()
+        {
+            const ExpansionCadence cadence = ExpansionCadence.OddUpcomingWaves;
+            Assert.IsTrue(ExpandPickPolicy.ShouldExpand(1, 30, cadence));
+            Assert.IsFalse(ExpandPickPolicy.ShouldExpand(2, 30, cadence));
+            Assert.IsTrue(ExpandPickPolicy.ShouldExpand(29, 30, cadence));
+            Assert.IsFalse(ExpandPickPolicy.ShouldExpand(30, 30, cadence));
+            Assert.IsTrue(ExpandPickPolicy.SkipExpand(28, 30, cadence));
+        }
+
+        [Test]
+        public void ExpansionTurnsRemaining_OddUpcomingWaves_CountsOddSlots()
+        {
+            const ExpansionCadence cadence = ExpansionCadence.OddUpcomingWaves;
+            Assert.AreEqual(15, ExpandPickPolicy.ExpansionTurnsRemaining(1, 30, cadence));
+            Assert.AreEqual(14, ExpandPickPolicy.ExpansionTurnsRemaining(2, 30, cadence));
+            Assert.AreEqual(1, ExpandPickPolicy.ExpansionTurnsRemaining(29, 30, cadence));
+            Assert.AreEqual(0, ExpandPickPolicy.ExpansionTurnsRemaining(30, 30, cadence));
+        }
     }
 }
