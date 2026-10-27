@@ -32,6 +32,7 @@ namespace GemTD.Gameplay
 
         [Header("Scene")]
         [SerializeField] ChunkBoardView chunkBoardView;
+        [SerializeField] MapFogView mapFogView;
         [SerializeField] RunInputController inputController;
         [SerializeField] Transform poolRoot;
 
@@ -529,6 +530,10 @@ namespace GemTD.Gameplay
 
             if (chunkBoardView != null)
                 chunkBoardView.Bind(_chunkGrid, _tileHeights, tileSpacing);
+            if (mapFogView != null)
+                mapFogView.Bind(chunkBoardView, _chunkGrid);
+            else
+                Debug.LogError("[GemTD] Assign MapFogView on GameCompositionRoot.");
 
             var laneCount = runConfig != null ? runConfig.LaneCount : 1;
             if (chunkCatalog == null)

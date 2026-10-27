@@ -2868,6 +2868,7 @@ MonoBehaviour:
   codexCatalog: {fileID: 11400000, guid: ba6e968f6809e404c9aaf73ca92d32f7, type: 2}
   chunkCatalog: {fileID: 11400000, guid: 023e5156a863e5a438aef101044e8367, type: 2}
   chunkBoardView: {fileID: 1395327585}
+  mapFogView: {fileID: 1395327586}
   inputController: {fileID: 484406977}
   poolRoot: {fileID: 1924562253}
   enemyPrefab: {fileID: 8983046479639338321, guid: a951088e0b66e4443bf4b325ca038906, type: 3}
@@ -4555,6 +4556,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1395327584}
   - component: {fileID: 1395327585}
+  - component: {fileID: 1395327586}
   m_Layer: 0
   m_Name: GridRoot
   m_TagString: Untagged
@@ -4599,6 +4601,23 @@ MonoBehaviour:
   grassRendererPrefab: {fileID: 3958347308115939293, guid: 669c6d8cfafe51f47b8ae77cb80eb868, type: 3}
   grassStyle: {fileID: 11400000, guid: f2dffb3ec38d78344ad0b069a3d7d75f, type: 2}
   grassSurfaceOffset: 0.01
+--- !u!114 &1395327586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1395327582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e603c1d4f8b4020c5e7d9f13a2b6c84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Map.MapFogView
+  fogMaterial: {fileID: 2100000, guid: 8d5f2b0c3e7a4f19b4d6c8e02f1a5b73, type: 2}
+  fogColor: {r: 0, g: 0, b: 0, a: 1}
+  planeHeight: 0.35
+  coverage: 512
+  edgePeekCells: 10
 --- !u!1 &1453741560
 GameObject:
   m_ObjectHideFlags: 0
