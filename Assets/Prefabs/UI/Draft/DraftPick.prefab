@@ -375,7 +375,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 420}
+  m_SizeDelta: {x: 0, y: 430}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4635976973940611396
 CanvasRenderer:
@@ -877,6 +877,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1019625414267223976}
   - component: {fileID: 5754792887849644969}
+  - component: {fileID: 729951542687668364}
   m_Layer: 0
   m_Name: TowerLabelGroup
   m_TagString: Untagged
@@ -931,6 +932,26 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &729951542687668364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3006583239717919692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: 70
+  m_PreferredWidth: -1
+  m_PreferredHeight: 70
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &3298814290833712284
 GameObject:
   m_ObjectHideFlags: 0
@@ -1971,7 +1992,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 300, y: 420}
+  m_SizeDelta: {x: 300, y: 430}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3641177839725469760
 MonoBehaviour:
@@ -1994,27 +2015,27 @@ MonoBehaviour:
     selectedHighlight: {fileID: 2887002573347181485}
   draftButton: {fileID: 6285461887527601426}
   draftLabel: {fileID: 6181586813602093665}
+  draftDescription: {fileID: 5120767098614487687}
   tagsParent: {fileID: 8995959820187500861}
   tagSubParentTemplate: {fileID: 8937258690395883622}
   tagLabelPrefab: {fileID: 4519037936465541972, guid: 5ed3cf0ee14165640a5ad42468748b01, type: 3}
   tagLabels: []
-  draftDescription: {fileID: 5120767098614487687}
+  levelLabel: {fileID: 6101908375027415617}
   draftStatusGroup: {fileID: 4563904474029979286}
   draftStatus: {fileID: 494300992379944048}
-  levelLabel: {fileID: 6101908375027415617}
   cardPanel: {fileID: 135538767431862446}
   iconMask: {fileID: 4403458354059740365}
   borderCanvasGroup: {fileID: 7016415722961224657}
+  selectedGroupPanel: {fileID: 6352027925484965606}
+  selectedHighlightColor: {r: 0.7607843, g: 0.46666667, b: 0.050980393, a: 1}
   selectMoveSeconds: 0.2
   selectedCardY: 4
   iconScaleSeconds: 0.12
+  selectedGroupFadeSeconds: 0.2
+  fadeOutSeconds: 0
   statusBounceHeight: 12
   statusBounceSeconds: 0.28
   statusBounceInterval: 1.2
-  selectedGroupPanel: {fileID: 6352027925484965606}
-  selectedGroupFadeSeconds: 0.2
-  fadeOutSeconds: 0
-  selectedHighlightColor: {r: 0.7607843, g: 0.46666667, b: 0.050980393, a: 1}
 --- !u!114 &8619733124869763797
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2126,9 +2147,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: 330
-  m_MinHeight: 420
+  m_MinHeight: 430
   m_PreferredWidth: 330
-  m_PreferredHeight: 420
+  m_PreferredHeight: 430
   m_FlexibleWidth: 1
   m_FlexibleHeight: 1
   m_LayoutPriority: 1
@@ -2585,7 +2606,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 0
+  m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
