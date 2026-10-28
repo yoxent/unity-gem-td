@@ -152,6 +152,25 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void WaveReadyProgress_RaisesAndClears()
+        {
+            var progress = -1f;
+            var count = 0;
+            GameEvents.WaveReadyProgress += value =>
+            {
+                progress = value;
+                count++;
+            };
+            GameEvents.RaiseWaveReadyProgress(0.25f);
+            Assert.AreEqual(0.25f, progress, 1e-4f);
+            Assert.AreEqual(1, count);
+            GameEvents.ClearAll();
+            GameEvents.RaiseWaveReadyProgress(1f);
+            Assert.AreEqual(0.25f, progress, 1e-4f);
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
         public void CameraShakeContinuous_RaisesContinuousKind()
         {
             CameraShakeRequest received = default;

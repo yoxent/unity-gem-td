@@ -21,11 +21,16 @@ namespace GemTD.Gameplay.Run
 
         public const float ClearHoldSeconds = 2f;
 
+        /// <summary>Combat time after <see cref="StartWave"/> before the first enemy. Pause freezes it.</summary>
+        public const float ReadyHoldSeconds = 1.6f;
+
         int _nextWaveIndex;
         int _spawnIndex;
         float _spawnTimer;
         WaveDefinition _activeWave;
         bool _waveCleared;
+        bool _readyHoldActive;
+        float _readyHoldRemaining;
         bool _clearHoldActive;
         float _clearHoldRemaining;
 
@@ -88,14 +93,37 @@ namespace GemTD.Gameplay.Run
             _spawnIndex = 0;
             _spawnTimer = 0f;
             _waveCleared = false;
+            _readyHoldActive = ReadyHoldSeconds > 0f;
+            _readyHoldRemaining = ReadyHoldSeconds;
             _clearHoldActive = false;
             _clearHoldRemaining = 0f;
+            if (_readyHoldActive)
+                GameEvents.RaiseWaveReadyProgress(0f);
         }
 
         public void Tick(float dt, EnemySpawnerGate spawner)
         {
             if (spawner == null || _waveCleared || _states.Current != RunStateId.Combat)
                 return;
+
+            if (_readyHoldActive)
+            {
+                _readyHoldRemaining -= dt;
+                if (_readyHoldRemaining > 0f)
+                {
+                    GameEvents.RaiseWaveReadyProgress(1f - _readyHoldRemaining / ReadyHoldSeconds);
+                    return;
+                }
+
+                var overtime = -_readyHoldRemaining;
+                _readyHoldActive = false;
+                _readyHoldRemaining = 0f;
+                GameEvents.RaiseWaveReadyProgress(1f);
+                if (overtime <= 0f)
+                    return;
+
+                dt = overtime;
+            }
 
             if (_spawnIndex < _spawnQueue.Count)
             {

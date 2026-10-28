@@ -68,6 +68,7 @@ namespace GemTD.Tests.EditMode
             controller.StartWave();
             Assert.AreEqual(1, controller.NextWaveNumber);
 
+            PassReadyHold(controller, gate);
             controller.Tick(0f, gate.Gate);
             controller.Tick(1f, gate.Gate);
             gate.ClearLive();
@@ -84,6 +85,7 @@ namespace GemTD.Tests.EditMode
             EnterPlanReady();
             controller.StartWave();
 
+            PassReadyHold(controller, gate);
             controller.Tick(0f, gate.Gate);
             Assert.AreEqual(1, gate.SpawnCount);
 
@@ -95,6 +97,28 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_HoldsFirstSpawnUntilReadyHoldElapses()
+        {
+            var controller = CreateController(_wave1);
+            var gate = new TestSpawnerGate();
+            EnterPlanReady();
+            var progress = -1f;
+            GameEvents.WaveReadyProgress += value => progress = value;
+
+            controller.StartWave();
+            Assert.AreEqual(0f, progress, 1e-4f);
+
+            controller.Tick(0.2f, gate.Gate);
+            Assert.AreEqual(0, gate.SpawnCount);
+            Assert.Greater(progress, 0f);
+            Assert.Less(progress, 1f);
+
+            controller.Tick(WaveController.ReadyHoldSeconds, gate.Gate);
+            Assert.AreEqual(1f, progress, 1e-4f);
+            Assert.AreEqual(1, gate.SpawnCount);
+        }
+
+        [Test]
         public void Tick_WhenQueueEmptyAndNoLiveEnemies_GrantsGoldAndClearsToDraft()
         {
             var controller = CreateController(new[] { _wave1 }, endWaveGold: 25);
@@ -102,6 +126,7 @@ namespace GemTD.Tests.EditMode
             EnterPlanReady();
             controller.StartWave();
 
+            PassReadyHold(controller, gate);
             controller.Tick(0f, gate.Gate);
             controller.Tick(1f, gate.Gate);
             Assert.AreEqual(RunStateId.Combat, _states.Current);
@@ -125,6 +150,7 @@ namespace GemTD.Tests.EditMode
             EnterPlanReady();
             controller.StartWave();
 
+            PassReadyHold(controller, gate);
             controller.Tick(0f, gate.Gate);
             controller.Tick(1f, gate.Gate);
 
@@ -155,6 +181,7 @@ namespace GemTD.Tests.EditMode
                 EnterPlanReady();
                 controller.StartWave();
 
+                PassReadyHold(controller, gate);
                 controller.Tick(0f, gate.Gate);
                 controller.Tick(0f, gate.Gate);
                 controller.Tick(0f, gate.Gate);
@@ -196,6 +223,7 @@ namespace GemTD.Tests.EditMode
                 controller.StartWave(spawnTipCount: 1);
 
                 Assert.AreEqual(0, controller.CurrentBossCount);
+                PassReadyHold(controller, gate);
                 controller.Tick(0f, gate.Gate);
 
                 Assert.AreEqual(2, gate.SpawnCount);
@@ -247,6 +275,7 @@ namespace GemTD.Tests.EditMode
                 Assert.AreEqual(1, controller.CurrentBossCount);
 
                 gate.ResetCounts();
+                PassReadyHold(controller, gate);
                 controller.Tick(0f, gate.Gate); // interval 0 — one Tick drains the queue
 
                 Assert.AreEqual(9, gate.SpawnCount); // 8 regulars + 1 boss
@@ -282,6 +311,7 @@ namespace GemTD.Tests.EditMode
                 Assert.AreEqual(1, controller.CurrentBossCount);
 
                 gate.ResetCounts();
+                PassReadyHold(controller, gate);
                 controller.Tick(0f, gate.Gate);
 
                 Assert.AreEqual(2, gate.SpawnCount); // 1 regular + 1 boss (capped)
@@ -314,6 +344,7 @@ namespace GemTD.Tests.EditMode
                 Assert.AreEqual(2, controller.CurrentBossCount);
 
                 gate.ResetCounts();
+                PassReadyHold(controller, gate);
                 controller.Tick(0f, gate.Gate);
 
                 Assert.AreEqual(14, gate.SpawnCount);
@@ -571,6 +602,11 @@ namespace GemTD.Tests.EditMode
                 _states.DraftResolved();
             if (_states.Current == RunStateId.Plan && !_states.ExpandSatisfiedThisCycle)
                 _states.NotifyExpandDone();
+        }
+
+        void PassReadyHold(WaveController controller, TestSpawnerGate gate)
+        {
+            controller.Tick(WaveController.ReadyHoldSeconds, gate.Gate);
         }
 
         void ClearWave(WaveController controller, TestSpawnerGate gate, int expectedSpawns)
