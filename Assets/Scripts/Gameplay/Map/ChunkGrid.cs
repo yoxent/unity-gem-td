@@ -41,6 +41,8 @@ namespace GemTD.Gameplay.Map
         public bool IsOccupied(int cx, int cy) =>
             _slots.ContainsKey(new Vector2Int(cx, cy));
 
+        public bool Remove(Vector2Int coord) => _slots.Remove(coord);
+
         public bool TryGet(int cx, int cy, out ChunkSlot slot) =>
             _slots.TryGetValue(new Vector2Int(cx, cy), out slot);
 

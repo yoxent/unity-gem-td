@@ -13,6 +13,9 @@ namespace GemTD.Gameplay.Run
 
         public bool ExpandSatisfiedThisCycle { get; private set; }
 
+        /// <summary>Set by <see cref="EnterEndless"/> after Victory — skip expand; combat+draft loop.</summary>
+        public bool IsEndless { get; private set; }
+
         public event Action<RunStateId, RunStateId> StateChanged;
 
         readonly RunClock _clock;
@@ -31,7 +34,9 @@ namespace GemTD.Gameplay.Run
             Current = next;
             ApplyClockForState(next);
             StateChanged?.Invoke(prev, next);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[RunState] {prev} → {next}");
+#endif
         }
 
         public void StartRun()
@@ -43,7 +48,17 @@ namespace GemTD.Gameplay.Run
         public void DraftResolved()
         {
             Ensure(RunStateId.Draft);
-            ExpandSatisfiedThisCycle = false;
+            // Endless: no expand — enter Plan already waived so combat can start immediately.
+            ExpandSatisfiedThisCycle = IsEndless;
+            ForceState(RunStateId.Plan);
+        }
+
+        /// <summary>Victory → Endless: leave summary, enter Plan with expand waived.</summary>
+        public void EnterEndless()
+        {
+            Ensure(RunStateId.VictorySummary);
+            IsEndless = true;
+            ExpandSatisfiedThisCycle = true;
             ForceState(RunStateId.Plan);
         }
 
@@ -78,7 +93,8 @@ namespace GemTD.Gameplay.Run
                 return;
             }
 
-            ExpandSatisfiedThisCycle = false;
+            // Endless: no Plan/expand — stay ready to start the next combat immediately.
+            ExpandSatisfiedThisCycle = IsEndless;
             ForceState(RunStateId.Plan);
         }
 

@@ -1,0 +1,51 @@
+---
+description: Gem TD docs, gates, verification, and workspace conventions
+alwaysApply: true
+---
+
+# Agent working agreements
+
+## Docs
+
+The Unity project is `E:\Projects\Unity\unity-gem-td`.
+All design and planning docs live in:
+`E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`.
+
+Read `HOME.md` first, then `PROJECT_CONTEXT.md` before assuming a decision is
+missing. Use the canonical owner for the subject:
+
+1. `PROJECT_CONTEXT.md` — what the build does today
+2. `GDD.md` — gameplay rules and scope
+3. `ARCHITECTURE.md` — code boundaries and runtime contracts
+4. `UI-SPEC.md` — presentation and interaction contracts
+5. `DAMAGE-MODEL.md` — combat and damage rules
+6. `ROADMAP.md` — what to build next and the current gate
+7. `TEST_STRATEGY.md` — done criteria and verification reporting
+
+`planning/STATUS.md` and `planning/handoff.md` hold the existing phase and
+release-scope detail. `planning/sdd/` is the SDD ledger. Historical plans are
+not a work list: Phase 2 and PR6 plans are closed, and the full catalog is out
+of the current Demo / Early Access version.
+
+If a note disagrees with a living owner, the living owner wins. Do not add
+design docs, plans, or SDD scratch to the Unity repository. Do not duplicate
+the docs tree in the game repo.
+
+Do not `git commit` or `git push` unless the user explicitly asks. Writing or
+updating docs is not a commit request.
+
+Stay inside the current `ROADMAP.md` gate. A class, imported asset, or passing
+EditMode suite does not close a gate; the documented runtime or manual exit
+must be verified.
+
+## Screenshots
+
+Do not capture, generate, or save screenshots during normal workflow. Verify
+scenes through hierarchy/component inspection, camera settings, serialized
+bindings, and the Unity console. Do not add `Assets/Screenshots`.
+
+## References
+
+Look up this project in its docs repo first. For external guidance, search SCE
+for `unity-gem-td`, then retrieve the needed document. Use Context7 for
+library/API documentation and do not treat training memory as API evidence.

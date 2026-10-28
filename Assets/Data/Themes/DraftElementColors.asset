@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b058e6dda072f3419ccdf9a0f1e3341, type: 3}
+  m_Name: DraftElementColors
+  m_EditorClassIdentifier: GemTD.UI::GemTD.UI.DraftElementColors
+  nonElemental:
+    normal: {r: 0.54509807, g: 0.6039216, b: 0.67058825, a: 1}
+    dimmed: {r: 0.91764706, g: 0.92941177, b: 0.9411765, a: 1}
+  fire:
+    normal: {r: 0.9433962, g: 0.3808059, b: 0.35154858, a: 1}
+    dimmed: {r: 0.9843137, g: 0.84308785, b: 0.8235294, a: 1}
+  cold:
+    normal: {r: 0.2901961, g: 0.60784316, b: 0.9411765, a: 1}
+    dimmed: {r: 0.87058824, g: 0.92941177, b: 0.9882353, a: 1}
+  lightning:
+    normal: {r: 1, g: 0.6509804, b: 0.16862746, a: 1}
+    dimmed: {r: 1, g: 0.9372549, b: 0.8509804, a: 1}
+  chaos:
+    normal: {r: 0.36470592, g: 0.8980392, b: 0.38807628, a: 1}
+    dimmed: {r: 0.8862745, g: 0.98039216, b: 0.8949044, a: 1}
+  fireCold:
+    normal: {r: 0.59781873, g: 0.36078432, b: 0.76862746, a: 1}
+    dimmed: {r: 0.9316445, g: 0.8862745, b: 0.95686275, a: 1}
+  fireLightning:
+    normal: {r: 1, g: 0.56455576, b: 0.109803915, a: 1}
+    dimmed: {r: 1, g: 0.92470723, b: 0.8392157, a: 1}
+  fireChaos:
+    normal: {r: 0.62987596, g: 0.76862746, b: 0.2352941, a: 1}
+    dimmed: {r: 0.94119453, g: 0.95686275, b: 0.8627451, a: 1}
+  coldLightning:
+    normal: {r: 0.47843134, g: 1, b: 0.797894, a: 1}
+    dimmed: {r: 0.90588236, g: 1, b: 0.9705747, a: 1}
+  coldChaos:
+    normal: {r: 0.42352942, g: 0.42352942, b: 1, a: 1}
+    dimmed: {r: 0.8980392, g: 0.8980392, b: 1, a: 1}
+  lightningChaos:
+    normal: {r: 0.6409999, g: 0.9882353, b: 0.5176471, a: 1}
+    dimmed: {r: 0.93946964, g: 0.99607843, b: 0.9137255, a: 1}
+  threeElements:
+    normal: {r: 0.90588236, g: 0.5411765, b: 0.8135009, a: 1}
+    dimmed: {r: 0.9843137, g: 0.91764706, b: 0.9720935, a: 1}

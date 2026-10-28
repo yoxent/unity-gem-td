@@ -13,7 +13,8 @@ namespace GemTD.Tests.EditMode
         const float CellSize = 1f;
 
         EnemyDefinition _enemyDef;
-        TowerDefinition _cannonDef;
+        TowerDefinition _splashTower;
+        AttackRoleDefinition _splashRole;
         GemModifierPipeline _pipeline;
 
         [SetUp]
@@ -23,12 +24,20 @@ namespace GemTD.Tests.EditMode
             _enemyDef.MaxHealth = 100f;
             _enemyDef.MoveSpeed = 0.01f;
 
-            _cannonDef = ScriptableObject.CreateInstance<TowerDefinition>();
-            _cannonDef.Range = 20f;
-            _cannonDef.Damage = 8f;
-            _cannonDef.AttackInterval = 1.2f;
-            _cannonDef.SplashRadius = 1.5f;
-            _cannonDef.SocketCount = 2;
+            _splashTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            _splashRole = ScriptableObject.CreateInstance<AttackRoleDefinition>();
+            _splashRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1.2f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 1.5f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
+            _splashTower.Roles = new TowerRoleDefinition[] { _splashRole };
+            _splashTower.Tags = GemTag.Attack | GemTag.Projectile | GemTag.Aoe;
+            _splashTower.Damage = 8f;
+            _splashTower.SocketCount = 2;
 
             _pipeline = new GemModifierPipeline();
         }
@@ -37,17 +46,24 @@ namespace GemTD.Tests.EditMode
         public void TearDown()
         {
             Object.DestroyImmediate(_enemyDef);
-            Object.DestroyImmediate(_cannonDef);
+            Object.DestroyImmediate(_splashRole);
+            Object.DestroyImmediate(_splashTower);
         }
 
         [Test]
-        public void CannonSplash_DamagesPrimaryAndNearbyEnemy()
+        public void SplashTower_DamagesPrimaryAndNearbyEnemy()
         {
-            var director = new CombatDirector(CellSize, projectileSpeed: 200f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _cannonDef);
+            // Keep the exact-damage assertions independent of the default 5% crit roll.
+            var director = new CombatDirector(
+                CellSize,
+                projectileSpeed: 200f,
+                payloadRng: new System.Random(42));
+            var tower = new TowerInstance(new Vector2Int(0, 0), _splashTower);
 
+            // Same progress; nearby is off the flight line so ballistic hits primary first.
+            // Lateral 1.0 is inside SplashRadius 1.5.
             var primary = CreateEnemyAtProgress(0.2f);
-            var nearby = CreateEnemyAtProgress(0.15f);
+            var nearby = CreateEnemyAtProgress(0.2f, laneOffsetZ: 1f);
             var registry = new EnemyRegistry();
             registry.Register(primary);
             registry.Register(nearby);
@@ -55,11 +71,12 @@ namespace GemTD.Tests.EditMode
             var primaryHpBefore = primary.Hp;
             var nearbyHpBefore = nearby.Hp;
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            director.Tick(2f, new List<TowerInstance> { tower }, registry, _pipeline);
             Assert.AreEqual(1, director.Projectiles.Count);
 
             for (var i = 0; i < 60; i++)
-                director.Tick(0.05f, new List<TowerRuntime>(), registry, _pipeline);
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(primary.Hp, primaryHpBefore);
             Assert.Less(nearby.Hp, nearbyHpBefore);
@@ -70,31 +87,45 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void NoSplash_WhenSplashRadiusZero_OnlyPrimaryDamaged()
         {
-            _cannonDef.SplashRadius = 0f;
+            _splashTower.Tags = GemTag.Attack | GemTag.Projectile;
+            _splashRole.Modifiers = new[]
+            {
+                Modifier(RoleStat.TowerRadius, 20f),
+                Modifier(RoleStat.AttackTime, 1.2f),
+                Modifier(RoleStat.AttackSpeed, 100f),
+                Modifier(RoleStat.SplashRadius, 0f),
+                Modifier(RoleStat.ProjectileCount, 1f)
+            };
 
             var director = new CombatDirector(CellSize, projectileSpeed: 200f);
-            var tower = new TowerRuntime(new Vector2Int(0, 0), _cannonDef);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _splashTower);
 
             var primary = CreateEnemyAtProgress(0.2f);
-            var nearby = CreateEnemyAtProgress(0.15f);
+            var nearby = CreateEnemyAtProgress(0.2f, laneOffsetZ: 1f);
             var registry = new EnemyRegistry();
             registry.Register(primary);
             registry.Register(nearby);
 
             var nearbyHpBefore = nearby.Hp;
 
-            director.Tick(0.016f, new List<TowerRuntime> { tower }, registry, _pipeline);
+            director.Tick(0.016f, new List<TowerInstance> { tower }, registry, _pipeline);
+            director.Tick(2f, new List<TowerInstance> { tower }, registry, _pipeline);
 
             for (var i = 0; i < 60; i++)
-                director.Tick(0.05f, new List<TowerRuntime>(), registry, _pipeline);
+                director.Tick(0.05f, new List<TowerInstance>(), registry, _pipeline);
 
             Assert.Less(primary.Hp, 100f);
             Assert.AreEqual(nearbyHpBefore, nearby.Hp, 1e-4f);
         }
 
-        EnemyRuntime CreateEnemyAtProgress(float approximateProgress)
+        static RoleStatModifier Modifier(RoleStat stat, float value)
         {
-            var waypoints = BuildWorldWaypoints(new Vector2Int(0, 0), new Vector2Int(10, 0));
+            return RoleStatModifier.Single(stat, RoleModifierOperation.Set, value);
+        }
+
+        EnemyRuntime CreateEnemyAtProgress(float approximateProgress, float laneOffsetZ = 0f)
+        {
+            var waypoints = BuildWorldWaypoints(laneOffsetZ, new Vector2Int(0, 0), new Vector2Int(10, 0));
             var enemy = new EnemyRuntime();
             enemy.Init(_enemyDef, waypoints);
             _enemyDef.MoveSpeed = 1f;
@@ -105,14 +136,14 @@ namespace GemTD.Tests.EditMode
             return enemy;
         }
 
-        static List<Vector3> BuildWorldWaypoints(params Vector2Int[] cells)
+        static List<Vector3> BuildWorldWaypoints(float laneOffsetZ, params Vector2Int[] cells)
         {
             var half = CellSize * 0.5f;
             var list = new List<Vector3>(cells.Length);
             for (var i = 0; i < cells.Length; i++)
             {
                 var c = cells[i];
-                list.Add(new Vector3(c.x * CellSize + half, 0f, c.y * CellSize + half));
+                list.Add(new Vector3(c.x * CellSize + half, 0f, c.y * CellSize + half + laneOffsetZ));
             }
             return list;
         }

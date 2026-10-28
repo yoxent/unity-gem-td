@@ -4,21 +4,24 @@ using GemTD.Gameplay.Run;
 namespace GemTD.Gameplay.Towers
 {
     /// <summary>
-    /// Per-tower Combat socket lockdown. Plan is always free; firing is unaffected.
+    /// Optional per-tower Combat socket lockdown. Duration 0 disables it (current default).
+    /// Plan is always free; firing is unaffected.
     /// </summary>
     public sealed class SocketLockdown
     {
         readonly float _duration;
-        readonly Dictionary<TowerRuntime, float> _remaining = new Dictionary<TowerRuntime, float>();
-        readonly List<TowerRuntime> _scratchKeys = new List<TowerRuntime>(8);
+        readonly Dictionary<TowerInstance, float> _remaining = new Dictionary<TowerInstance, float>();
+        readonly List<TowerInstance> _scratchKeys = new List<TowerInstance>(8);
 
-        public SocketLockdown(float duration = 3f)
+        public SocketLockdown(float duration = 0f)
         {
-            _duration = duration > 0f ? duration : 3f;
+            _duration = duration > 0f ? duration : 0f;
         }
 
-        public void NotifyChanged(TowerRuntime tower, RunStateId state)
+        public void NotifyChanged(TowerInstance tower, RunStateId state)
         {
+            if (_duration <= 0f)
+                return;
             if (tower == null || state != RunStateId.Combat)
                 return;
 
@@ -45,10 +48,13 @@ namespace GemTD.Gameplay.Towers
             }
         }
 
-        public bool CanSocket(TowerRuntime tower, RunStateId state)
+        public bool CanSocket(TowerInstance tower, RunStateId state)
         {
             if (tower == null)
                 return false;
+
+            if (_duration <= 0f)
+                return state == RunStateId.Plan || state == RunStateId.Combat;
 
             if (state == RunStateId.Plan)
                 return true;
@@ -59,7 +65,7 @@ namespace GemTD.Gameplay.Towers
             return Remaining(tower) <= 0f;
         }
 
-        public float Remaining(TowerRuntime tower)
+        public float Remaining(TowerInstance tower)
         {
             if (tower == null || !_remaining.TryGetValue(tower, out var left))
                 return 0f;

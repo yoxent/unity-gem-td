@@ -1,0 +1,21 @@
+---
+description: Plain-C# gameplay rules and tests for Gem TD
+globs: Assets/Scripts/Gameplay/**/*.cs
+alwaysApply: false
+---
+
+# Gameplay logic
+
+- Damage, targeting, economy, wave, gem, status, and identity rules belong in
+  plain C# seams or ScriptableObject data, not in UI views.
+- Do not put rules in `Update`, `LateUpdate`, or animation callbacks that read
+  `Time` or `UnityEngine.Random`. Pass a clock delta or deterministic RNG into
+  the domain service instead.
+- Combat ticks use object pools, reused collections, and `for` loops. Do not
+  add `System.Linq` to hot combat paths.
+- New or changed domain behavior requires a focused EditMode test. Test
+  boundaries and invariants rather than copying every authored balance value.
+- Keep the dependency direction `UI → Gameplay → Core`; Gameplay must not
+  reference UI or Steam.
+- Use explicit factories and ScriptableObject data. Do not introduce gameplay
+  reflection, attribute scans, or string-to-type registries.

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a73c30da3ad78d0418e3567e462e3405, type: 3}
+  m_Name: Tower_Ice_Shot
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
+  DisplayName: Ice Shot
+  Description: Fires an arrow that bursts cold in a cone behind the target.
+  Cost: 20
+  BuildIncrement: 15
+  Damage: 10
+  Roles:
+  - {fileID: 11400000, guid: 34da67471d7045a3b66b6b73a1ef1366, type: 2}
+  SocketCount: 3
+  AllowsHydraEvolution: 0
+  towerViewPrefabOverride: {fileID: 0}
+  vfx:
+    castPrefab: {fileID: 2788608596141191733, guid: f9746a9ea1d647d41bf035ba604b81b5, type: 3}
+    flightPrefab: {fileID: 1928061869665302356, guid: 3d0d661f85734984cba3701a278a89d5, type: 3}
+    impactPrefab: {fileID: 6649838901265725968, guid: f052c001ae1d5394bbea1f36502ac4db, type: 3}
+    chainPrefab: {fileID: 7200000000000000003, guid: a3b4c5d6e7f8498899aabbccddee0088, type: 3}
+  tags: 69643
