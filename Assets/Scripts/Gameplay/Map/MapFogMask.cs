@@ -3,10 +3,10 @@ using UnityEngine;
 namespace GemTD.Gameplay.Map
 {
     /// <summary>
-    /// Cell mask for the map fog sheet. Each occupied chunk clears its square
-    /// and a disc centered on that chunk, so the empty ground just outside
-    /// the square peeks through. The texture border stays fog so clamping
-    /// does not smear a clear edge across the rest of the world.
+    /// Cell mask for the map fog sheet. A placed chunk clears its square and
+    /// a disc centered on that chunk, so a few cells of ground past the
+    /// square peek through. The texture border stays fog so clamping does
+    /// not smear a clear edge across the rest of the world.
     /// </summary>
     public static class MapFogMask
     {
@@ -125,36 +125,14 @@ namespace GemTD.Gameplay.Map
             BoardCenterZ = cellsH * cellSize * 0.5f;
         }
 
-        public Vector2 TextureScale(float coverage)
+        public float TextureU(float worldX)
         {
-            return new Vector2(coverage / WorldWidth, coverage / WorldDepth);
+            return (worldX - OriginX) / WorldWidth;
         }
 
-        public Vector2 TextureOffset(float coverage)
+        public float TextureV(float worldZ)
         {
-            var planeMinX = BoardCenterX - coverage * 0.5f;
-            var planeMinZ = BoardCenterZ - coverage * 0.5f;
-            return new Vector2(
-                (planeMinX - OriginX) / WorldWidth,
-                (planeMinZ - OriginZ) / WorldDepth);
-        }
-
-        public float TextureU(float worldX, float coverage)
-        {
-            var scale = TextureScale(coverage);
-            var offset = TextureOffset(coverage);
-            var planeMinX = BoardCenterX - coverage * 0.5f;
-            var meshU = (worldX - planeMinX) / coverage;
-            return offset.x + meshU * scale.x;
-        }
-
-        public float TextureV(float worldZ, float coverage)
-        {
-            var scale = TextureScale(coverage);
-            var offset = TextureOffset(coverage);
-            var planeMinZ = BoardCenterZ - coverage * 0.5f;
-            var meshV = (worldZ - planeMinZ) / coverage;
-            return offset.y + meshV * scale.y;
+            return (worldZ - OriginZ) / WorldDepth;
         }
     }
 }

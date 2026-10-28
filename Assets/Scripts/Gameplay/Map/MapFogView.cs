@@ -4,15 +4,14 @@ using GemTD.Core;
 namespace GemTD.Gameplay.Map
 {
     /// <summary>
-    /// Black sheet over the playfield. Expanded chunks are punched clear.
-    /// The sheet is larger than the board so ground outside the grid stays covered.
+    /// Black sheet over the playfield. A placed chunk clears its square and
+    /// a disc a few cells past that square. The sheet matches the mask, which
+    /// already includes that peek.
     /// </summary>
     public sealed class MapFogView : MonoBehaviour
     {
         [SerializeField] Material fogMaterial;
         [SerializeField] Color fogColor = Color.black;
-        [SerializeField, Min(0f)] float planeHeight = 0.35f;
-        [SerializeField, Min(1f)] float coverage = 512f;
         [SerializeField, Min(0f)] float edgePeekCells = MapFogMask.DefaultEdgePeekCells;
 
         ChunkGrid _grid;
@@ -61,18 +60,17 @@ namespace GemTD.Gameplay.Map
             _plane = new GameObject("MapFog");
             _plane.transform.SetParent(board.transform, false);
 
-            var coverage = Mathf.Max(this.coverage, Mathf.Max(_layout.WorldWidth, _layout.WorldDepth));
-            _plane.transform.localPosition = new Vector3(_layout.BoardCenterX, planeHeight, _layout.BoardCenterZ);
+            _plane.transform.localPosition = new Vector3(_layout.BoardCenterX, 0f, _layout.BoardCenterZ);
             _plane.transform.localRotation = Quaternion.identity;
-            _plane.transform.localScale = new Vector3(coverage, 1f, coverage);
+            _plane.transform.localScale = new Vector3(_layout.WorldWidth, 1f, _layout.WorldDepth);
 
             var filter = _plane.AddComponent<MeshFilter>();
             var renderer = _plane.AddComponent<MeshRenderer>();
             filter.sharedMesh = _mesh;
             _runtimeMaterial = new Material(fogMaterial);
             _runtimeMaterial.SetTexture("_MainTex", _texture);
-            _runtimeMaterial.SetTextureScale("_MainTex", _layout.TextureScale(coverage));
-            _runtimeMaterial.SetTextureOffset("_MainTex", _layout.TextureOffset(coverage));
+            _runtimeMaterial.SetTextureScale("_MainTex", Vector2.one);
+            _runtimeMaterial.SetTextureOffset("_MainTex", Vector2.zero);
             _runtimeMaterial.SetColor("_Color", fogColor);
             renderer.sharedMaterial = _runtimeMaterial;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -96,17 +94,8 @@ namespace GemTD.Gameplay.Map
             if (_pixels == null || _texture == null)
                 return;
 
-            MapFogMask.RevealChunk(
-                _pixels,
-                _layout.Width,
-                _layout.Height,
-                coord.x,
-                coord.y,
-                ChunkMask.Size,
-                _layout.Margin,
-                _revealRadius);
-            _texture.SetPixels32(_pixels);
-            _texture.Apply(false, false);
+            Stamp(coord.x, coord.y);
+            ApplyTexture();
         }
 
         void RepaintOccupied()
@@ -118,18 +107,31 @@ namespace GemTD.Gameplay.Map
                 {
                     if (!_grid.IsOccupied(cx, cy))
                         continue;
-                    MapFogMask.RevealChunk(
-                        _pixels,
-                        _layout.Width,
-                        _layout.Height,
-                        cx,
-                        cy,
-                        ChunkMask.Size,
-                        _layout.Margin,
-                        _revealRadius);
+                    Stamp(cx, cy);
                 }
             }
 
+            ApplyTexture();
+        }
+
+        void Stamp(int cx, int cy)
+        {
+            if (_grid == null || !_grid.IsOccupied(cx, cy))
+                return;
+
+            MapFogMask.RevealChunk(
+                _pixels,
+                _layout.Width,
+                _layout.Height,
+                cx,
+                cy,
+                ChunkMask.Size,
+                _layout.Margin,
+                _revealRadius);
+        }
+
+        void ApplyTexture()
+        {
             _texture.SetPixels32(_pixels);
             _texture.Apply(false, false);
         }

@@ -7,7 +7,7 @@ namespace GemTD.Tests.EditMode
     public class MapFogMaskTests
     {
         [Test]
-        public void RevealChunk_ClearsTheSquare_AndADiscPastTheEdge()
+        public void RevealChunk_ClearsTheSquare_AndADiscOutsideTheGrid()
         {
             const int chunk = 7;
             const float peek = MapFogMask.DefaultEdgePeekCells;
@@ -56,24 +56,22 @@ namespace GemTD.Tests.EditMode
         public void TextureUv_CellOrigin_LandsOnFirstBoardTexel()
         {
             var layout = new MapFogLayout(1, 1, 7, 1, 1f);
-            const float coverage = 21f;
 
-            Assert.AreEqual(0f, layout.TextureU(-1f, coverage), 1e-4f);
-            Assert.AreEqual(1f / 9f, layout.TextureU(0f, coverage), 1e-4f);
-            Assert.AreEqual(0f, layout.TextureV(-1f, coverage), 1e-4f);
-            Assert.AreEqual(1f / 9f, layout.TextureV(0f, coverage), 1e-4f);
+            Assert.AreEqual(0f, layout.TextureU(-1f), 1e-4f);
+            Assert.AreEqual(1f / 9f, layout.TextureU(0f), 1e-4f);
+            Assert.AreEqual(0f, layout.TextureV(-1f), 1e-4f);
+            Assert.AreEqual(1f / 9f, layout.TextureV(0f), 1e-4f);
         }
 
         [Test]
         public void TextureUv_OutsideTheBoard_ClampsToTheFogMargin()
         {
             var layout = new MapFogLayout(13, 13, ChunkMask.Size, 1, 1f);
-            const float coverage = 512f;
             var cells = 13 * ChunkMask.Size;
 
-            Assert.Less(layout.TextureU(-20f, coverage), 0f);
-            Assert.Greater(layout.TextureU(cells + 20f, coverage), 1f);
-            Assert.AreEqual(1f / layout.Width, layout.TextureU(0f, coverage), 1e-4f);
+            Assert.Less(layout.TextureU(-20f), 0f);
+            Assert.Greater(layout.TextureU(cells + 20f), 1f);
+            Assert.AreEqual(1f / layout.Width, layout.TextureU(0f), 1e-4f);
         }
     }
 }
