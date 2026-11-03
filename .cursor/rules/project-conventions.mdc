@@ -31,8 +31,17 @@ If a note disagrees with a living owner, the living owner wins. Do not add
 design docs, plans, or SDD scratch to the Unity repository. Do not duplicate
 the docs tree in the game repo.
 
-Do not `git commit` or `git push` unless the user explicitly asks. Writing or
-updating docs is not a commit request.
+Do not `git commit` or `git push` unless the user explicitly asks to commit
+or push. Sync, update, finalize, record, save, and "docs first" do not
+authorize either one. The docs checkout is a git repo and the same rule
+applies there. Writing or updating docs is not a commit request.
+
+Change only what the user names. If that change would alter something unnamed
+through a shared path, keep the unnamed behavior as it is. Do not edit its
+values, and do not restructure it when the named change would not reach it.
+Card-chrome colors and tag-chip colors are independent. Do not rewrite an
+asset in a way that drops or resets values the user set. Script defaults are
+not those values.
 
 Stay inside the current `ROADMAP.md` gate. A class, imported asset, or passing
 EditMode suite does not close a gate; the documented runtime or manual exit
