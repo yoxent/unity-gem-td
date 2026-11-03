@@ -314,7 +314,7 @@ namespace GemTD.Tests.EditMode
                 FindModifier(fleshRole.Modifiers, RoleStat.ReservationPercent).Value,
                 0.001f);
             Assert.AreEqual(0, fleshRole.Levels[0].Effects.Length);
-            Assert.AreEqual(GemTag.Spell | GemTag.Aura | GemTag.Aoe | GemTag.Stance | GemTag.Physical, flesh.Tags);
+            Assert.AreEqual(GemTag.Aura | GemTag.Stance | GemTag.Physical, flesh.Tags);
             CollectionAssert.Contains(
                 flesh.UnsupportedEffectKeys,
                 "#% increased Cooldown Recovery Rate");
@@ -425,7 +425,7 @@ namespace GemTD.Tests.EditMode
             var r = SkillGemTowerMap.FromJson(EnvyJson);
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
             CollectionAssert.AreEqual(new[] { 1, 5, 10 }, r.SourceLevels);
-            Assert.AreEqual(GemTag.Spell | GemTag.Aoe | GemTag.Aura | GemTag.Chaos, r.Tags);
+            Assert.AreEqual(GemTag.Aura | GemTag.Chaos, r.Tags);
             Assert.AreEqual(50f, FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value, 0.001f);
             Assert.AreEqual(33f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackChaosDamage).Min, 0.001f);
             Assert.AreEqual(47f, FindEffect(aura.Levels[0], RoleEffectKind.AllyAddedAttackChaosDamage).Max, 0.001f);
@@ -457,6 +457,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsFalse(HasModifier(curse.Modifiers, RoleStat.CastTime));
             Assert.AreEqual(0f, r.Damage, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, r.RoleKinds[0]);
+            Assert.AreEqual(GemTag.Curse | GemTag.Mark, r.Tags);
             SkillGemTowerMap.ResolveFireBehavior(
                 r.Tags,
                 r.Slug,
@@ -529,7 +530,11 @@ namespace GemTD.Tests.EditMode
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
             Assert.AreEqual(35f, FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value, 0.001f);
             Assert.AreEqual(1.5f, FindModifier(aura.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
-            StringAssert.StartsWith("Summon a Chilling Skitterbot", r.Description);
+            Assert.AreEqual("Daedalus' Curse", r.DisplayName);
+            Assert.AreEqual(GemTag.None, r.Tags & GemTag.Spell);
+            Assert.AreNotEqual(GemTag.None, r.Tags & GemTag.Curse);
+            Assert.AreNotEqual(GemTag.None, r.Tags & GemTag.Aoe);
+            Assert.AreEqual("Curse that chills and shocks enemies in range.", r.Description);
         }
 
         [Test]
@@ -561,7 +566,8 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, r.RoleKinds[0]);
             Assert.AreEqual(1, r.RoleKinds.Length);
             Assert.AreEqual(0f, r.Damage, 0.001f);
-            Assert.AreEqual(GemTag.Spell | GemTag.Aoe | GemTag.Duration | GemTag.Curse | GemTag.Hex, r.Tags);
+            Assert.AreEqual(GemTag.Aoe | GemTag.Duration | GemTag.Curse | GemTag.Hex, r.Tags);
+            Assert.AreEqual(GemTag.None, r.Tags & GemTag.Spell);
             Assert.AreEqual(new[] { 1, 10 }, r.SourceLevels);
             Assert.IsFalse(HasModifier(curse.Modifiers, RoleStat.CastTime));
             Assert.AreEqual(3f, FindModifier(curse.Modifiers, RoleStat.TowerRadius).Value, 0.001f);
@@ -606,6 +612,7 @@ namespace GemTD.Tests.EditMode
             var hexblast = SkillGemTowerMap.FromJson(
                 "{\"name\":\"Hexblast\",\"slug\":\"Hexblast\",\"tags\":[\"Spell\",\"AoE\",\"Chaos\",\"Hex\"],\"category\":\"curse\",\"header\":{\"cast_time\":{\"kind\":\"seconds\",\"value\":0.85}},\"levels\":{\"1\":{\"Deals # to # Chaos Damage\":{\"kind\":\"flat\",\"value\":[204,307]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}},\"10\":{\"Deals # to # Chaos Damage\":{\"kind\":\"flat\",\"value\":[7916,11874]},\"damage_percent\":{\"kind\":\"percent\",\"value\":100}}},\"radius\":{\"kind\":\"metres\",\"value\":4.5}}");
             var hexblastRole = hexblast.GetRolePayload(SkillGemTowerMap.RoleKind.Curse);
+            Assert.AreEqual(GemTag.None, hexblast.Tags & GemTag.Spell);
             Assert.AreEqual(0f, hexblast.Damage, 0.001f);
             Assert.AreEqual(SkillGemTowerMap.RoleKind.Curse, hexblast.RoleKinds[0]);
             Assert.IsFalse(HasModifier(hexblastRole.Modifiers, RoleStat.CastTime));

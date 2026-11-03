@@ -356,11 +356,22 @@ namespace GemTD.Gameplay.Towers
             var unsupportedEffectKeys = ReadUnsupportedAuraEffectKeys(category, levels);
 
             var tags = MapTags(tagsToken, category);
+            if (category == "curse")
+                tags = (tags & ~GemTag.Spell) | GemTag.Curse;
+            if (category == "aura"
+                && !string.Equals(slug, "Summon_Skitterbots", StringComparison.Ordinal))
+                tags &= ~(GemTag.Spell | GemTag.Aoe);
+            if (string.Equals(slug, "Summon_Skitterbots", StringComparison.Ordinal))
+                tags = (tags & ~GemTag.Spell) | GemTag.Curse;
             var extraAura = category == "attack" && (tags & GemTag.Aura) != 0;
             var result = new Result
             {
-                DisplayName = name,
-                Description = gem.Value<string>("description") ?? "",
+                DisplayName = string.Equals(slug, "Summon_Skitterbots", StringComparison.Ordinal)
+                    ? "Daedalus' Curse"
+                    : name,
+                Description = string.Equals(slug, "Summon_Skitterbots", StringComparison.Ordinal)
+                    ? "Curse that chills and shocks enemies in range."
+                    : gem.Value<string>("description") ?? "",
                 Slug = slug,
                 Category = category,
                 Tags = tags,
