@@ -2009,10 +2009,15 @@ MonoBehaviour:
   elementColors: {fileID: 11400000, guid: 9b884f7cc1bf88648b04015440ec527f, type: 2}
   colorTargets:
     dimmed:
-    - {fileID: 106142106867223495}
+    - graphic: {fileID: 106142106867223495}
+      text: {fileID: 0}
     normal:
-    - {fileID: 3088256420437478831}
-    selectedHighlight: {fileID: 2887002573347181485}
+    - graphic: {fileID: 3088256420437478831}
+      text: {fileID: 0}
+    border: []
+    selectedHighlight:
+      graphic: {fileID: 2887002573347181485}
+      text: {fileID: 0}
   draftButton: {fileID: 6285461887527601426}
   draftLabel: {fileID: 6181586813602093665}
   draftDescription: {fileID: 5120767098614487687}

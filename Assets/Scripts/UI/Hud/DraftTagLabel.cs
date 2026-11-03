@@ -23,7 +23,7 @@ namespace GemTD.UI
                 return;
             }
 
-            if (!colorTargets.Apply(elementColors.Resolve(GemTags.FromPoe(tagName))))
+            if (!colorTargets.Apply(elementColors.ForTagLabel(GemTags.FromPoe(tagName))))
                 Debug.LogError("TagLabel: assign colorTargets on the prefab.", this);
         }
     }

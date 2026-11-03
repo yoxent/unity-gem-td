@@ -356,14 +356,12 @@ namespace GemTD.UI
 
         void PaintSelectionHighlight(bool selected)
         {
-            var graphic = colorTargets.selectedHighlight;
-            if (graphic == null)
+            if (!colorTargets.HasSelectedHighlight)
                 Debug.LogError("DraftPick: assign colorTargets.selectedHighlight on the prefab.", this);
 
             if (selected)
             {
-                if (graphic != null)
-                    graphic.color = selectedHighlightColor;
+                colorTargets.PaintSelectedHighlight(selectedHighlightColor);
                 FadeBorder(0f, selectedGroupFadeSeconds);
                 return;
             }
@@ -372,8 +370,7 @@ namespace GemTD.UI
             if (!_havePalette)
                 return;
 
-            if (graphic != null)
-                graphic.color = _palette.normal;
+            colorTargets.PaintSelectedHighlight(_palette.normal);
         }
 
         void FadeBorder(float target, float seconds)

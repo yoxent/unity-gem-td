@@ -838,8 +838,12 @@ MonoBehaviour:
   colorTargets:
     dimmed: []
     normal:
-    - {fileID: 8941894025529447205}
-    selectedHighlight: {fileID: 0}
+    - graphic: {fileID: 8941894025529447205}
+      text: {fileID: 0}
+    border: []
+    selectedHighlight:
+      graphic: {fileID: 0}
+      text: {fileID: 0}
 --- !u!114 &129703428249355900
 MonoBehaviour:
   m_ObjectHideFlags: 0
