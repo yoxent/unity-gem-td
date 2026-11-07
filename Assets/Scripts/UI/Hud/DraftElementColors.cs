@@ -34,7 +34,9 @@ namespace GemTD.UI
         public Palette melee = Row(0xA32F2F);
         public Palette mine = Row(0x864C08);
         public Palette projectile = Row(0x3D8BFF);
+        public Palette slam = Row(0xA32F2F);
         public Palette spell = Row(0xA32F2F);
+        public Palette strike = Row(0xA32F2F);
         public Palette summon = Row(0x43226B);
         public Palette trap = Row(0x864C08);
 
@@ -119,8 +121,12 @@ namespace GemTD.UI
                     return mine;
                 case GemTag.Projectile:
                     return projectile;
+                case GemTag.Slam:
+                    return slam;
                 case GemTag.Spell:
                     return spell;
+                case GemTag.Strike:
+                    return strike;
                 case GemTag.Minion:
                     return summon;
                 case GemTag.Trap:

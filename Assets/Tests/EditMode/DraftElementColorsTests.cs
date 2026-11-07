@@ -90,6 +90,8 @@ namespace GemTD.Tests.EditMode
             AssertSame(_colors.melee, _colors.ResolveTag(GemTag.Melee));
             AssertSame(_colors.bow, _colors.ResolveTag(GemTag.Bow));
             AssertSame(_colors.projectile, _colors.ResolveTag(GemTag.Projectile));
+            AssertSame(_colors.slam, _colors.ResolveTag(GemTag.Slam));
+            AssertSame(_colors.strike, _colors.ResolveTag(GemTag.Strike));
             AssertSame(_colors.area, _colors.ResolveTag(GemTag.Aoe));
             AssertSame(_colors.aura, _colors.ResolveTag(GemTag.Aura));
             AssertSame(_colors.curse, _colors.ResolveTag(GemTag.Curse));
@@ -110,7 +112,6 @@ namespace GemTD.Tests.EditMode
         {
             AssertSame(_colors.nonElemental, _colors.ResolveTag(GemTag.None));
             AssertSame(_colors.nonElemental, _colors.ResolveTag(GemTag.Fire));
-            AssertSame(_colors.nonElemental, _colors.ResolveTag(GemTag.Strike));
             AssertSame(_colors.nonElemental, _colors.ResolveTag(GemTag.Support));
             AssertSame(_colors.nonElemental, _colors.ResolveTag(GemTag.Attack | GemTag.Melee));
         }
