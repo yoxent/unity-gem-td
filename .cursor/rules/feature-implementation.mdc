@@ -1,0 +1,29 @@
+---
+description: Workflow for substantial Gem TD feature or system changes
+alwaysApply: false
+---
+
+# Feature implementation
+
+Use this rule for a feature, new runtime contract, cross-file change, or
+meaningful asset/prefab change.
+
+1. Understand: read `PROJECT_CONTEXT.md`, the relevant canonical owner, the
+   current `ROADMAP.md` gate, and any feature plan or SDD brief.
+2. Plan: identify the existing owner, classify domain versus presentation,
+   list the files and serialized assets that may change, and state the
+   verification needed. Stop for user approval when the work would cross the
+   current roadmap gate or requires a missing gameplay decision.
+3. Implement incrementally. Preserve serialized asset GUIDs and unrelated
+   working-tree changes. Extend existing seams before adding a new system.
+4. Verify proportionately:
+   - domain rules: focused EditMode tests;
+   - scene/prefab wiring: serialized inspection, Unity console, and the
+     manual validator when available;
+   - rendered or Play Mode behavior: report it separately and only claim it
+     after it was actually run.
+5. Update the external docs in the same session when a decision, scope,
+   status, or next step changed. Do not add a note that only repeats the work
+   report.
+
+A passing class or EditMode suite is not a roadmap-gate exit by itself.

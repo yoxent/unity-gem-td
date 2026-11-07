@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 288687ae1c7b81842bf4356dacad3efa, type: 3}
+  m_Name: HandPaintedGrass
+  m_EditorClassIdentifier: GemTD.GrassRenderer.Runtime::GemTD.Grass.GrassStyleDefinition
+  clumpMeshes:
+  - {fileID: 4300000, guid: 783cd66be14951b4d8824e99da2ca789, type: 2}
+  - {fileID: 4300000, guid: f54570b48d44c3c4bb76c4e7271a6113, type: 2}
+  variantWeights:
+  - 1
+  - 1
+  material: {fileID: 2100000, guid: b972ff3419fa9b74798d867c8d20852e, type: 2}
+  clumpsPerSquareUnit: 10
+  scaleRange: {x: 0.9, y: 1.15}
+  edgeInset: 0.08
+  edgeThinChance: 0.35
+  cliffDensityMultiplier: 1.15
+  towerClearanceRadius: 0.38
+  rootColor: {r: 0.28, g: 0.39, b: 0.21, a: 1}
+  bodyColor: {r: 0.4, g: 0.53, b: 0.29, a: 1}
+  tipColor: {r: 0.55, g: 0.66, b: 0.38, a: 1}
+  colorNoiseScale: 3
+  colorNoiseStrength: 0.07
+  windDirection: {x: 1, y: 0.35}
+  windScale: 2.5
+  windSpeed: 0.22
+  windStrength: 0.05
+  shadowCasting: 0
+  receiveShadows: 1

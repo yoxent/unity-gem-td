@@ -9,8 +9,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.77168
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
       propertyPath: m_LocalPosition.y
@@ -18,7 +30,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2.21601
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d4782309fb4a76e419b05255068605f6, type: 3}
       propertyPath: m_LocalRotation.w
@@ -75,5 +87,25 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d4782309fb4a76e419b05255068605f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8352422082942132169}
   m_SourcePrefab: {fileID: 100100000, guid: d4782309fb4a76e419b05255068605f6, type: 3}
+--- !u!1 &7717033410940181029 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d4782309fb4a76e419b05255068605f6, type: 3}
+  m_PrefabInstance: {fileID: 7483013156972013428}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8352422082942132169
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7717033410940181029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cbe3b2a8894439da5ee593901f957fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Enemies.EnemyView

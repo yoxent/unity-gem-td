@@ -13,7 +13,8 @@ namespace GemTD.Gameplay.Towers
         readonly HashSet<Vector2Int> _occupied = new HashSet<Vector2Int>();
         readonly RunEconomy _economy;
 
-        public TowerRuntime Selected { get; set; }
+        public TowerInstance Selected { get; set; }
+        public event System.Action<Vector2Int> OccupancyChanged;
 
         public TowerPlacementService(
             GridBoard board,
@@ -50,7 +51,7 @@ namespace GemTD.Gameplay.Towers
             return true;
         }
 
-        public bool TryPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, int placeCost, out TowerRuntime tower)
+        public bool TryPlace(TowerDefinition def, Vector2Int cell, RunStateId phase, int placeCost, out TowerInstance tower)
         {
             tower = null;
 
@@ -60,12 +61,13 @@ namespace GemTD.Gameplay.Towers
             if (!_economy.TrySpend(placeCost))
                 return false;
 
-            tower = new TowerRuntime(cell, def, placeCost);
-            _occupied.Add(cell);
+            tower = new TowerInstance(cell, def, placeCost);
+            if (_occupied.Add(cell))
+                OccupancyChanged?.Invoke(cell);
             return true;
         }
 
-        public bool CanSell(TowerRuntime tower, RunStateId phase, GemInventory inventory)
+        public bool CanSell(TowerInstance tower, RunStateId phase, GemInventory inventory)
         {
             if (tower == null || inventory == null)
                 return false;
@@ -76,14 +78,14 @@ namespace GemTD.Gameplay.Towers
             return CountSocketedGems(tower) <= inventory.FreeSlotCount;
         }
 
-        public bool TrySell(TowerRuntime tower, RunStateId phase, GemInventory inventory)
+        public bool TrySell(TowerInstance tower, RunStateId phase, GemInventory inventory)
         {
             if (!CanSell(tower, phase, inventory))
                 return false;
 
             for (var i = 0; i < tower.Sockets.Length; i++)
             {
-                if (!tower.TryUnsocket(i, out var gem, allowSocket: true))
+                if (!tower.TryUnsocket(i, out var gem, allowSocket: true, ignoreHydraLock: true))
                     continue;
 
                 if (inventory.TryAdd(gem))
@@ -96,7 +98,8 @@ namespace GemTD.Gameplay.Towers
             _economy.AddGold(RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend));
 
             var cell = tower.Cell;
-            _occupied.Remove(cell);
+            if (_occupied.Remove(cell))
+                OccupancyChanged?.Invoke(cell);
 
             if (Selected == tower)
                 Selected = null;
@@ -104,12 +107,12 @@ namespace GemTD.Gameplay.Towers
             return true;
         }
 
-        static int CountSocketedGems(TowerRuntime tower)
+        static int CountSocketedGems(TowerInstance tower)
         {
             var gemCount = 0;
             for (var i = 0; i < tower.Sockets.Length; i++)
             {
-                if (tower.Sockets[i] != null)
+                if (!tower.Sockets[i].IsEmpty)
                     gemCount++;
             }
 

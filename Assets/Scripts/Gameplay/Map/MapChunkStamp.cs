@@ -9,7 +9,33 @@ namespace GemTD.Gameplay.Map
         [SerializeField] bool[] elevationLocked = new bool[ChunkMask.CellCount];
         [SerializeField] int homeIndex = -1;
 
-        public ChunkMask GetMask() => new ChunkMask(isPath, homeIndex, elevationLocked);
+        ChunkMask _cachedMask;
+        bool _hasCachedMask;
+        ChunkMask[] _rotatedMasks;
+
+        public ChunkMask GetMask()
+        {
+            if (!_hasCachedMask)
+            {
+                _cachedMask = new ChunkMask(isPath, homeIndex, elevationLocked);
+                _hasCachedMask = true;
+            }
+            return _cachedMask;
+        }
+
+        public ChunkMask GetRotatedMask(int yaw)
+        {
+            var turns = ((yaw % 4) + 4) % 4;
+            if (_rotatedMasks == null)
+            {
+                var baseMask = GetMask();
+                _rotatedMasks = new ChunkMask[4];
+                _rotatedMasks[0] = baseMask;
+                for (var t = 1; t < 4; t++)
+                    _rotatedMasks[t] = baseMask.Rotated(t);
+            }
+            return _rotatedMasks[turns];
+        }
 
         public void ApplyMask(ChunkMask mask)
         {
@@ -21,7 +47,18 @@ namespace GemTD.Gameplay.Map
             homeIndex = mask.HasHome
                 ? mask.HomeLocal.y * ChunkMask.Size + mask.HomeLocal.x
                 : -1;
+            InvalidateMaskCache();
         }
+
+        void InvalidateMaskCache()
+        {
+            _hasCachedMask = false;
+            _rotatedMasks = null;
+        }
+
+#if UNITY_EDITOR
+        void OnValidate() => InvalidateMaskCache();
+#endif
 
         public void BuildVisuals(Material pathMat, Material towerMat, float cellSize,
             Material homeMat = null, Material elevationLockMat = null)

@@ -8,12 +8,14 @@ using GemTD.Gameplay.Run;
 
 namespace GemTD.UI
 {
-    /// <summary>Lives on InventoryPanel prefab. Manages 10 InventoryGemSlot instances + hint text.</summary>
+    /// <summary>Lives on InventoryPanel prefab. Manages 10 InventoryGemSlot instances, occupancy count, and hint text.</summary>
     public sealed class InventoryController : MonoBehaviour
     {
+        [SerializeField] TMP_Text inventoryCountText;
         [SerializeField] TMP_Text inventoryHintText;
         [SerializeField] GameObject panel;
         [SerializeField] List<InventoryGemSlot> slots = new List<InventoryGemSlot>();
+        [SerializeField] InventoryGemTooltip inventoryGemTooltip;
 
         GameCompositionRoot _root;
         PopupManager _popup;
@@ -42,6 +44,11 @@ namespace GemTD.UI
             if (slots == null || slots.Count == 0)
                 Debug.LogError("InventoryController: assign InventoryGemSlot refs on the prefab.", this);
             _buttonsBound = slots != null && slots.Count > 0;
+            for (var i = 0; slots != null && i < slots.Count; i++)
+            {
+                if (slots[i] != null)
+                    slots[i].SetTooltip(inventoryGemTooltip);
+            }
             Refresh();
         }
 
@@ -59,22 +66,25 @@ namespace GemTD.UI
             var inv = _root.Inventory;
             if (inv == null) return;
             var canSocket = (_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat)
-                            && _root.HasSelectedTower && _root.SelectedSocketLockRemaining <= 0f;
+                            && _root.HasSelectedTower;
             var replacePick = _root.States.Current == RunStateId.Draft
                               && _root.Draft != null
                               && _root.Draft.ReplacePhase == DraftReplacePhase.AwaitingInventoryPick;
             var inPlan = _root.States.Current == RunStateId.Plan;
 
+            if (inventoryCountText != null)
+                inventoryCountText.text = $"{inv.OccupiedCount}/{inv.Capacity}";
+
             if (inventoryHintText != null)
             {
                 if (replacePick)
-                    inventoryHintText.text = "Inventory — click a gem to DESTROY & take draft card";
+                    inventoryHintText.text = "Click a gem to destroy & take draft card";
                 else if (canSocket)
-                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity} — click=socket | Shift+click=discard (Plan)";
+                    inventoryHintText.text = "Click=socket | Shift+click=discard (Plan)";
                 else if (inPlan)
-                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity} — select a tower to socket";
+                    inventoryHintText.text = "Select a tower to socket";
                 else
-                    inventoryHintText.text = $"Inventory {inv.OccupiedCount}/{inv.Capacity}";
+                    inventoryHintText.text = string.Empty;
             }
 
             for (var i = 0; i < slots.Count && i < inv.Slots.Count; i++)
@@ -84,7 +94,7 @@ namespace GemTD.UI
 
                 slots[i].Configure(_root, _popup, i, gem);
 
-                var filled = gem != null;
+                var filled = !gem.IsEmpty;
                 slots[i].SetPointerInteractable(filled && (canSocket || replacePick || inPlan));
             }
         }

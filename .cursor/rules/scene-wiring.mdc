@@ -1,0 +1,21 @@
+---
+description: Serialized scene and prefab wiring for Gem TD
+globs: Assets/Scripts/**/*.cs
+alwaysApply: false
+---
+
+# Scene and prefab wiring
+
+- Dependencies on a scene object or prefab child are serialized fields and are
+  assigned in the scene or prefab.
+- Do not use `Find`, `transform.Find`, `GetComponent`,
+  `GetComponentInChildren`, or `TryGetComponent` in `Awake` or `Start` to
+  discover components that already exist on the authored object.
+- Do not add components or build UI hierarchy at runtime to repair missing
+  authoring. Log a clear error for a required reference that is missing.
+- Existing scene bootstrap and wire-menu code is frozen. Do not extend it as a
+  substitute for inspector wiring.
+- `GetComponent`/`AddComponent` is allowed for an object spawned by the current
+  operation when the spawned object's contract explicitly requires it.
+- After changing serialized scene or prefab contracts, inspect the affected
+  asset and check the Unity console; a compile pass alone is insufficient.

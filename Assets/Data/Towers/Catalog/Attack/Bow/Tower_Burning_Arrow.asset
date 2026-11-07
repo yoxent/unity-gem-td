@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a73c30da3ad78d0418e3567e462e3405, type: 3}
+  m_Name: Tower_Burning_Arrow
+  m_EditorClassIdentifier: GemTD.Gameplay::GemTD.Gameplay.Towers.TowerDefinition
+  DisplayName: Burning Arrow
+  Description: Fires a burning arrow that can ignite.
+  Cost: 20
+  BuildIncrement: 15
+  Damage: 10
+  Roles:
+  - {fileID: 11400000, guid: 2407e28cb5e9e1896fa598b561ce963c, type: 2}
+  SocketCount: 3
+  AllowsHydraEvolution: 0
+  towerViewPrefabOverride: {fileID: 0}
+  vfx:
+    castPrefab: {fileID: 7566652684238491759, guid: 4cb012fa158de8c448b36ed10c46a11c, type: 3}
+    flightPrefab: {fileID: 4322952573170916030, guid: 23c601ebba72c5a4eb6e2199869f4f5d, type: 3}
+    impactPrefab: {fileID: 5271222918783875335, guid: efc34b43dda7d964bad679f2bbb84fde, type: 3}
+    chainPrefab: {fileID: 7200000000000000003, guid: a3b4c5d6e7f8498899aabbccddee0088, type: 3}
+  tags: 2101257

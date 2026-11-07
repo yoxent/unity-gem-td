@@ -1,0 +1,20 @@
+---
+description: ScriptableObject, prefab, and authored content rules for Gem TD
+alwaysApply: false
+---
+
+# Content authoring
+
+- A new kind of gameplay content is a ScriptableObject definition plus its
+  authored assets. Keep tunable balance and catalog data in those assets, not
+  hardcoded in runtime code.
+- A repeated UI row, card, slot, or world view is one prefab with instances or
+  a pool; do not copy its hierarchy into multiple bespoke objects.
+- Fixed-count UI slots are authored and pre-placed. Variable lists use an
+  authored child-view prefab under a serialized parent and pool instances.
+- Preserve asset GUIDs and serialized references when moving assets. Use
+  Unity-aware asset operations where available; do not hand-recreate YAML
+  references.
+- Do not import catalog content merely because source data exists. Respect the
+  gameplay-ready set, deferred mechanics, and release scope in
+  `planning/handoff.md`.

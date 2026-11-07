@@ -1,0 +1,20 @@
+---
+description: Presentation and UI boundaries for Gem TD
+globs: Assets/Scripts/UI/**/*.cs
+alwaysApply: false
+---
+
+# Presentation boundaries
+
+- UI and presentation code binds domain snapshots and events; it does not
+  calculate damage, economy, wave results, save settlement, or run rules.
+- Follow `UI-SPEC.md`: authored prefab shells, inspector-dragged references,
+  TMP text, layout groups, fixed slots for fixed counts, and bindable prefab
+  view hierarchies for variable lists.
+- UI controllers subscribe to domain events and refresh from a bind method.
+  Do not poll gameplay state every frame unless the UI contract explicitly
+  requires a world-space follow update.
+- Animate changing values with LitMotion. Do not use coroutines, `Update`, or
+  DOTween for presentation animation.
+- Verify UI changes through prefab/scene wiring and Unity console inspection.
+  Do not claim rendered or Play Mode behavior from EditMode tests alone.
