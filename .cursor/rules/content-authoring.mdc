@@ -16,5 +16,6 @@ alwaysApply: false
   Unity-aware asset operations where available; do not hand-recreate YAML
   references.
 - Do not import catalog content merely because source data exists. Respect the
-  gameplay-ready set, deferred mechanics, and release scope in
-  `planning/handoff.md`.
+  gameplay-ready set, deferred mechanics, and release scope. The release-scope
+  reference is opt-in: state that unfinished items exist in `planning/handoff.md`
+  and read it only when the user asks.

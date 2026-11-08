@@ -25,8 +25,12 @@ Canonical docs: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 - Map fog is a separate world sheet (`MapFogView`), not part of the post stack.
 - Bloom + Vignette are retuned and accepted; do not open a new post stack.
 - No grass system is active; chunks render pads only.
-- Do not import new towers or gem mechanics. The rest of the catalog is out of this version (`planning/handoff.md`).
+- Do not import new towers or gem mechanics. The rest of the catalog is out of this version.
 - Clip assignment (shared SFX + one music loop) is the next authorized branch, not the current one.
+
+**Do not import new towers or gem mechanics.** The rest of the catalog is out of
+this version. Socket count is uniform (3) across every tower and the importer
+writes that same value, so a reimport no longer resets authored socket counts.
 
 **Freshness:** if `PROJECT_CONTEXT.md`'s `Updated:` date is older than the newest
 `## ` heading in `planning/sdd/progress.md`, reconcile it before code.

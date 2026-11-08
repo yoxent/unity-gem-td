@@ -22,6 +22,14 @@ namespace GemTD.Gameplay.Towers
         public const int CostMine = 25;
         public const int BuildIncrement = 15;
 
+        /// <summary>
+        /// Every tower gets the same socket count. Gem eligibility is gated by tags,
+        /// so lowering a tower's sockets is redundant: a gem that does not fit cannot
+        /// socket regardless. Keeping this uniform also means the importer and the
+        /// authored assets never disagree.
+        /// </summary>
+        public const int SocketCountAllTowers = 3;
+
         public const float DamageAttack = 10f;
         public const float DamageSpellTrapMine = 8f;
         public const float DamageAuraCurse = 0f;
@@ -396,12 +404,12 @@ namespace GemTD.Gameplay.Towers
 
         static void ApplyCategoryDefaults(Result result, string category, bool extraAura)
         {
+            result.SocketCount = SocketCountAllTowers;
             switch (category)
             {
                 case "attack":
                     result.Cost = CostAttack;
                     result.Damage = DamageAttack;
-                    result.SocketCount = 3;
                     result.RoleKinds = extraAura
                         ? new[] { RoleKind.Attack, RoleKind.Aura }
                         : new[] { RoleKind.Attack };
@@ -409,31 +417,26 @@ namespace GemTD.Gameplay.Towers
                 case "spell":
                     result.Cost = CostSpell;
                     result.Damage = DamageSpellTrapMine;
-                    result.SocketCount = 3;
                     result.RoleKinds = new[] { RoleKind.Spell };
                     break;
                 case "curse":
                     result.Cost = CostCurse;
                     result.Damage = DamageAuraCurse;
-                    result.SocketCount = 3;
                     result.RoleKinds = new[] { RoleKind.Curse };
                     break;
                 case "aura":
                     result.Cost = CostAura;
                     result.Damage = DamageAuraCurse;
-                    result.SocketCount = 1;
                     result.RoleKinds = new[] { RoleKind.Aura };
                     break;
                 case "trap":
                     result.Cost = CostTrap;
                     result.Damage = DamageSpellTrapMine;
-                    result.SocketCount = 3;
                     result.RoleKinds = new[] { RoleKind.Trap };
                     break;
                 case "mine":
                     result.Cost = CostMine;
                     result.Damage = DamageSpellTrapMine;
-                    result.SocketCount = 3;
                     result.RoleKinds = new[] { RoleKind.Mine };
                     break;
                 default:

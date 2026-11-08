@@ -19,7 +19,9 @@ Gem TD tree: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 | `TEST_STRATEGY.md` | Done criteria and verification reporting |
 | `wiki/catalog/` | Generated per-tower (and later per-gem) reference |
 | `planning/` | Phase designs, implementation plans, STATUS. **Phase 2 is closed** — do not execute `phase2-*` or PR6 plans. |
-| `planning/handoff.md` | Release-scope guard: 29-tower Demo / Early Access set, deferred tables, reimport hazards |
+| `planning/handoff.md` | Release-scope guard: what is in, out, and unsafe to reimport. Read only for a scope question. |
+| `planning/handoff-catalog.md` | Remaining catalog and mapper rules (out of this version) |
+| `planning/handoff-tracking.md` | Accepted-but-deferred and parked work |
 | `planning/handoff-slices.md` | Shipped slices and locked contracts (record — not a work list) |
 | `planning/handoff-import-recipe.md` | Full-release catalog import procedure (out of this version) |
 | `planning/STATUS.md` | Phase checklist. Delivered detail is in `planning/STATUS-delivered-phases.md` |
@@ -40,12 +42,23 @@ Read in tiers. Do not read the whole tree; most of it is ledger.
 | --- | --- | --- |
 | 1 | `HOME.md`, `PROJECT_CONTEXT.md`, `ROADMAP.md` | every session |
 | 2 | the one canonical owner for the subject (`GDD` / `ARCHITECTURE` / `UI-SPEC` / `DAMAGE-MODEL`) | every session that touches it |
-| 3 | `planning/handoff.md` | only when editing towers, gems, combat, VFX, or release scope |
 | 4 | `planning/STATUS.md` | only when phase detail is needed |
 | 5 | the newest 2–3 entries of `planning/sdd/progress.md` | only when resuming mid-task. It is newest-first and append-only; never read it whole |
-| — | `handoff-slices.md`, `handoff-import-recipe.md`, `STATUS-delivered-phases.md` | archaeology, or a later full-release branch |
 
 Then inspect `git status` before editing and preserve unrelated changes.
+
+**Handoff files are opt-in, never read unasked.** `planning/` holds unfinished and
+deferred work in `handoff.md` (release scope), `handoff-catalog.md` (remaining
+catalog), and `handoff-tracking.md` (accepted-but-deferred, parked). They are
+reference, not prelude.
+
+- **Do not open them to "get context."** State that unfinished items exist there
+  and stop.
+- Read one only when the user asks, or when they approve listing its contents.
+  If a task genuinely needs them, say which file and why, then wait.
+- `handoff-slices.md`, `handoff-import-recipe.md`, and
+  `STATUS-delivered-phases.md` are records for archaeology or a full-release
+  branch; same opt-in rule.
 
 **Living docs stay lean.** `HOME.md`, `PROJECT_CONTEXT.md`, `ROADMAP.md`,
 `planning/STATUS.md`, and `TEST_STRATEGY.md` stay under ~1,500 words each;

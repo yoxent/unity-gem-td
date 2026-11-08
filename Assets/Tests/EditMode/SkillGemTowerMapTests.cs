@@ -235,7 +235,7 @@ namespace GemTD.Tests.EditMode
                 FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value,
                 0.001f);
             Assert.AreEqual(0f, r.Damage, 0.001f);
-            Assert.AreEqual(1, r.SocketCount);
+            Assert.AreEqual(3, r.SocketCount);
             Assert.AreEqual(30, r.Cost);
             Assert.IsFalse(r.AllowsHydraEvolution);
             CollectionAssert.AreEqual(new[] { 1 }, r.SourceLevels);
@@ -525,7 +525,7 @@ namespace GemTD.Tests.EditMode
             Assert.IsNull(r.GetRolePayload(SkillGemTowerMap.RoleKind.Mine));
             Assert.IsFalse(r.IsActiveCatalogCompatible);
             Assert.AreEqual(0f, r.Damage, 0.001f);
-            Assert.AreEqual(1, r.SocketCount);
+            Assert.AreEqual(3, r.SocketCount);
             Assert.AreEqual(30, r.Cost);
             var aura = r.GetRolePayload(SkillGemTowerMap.RoleKind.Aura);
             Assert.AreEqual(35f, FindModifier(aura.Modifiers, RoleStat.ReservationPercent).Value, 0.001f);
