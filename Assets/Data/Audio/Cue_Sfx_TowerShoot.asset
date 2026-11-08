@@ -18,8 +18,10 @@ MonoBehaviour:
   bgmClip: {fileID: 0}
   loop: 0
   sfx:
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: ff81e2c3046c4fa4cb51897765f73cfe, type: 3}
     randomPitch: 1
     pitch: 1
     pitchMin: 0.9
     pitchMax: 1.1
+    minIntervalSeconds: 0.08
+    maxPlaybackSeconds: 0.2

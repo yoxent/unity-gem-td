@@ -20,6 +20,10 @@ namespace GemTD.UI
         [SerializeField] RunSummaryController runSummary;
         [SerializeField] EnemyHealthBarController enemyHealthBars;
 
+        [SerializeField, Tooltip("Audio cue catalog handed to the AudioPlayer when Run.unity is entered directly. " +
+                                 "Leave empty when entering through MainMenu.unity, which already owns a player.")]
+        AudioCueCatalog audioCueCatalog;
+
         void Awake()
         {
             if (root == null)
@@ -49,6 +53,15 @@ namespace GemTD.UI
             codex?.Bind(root);
 
             AudioPlayer.EnsureExists();
+
+            // EnsureExists() builds a bare player with no catalog, which is fine
+            // when MainMenu.unity already owns a configured AudioPlayer. When
+            // Run.unity is entered directly there is no such player, so hand the
+            // catalog to the player we just created.
+            var audio = AudioPlayer.Instance;
+            if (audio != null && !audio.HasCatalog && audioCueCatalog != null)
+                audio.SetCatalog(audioCueCatalog);
+
             GameSettings.ApplyAudio();
             if (settings != null)
             {

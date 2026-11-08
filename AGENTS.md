@@ -13,13 +13,16 @@ Gem TD tree: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 | Path | Contents |
 | --- | --- |
 | `HOME.md` | Docs map |
-| `PROJECT_CONTEXT.md` | Current build state, known gaps, and next step |
+| `PROJECT_CONTEXT.md` | **The single owner of current build state**, known gaps, and next step |
 | `GDD.md` / `ARCHITECTURE.md` / `UI-SPEC.md` / `DAMAGE-MODEL.md` | Canonical design |
 | `ROADMAP.md` | Current gate and authorized next work |
 | `TEST_STRATEGY.md` | Done criteria and verification reporting |
 | `wiki/catalog/` | Generated per-tower (and later per-gem) reference |
 | `planning/` | Phase designs, implementation plans, STATUS. **Phase 2 is closed** — do not execute `phase2-*` or PR6 plans. |
-| `planning/handoff.md` | Demo / Early Access set: 29 towers. Full catalog is out of this version. On `feat/phase3-campaign`, custom grass is the only grass system. Attack VFX prefabs are assigned on the tower and payload assets. Delivery timing and damage stay as accepted. The wave-50 Play Mode playthrough is a pass for now (2026-10-15; the run ended in a loss before wave 50). Bloom + Vignette were retuned the same day. Playable bow ice, fire, and physical shots use AllIn1 wrappers; Fireball is unchanged; Lightning Arrow stays on the generic bolt. Other VFX art and SFX clips are later. |
+| `planning/handoff.md` | Release-scope guard: 29-tower Demo / Early Access set, deferred tables, reimport hazards |
+| `planning/handoff-slices.md` | Shipped slices and locked contracts (record — not a work list) |
+| `planning/handoff-import-recipe.md` | Full-release catalog import procedure (out of this version) |
+| `planning/STATUS.md` | Phase checklist. Delivered detail is in `planning/STATUS-delivered-phases.md` |
 | `planning/sdd/` | Superpowers / SDD session ledger (briefs, reports, `progress.md`) |
 
 **Do not use Notion.** The July 2026 Gem TD Notion tree is retired and is not a source.
@@ -31,12 +34,37 @@ second `TECHNICAL_DESIGN.md`.
 
 ## Before working
 
-1. Read `HOME.md` and `PROJECT_CONTEXT.md`.
-2. Read the relevant canonical owner: `GDD.md`, `ARCHITECTURE.md`,
-   `UI-SPEC.md`, or `DAMAGE-MODEL.md`.
-3. Read `ROADMAP.md`, then `planning/STATUS.md`, `planning/handoff.md`, and
-   the relevant design/plan or SDD brief.
-4. Inspect `git status` before editing and preserve unrelated changes.
+Read in tiers. Do not read the whole tree; most of it is ledger.
+
+| Tier | Read | When |
+| --- | --- | --- |
+| 1 | `HOME.md`, `PROJECT_CONTEXT.md`, `ROADMAP.md` | every session |
+| 2 | the one canonical owner for the subject (`GDD` / `ARCHITECTURE` / `UI-SPEC` / `DAMAGE-MODEL`) | every session that touches it |
+| 3 | `planning/handoff.md` | only when editing towers, gems, combat, VFX, or release scope |
+| 4 | `planning/STATUS.md` | only when phase detail is needed |
+| 5 | the newest 2–3 entries of `planning/sdd/progress.md` | only when resuming mid-task. It is newest-first and append-only; never read it whole |
+| — | `handoff-slices.md`, `handoff-import-recipe.md`, `STATUS-delivered-phases.md` | archaeology, or a later full-release branch |
+
+Then inspect `git status` before editing and preserve unrelated changes.
+
+**Living docs stay lean.** `HOME.md`, `PROJECT_CONTEXT.md`, `ROADMAP.md`,
+`planning/STATUS.md`, and `TEST_STRATEGY.md` stay under ~1,500 words each;
+`planning/handoff.md` under ~2,000 because it carries the deferred-catalog
+tables. These are tripwires, not targets: if a living doc crosses its number, ask
+whether the overflow is **history** (move it to the matching append-only record)
+or **scope** (keep it, and the record is what shrinks). Do not shorten live scope
+to satisfy a count. When work ships, its narrative moves to
+`planning/sdd/progress.md` in the same edit; a delivered phase becomes one table
+line plus a pointer.
+
+**Current state has exactly one home: `PROJECT_CONTEXT.md`.**
+- Do not restate it in rules, handoff files, or `planning/NOTES.md`.
+- Keep its `## Current state` bullets as standing **contracts** ("delivery timing
+  is accepted; do not change it"), not narrative ("we tested X on date Y").
+  Narrative goes in `planning/sdd/progress.md`.
+- **Freshness check before working:** compare its `**Updated:**` date against the
+  newest `## ` heading in `planning/sdd/progress.md`. If the progress entry is
+  newer, the owner is stale — reconcile it as the first task, before code.
 
 Use SCE only after the docs repo: search `unity-gem-td`, then retrieve the
 needed document. Use Context7 for current library/API documentation.

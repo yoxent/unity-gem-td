@@ -15,6 +15,27 @@ namespace GemTD.Core
         AudioSource[] _sfx;
         AudioCue _currentBgmCue;
 
+        readonly SfxRateLimiter _rateLimiter = new SfxRateLimiter();
+
+        /// <summary>
+        /// Throttle gate shared by every SFX request. Exposed so the editor and
+        /// tests can inspect or clear it.
+        /// </summary>
+        public SfxRateLimiter RateLimiter => _rateLimiter;
+
+        /// <summary>True when a <see cref="AudioCueCatalog"/> is configured.</summary>
+        public bool HasCatalog => catalog != null;
+
+        /// <summary>
+        /// Assigns the cue catalog. Used when the player is created at runtime by
+        /// <see cref="EnsureExists"/> because the scene was entered without
+        /// <c>MainMenu.unity</c>'s pre-configured instance.
+        /// </summary>
+        public void SetCatalog(AudioCueCatalog value)
+        {
+            catalog = value;
+        }
+
         public static AudioPlayer EnsureExists()
         {
             if (Instance != null)
@@ -118,12 +139,29 @@ namespace GemTD.Core
                 return;
             }
 
+            // Throttle uses unscaled time so pausing the run does not bank
+            // budget, and speed multipliers do not tighten or loosen the gate.
+            if (!_rateLimiter.TryPlay(eventKey, cue.sfx.minIntervalSeconds, Time.unscaledTime))
+                return;
+
             var src = NextSfxSource();
             src.clip = cue.sfx.clip;
             src.loop = false;
             src.pitch = AudioPitch.Resolve(cue.sfx, UnityEngine.Random.value);
             src.volume = AudioMix.SfxSourceVolume(cue.volume, GameSettings.GetSfxVolume());
+            src.time = 0f;
             src.Play();
+
+            // A source stays occupied for the clip's whole length, including any
+            // silent tail. Cap short one-shots so a long source asset cannot
+            // starve the pool. The full clip stays auditionable in the inspector,
+            // so swapping in a longer candidate needs no re-trim.
+            var endCap = AudioMix.ResolvePlaybackCapSeconds(
+                cue.sfx.clip.length,
+                src.pitch,
+                cue.sfx.maxPlaybackSeconds);
+            if (endCap > 0f)
+                src.SetScheduledEndTime(AudioSettings.dspTime + endCap);
         }
 
         void OnPlayBgm(AudioCue cue)

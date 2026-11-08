@@ -15,7 +15,21 @@ Canonical docs: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 - Plans/status: `planning/`
 - Superpowers / SDD ledger: `planning/sdd/` (`progress.md`, task briefs/reports)
 
-**Always read the docs repo** when resuming work, locking designs, or answering “what’s decided / what’s next.” Do not assume absence because the file is not in this Unity workspace. **Phase 2 is closed** (merged PR #3) — do not execute historical `phase2-*` / PR6 plans. The roadmap ends at a Steam Demo / Early Access build on the current 29-tower set. The wave-50 Play Mode playthrough is a pass for now (2026-10-15; the run ended in a loss before wave 50). Point Grass was removed; custom grass is the only grass system. Attack VFX prefabs are assigned on the tower and payload assets. Delivery timing and damage are Play Mode OK; do not change them. Bloom + Vignette were retuned and accepted 2026-10-15. Playable bow ice, fire, and physical shots use AllIn1 wrappers; Fireball is unchanged; Lightning Arrow stays on the generic bolt; gun-impact distortion is off. Other VFX art edits wait for the polish stage before Early Access. Shared SFX clip assignment is the next branch, not this one. Do not import new towers or gem mechanics; the rest of the catalog is out of this version (`planning/handoff.md`).
+**Always read the docs repo** when resuming work, locking designs, or answering “what’s decided / what’s next.” Do not assume absence because the file is not in this Unity workspace. **Phase 2 is closed** (merged PR #3) — do not execute historical `phase2-*` / PR6 plans. The roadmap ends at a Steam Demo / Early Access build on the current 29-tower set.
+
+**Current build state has one owner: `PROJECT_CONTEXT.md`.** Do not restate it here or in a handoff file. Read it before assuming a contract, a guard, or the next slice. The invariants below are the only state an agent needs before it has opened that file.
+
+**Guarded invariants — do not change as incidental polish:**
+- Delivery timing, damage, and combat routing are accepted.
+- Delivery VFX is assigned on the tower (`TowerVfx`) and payload assets, not in shared scene slots.
+- Map fog is a separate world sheet (`MapFogView`), not part of the post stack.
+- Bloom + Vignette are retuned and accepted; do not open a new post stack.
+- No grass system is active; chunks render pads only.
+- Do not import new towers or gem mechanics. The rest of the catalog is out of this version (`planning/handoff.md`).
+- Clip assignment (shared SFX + one music loop) is the next authorized branch, not the current one.
+
+**Freshness:** if `PROJECT_CONTEXT.md`'s `Updated:` date is older than the newest
+`## ` heading in `planning/sdd/progress.md`, reconcile it before code.
 
 **Do not use Notion.** The July 2026 Gem TD Notion tree is retired. Canon is markdown in the docs repo (`HOME.md`).
 
