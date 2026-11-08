@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using GemTD.Core;
-using GemTD.Grass;
-using GemTD.Gameplay.Towers;
 
 namespace GemTD.Gameplay.Map
 {
@@ -15,12 +13,6 @@ namespace GemTD.Gameplay.Map
         [SerializeField] Material towerHeight1;
         [SerializeField] Material towerHeight2;
         [SerializeField] PathTileSet pathTiles;
-        [Header("Grass")]
-        [SerializeField] bool useGrassRenderer = true;
-        [SerializeField] GrassChunkRenderer grassRendererPrefab;
-        [SerializeField] GrassStyleDefinition grassStyle;
-        [Tooltip("Small lift applied to the generated chunk distribution surface.")]
-        [SerializeField, Min(0f)] float grassSurfaceOffset = 0.01f;
 
         public float CellSize => cellSize;
 
@@ -30,17 +22,7 @@ namespace GemTD.Gameplay.Map
         Material[] _tintedFallback;
         bool _loggedMissingAuthoredMats;
         bool _loggedMissingPathTiles;
-        bool _loggedMissingGrassReferences;
-        bool _hasAppliedGrassUse;
-        bool _appliedUseGrassRenderer;
         readonly Dictionary<Vector2Int, GameObject> _instances = new Dictionary<Vector2Int, GameObject>(32);
-        const int GrassLayoutSeed = unchecked((int)0x5e7a91c3);
-        readonly Dictionary<Vector2Int, GrassChunkRenderer> _grassRenderers =
-            new Dictionary<Vector2Int, GrassChunkRenderer>(32);
-        readonly List<GrassSurfacePatch> _grassPatchScratch = new List<GrassSurfacePatch>(49);
-        readonly List<GrassExclusion> _grassExclusionScratch = new List<GrassExclusion>(8);
-        readonly List<GrassInstance> _grassInstanceScratch = new List<GrassInstance>(512);
-        TowerPlacementService _grassPlacement;
 
         public void Bind(ChunkGrid grid, TileHeightMap heights = null, float tileSpacing = 0.05f)
         {
@@ -48,22 +30,6 @@ namespace GemTD.Gameplay.Map
             _heights = heights;
             _tileSpacing = tileSpacing < 0f ? 0f : tileSpacing;
             GameEvents.ChunkPlaced += OnChunkPlaced;
-        }
-
-        public void BindGrassOccupancy(TowerPlacementService placement)
-        {
-            if (_grassPlacement == placement)
-                return;
-
-            if (_grassPlacement != null)
-                _grassPlacement.OccupancyChanged -= OnGrassOccupancyChanged;
-
-            _grassPlacement = placement;
-            if (_grassPlacement != null)
-                _grassPlacement.OccupancyChanged += OnGrassOccupancyChanged;
-
-            if (useGrassRenderer)
-                RebuildAllGrass();
         }
 
         public void SetTileSpacing(float spacing)
@@ -82,8 +48,6 @@ namespace GemTD.Gameplay.Map
                 else
                     ApplyFootprints(pair.Value.transform, default);
             }
-
-            RebuildAllGrass();
         }
 
         public void OnChunkPlaced(Vector2Int coord)
@@ -98,7 +62,6 @@ namespace GemTD.Gameplay.Map
             _instances[coord] = instance.gameObject;
             ApplyFootprints(instance.transform, slot);
             ApplyTileHeights(instance.transform, coord, slot);
-            RebuildGrass(coord, instance.transform, slot);
         }
 
         void ApplyFootprints(Transform instance, ChunkSlot slot)
@@ -207,159 +170,6 @@ namespace GemTD.Gameplay.Map
             return towerHeight0;
         }
 
-        void LateUpdate()
-        {
-            if (!_hasAppliedGrassUse)
-            {
-                _hasAppliedGrassUse = true;
-                _appliedUseGrassRenderer = useGrassRenderer;
-                if (!useGrassRenderer)
-                    ClearAllGrass();
-                return;
-            }
-
-            if (_appliedUseGrassRenderer == useGrassRenderer)
-                return;
-
-            _appliedUseGrassRenderer = useGrassRenderer;
-            if (useGrassRenderer)
-                RebuildAllGrass();
-            else
-                ClearAllGrass();
-        }
-
-        void RebuildAllGrass()
-        {
-            if (!useGrassRenderer)
-            {
-                ClearAllGrass();
-                return;
-            }
-
-            if (_grid == null)
-                return;
-
-            foreach (var pair in _instances)
-            {
-                if (pair.Value == null || !_grid.TryGet(pair.Key.x, pair.Key.y, out var slot))
-                    continue;
-                RebuildGrass(pair.Key, pair.Value.transform, slot);
-            }
-        }
-
-        void RebuildGrass(Vector2Int coord, Transform instance, ChunkSlot slot)
-        {
-            if (!useGrassRenderer)
-            {
-                ClearGrass(coord);
-                return;
-            }
-
-            if (grassRendererPrefab == null || grassStyle == null || instance == null)
-            {
-                WarnMissingGrassReferences();
-                return;
-            }
-
-            if (!_grassRenderers.TryGetValue(coord, out var renderer) || renderer == null)
-            {
-                renderer = Instantiate(grassRendererPrefab, instance);
-                renderer.transform.localPosition = Vector3.zero;
-                renderer.transform.localRotation = Quaternion.identity;
-                renderer.transform.localScale = Vector3.one;
-                _grassRenderers[coord] = renderer;
-            }
-
-            ChunkGrassPatchAdapter.BuildPatches(
-                instance,
-                coord,
-                in slot,
-                _grid,
-                _heights,
-                grassSurfaceOffset,
-                _grassPatchScratch);
-            ChunkGrassPatchAdapter.BuildExclusions(
-                instance,
-                coord,
-                in slot,
-                _grassPlacement,
-                grassStyle.TowerClearanceRadius,
-                _grassExclusionScratch);
-            var settings = grassStyle.CreateLayoutSettings();
-            GrassLayoutBuilder.Build(
-                _grassPatchScratch,
-                _grassExclusionScratch,
-                in settings,
-                GrassLayoutSeed,
-                _grassInstanceScratch);
-            var bounds = ChunkGrassPatchAdapter.CalculateLocalBounds(_grassPatchScratch);
-            renderer.Bind(grassStyle, _grassInstanceScratch, bounds);
-            renderer.enabled = true;
-        }
-
-        void ClearAllGrass()
-        {
-            foreach (var renderer in _grassRenderers.Values)
-                ReleaseRenderer(renderer);
-
-            _grassRenderers.Clear();
-        }
-
-        void ClearGrass(Vector2Int coord)
-        {
-            if (_grassRenderers.TryGetValue(coord, out var renderer))
-            {
-                ReleaseRenderer(renderer);
-                _grassRenderers.Remove(coord);
-            }
-        }
-
-        static void ReleaseRenderer(GrassChunkRenderer renderer)
-        {
-            if (renderer == null)
-                return;
-
-            var gameObject = renderer.gameObject;
-            if (Application.isPlaying)
-                Destroy(gameObject);
-            else
-                DestroyImmediate(gameObject);
-        }
-
-        void WarnMissingGrassReferences()
-        {
-            if (_loggedMissingGrassReferences)
-                return;
-
-            _loggedMissingGrassReferences = true;
-            Debug.LogWarning(
-                "[GemTD] ChunkBoardView needs GrassRendererPrefab and GrassStyle references before it can build chunk grass.");
-        }
-
-        void OnGrassOccupancyChanged(Vector2Int cell)
-        {
-            if (!useGrassRenderer || _grid == null)
-                return;
-
-            var coord = new Vector2Int(
-                FloorDiv(cell.x, ChunkMask.Size),
-                FloorDiv(cell.y, ChunkMask.Size));
-            if (!_instances.TryGetValue(coord, out var instance) || instance == null)
-                return;
-            if (!_grid.TryGet(coord.x, coord.y, out var slot))
-                return;
-
-            RebuildGrass(coord, instance.transform, slot);
-        }
-
-        static int FloorDiv(int value, int divisor)
-        {
-            var quotient = value / divisor;
-            if (value % divisor < 0)
-                quotient--;
-            return quotient;
-        }
-
         static Vector2Int RotateLocalCw(int x, int y, int yaw)
         {
             var n = ChunkMask.Size;
@@ -398,10 +208,6 @@ namespace GemTD.Gameplay.Map
         void OnDestroy()
         {
             GameEvents.ChunkPlaced -= OnChunkPlaced;
-            if (_grassPlacement != null)
-                _grassPlacement.OccupancyChanged -= OnGrassOccupancyChanged;
-            _grassPlacement = null;
-            ClearAllGrass();
         }
 
         public Vector3 CellToWorld(int x, int y) => CellCenterWorld(x, y);
