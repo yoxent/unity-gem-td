@@ -295,6 +295,55 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void IncreasedCriticalStrikes_MapsChanceAsMultiplier()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Increased Critical Strikes Support\",\"tags\":[\"Critical\",\"Support\"],\"category\":\"offensive\",\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have #% increased Critical Strike Chance\",\"values\":{\"lesser\":93,\"normal\":117,\"greater\":141}},{\"text\":\"Supported Skills have #% to Critical Strike Chance\",\"values\":null}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(1, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.CritChance, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Multiply, result.Modifiers[0].Operation);
+            Assert.AreEqual(1.93f, result.Modifiers[0].Resolve(GemRarity.Lesser).Value, 1e-4f);
+            Assert.AreEqual(2.41f, result.Modifiers[0].Resolve(GemRarity.Greater).Value, 1e-4f);
+        }
+
+        [Test]
+        public void IncreasedCriticalDamage_MapsMultiplierAsAdditive()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Increased Critical Damage Support\",\"tags\":[\"Critical\",\"Support\"],\"category\":\"offensive\",\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have #% to Critical Strike Multiplier\",\"values\":{\"lesser\":122,\"normal\":138,\"greater\":154}}]}");
+
+            Assert.IsTrue(result.CanIngest);
+            Assert.AreEqual(1, result.Modifiers.Length);
+            Assert.AreEqual(GemStat.CritMultiplier, result.Modifiers[0].Stat);
+            Assert.AreEqual(RoleModifierOperation.Add, result.Modifiers[0].Operation);
+            Assert.AreEqual(1.22f, result.Modifiers[0].Resolve(GemRarity.Lesser).Value, 1e-4f);
+            Assert.AreEqual(1.54f, result.Modifiers[0].Resolve(GemRarity.Greater).Value, 1e-4f);
+        }
+
+        [Test]
+        public void PowerChargeOnCritical_StillSkipped()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Power Charge On Critical Support\",\"tags\":[\"Critical\",\"Support\"],\"category\":\"utility_control\",\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have #% chance to gain a Power Charge on Critical Strike\",\"values\":{\"normal\":50}}]}");
+
+            Assert.IsFalse(result.CanIngest);
+            Assert.IsNotEmpty(result.SkipReason);
+            Assert.AreEqual(0, result.Modifiers.Length);
+        }
+
+        [Test]
+        public void CriticalStrikeAffliction_StillSkipped()
+        {
+            var result = SupportGemMap.FromGemJson(
+                "{\"name\":\"Critical Strike Affliction Support\",\"tags\":[\"Critical\",\"Support\"],\"category\":\"offensive\",\"upside\":\"a\",\"downside\":\"b\",\"explicitMods\":[{\"text\":\"Supported Skills have #% Damage over Time Multiplier for Ailments from Critical Strikes\",\"values\":{\"normal\":110}}]}");
+
+            Assert.IsFalse(result.CanIngest);
+            Assert.AreEqual(0, result.Modifiers.Length);
+        }
+
+        [Test]
         public void Ruthless_Skipped()
         {
             var result = SupportGemMap.FromGemJson(

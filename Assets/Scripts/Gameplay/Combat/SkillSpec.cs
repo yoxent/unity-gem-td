@@ -97,6 +97,15 @@ namespace GemTD.Gameplay.Combat
         public float AilmentDurationMultiplier;
         public float CritChance;
         public float CritMultiplier;
+        /// <summary>
+        /// True once a fire action has decided crit for this cast. When set,
+        /// every hit this cast produces reads <see cref="Crit"/> instead of
+        /// rolling, so a multi-projectile volley, a pierce, a splash, and a
+        /// chain all crit together.
+        /// </summary>
+        public bool CritResolved;
+        /// <summary>The cast's crit decision. Only meaningful when <see cref="CritResolved"/>.</summary>
+        public bool Crit;
 
         public bool Pierce => PierceBehavior == PierceMode.Infinite || PierceCount > 0;
 

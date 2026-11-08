@@ -161,9 +161,37 @@ namespace GemTD.Gameplay.Gems
             return EffectiveGemTags(gem) & RestrictionMask;
         }
 
+        /// <summary>
+        /// A critical gem only does something on a tower that can crit. Aura-only
+        /// and curse towers never land hits, so they are refused here rather than
+        /// showing a chip they cannot honor. This is not a tag mask bit: the
+        /// stored <see cref="GemTag.Critical"/> bit is unreliable on towers (only
+        /// two aura towers carry it), so the gate reads capability instead.
+        /// </summary>
         public static bool CanSocket(TowerDefinition tower, GemDefinition gem)
         {
-            return CanSocket(EffectiveTowerTags(tower), EffectiveRequiredTags(gem));
+            if (!CanSocket(EffectiveTowerTags(tower), EffectiveRequiredTags(gem)))
+                return false;
+
+            if (gem != null && (EffectiveGemTags(gem) & GemTag.Critical) != 0)
+                return CanCrit(tower);
+
+            return true;
+        }
+
+        /// <summary>
+        /// True when the tower can land a crit: it has a fire role and is not a
+        /// curse or aura-only tower. Mirrors <see cref="CollectChipFlags(TowerDefinition, List{GemTag})"/>.
+        /// </summary>
+        public static bool CanCrit(TowerDefinition tower)
+        {
+            if (tower == null)
+                return false;
+            if (tower.HasRole<CurseRoleDefinition>())
+                return false;
+            if (tower.IsAuraOnly)
+                return false;
+            return tower.FireRole != null;
         }
 
         public static bool CanSocket(TowerDefinition tower, GemInstance gem)
@@ -200,21 +228,29 @@ namespace GemTD.Gameplay.Gems
             return sb.ToString();
         }
 
-        // Player-facing chips are the locked 2026-11-03 set in UI-SPEC "Tag chips":
-        // Attack, Spell, Melee, Strike, Slam, Bow, Projectile, Area, Aura, Curse,
-        // Duration, Channeling, Summon, Trap, Mine. Damage types, Support, Chaining,
-        // Critical, Herald, Nova, and delivery names are not chips. Each chip below
-        // has its own row on DraftElementColors, so a chip never paints grey.
+        // Player-facing chips are the locked 2026-11-03 set in UI-SPEC "Tag chips",
+        // revised 2026-11-08 to add Critical: Attack, Spell, Melee, Strike, Slam,
+        // Bow, Projectile, Area, Aura, Curse, Duration, Channeling, Summon, Trap,
+        // Mine, Critical. Damage types, Support, Chaining, Herald, Nova, and
+        // delivery names are not chips. Each chip below has its own row on
+        // DraftElementColors, so a chip never paints grey.
         public const GemTag CurseFamily = GemTag.Curse | GemTag.Hex | GemTag.Mark;
 
         /// <summary>Minion, Totem, Brand, and Golem are one Summon chip.</summary>
         public const GemTag SummonFamily =
             GemTag.Minion | GemTag.Totem | GemTag.Brand | GemTag.Golem;
 
-        /// <summary>Chip flags a gem shows. No roles exist on a gem row.</summary>
+        /// <summary>Chip flags a gem shows. A gem row states its own requirement, so its Critical bit is the source.</summary>
         public static void CollectChipFlags(GemTag tags, List<GemTag> dest)
         {
-            CollectChipFlags(tags, false, false, false, false, dest);
+            CollectChipFlags(
+                tags,
+                auraRole: false,
+                curseRole: false,
+                mineRole: false,
+                trapRole: false,
+                showCritical: (tags & GemTag.Critical) != 0,
+                dest);
         }
 
         /// <summary>
@@ -237,6 +273,7 @@ namespace GemTD.Gameplay.Gems
                 tower.HasRole<CurseRoleDefinition>(),
                 tower.HasRole<MineRoleDefinition>(),
                 tower.HasRole<TrapRoleDefinition>(),
+                showCritical: CanCrit(tower),
                 dest);
         }
 
@@ -246,6 +283,7 @@ namespace GemTD.Gameplay.Gems
             bool curseRole,
             bool mineRole,
             bool trapRole,
+            bool showCritical,
             List<GemTag> dest)
         {
             if (dest == null)
@@ -272,6 +310,9 @@ namespace GemTD.Gameplay.Gems
             if (!curse && (tags & SummonFamily) != 0) dest.Add(GemTag.Minion);
             if (!curse && trap) dest.Add(GemTag.Trap);
             if (!curse && mine) dest.Add(GemTag.Mine);
+            // Gem rows carry the intent (this gem only affects crits). Tower rows
+            // carry capability, so a tower that cannot crit never advertises it.
+            if (showCritical) dest.Add(GemTag.Critical);
         }
 
         /// <summary>Player-facing text for one chip flag. Area is the AoE chip; Summon is the Minion chip.</summary>
@@ -294,6 +335,7 @@ namespace GemTD.Gameplay.Gems
                 case GemTag.Minion: return "Summon";
                 case GemTag.Trap: return "Trap";
                 case GemTag.Mine: return "Mine";
+                case GemTag.Critical: return "Critical";
                 default: return "";
             }
         }

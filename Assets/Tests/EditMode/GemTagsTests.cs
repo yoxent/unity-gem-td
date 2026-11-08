@@ -173,17 +173,53 @@ namespace GemTD.Tests.EditMode
         [Test]
         public void ChipFlags_Gem_UseLockedOrderAndDropInternalTags()
         {
-            var chips = new List<GemTag>(15);
+            var chips = new List<GemTag>(16);
             GemTags.CollectChipFlags(
-                GemTag.Support | GemTag.Chaining | GemTag.Critical | GemTag.Herald
+                GemTag.Support | GemTag.Chaining | GemTag.Herald
                 | GemTag.Nova | GemTag.Exceptional | GemTag.Trigger | GemTag.Warcry
                 | GemTag.Physical | GemTag.Fire | GemTag.Attack | GemTag.Melee
-                | GemTag.Strike | GemTag.Aoe | GemTag.Duration,
+                | GemTag.Strike | GemTag.Aoe | GemTag.Duration | GemTag.Critical,
                 chips);
 
             CollectionAssert.AreEqual(
-                new[] { GemTag.Attack, GemTag.Melee, GemTag.Strike, GemTag.Aoe, GemTag.Duration },
+                new[]
+                {
+                    GemTag.Attack, GemTag.Melee, GemTag.Strike, GemTag.Aoe,
+                    GemTag.Duration, GemTag.Critical,
+                },
                 chips);
+        }
+
+        [Test]
+        public void ChipFlags_CritGem_ShowsCritical()
+        {
+            var chips = new List<GemTag>(4);
+            GemTags.CollectChipFlags(GemTag.Support | GemTag.Critical, chips);
+            CollectionAssert.AreEqual(new[] { GemTag.Critical }, chips);
+        }
+
+        [Test]
+        public void CanCrit_TrueForAFiringTower_FalseForAuraAndCurse()
+        {
+            var attack = ScriptableObject.CreateInstance<TowerDefinition>();
+            attack.Roles = new TowerRoleDefinition[] { ScriptableObject.CreateInstance<AttackRoleDefinition>() };
+            var aura = ScriptableObject.CreateInstance<TowerDefinition>();
+            aura.Roles = new TowerRoleDefinition[] { ScriptableObject.CreateInstance<AuraRoleDefinition>() };
+            var curse = ScriptableObject.CreateInstance<TowerDefinition>();
+            curse.Roles = new TowerRoleDefinition[] { ScriptableObject.CreateInstance<CurseRoleDefinition>() };
+            try
+            {
+                Assert.IsTrue(GemTags.CanCrit(attack));
+                Assert.IsFalse(GemTags.CanCrit(aura));
+                Assert.IsFalse(GemTags.CanCrit(curse));
+                Assert.IsFalse(GemTags.CanCrit(null));
+            }
+            finally
+            {
+                Object.DestroyImmediate(attack);
+                Object.DestroyImmediate(aura);
+                Object.DestroyImmediate(curse);
+            }
         }
 
         [Test]
@@ -283,7 +319,7 @@ namespace GemTD.Tests.EditMode
             {
                 GemTags.CollectChipFlags(smite, chips);
                 CollectionAssert.AreEqual(
-                    new[] { GemTag.Attack, GemTag.Projectile, GemTag.Aura }, chips);
+                    new[] { GemTag.Attack, GemTag.Projectile, GemTag.Aura, GemTag.Critical }, chips);
             }
             finally
             {
@@ -298,7 +334,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual("Summon", GemTags.ChipLabel(GemTag.Minion));
             Assert.AreEqual("Curse", GemTags.ChipLabel(GemTag.Curse));
             Assert.AreEqual("", GemTags.ChipLabel(GemTag.Support));
-            Assert.AreEqual("", GemTags.ChipLabel(GemTag.Critical));
+            Assert.AreEqual("Critical", GemTags.ChipLabel(GemTag.Critical));
             Assert.AreEqual("", GemTags.ChipLabel(GemTag.None));
         }
 

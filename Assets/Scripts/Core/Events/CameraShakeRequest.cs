@@ -12,6 +12,7 @@ namespace GemTD.Core
         public const float DefaultIntensity = 0.03f;
         public const float FireIntensity = 0.02f;
         public const float HitIntensity = 0.035f;
+        public const float CritIntensity = 0.05f;
         public const float MaxIntensity = 0.08f;
         public const float DefaultDuration = 0.12f;
         public const float DefaultHoldDuration = 0.4f;
@@ -61,6 +62,7 @@ namespace GemTD.Core
         public static CameraShakeRequest Default => Burst(-1f);
         public static CameraShakeRequest Fire => Burst(FireIntensity);
         public static CameraShakeRequest Hit => Burst(HitIntensity);
+        public static CameraShakeRequest Crit => Burst(CritIntensity);
         public static CameraShakeRequest StopAll => new CameraShakeRequest(0f);
         public static CameraShakeRequest StopContinuous =>
             new CameraShakeRequest(0f, 0f, CameraShakeKind.Continuous, default, false);

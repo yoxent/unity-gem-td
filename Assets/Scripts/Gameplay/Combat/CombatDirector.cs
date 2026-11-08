@@ -322,6 +322,7 @@ namespace GemTD.Gameplay.Combat
             StatusRuntime statuses,
             TowerInstance tower)
         {
+            ResolveCritForCast(ref spec);
             var speedMul = spec.ProjectileSpeedMultiplier > 0.01f ? spec.ProjectileSpeedMultiplier : 1f;
             var speed = _projectileSpeed * speedMul;
             var aimPoint = spec.AimMode == AimMode.Ground
@@ -1229,6 +1230,26 @@ namespace GemTD.Gameplay.Combat
             }
 
             AuraInfluenceRuntime.Apply(tower, sources, ref spec, _cellSize);
+        }
+
+        /// <summary>
+        /// One crit decision per fire action. Every hit this cast produces reads
+        /// this flag instead of rolling, so a multi-projectile volley, every
+        /// pierce/splash target, fork children, chain hops, and all secondary
+        /// payloads crit together.
+        /// </summary>
+        void ResolveCritForCast(ref SkillSpec spec)
+        {
+            // Same float-space rule as IncomingHit: an at-chance roll is a miss.
+            spec.Crit = (float)_payloadRng.NextDouble() < spec.CritChance;
+            spec.CritResolved = true;
+
+            // The decision is per cast, so the shake is raised here: exactly one
+            // request per crit cast, no per-hit throttle needed. CameraShake
+            // already ignores a weaker request while a stronger one is live,
+            // and already honors the settings toggle.
+            if (spec.Crit)
+                GameEvents.RaiseCameraShake(CameraShakeRequest.Crit);
         }
 
         void BindCritRng(ProjectileRuntime projectile)

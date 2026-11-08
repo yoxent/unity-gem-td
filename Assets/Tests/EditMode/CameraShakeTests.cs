@@ -237,5 +237,29 @@ namespace GemTD.Tests.EditMode
             shake.Tick(0f, Quaternion.identity, Vector3.zero);
             Assert.IsFalse(shake.IsShaking);
         }
+
+        [Test]
+        public void CritPreset_IsAboveHitAndBelowCap()
+        {
+            Assert.Greater(CameraShakeRequest.CritIntensity, CameraShakeRequest.HitIntensity);
+            Assert.Less(CameraShakeRequest.CritIntensity, CameraShakeRequest.MaxIntensity);
+            Assert.AreEqual(CameraShakeRequest.CritIntensity, CameraShakeRequest.Crit.Intensity, 1e-4f);
+        }
+
+        [Test]
+        public void SettingsDisabled_IgnoresCritShake()
+        {
+            GameSettings.SetCameraShakeEnabled(false);
+            try
+            {
+                var shake = new CameraShake();
+                shake.Shake(CameraShakeRequest.Crit);
+                Assert.IsFalse(shake.IsShaking);
+            }
+            finally
+            {
+                GameSettings.SetCameraShakeEnabled(true);
+            }
+        }
     }
 }

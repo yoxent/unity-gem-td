@@ -57,6 +57,8 @@ namespace GemTD.Gameplay.Gems
         HallowingFlame,
         AilmentDamage,
         AilmentDuration,
+        CritChance,
+        CritMultiplier,
         AimMode,
         DeliveryPattern
     }
@@ -297,7 +299,24 @@ namespace GemTD.Gameplay.Gems
             ApplyGroup(ref spec, modifiers, RoleModifierOperation.Set, rarity);
             ApplyGroup(ref spec, modifiers, RoleModifierOperation.Add, rarity);
             ApplyGroup(ref spec, modifiers, RoleModifierOperation.Multiply, rarity);
+            ClampCrit(ref spec);
             return spec;
+        }
+
+        /// <summary>
+        /// Crit is clamped once after every group. A chance above 1 is not a
+        /// super-crit, and a multiplier below 1 would make a crit hit softer
+        /// than a normal one.
+        /// </summary>
+        static void ClampCrit(ref SkillSpec spec)
+        {
+            if (spec.CritChance < 0f)
+                spec.CritChance = 0f;
+            else if (spec.CritChance > 1f)
+                spec.CritChance = 1f;
+
+            if (spec.CritMultiplier < 1f)
+                spec.CritMultiplier = 1f;
         }
 
         static void ApplyGroup(
@@ -507,6 +526,12 @@ namespace GemTD.Gameplay.Gems
                         spec.AilmentDurationMultiplier,
                         modifier.Operation,
                         scalar);
+                    break;
+                case GemStat.CritChance:
+                    spec.CritChance = FloatOp(spec.CritChance, modifier.Operation, scalar);
+                    break;
+                case GemStat.CritMultiplier:
+                    spec.CritMultiplier = FloatOp(spec.CritMultiplier, modifier.Operation, scalar);
                     break;
                 case GemStat.AimMode:
                     ApplyAimMode(ref spec, modifier.Operation, scalar);

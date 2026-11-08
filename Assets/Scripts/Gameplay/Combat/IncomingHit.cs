@@ -20,8 +20,33 @@ namespace GemTD.Gameplay.Combat
 
         public static float ApplyCrit(float damage, in SkillSpec spec, double unitInterval)
         {
+            return ApplyCrit(damage, spec, unitInterval, out _);
+        }
+
+        /// <summary>
+        /// Applies crit and reports whether it landed. A cast that already
+        /// decided crit (<see cref="SkillSpec.CritResolved"/>) reuses that
+        /// decision and draws nothing, so one roll covers the whole volley.
+        /// </summary>
+        public static float ApplyCrit(
+            float damage,
+            in SkillSpec spec,
+            double unitInterval,
+            out bool isCrit)
+        {
+            isCrit = false;
             if (damage <= 0f)
                 return 0f;
+
+            if (spec.CritResolved)
+            {
+                isCrit = spec.Crit;
+                if (!isCrit)
+                    return damage;
+
+                var resolvedMultiplier = spec.CritMultiplier > 0f ? spec.CritMultiplier : 1.5f;
+                return damage * resolvedMultiplier;
+            }
 
             var chance = spec.CritChance;
             // Compare in float space: double 0.05 is slightly below float 0.05f,
@@ -29,6 +54,7 @@ namespace GemTD.Gameplay.Combat
             if (chance <= 0f || (float)unitInterval >= chance)
                 return damage;
 
+            isCrit = true;
             var multiplier = spec.CritMultiplier > 0f ? spec.CritMultiplier : 1.5f;
             return damage * multiplier;
         }

@@ -348,6 +348,26 @@ namespace GemTD.Gameplay.Gems
             if (TryMapAilmentDamageLine(text, values, out mapped))
                 return true;
 
+            if (text == "Supported Skills have #% increased Critical Strike Chance")
+            {
+                // Increased chance scales the base: 0.05 x (1 + 1.41) at Greater.
+                mapped = Tiered(
+                    GemStat.CritChance,
+                    RoleModifierOperation.Multiply,
+                    PercentFactor(values, more: true));
+                return true;
+            }
+
+            if (text == "Supported Skills have #% to Critical Strike Multiplier")
+            {
+                // "to Multiplier" is additive on the 1.5 base, not multiplicative.
+                mapped = Tiered(
+                    GemStat.CritMultiplier,
+                    RoleModifierOperation.Add,
+                    Fraction(values));
+                return true;
+            }
+
             if (text == "Supported Attacks have #% chance to cause Bleeding"
                 || text == "Supported Skills have #% chance to cause Bleeding")
             {
@@ -749,7 +769,16 @@ namespace GemTD.Gameplay.Gems
                 return true;
             if (text.IndexOf("as though", StringComparison.OrdinalIgnoreCase) >= 0)
                 return true;
-            if (text.IndexOf("Critical Strike", StringComparison.Ordinal) >= 0)
+            // Crit rows: only conditional crit phrasing is unmappable. Plain
+            // "have #% increased Critical Strike Chance" and "have #% to Critical
+            // Strike Multiplier" are real stats and map below.
+            if (text.IndexOf("on Critical Strike", StringComparison.Ordinal) >= 0)
+                return true;
+            if (text.IndexOf("from Critical Strike", StringComparison.Ordinal) >= 0)
+                return true;
+            if (text.IndexOf("when you Crit", StringComparison.Ordinal) >= 0)
+                return true;
+            if (text.IndexOf("Critical Strike Affliction", StringComparison.Ordinal) >= 0)
                 return true;
             return false;
         }
@@ -775,7 +804,9 @@ namespace GemTD.Gameplay.Gems
             if (name == "Overcharge Support")
                 return "PoEDB: shock as though more damage; not generic more damage";
             if (name == "Critical Strike Affliction Support")
-                return "PoEDB: ailment DoT multiplier on crits only; no crits";
+                return "PoEDB: ailment DoT multiplier on crits only; no crit ailment path";
+            if (name == "Power Charge On Critical Support")
+                return "PoEDB: power charges on crit; no power charge resource";
             if (name == "Withering Touch Support")
                 return "PoEDB: Wither stacks; no Wither";
             if (name == "Maim Support")

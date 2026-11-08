@@ -39,6 +39,7 @@ namespace GemTD.UI
         public Palette strike = Row(0xA32F2F);
         public Palette summon = Row(0x43226B);
         public Palette trap = Row(0x864C08);
+        public Palette critical = Row(0xB03A2E);
 
         [Header("Card chrome")]
         public Palette chaos = Row(0x78C850);
@@ -153,6 +154,8 @@ namespace GemTD.UI
                     return summon;
                 case GemTag.Trap:
                     return trap;
+                case GemTag.Critical:
+                    return critical;
                 default:
                     return nonElemental;
             }

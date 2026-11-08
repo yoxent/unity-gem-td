@@ -124,9 +124,10 @@ namespace GemTD.Tests.EditMode
                 GemTag.Attack, GemTag.Spell, GemTag.Melee, GemTag.Strike, GemTag.Slam,
                 GemTag.Bow, GemTag.Projectile, GemTag.Aoe, GemTag.Aura, GemTag.Curse,
                 GemTag.Duration, GemTag.Channeling, GemTag.Minion, GemTag.Trap, GemTag.Mine,
+                GemTag.Critical,
             };
 
-            Assert.AreEqual(15, chips.Length, "UI-SPEC locks fifteen chips.");
+            Assert.AreEqual(16, chips.Length, "UI-SPEC locks sixteen chips.");
             for (var i = 0; i < chips.Length; i++)
             {
                 var chip = chips[i];
@@ -157,6 +158,7 @@ namespace GemTD.Tests.EditMode
                 case GemTag.Channeling: return _colors.channeling;
                 case GemTag.Minion: return _colors.summon;
                 case GemTag.Trap: return _colors.trap;
+                case GemTag.Critical: return _colors.critical;
                 case GemTag.Mine: return _colors.mine;
                 default: return _colors.nonElemental;
             }

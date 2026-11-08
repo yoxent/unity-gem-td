@@ -16,6 +16,12 @@ namespace GemTD.Gameplay.Gems
             return false;
         }
 
+        /// <summary>
+        /// Stats that do not by themselves make a gem worth drafting. This is an
+        /// eligibility filter, not a "not implemented" list: crit works, but the
+        /// two crit-only gems stay out of the campaign pool for this release.
+        /// Do not remove these rows believing crit is unfinished.
+        /// </summary>
         static bool IsPausedSpecial(GemStat stat)
         {
             switch (stat)
@@ -23,6 +29,8 @@ namespace GemTD.Gameplay.Gems
                 case GemStat.SpreadDegrees:
                 case GemStat.Proliferate:
                 case GemStat.KnockbackDistance:
+                case GemStat.CritChance:
+                case GemStat.CritMultiplier:
                     return true;
                 default:
                     return false;
