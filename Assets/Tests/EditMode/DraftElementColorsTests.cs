@@ -117,6 +117,52 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void EveryChipFlag_HasItsOwnRow_SoNoChipFallsBackToGrey()
+        {
+            var chips = new[]
+            {
+                GemTag.Attack, GemTag.Spell, GemTag.Melee, GemTag.Strike, GemTag.Slam,
+                GemTag.Bow, GemTag.Projectile, GemTag.Aoe, GemTag.Aura, GemTag.Curse,
+                GemTag.Duration, GemTag.Channeling, GemTag.Minion, GemTag.Trap, GemTag.Mine,
+            };
+
+            Assert.AreEqual(15, chips.Length, "UI-SPEC locks fifteen chips.");
+            for (var i = 0; i < chips.Length; i++)
+            {
+                var chip = chips[i];
+                AssertSame(ExpectedRow(chip), _colors.ResolveTag(chip));
+                Assert.AreNotEqual(
+                    _colors.nonElemental.normal,
+                    _colors.ResolveTag(chip).normal,
+                    chip + " must not fall back to the grey row.");
+                Assert.AreNotEqual("", GemTags.ChipLabel(chip), chip + " needs chip text.");
+            }
+        }
+
+        DraftElementColors.Palette ExpectedRow(GemTag chip)
+        {
+            switch (chip)
+            {
+                case GemTag.Attack: return _colors.attack;
+                case GemTag.Spell: return _colors.spell;
+                case GemTag.Melee: return _colors.melee;
+                case GemTag.Strike: return _colors.strike;
+                case GemTag.Slam: return _colors.slam;
+                case GemTag.Bow: return _colors.bow;
+                case GemTag.Projectile: return _colors.projectile;
+                case GemTag.Aoe: return _colors.area;
+                case GemTag.Aura: return _colors.aura;
+                case GemTag.Curse: return _colors.curse;
+                case GemTag.Duration: return _colors.duration;
+                case GemTag.Channeling: return _colors.channeling;
+                case GemTag.Minion: return _colors.summon;
+                case GemTag.Trap: return _colors.trap;
+                case GemTag.Mine: return _colors.mine;
+                default: return _colors.nonElemental;
+            }
+        }
+
+        [Test]
         public void Resolve_TagName_UsesThatElementOrNonElemental()
         {
             AssertSame(_colors.fire, _colors.Resolve(GemTags.FromPoe("Fire")));

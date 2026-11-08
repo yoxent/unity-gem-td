@@ -7,6 +7,7 @@ using GemTD.Gameplay;
 using GemTD.Gameplay.Combat;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
+using GemTD.Gameplay.Towers;
 
 namespace GemTD.UI
 {
@@ -41,7 +42,7 @@ namespace GemTD.UI
         bool _visible;
         bool _lockOverlayShown;
 
-        readonly List<string> _tagNames = new List<string>(8);
+        readonly List<GemTag> _tagChips = new List<GemTag>(8);
 
         void Awake()
         {
@@ -140,9 +141,7 @@ namespace GemTD.UI
                 sellButton.gameObject.SetActive(planOrCombat);
 
             var tower = _root.Placement?.Selected;
-            SetTags(tower != null && tower.Def != null
-                ? GemTags.EffectiveTowerTags(tower.Def)
-                : GemTag.None);
+            SetTags(tower);
             if (sellLabel != null && planOrCombat && tower != null)
                 sellLabel.text = $"Sell · {RunEconomy.ComputeSellRefund(tower.PurchaseCost, tower.UpgradeSpend)}g";
 
@@ -224,7 +223,7 @@ namespace GemTD.UI
             label.text = value;
         }
 
-        void SetTags(GemTag tags)
+        void SetTags(TowerInstance tower)
         {
             if (tagsPanel == null)
             {
@@ -239,9 +238,9 @@ namespace GemTD.UI
             }
 
             tagSubParentTemplate.gameObject.SetActive(false);
-            GemTags.CollectNames(tags, _tagNames);
+            GemTags.CollectChipFlags(tower?.Def, _tagChips);
 
-            for (var i = 0; i < _tagNames.Count; i++)
+            for (var i = 0; i < _tagChips.Count; i++)
             {
                 var label = GetOrCreateTag(i);
                 if (label == null)
@@ -250,10 +249,10 @@ namespace GemTD.UI
                     label.transform.SetParent(tagsPanel.transform, false);
                 label.transform.SetSiblingIndex(i);
                 label.gameObject.SetActive(true);
-                label.Bind(_tagNames[i]);
+                label.Bind(_tagChips[i]);
             }
 
-            for (var i = _tagNames.Count; i < tagLabels.Count; i++)
+            for (var i = _tagChips.Count; i < tagLabels.Count; i++)
             {
                 if (tagLabels[i] != null)
                     tagLabels[i].gameObject.SetActive(false);

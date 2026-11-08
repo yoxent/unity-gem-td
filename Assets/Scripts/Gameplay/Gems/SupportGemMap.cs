@@ -63,6 +63,7 @@ namespace GemTD.Gameplay.Gems
         {
             public string DisplayName;
             public string Slug;
+            public GemCategory Category;
             public GemTag Tags;
             public string Description;
             public GemStatModifier[] Modifiers;
@@ -136,6 +137,7 @@ namespace GemTD.Gameplay.Gems
             {
                 DisplayName = TrimSupportSuffix(name),
                 Slug = SlugFromName(name),
+                Category = GemCategories.FromSource(category),
                 Tags = MapTags(gem["tags"] as JArray),
                 Description = description,
                 Modifiers = modifiers.ToArray(),

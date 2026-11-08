@@ -122,6 +122,7 @@ namespace GemTD.Editor
                 var gem = matched[i];
                 gem.DisplayName = result.DisplayName;
                 gem.Description = result.Description;
+                gem.Category = result.Category;
                 gem.Tags = result.Tags;
                 gem.Modifiers = result.CanIngest && result.Modifiers != null
                     ? result.Modifiers

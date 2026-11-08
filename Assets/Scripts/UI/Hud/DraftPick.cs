@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GemTD.Gameplay.Gems;
+using GemTD.Gameplay.Towers;
 using LitMotion;
 using TMPro;
 using UnityEngine;
@@ -52,7 +53,8 @@ namespace GemTD.UI
         [SerializeField] float statusBounceSeconds = 0.28f;
         [SerializeField] float statusBounceInterval = 1.2f;
 
-        readonly List<string> _tagNames = new List<string>(8);
+        readonly List<GemTag> _tagChips = new List<GemTag>(8);
+        GemCategory _category = GemCategory.None;
         DraftElementColors.Palette _palette;
         bool _havePalette;
         bool _hasSelection;
@@ -149,6 +151,13 @@ namespace GemTD.UI
                 Debug.LogError("DraftPick: assign levelLabel on the prefab.", this);
         }
 
+        /// <summary>
+        /// Shows the player-facing gem category badge. Tower cards pass None, which hides it.
+        /// This is what still identifies a gem whose only tags (Support, Critical, damage type)
+        /// are all non-chips and therefore show no chip at all.
+        /// </summary>
+        public void SetCategory(GemCategory category) => _category = category;
+
         public void ApplyElements(GemTag tags)
         {
             if (elementColors == null)
@@ -165,7 +174,11 @@ namespace GemTD.UI
                 PaintSelectionHighlight(true);
         }
 
-        public void SetTags(GemTag tags)
+        public void SetTags(GemTag tags) => SetTags(tags, null);
+
+        /// <summary>Tower cards pass their definition so role-only facts (Trap, Mine, Curse, Aura) reach the chips.
+        /// Gem cards pass null; a gem row carries no roles.</summary>
+        public void SetTags(GemTag tags, TowerDefinition tower)
         {
             if (tagsParent == null)
             {
@@ -180,21 +193,40 @@ namespace GemTD.UI
             }
 
             tagSubParentTemplate.gameObject.SetActive(false);
-            GemTags.CollectNames(tags, _tagNames);
+            if (tower != null)
+                GemTags.CollectChipFlags(tower, _tagChips);
+            else
+                GemTags.CollectChipFlags(tags, _tagChips);
 
-            for (var i = 0; i < _tagNames.Count; i++)
+            var slot = 0;
+            if (GemCategories.Label(_category).Length > 0)
             {
-                var label = GetOrCreateTag(i);
+                var categoryLabel = GetOrCreateTag(slot);
+                if (categoryLabel != null)
+                {
+                    if (categoryLabel.transform.parent != tagsParent)
+                        categoryLabel.transform.SetParent(tagsParent, false);
+                    categoryLabel.transform.SetSiblingIndex(slot);
+                    categoryLabel.gameObject.SetActive(true);
+                    categoryLabel.BindCategory(_category);
+                    slot++;
+                }
+            }
+
+            for (var i = 0; i < _tagChips.Count; i++)
+            {
+                var label = GetOrCreateTag(slot);
                 if (label == null)
                     continue;
                 if (label.transform.parent != tagsParent)
                     label.transform.SetParent(tagsParent, false);
-                label.transform.SetSiblingIndex(i);
+                label.transform.SetSiblingIndex(slot);
                 label.gameObject.SetActive(true);
-                label.Bind(_tagNames[i]);
+                label.Bind(_tagChips[i]);
+                slot++;
             }
 
-            for (var i = _tagNames.Count; i < tagLabels.Count; i++)
+            for (var i = slot; i < tagLabels.Count; i++)
             {
                 if (tagLabels[i] != null)
                     tagLabels[i].gameObject.SetActive(false);

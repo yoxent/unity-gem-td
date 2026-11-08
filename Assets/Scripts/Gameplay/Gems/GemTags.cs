@@ -200,6 +200,104 @@ namespace GemTD.Gameplay.Gems
             return sb.ToString();
         }
 
+        // Player-facing chips are the locked 2026-11-03 set in UI-SPEC "Tag chips":
+        // Attack, Spell, Melee, Strike, Slam, Bow, Projectile, Area, Aura, Curse,
+        // Duration, Channeling, Summon, Trap, Mine. Damage types, Support, Chaining,
+        // Critical, Herald, Nova, and delivery names are not chips. Each chip below
+        // has its own row on DraftElementColors, so a chip never paints grey.
+        public const GemTag CurseFamily = GemTag.Curse | GemTag.Hex | GemTag.Mark;
+
+        /// <summary>Minion, Totem, Brand, and Golem are one Summon chip.</summary>
+        public const GemTag SummonFamily =
+            GemTag.Minion | GemTag.Totem | GemTag.Brand | GemTag.Golem;
+
+        /// <summary>Chip flags a gem shows. No roles exist on a gem row.</summary>
+        public static void CollectChipFlags(GemTag tags, List<GemTag> dest)
+        {
+            CollectChipFlags(tags, false, false, false, false, dest);
+        }
+
+        /// <summary>
+        /// Chip flags a tower shows. Roles supply Trap, Mine, and Curse, and keep Aura off a mine.
+        /// Daedalus' Curse stores Mine, Trap, Minion, and Aura bits; Curse outranks them.
+        /// </summary>
+        public static void CollectChipFlags(TowerDefinition tower, List<GemTag> dest)
+        {
+            if (dest == null)
+                return;
+            if (tower == null)
+            {
+                dest.Clear();
+                return;
+            }
+
+            CollectChipFlags(
+                EffectiveTowerTags(tower),
+                tower.HasRole<AuraRoleDefinition>(),
+                tower.HasRole<CurseRoleDefinition>(),
+                tower.HasRole<MineRoleDefinition>(),
+                tower.HasRole<TrapRoleDefinition>(),
+                dest);
+        }
+
+        static void CollectChipFlags(
+            GemTag tags,
+            bool auraRole,
+            bool curseRole,
+            bool mineRole,
+            bool trapRole,
+            List<GemTag> dest)
+        {
+            if (dest == null)
+                return;
+            dest.Clear();
+
+            var curse = curseRole || (tags & CurseFamily) != 0;
+            var mine = mineRole || (tags & GemTag.Mine) != 0;
+            var trap = trapRole || (tags & GemTag.Trap) != 0;
+            var aura = (auraRole || (tags & GemTag.Aura) != 0) && !mine && !curse;
+
+            if ((tags & GemTag.Attack) != 0) dest.Add(GemTag.Attack);
+            if ((tags & GemTag.Spell) != 0) dest.Add(GemTag.Spell);
+            if ((tags & GemTag.Melee) != 0) dest.Add(GemTag.Melee);
+            if ((tags & GemTag.Strike) != 0) dest.Add(GemTag.Strike);
+            if ((tags & GemTag.Slam) != 0) dest.Add(GemTag.Slam);
+            if ((tags & GemTag.Bow) != 0) dest.Add(GemTag.Bow);
+            if ((tags & GemTag.Projectile) != 0) dest.Add(GemTag.Projectile);
+            if ((tags & GemTag.Aoe) != 0) dest.Add(GemTag.Aoe);
+            if (aura) dest.Add(GemTag.Aura);
+            if (curse) dest.Add(GemTag.Curse);
+            if ((tags & GemTag.Duration) != 0) dest.Add(GemTag.Duration);
+            if ((tags & GemTag.Channeling) != 0) dest.Add(GemTag.Channeling);
+            if (!curse && (tags & SummonFamily) != 0) dest.Add(GemTag.Minion);
+            if (!curse && trap) dest.Add(GemTag.Trap);
+            if (!curse && mine) dest.Add(GemTag.Mine);
+        }
+
+        /// <summary>Player-facing text for one chip flag. Area is the AoE chip; Summon is the Minion chip.</summary>
+        public static string ChipLabel(GemTag chip)
+        {
+            switch (chip)
+            {
+                case GemTag.Attack: return "Attack";
+                case GemTag.Spell: return "Spell";
+                case GemTag.Melee: return "Melee";
+                case GemTag.Strike: return "Strike";
+                case GemTag.Slam: return "Slam";
+                case GemTag.Bow: return "Bow";
+                case GemTag.Projectile: return "Projectile";
+                case GemTag.Aoe: return "Area";
+                case GemTag.Aura: return "Aura";
+                case GemTag.Curse: return "Curse";
+                case GemTag.Duration: return "Duration";
+                case GemTag.Channeling: return "Channeling";
+                case GemTag.Minion: return "Summon";
+                case GemTag.Trap: return "Trap";
+                case GemTag.Mine: return "Mine";
+                default: return "";
+            }
+        }
+
         public static void CollectNames(GemTag tags, List<string> dest)
         {
             if (dest == null)

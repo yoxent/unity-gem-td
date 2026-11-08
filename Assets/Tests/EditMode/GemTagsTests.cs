@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Towers;
@@ -162,11 +163,143 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
-        public void Format_JoinsActiveTags()
+        public void Format_KeepsPrintingStoredFlags_ForDebugAndEditor()
         {
             Assert.AreEqual("—", GemTags.Format(GemTag.None));
             Assert.AreEqual("Attack, Projectile, AoE", GemTags.Format(GemTag.Attack | GemTag.Projectile | GemTag.Aoe));
             Assert.AreEqual("Fire, Lightning", GemTags.Format(GemTag.Fire | GemTag.Lightning));
+        }
+
+        [Test]
+        public void ChipFlags_Gem_UseLockedOrderAndDropInternalTags()
+        {
+            var chips = new List<GemTag>(15);
+            GemTags.CollectChipFlags(
+                GemTag.Support | GemTag.Chaining | GemTag.Critical | GemTag.Herald
+                | GemTag.Nova | GemTag.Exceptional | GemTag.Trigger | GemTag.Warcry
+                | GemTag.Physical | GemTag.Fire | GemTag.Attack | GemTag.Melee
+                | GemTag.Strike | GemTag.Aoe | GemTag.Duration,
+                chips);
+
+            CollectionAssert.AreEqual(
+                new[] { GemTag.Attack, GemTag.Melee, GemTag.Strike, GemTag.Aoe, GemTag.Duration },
+                chips);
+        }
+
+        [Test]
+        public void ChipFlags_Gem_SummonFamilyCollapsesToMinion()
+        {
+            var chips = new List<GemTag>(4);
+            GemTags.CollectChipFlags(GemTag.Totem | GemTag.Brand | GemTag.Golem | GemTag.Minion, chips);
+            CollectionAssert.AreEqual(new[] { GemTag.Minion }, chips);
+        }
+
+        [Test]
+        public void ChipFlags_Gem_HexAndMarkShowCurse()
+        {
+            var chips = new List<GemTag>(4);
+            GemTags.CollectChipFlags(GemTag.Hex | GemTag.Mark, chips);
+            CollectionAssert.AreEqual(new[] { GemTag.Curse }, chips);
+        }
+
+        [Test]
+        public void ChipFlags_Tower_RolesAddTrapAndMine()
+        {
+            var trapTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            trapTower.Roles = new TowerRoleDefinition[] { ScriptableObject.CreateInstance<TrapRoleDefinition>() };
+            trapTower.Tags = GemTag.Attack | GemTag.Projectile;
+            var mineTower = ScriptableObject.CreateInstance<TowerDefinition>();
+            mineTower.Roles = new TowerRoleDefinition[] { ScriptableObject.CreateInstance<MineRoleDefinition>() };
+            mineTower.Tags = GemTag.Spell;
+            var chips = new List<GemTag>(8);
+            try
+            {
+                GemTags.CollectChipFlags(trapTower, chips);
+                CollectionAssert.AreEqual(
+                    new[] { GemTag.Attack, GemTag.Projectile, GemTag.Trap }, chips);
+
+                GemTags.CollectChipFlags(mineTower, chips);
+                CollectionAssert.AreEqual(new[] { GemTag.Spell, GemTag.Mine }, chips);
+            }
+            finally
+            {
+                Object.DestroyImmediate(trapTower);
+                Object.DestroyImmediate(mineTower);
+            }
+        }
+
+        [Test]
+        public void ChipFlags_CurseTower_DropsAuraSummonAndMineBits()
+        {
+            var skitterbots = ScriptableObject.CreateInstance<TowerDefinition>();
+            skitterbots.Roles = new TowerRoleDefinition[]
+            {
+                ScriptableObject.CreateInstance<AuraRoleDefinition>(),
+                ScriptableObject.CreateInstance<CurseRoleDefinition>(),
+            };
+            skitterbots.Tags = GemTag.Aoe | GemTag.Aura | GemTag.Curse | GemTag.Mine
+                | GemTag.Minion | GemTag.Trap;
+            var chips = new List<GemTag>(8);
+            try
+            {
+                GemTags.CollectChipFlags(skitterbots, chips);
+                CollectionAssert.AreEqual(new[] { GemTag.Aoe, GemTag.Curse }, chips);
+            }
+            finally
+            {
+                Object.DestroyImmediate(skitterbots);
+            }
+        }
+
+        [Test]
+        public void ChipFlags_AuraOnlyTower_OmitsSpellAndArea()
+        {
+            var aura = ScriptableObject.CreateInstance<TowerDefinition>();
+            aura.Roles = new TowerRoleDefinition[] { ScriptableObject.CreateInstance<AuraRoleDefinition>() };
+            aura.Tags = GemTag.Aura;
+            var chips = new List<GemTag>(4);
+            try
+            {
+                GemTags.CollectChipFlags(aura, chips);
+                CollectionAssert.AreEqual(new[] { GemTag.Aura }, chips);
+            }
+            finally
+            {
+                Object.DestroyImmediate(aura);
+            }
+        }
+
+        [Test]
+        public void ChipFlags_AttackAuraTower_KeepsAttackAndAura()
+        {
+            var smite = ScriptableObject.CreateInstance<TowerDefinition>();
+            smite.Roles = new TowerRoleDefinition[]
+            {
+                ScriptableObject.CreateInstance<AttackRoleDefinition>(),
+                ScriptableObject.CreateInstance<AuraRoleDefinition>(),
+            };
+            var chips = new List<GemTag>(4);
+            try
+            {
+                GemTags.CollectChipFlags(smite, chips);
+                CollectionAssert.AreEqual(
+                    new[] { GemTag.Attack, GemTag.Projectile, GemTag.Aura }, chips);
+            }
+            finally
+            {
+                Object.DestroyImmediate(smite);
+            }
+        }
+
+        [Test]
+        public void ChipLabel_UsesPlayerFacingWords()
+        {
+            Assert.AreEqual("Area", GemTags.ChipLabel(GemTag.Aoe));
+            Assert.AreEqual("Summon", GemTags.ChipLabel(GemTag.Minion));
+            Assert.AreEqual("Curse", GemTags.ChipLabel(GemTag.Curse));
+            Assert.AreEqual("", GemTags.ChipLabel(GemTag.Support));
+            Assert.AreEqual("", GemTags.ChipLabel(GemTag.Critical));
+            Assert.AreEqual("", GemTags.ChipLabel(GemTag.None));
         }
 
         [Test]

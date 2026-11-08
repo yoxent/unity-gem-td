@@ -36,6 +36,10 @@ namespace GemTD.Gameplay.Run
             }
         }
 
+        /// <summary>Gem category. Tower cards and empty cards report None.</summary>
+        public GemCategory Category =>
+            IsGem && Gem.Def != null ? Gem.Def.Category : GemCategory.None;
+
         public string DisplayName =>
             IsGem ? Gem.DisplayName : IsTower ? Tower.DisplayName : "";
 

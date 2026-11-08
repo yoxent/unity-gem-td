@@ -138,7 +138,8 @@ namespace GemTD.UI
                         card.Description,
                         TowerRoster.FormatOfferStatus(card, roster),
                         TowerRoster.FormatOfferLevel(card, roster));
-                    picks[i].SetTags(card.Tags);
+                    picks[i].SetCategory(card.Category);
+                    picks[i].SetTags(card.Tags, card.Tower);
                     picks[i].ApplyElements(card.Tags);
                     picks[i].SetSelected(i == draft.SelectedIndex);
                     picks[i].gameObject.SetActive(true);
@@ -151,6 +152,7 @@ namespace GemTD.UI
                 else
                 {
                     picks[i].SetSelected(false);
+                    picks[i].SetCategory(GemCategory.None);
                     picks[i].SetTags(GemTag.None);
                     picks[i].gameObject.SetActive(false);
                 }

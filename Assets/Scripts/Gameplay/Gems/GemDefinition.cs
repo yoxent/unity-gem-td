@@ -27,6 +27,8 @@ namespace GemTD.Gameplay.Gems
         [Min(0f)] public float GreaterRarityWeight;
 
         [Header("Combat")]
+        [Tooltip("Player-facing category from the support-gem source. Shows what the gem does to a build; None displays nothing.")]
+        public GemCategory Category = GemCategory.None;
         [Tooltip("PoE-style tags. Socketing: tower must have every restriction tag (Attack/Projectile/AoE/…). Support and Chaining do not gate.")]
         [SerializeField, FormerlySerializedAs("Tags"), GemTagMask]
         long tags;

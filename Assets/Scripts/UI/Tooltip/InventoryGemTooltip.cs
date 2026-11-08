@@ -21,7 +21,7 @@ namespace GemTD.UI
         [SerializeField] TMP_Text effectsText;
         [SerializeField] TMP_Text combineText;
 
-        readonly List<string> _tagNames = new List<string>(8);
+        readonly List<GemTag> _tagChips = new List<GemTag>(8);
 
         void Awake()
         {
@@ -53,7 +53,7 @@ namespace GemTD.UI
 
             SetText(gemNameText, definition.DisplayName);
             SetRarity(gem.Rarity);
-            SetTags(GemTags.EffectiveGemTags(definition));
+            SetTags(GemTags.EffectiveGemTags(definition), definition.Category);
             SetText(descriptionText, definition.Description);
             SetText(effectsText, TowerGemTooltip.FormatEffects(gem));
             if (effectsText != null)
@@ -80,34 +80,50 @@ namespace GemTD.UI
             rarityText.color = RarityColor(normalized);
         }
 
-        void SetTags(GemTag tags)
+        void SetTags(GemTag tags, GemCategory category)
         {
             if (tagsParent == null || tagSubParentTemplate == null)
                 return;
 
             tagSubParentTemplate.gameObject.SetActive(false);
-            GemTags.CollectNames(tags, _tagNames);
+            GemTags.CollectChipFlags(tags, _tagChips);
 
-            for (var i = 0; i < _tagNames.Count; i++)
+            var slot = 0;
+            if (GemCategories.Label(category).Length > 0)
             {
-                var label = GetOrCreateTag(i);
+                var categoryLabel = GetOrCreateTag(slot);
+                if (categoryLabel != null)
+                {
+                    if (categoryLabel.transform.parent != tagsParent)
+                        categoryLabel.transform.SetParent(tagsParent, false);
+                    categoryLabel.transform.SetSiblingIndex(slot);
+                    categoryLabel.gameObject.SetActive(true);
+                    categoryLabel.BindCategory(category);
+                    slot++;
+                }
+            }
+
+            for (var i = 0; i < _tagChips.Count; i++)
+            {
+                var label = GetOrCreateTag(slot);
                 if (label == null)
                     continue;
 
                 if (label.transform.parent != tagsParent)
                     label.transform.SetParent(tagsParent, false);
-                label.transform.SetSiblingIndex(i);
+                label.transform.SetSiblingIndex(slot);
                 label.gameObject.SetActive(true);
-                label.Bind(_tagNames[i]);
+                label.Bind(_tagChips[i]);
+                slot++;
             }
 
-            for (var i = _tagNames.Count; i < tagLabels.Count; i++)
+            for (var i = slot; i < tagLabels.Count; i++)
             {
                 if (tagLabels[i] != null)
                     tagLabels[i].gameObject.SetActive(false);
             }
 
-            tagsParent.gameObject.SetActive(_tagNames.Count > 0);
+            tagsParent.gameObject.SetActive(slot > 0);
             LayoutRebuilder.MarkLayoutForRebuild((RectTransform)tagsParent);
         }
 

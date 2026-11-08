@@ -277,6 +277,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1.14f, result.Modifiers[0].Value, 0.001f);
             Assert.AreEqual(GemStat.AilmentDamage, result.Modifiers[1].Stat);
             Assert.AreEqual(1.14f, result.Modifiers[1].Value, 0.001f);
+            Assert.AreEqual(GemCategory.UtilityAndControl, result.Category);
         }
 
         [Test]
@@ -290,6 +291,7 @@ namespace GemTD.Tests.EditMode
             Assert.AreEqual(1.36f, result.Modifiers[0].Value, 0.001f);
             Assert.AreEqual(GemStat.Damage, result.Modifiers[1].Stat);
             Assert.AreEqual(0.2f, result.Modifiers[1].Value, 0.001f);
+            Assert.AreEqual(GemCategory.Offensive, result.Category);
         }
 
         [Test]

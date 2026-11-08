@@ -54,6 +54,28 @@ namespace GemTD.UI
         public Palette nonElemental = Row(0xC0C8D0);
         public Palette threeElements = Row(0xB99781);
 
+        [Header("Gem category")]
+        public Palette categoryOffensive = Row(0xB03A2E);
+        public Palette categoryProjectile = Row(0x2F7D4F);
+        public Palette categoryUtility = Row(0x2B5FA8);
+        public Palette categoryTransformation = Row(0x6B3FA0);
+
+        /// <summary>
+        /// Palette for a gem category badge. Follows the source-JSON hues:
+        /// offensive red, projectile green, utility blue, transformation purple.
+        /// </summary>
+        public Palette ForCategory(GemCategory category)
+        {
+            switch (category)
+            {
+                case GemCategory.Offensive: return categoryOffensive;
+                case GemCategory.ProjectileTargeting: return categoryProjectile;
+                case GemCategory.UtilityAndControl: return categoryUtility;
+                case GemCategory.Transformation: return categoryTransformation;
+                default: return nonElemental;
+            }
+        }
+
         public Palette Resolve(GemTag tags)
         {
             switch (tags & ElementMask)
