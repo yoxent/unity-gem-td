@@ -151,6 +151,37 @@ namespace GemTD.Tests.EditMode
         }
 
         [Test]
+        public void Tick_MultipleProjectiles_RaisesTowerShootOncePerAction()
+        {
+            var director = new CombatDirector(CellSize, projectileSpeed: 100f);
+            var tower = new TowerInstance(new Vector2Int(0, 0), _towerDef);
+            Assert.IsTrue(tower.TrySocket(_multipleProjectiles, 0, allowSocket: true));
+            var enemy = CreateEnemyNearTower();
+            var registry = new EnemyRegistry();
+            registry.Register(enemy);
+
+            var shots = 0;
+            System.Action<string> countShot = key =>
+            {
+                if (key == SfxKeys.TowerShoot)
+                    shots++;
+            };
+            GameEvents.PlaySfx += countShot;
+            try
+            {
+                TickThroughCast(director, tower, registry);
+            }
+            finally
+            {
+                GameEvents.PlaySfx -= countShot;
+            }
+
+            // The action is the event, not each pellet it spawns.
+            Assert.AreEqual(3, director.Projectiles.Count);
+            Assert.AreEqual(1, shots, "one fire action must raise TowerShoot once");
+        }
+
+        [Test]
         public void Tick_MultipleProjectiles_IncrementsFireGenerationOnce()
         {
             var director = new CombatDirector(CellSize, projectileSpeed: 100f);

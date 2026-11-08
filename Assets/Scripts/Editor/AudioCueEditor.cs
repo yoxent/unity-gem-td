@@ -57,20 +57,20 @@ namespace GemTD.Editor
                 return;
             }
 
-            var pitchesFixed = !sfxProperty.FindPropertyRelative("randomPitch").boolValue;
+            var randomPitch = sfxProperty.FindPropertyRelative("randomPitch").boolValue;
             var fixedPitch = sfxProperty.FindPropertyRelative("pitch").floatValue;
+            var pitchMin = sfxProperty.FindPropertyRelative("pitchMin").floatValue;
             var pitchMax = sfxProperty.FindPropertyRelative("pitchMax").floatValue;
-            var fastest = pitchesFixed ? fixedPitch : pitchMax;
-            var slowest = pitchesFixed ? fixedPitch : sfxProperty.FindPropertyRelative("pitchMin").floatValue;
-            if (slowest <= 0f) slowest = 0.01f;
+            if (pitchMin <= 0f) pitchMin = 0.01f;
+            if (pitchMax <= 0f) pitchMax = 0.01f;
+
+            var fastest = randomPitch ? pitchMax : fixedPitch;
+            var slowest = randomPitch ? pitchMin : fixedPitch;
             if (fastest <= 0f) fastest = 0.01f;
+            if (slowest <= 0f) slowest = 0.01f;
 
-            var shortest = AudioMix.AudibleLengthSeconds(clip.length, fastest);
-            var longest = AudioMix.AudibleLengthSeconds(clip.length, slowest);
-
-            var cap = sfxProperty.FindPropertyRelative("maxPlaybackSeconds").floatValue;
-            var capSeconds = AudioMix.ResolvePlaybackCapSeconds(clip.length, fastest, cap);
-            var effectiveLongest = capSeconds > 0f ? capSeconds : longest;
+            var shortest = clip.length / fastest;
+            var longest = clip.length / slowest;
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Playback", EditorStyles.boldLabel);
@@ -81,36 +81,24 @@ namespace GemTD.Editor
                     ? "  (" + shortest.ToString("0.###") + "\u2013" + longest.ToString("0.###") + " s at pitch range)"
                     : string.Empty));
 
-            if (capSeconds > 0f)
+            var interval = sfxProperty.FindPropertyRelative("minIntervalSeconds").floatValue;
+            if (interval <= 0f)
             {
-                EditorGUILayout.HelpBox(
-                    "Capped at " + capSeconds.ToString("0.###") + " s while the clip itself is " +
-                    clip.length.ToString("0.###") + " s. The silent remainder never occupies a source, " +
-                    "so a longer candidate clip can be dropped in without trimming it first.",
-                    MessageType.Info);
-            }
-            else if (clip.length > 1f && fastest >= 1f)
-            {
-                EditorGUILayout.HelpBox(
-                    "This clip is " + clip.length.ToString("0.##") + " s. A source stays occupied that whole " +
-                    "time. For a high-frequency cue set Max Playback Seconds (for example 0.2) instead of " +
-                    "hand-trimming the file.",
-                    MessageType.Warning);
+                EditorGUILayout.LabelField("Throttle", "none \u2014 plays on every request");
+                return;
             }
 
-            var interval = sfxProperty.FindPropertyRelative("minIntervalSeconds").floatValue;
-            if (interval > 0f)
-            {
-                var sustained = effectiveLongest > 0f ? Mathf.FloorToInt(8f / effectiveLongest) : 8;
-                var allowed = Mathf.FloorToInt(1f / interval);
-                EditorGUILayout.LabelField(
-                    "Throttle",
-                    interval.ToString("0.###") + " s  \u2192  max " + allowed + " plays/s demanded");
-                EditorGUILayout.LabelField(
-                    "Pool (8 sources)",
-                    "~" + sustained + " concurrent  \u2192  " +
-                    (sustained >= allowed ? "no source stealing" : "STEALING (raise cap or shorten clip)"));
-            }
+            var demanded = Mathf.FloorToInt(1f / interval);
+            var sustainable = Mathf.FloorToInt(8f / longest);
+            EditorGUILayout.LabelField(
+                "Throttle",
+                interval.ToString("0.###") + " s  \u2192  max " + demanded + " plays/s demanded");
+            EditorGUILayout.LabelField(
+                "Pool (8 sources)",
+                "~" + sustainable + " concurrent  \u2192  " +
+                (sustainable >= demanded
+                    ? "no source stealing"
+                    : "STEALING \u2014 shorten the clip or raise the interval"));
         }
     }
 }

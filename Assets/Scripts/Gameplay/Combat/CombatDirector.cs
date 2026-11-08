@@ -480,10 +480,12 @@ namespace GemTD.Gameplay.Combat
                 ? PathIntercept.Predict(muzzle, speed, primary)
                 : primary.WorldPosition;
 
+            // One shot sound per fire action, not per projectile, echo volley,
+            // hydra head, or sequential bolt. The action is the event.
+            GameEvents.RaisePlaySfx(SfxKeys.TowerShoot);
+
             for (var v = 0; v < volleys; v++)
             {
-                GameEvents.RaisePlaySfx(SfxKeys.TowerShoot);
-
                 if (spec.DeliveryPattern == DeliveryPattern.WarpStrike)
                 {
                     SpawnWarpStrike(
@@ -1150,7 +1152,6 @@ namespace GemTD.Gameplay.Combat
                 pending.Wait -= dt;
                 while (pending.Wait <= 0f && pending.NextIndex < pending.Spec.ProjectileCount)
                 {
-                    GameEvents.RaisePlaySfx(SfxKeys.TowerShoot);
                     SpawnVolley(
                         pending.Origin,
                         pending.AimPoint,

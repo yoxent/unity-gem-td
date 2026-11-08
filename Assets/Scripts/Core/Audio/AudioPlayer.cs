@@ -151,17 +151,6 @@ namespace GemTD.Core
             src.volume = AudioMix.SfxSourceVolume(cue.volume, GameSettings.GetSfxVolume());
             src.time = 0f;
             src.Play();
-
-            // A source stays occupied for the clip's whole length, including any
-            // silent tail. Cap short one-shots so a long source asset cannot
-            // starve the pool. The full clip stays auditionable in the inspector,
-            // so swapping in a longer candidate needs no re-trim.
-            var endCap = AudioMix.ResolvePlaybackCapSeconds(
-                cue.sfx.clip.length,
-                src.pitch,
-                cue.sfx.maxPlaybackSeconds);
-            if (endCap > 0f)
-                src.SetScheduledEndTime(AudioSettings.dspTime + endCap);
         }
 
         void OnPlayBgm(AudioCue cue)
