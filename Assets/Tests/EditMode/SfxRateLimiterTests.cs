@@ -112,9 +112,10 @@ namespace GemTD.Tests.EditMode
         public void DenseVolley_IsCappedToInterval()
         {
             var limiter = new SfxRateLimiter();
-            // 48 shots/second demanded, 12.5/second allowed at 0.08s.
+            // One second of demand: 48 shots/second, against a 0.08s gate that
+            // admits 12.5/second. 48 calls at 48 Hz spans exactly that second.
             var allowed = 0;
-            for (var i = 0; i < 96; i++)
+            for (var i = 0; i < 48; i++)
             {
                 var now = i / 48f;
                 if (limiter.TryPlay("TowerShoot", 0.08f, now))

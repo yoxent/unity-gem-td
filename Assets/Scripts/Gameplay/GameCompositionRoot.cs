@@ -228,12 +228,17 @@ namespace GemTD.Gameplay
 
         InputAction _debugAdvance;
         InputAction _debugFillBag;
+        InputAction _debugVictory;
+        InputAction _debugDefeat;
         InputActionMap _debugMap;
         bool _loggedExpandSkip;
         bool _usedStarterDraft;
         int _nextTipIndex;
         int _bossSpawnCursor;
         HomeBaseView _homeMarker;
+        /// <summary>Set while a debug outcome key drives the transition, so the fake wave
+        /// is never written to the saved highest wave.</summary>
+        bool _suppressHighestWaveSave;
 
         void Awake()
         {
@@ -272,6 +277,10 @@ namespace GemTD.Gameplay
             _debugAdvance.AddBinding("<Keyboard>/f5");
             _debugFillBag = _debugMap.AddAction("FillBag", InputActionType.Button);
             _debugFillBag.AddBinding("<Keyboard>/f6");
+            _debugVictory = _debugMap.AddAction("ShowVictory", InputActionType.Button);
+            _debugVictory.AddBinding("<Keyboard>/f7");
+            _debugDefeat = _debugMap.AddAction("ShowDefeat", InputActionType.Button);
+            _debugDefeat.AddBinding("<Keyboard>/f8");
             _debugMap.Enable();
 #endif
         }
@@ -311,6 +320,7 @@ namespace GemTD.Gameplay
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             TryDebugAdvance();
             TryDebugFillBag();
+            TryDebugOutcome();
 #endif
             if (States == null
                 || States.Current == RunStateId.Defeat
@@ -640,7 +650,11 @@ namespace GemTD.Gameplay
         void OnStateChanged(RunStateId prev, RunStateId next)
         {
             if (next == RunStateId.Defeat || next == RunStateId.VictorySummary)
-                PlayerProfile.TryUpdateHighestWave(CurrentWaveNumber);
+            {
+                // A debug-key outcome is a preview, not a reached wave.
+                if (!_suppressHighestWaveSave)
+                    PlayerProfile.TryUpdateHighestWave(CurrentWaveNumber);
+            }
 
             GameEvents.RaiseRunStateChanged();
 
@@ -1769,6 +1783,46 @@ namespace GemTD.Gameplay
             Debug.Log($"[GemTD] F6 filled {added} bag slot(s) with {filler.DisplayName}. Free={Inventory.FreeSlotCount}.");
             if (added > 0)
                 GameEvents.RaiseInventoryChanged();
+        }
+
+        /// <summary>
+        /// F7 / F8 preview the two run-end screens without playing to them. The
+        /// transition is suppressed from the saved highest wave so a preview never
+        /// inflates the profile. The wave shown is the one the run is currently on.
+        /// </summary>
+        void TryDebugOutcome()
+        {
+            if (_debugVictory != null && _debugVictory.WasPressedThisFrame())
+                ShowDebugOutcome(victory: true);
+            else if (_debugDefeat != null && _debugDefeat.WasPressedThisFrame())
+                ShowDebugOutcome(victory: false);
+        }
+
+        void ShowDebugOutcome(bool victory)
+        {
+            if (States == null)
+                return;
+
+            if (States.Current == RunStateId.Defeat || States.Current == RunStateId.VictorySummary)
+            {
+                Debug.Log("[GemTD] A run summary is already open; load the scene or press F5 to continue first.");
+                return;
+            }
+
+            _suppressHighestWaveSave = true;
+            try
+            {
+                if (victory)
+                    States.ForceState(RunStateId.VictorySummary);
+                else
+                    States.TriggerDefeat();
+            }
+            finally
+            {
+                _suppressHighestWaveSave = false;
+            }
+
+            Debug.Log($"[GemTD] {(victory ? "F7 victory" : "F8 defeat")} preview at wave {CurrentWaveNumber} — highest wave not saved.");
         }
 
         GemInstance ResolveDebugFillGem()
