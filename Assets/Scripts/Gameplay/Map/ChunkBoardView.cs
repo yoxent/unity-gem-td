@@ -9,16 +9,45 @@ namespace GemTD.Gameplay.Map
     {
         [SerializeField] float cellSize = 1f;
         [SerializeField] Transform chunkParent;
+        [SerializeField] Material towerHeight0;
+        [SerializeField] Material towerHeight1;
+        [SerializeField] Material towerHeight2;
+        [SerializeField] PathTileSet pathTiles;
 
         public float CellSize => cellSize;
 
         ChunkGrid _grid;
+        TileHeightMap _heights;
+        float _tileSpacing = 0.05f;
+        Material[] _tintedFallback;
+        bool _loggedMissingAuthoredMats;
+        bool _loggedMissingPathTiles;
         readonly Dictionary<Vector2Int, GameObject> _instances = new Dictionary<Vector2Int, GameObject>(32);
 
-        public void Bind(ChunkGrid grid)
+        public void Bind(ChunkGrid grid, TileHeightMap heights = null, float tileSpacing = 0.05f)
         {
             _grid = grid;
+            _heights = heights;
+            _tileSpacing = tileSpacing < 0f ? 0f : tileSpacing;
             GameEvents.ChunkPlaced += OnChunkPlaced;
+        }
+
+        public void SetTileSpacing(float spacing)
+        {
+            if (spacing < 0f)
+                spacing = 0f;
+            if (Mathf.Abs(_tileSpacing - spacing) < 1e-5f)
+                return;
+            _tileSpacing = spacing;
+            foreach (var pair in _instances)
+            {
+                if (pair.Value == null)
+                    continue;
+                if (_grid != null && _grid.TryGet(pair.Key.x, pair.Key.y, out var slot))
+                    ApplyFootprints(pair.Value.transform, slot);
+                else
+                    ApplyFootprints(pair.Value.transform, default);
+            }
         }
 
         public void OnChunkPlaced(Vector2Int coord)
@@ -31,6 +60,128 @@ namespace GemTD.Gameplay.Map
             instance.transform.localRotation = Quaternion.Euler(0f, slot.Yaw * 90f, 0f);
             instance.transform.localPosition = ChunkInstanceLocalPosition(coord, slot.Yaw, cellSize);
             _instances[coord] = instance.gameObject;
+            ApplyFootprints(instance.transform, slot);
+            ApplyTileHeights(instance.transform, coord, slot);
+        }
+
+        void ApplyFootprints(Transform instance, ChunkSlot slot)
+        {
+            // Baked path meshes stay at the set's scale so corridors meet across cells.
+            var skipPath = slot.Prefab != null;
+            for (var i = 0; i < instance.childCount; i++)
+            {
+                var child = instance.GetChild(i);
+                if (!TileHeightVisual.TryParseTileName(child.name, out var px, out var py))
+                    continue;
+                if (skipPath)
+                {
+                    var worldLocal = RotateLocalCw(px, py, slot.Yaw);
+                    if (slot.Mask.IsPath(worldLocal.x, worldLocal.y))
+                        continue;
+                }
+                TileHeightVisual.ApplyFootprint(child, cellSize, _tileSpacing);
+            }
+        }
+
+        void ApplyTileHeights(Transform instance, Vector2Int coord, ChunkSlot slot)
+        {
+            if (_heights == null)
+                return;
+
+            for (var i = 0; i < instance.childCount; i++)
+            {
+                var child = instance.GetChild(i);
+                if (!TileHeightVisual.TryParseTileName(child.name, out var px, out var py))
+                    continue;
+
+                var worldLocal = RotateLocalCw(px, py, slot.Yaw);
+                var wx = coord.x * ChunkMask.Size + worldLocal.x;
+                var wy = coord.y * ChunkMask.Size + worldLocal.y;
+                var locked = slot.Mask.IsElevationLocked(worldLocal.x, worldLocal.y);
+                // Lock freezes height at layer 0. Path and home stay baked path meshes.
+                if (locked && slot.Mask.IsPath(worldLocal.x, worldLocal.y))
+                    continue;
+
+                var layer = locked ? (byte)0 : _heights.Get(wx, wy);
+                if (TileHeightVisual.TryActivatePad(child, layer))
+                {
+                    ApplyRolledPadMaterials(child, layer, wx, wy);
+                    continue;
+                }
+
+                var renderer = child.GetComponent<MeshRenderer>();
+                var mat = ResolveHeightMaterial(layer, renderer != null ? renderer.sharedMaterial : null);
+                if (locked)
+                {
+                    if (renderer != null && mat != null)
+                        renderer.sharedMaterial = mat;
+                    continue;
+                }
+
+                TileHeightVisual.ApplyPad(child, layer, mat);
+            }
+        }
+
+        void ApplyRolledPadMaterials(Transform tile, byte layer, int wx, int wy)
+        {
+            if (pathTiles == null)
+            {
+                if (_loggedMissingPathTiles)
+                    return;
+                _loggedMissingPathTiles = true;
+                Debug.LogWarning(
+                    "[GemTD] ChunkBoardView has no Path Tile Set — pad materials stay on the cliff prefab.");
+                return;
+            }
+
+            var height = TileHeightVisual.PadHeight(layer);
+            if (!pathTiles.TryRollPadMaterials(height, wx, wy, out var top, out var sides))
+                return;
+            TileHeightVisual.ApplyPadLook(tile, top, sides);
+        }
+
+        Material ResolveHeightMaterial(byte layer, Material source)
+        {
+            var authored = HeightMaterial(layer);
+            if (authored != null)
+                return authored;
+
+            if (_tintedFallback == null && source != null)
+            {
+                _tintedFallback = TileHeightVisual.CreateLayerMaterials(source);
+                if (!_loggedMissingAuthoredMats)
+                {
+                    _loggedMissingAuthoredMats = true;
+                    Debug.LogWarning(
+                        "[GemTD] ChunkBoardView towerHeight0/1/2 are unassigned — tinting from the pad's prefab material.");
+                }
+            }
+
+            if (_tintedFallback == null)
+                return null;
+            var i = layer >= 2 ? 2 : (int)layer;
+            return _tintedFallback[i];
+        }
+
+        Material HeightMaterial(byte layer)
+        {
+            if (layer >= 2) return towerHeight2;
+            if (layer == 1) return towerHeight1;
+            return towerHeight0;
+        }
+
+        static Vector2Int RotateLocalCw(int x, int y, int yaw)
+        {
+            var n = ChunkMask.Size;
+            var turns = ((yaw % 4) + 4) % 4;
+            for (var t = 0; t < turns; t++)
+            {
+                var nx = y;
+                var ny = n - 1 - x;
+                x = nx;
+                y = ny;
+            }
+            return new Vector2Int(x, y);
         }
 
         /// <summary>
@@ -62,6 +213,16 @@ namespace GemTD.Gameplay.Map
         public Vector3 CellToWorld(int x, int y) => CellCenterWorld(x, y);
         public Vector3 CellToWorld(Vector2Int cell) => CellCenterWorld(cell.x, cell.y);
 
+        public Vector3 TowerCellWorld(Vector2Int cell) => TowerCellWorld(cell.x, cell.y);
+
+        public Vector3 TowerCellWorld(int x, int y)
+        {
+            var p = CellCenterWorld(x, y);
+            var layer = _heights != null ? _heights.Get(x, y) : (byte)0;
+            p.y += TileHeightVisual.TopY(layer);
+            return p;
+        }
+
         public Vector3 CellCenterWorld(int x, int y)
         {
             var half = cellSize * 0.5f;
@@ -74,6 +235,30 @@ namespace GemTD.Gameplay.Map
             var x = Mathf.FloorToInt(local.x / cellSize);
             var y = Mathf.FloorToInt(local.z / cellSize);
             return new Vector2Int(x, y);
+        }
+
+        /// <summary>Cell whose pad the ray hits. Falls back to the y=0 plane before heights are bound.</summary>
+        public bool TryPickCell(Ray worldRay, out Vector2Int cell)
+        {
+            if (_heights == null)
+                return TryPickFlatPlane(worldRay, out cell);
+
+            var origin = transform.InverseTransformPoint(worldRay.origin);
+            var direction = transform.InverseTransformVector(worldRay.direction);
+            return BoardCellPick.TryPick(new Ray(origin, direction), cellSize, _heights, out cell);
+        }
+
+        bool TryPickFlatPlane(Ray worldRay, out Vector2Int cell)
+        {
+            var plane = new Plane(Vector3.up, Vector3.zero);
+            if (!plane.Raycast(worldRay, out var enter))
+            {
+                cell = default;
+                return false;
+            }
+
+            cell = WorldToCell(worldRay.GetPoint(enter));
+            return true;
         }
 
         public Vector3 ChunkCenterWorld(Vector2Int coord)

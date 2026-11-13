@@ -7,19 +7,43 @@ alwaysApply: true
 
 ## Docs path (required lookup)
 
-Canonical docs: `E:\Projects\Docs\project-docs\Unity\unity-gem-td`
+Docs checkout: `E:\Projects\Docs\project-docs-unity-gem-td` on branch `docs/unity-gem-td`.
+
+Canonical docs: `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td`
 
 - Design: `GDD.md`, `ARCHITECTURE.md`, `UI-SPEC.md`
 - Plans/status: `planning/`
 - Superpowers / SDD ledger: `planning/sdd/` (`progress.md`, task briefs/reports)
 
-**Always read the docs repo** when resuming work, locking designs, or answering “what’s decided / what’s next.” Do not assume absence because the file is not in this Unity workspace.
+**Always read the docs repo** when resuming work, locking designs, or answering “what’s decided / what’s next.” Do not assume absence because the file is not in this Unity workspace. **Phase 2 is closed** (merged PR #3) — do not execute historical `phase2-*` / PR6 plans. The roadmap ends at a Steam Demo / Early Access build on the current 29-tower set.
 
-**Never** create design docs, plans, or `.superpowers/` / SDD scratch inside this game repo. If a skill defaults to `<repo>/.superpowers/sdd`, redirect writes to `…/unity-gem-td/planning/sdd/`.
+**Current build state has one owner: `PROJECT_CONTEXT.md`.** Do not restate it here or in a handoff file. Read it before assuming a contract, a guard, or the next slice. The invariants below are the only state an agent needs before it has opened that file.
+
+**Guarded invariants — do not change as incidental polish:**
+- Delivery timing, damage, and combat routing are accepted.
+- Delivery VFX is assigned on the tower (`TowerVfx`) and payload assets, not in shared scene slots.
+- Map fog is a separate world sheet (`MapFogView`), not part of the post stack.
+- Bloom + Vignette are retuned and accepted; do not open a new post stack.
+- No grass system is active; chunks render pads only.
+- Do not import new towers or gem mechanics. The rest of the catalog is out of this version.
+- Clip assignment (shared SFX + one music loop) is the next authorized branch, not the current one.
+
+**Do not import new towers or gem mechanics.** The rest of the catalog is out of
+this version. Socket count is uniform (3) across every tower and the importer
+writes that same value, so a reimport no longer resets authored socket counts.
+
+**Freshness:** if `PROJECT_CONTEXT.md`'s `Updated:` date is older than the newest
+`## ` heading in `planning/sdd/progress.md`, reconcile it before code.
+
+**Do not use Notion.** The July 2026 Gem TD Notion tree is retired. Canon is markdown in the docs repo (`HOME.md`).
+
+**Never** create design docs, plans, or `.superpowers/` / SDD scratch inside this game repo. If a skill defaults to `<repo>/.superpowers/sdd`, redirect writes to `E:\Projects\Docs\project-docs-unity-gem-td\Unity\unity-gem-td\planning\sdd\`.
 
 ## Lookup order
 
 Docs repo (absolute path) → SCE (`user-sce`) → Context7 → web. If SCE lacked info that exists only in the docs repo, say what to index.
+
+**SCE query:** search `unity-gem-td`. Do not search “Gem TD” — SCE does not retrieve this tree under that name. Index `Unity/unity-gem-td` in the docs repo if SCE should cover it.
 
 ## Pushback
 
@@ -32,10 +56,11 @@ When a suggestion is suboptimal: (1) acknowledge goal (2) why not (3) better opt
 - Object pools for enemies/projectiles/pops.
 - No `System.Linq` in combat ticks — use `for` / reused lists.
 - Git: feature branch + PR into protected `main` only.
-- Never `git commit` or `git push` unless the user explicitly asks.
+- Never `git commit` or `git push` unless the user explicitly asks to commit or push. Sync, update, finalize, record, save, and "docs first" do not authorize either one, including on the docs checkout.
+- Change only what the user names. If that change would alter something unnamed through a shared path, keep the unnamed behavior as it is and do not edit its values. Do not restructure it when the named change would not reach it. Card-chrome colors and tag-chip colors are independent. Do not reset inspector values to script defaults.
 - Same-prefab components: inspector `[SerializeField]` refs. No `AddComponent` / `GetComponent` (incl. children) in `Awake`/`Start` for those. See `gem-td-ui.mdc`.
 
 ## Conventional TD shell (Bloons-first)
 
-Unique fantasy = gems/sockets (+ map expansion). For place / select / sell / upgrade / waves / hotkeys / cancel / previews: check **Bloons TD 5/6 first**, match unless docs override. See `.cursor/rules/gem-td-bloons-mechanics.mdc`.
+Unique fantasy = gems/sockets (+ map expansion). For place / select / sell / waves / hotkeys / cancel / previews: check **Bloons TD 5/6 first**, match unless docs override. **No** Bloons Upgrade button — see `gem-td-bloons-mechanics.mdc`.
 

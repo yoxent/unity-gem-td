@@ -1,0 +1,18 @@
+---
+description: Gem TD simulation and view boundary
+globs: Assets/Scripts/Gameplay/**/*.cs
+alwaysApply: false
+---
+
+# Simulation boundary
+
+- Enemy movement is authored by the custom `PathGraph` / path-following
+  runtime. Do not introduce NavMesh or move simulation state by writing a
+  view transform directly.
+- The domain owns path progress, targeting, collision, damage, leaks, and
+  wave results. Views consume runtime snapshots/events and present them.
+- Combat visuals come from the existing combat/effect event and payload path.
+  Do not make a view authoritative for damage or apply damage from a particle
+  callback.
+- Keep gameplay movement deterministic and testable without a live scene.
+  Scene objects may mirror the runtime position for presentation.

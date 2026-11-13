@@ -4,67 +4,134 @@ using TMPro;
 using GemTD.Gameplay;
 using GemTD.Gameplay.Gems;
 using GemTD.Gameplay.Run;
+using GemTD.Core;
 using UnityEngine.EventSystems;
 
 namespace GemTD.UI
 {
-    /// <summary>Tower Details socketed-gem slot. Hover shows X; X click = instant unsocket. Prefab-based.</summary>
+    /// <summary>Tower Details socketed-gem slot. The remove button is visible whenever unsocketing is allowed.</summary>
     public sealed class TowerGemSlot : MonoBehaviour,
-        IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IPointerClickHandler
+        IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler,
+        IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
+        const string EmptySlotText = "—";
+
         [SerializeField] Image icon;
         [SerializeField] TMP_Text nameLabel;
-        [SerializeField] Button xButton;
+        [SerializeField] Button removeButton;
         [SerializeField] Button slotButton;
-        [SerializeField] HoverPointerRelay slotHover;
-        [SerializeField] HoverPointerRelay xHover;
+        [SerializeField] GameObject lockedIcon;
+        [SerializeField] InventoryDragGhost dragGhostPrefab;
+        [SerializeField] string dropSfxKey = SfxKeys.Drop;
 
         GameCompositionRoot _root;
         int _socketIndex = -1;
-        GemDefinition _gem;
+        GemInstance _gem;
+        bool _available;
+        bool _pointerOver;
+        TowerGemTooltip _tooltip;
 
         static TowerGemSlot s_dragSource;
-        static RectTransform s_ghost;
-        static Canvas s_ghostCanvas;
-
-        public Button SlotButton => slotButton;
 
         void Awake()
         {
-            if (xButton != null)
-                xButton.onClick.AddListener(OnXClicked);
+            if (lockedIcon == null)
+                Debug.LogError("TowerGemSlot: assign Locked Icon on the prefab.", this);
 
-            if (slotHover == null)
+            if (removeButton != null)
             {
-                Debug.LogError("TowerGemSlot: assign Slot Hover (HoverPointerRelay) on the prefab.", this);
-                return;
+                removeButton.onClick.AddListener(OnRemoveClicked);
+                removeButton.gameObject.SetActive(false);
             }
-
-            HoverAffordance.BindXHover(
-                slotHover,
-                xHover,
-                xButton != null ? xButton.gameObject : null,
-                () => _root != null && _root.SelectedSocketLockRemaining <= 0f && _gem != null);
         }
 
-        public void Configure(GameCompositionRoot root, int socketIndex, GemDefinition gem)
+        public void Configure(GameCompositionRoot root, int socketIndex, GemInstance gem)
         {
+            _available = true;
             _root = root;
             _socketIndex = socketIndex;
             _gem = gem;
-            if (icon != null) icon.color = gem != null ? Color.white : new Color(0.18f, 0.18f, 0.22f, 1f);
-            if (nameLabel != null) nameLabel.text = gem != null ? gem.DisplayName : "—";
+            if (icon != null)
+            {
+                var filled = !gem.IsEmpty;
+                icon.gameObject.SetActive(filled);
+                icon.sprite = filled ? gem.Def.Icon : null;
+                if (filled) icon.preserveAspect = true;
+            }
+            if (nameLabel != null) nameLabel.text = !gem.IsEmpty ? gem.DisplayName : EmptySlotText;
+            RefreshLockOverlay();
+            RefreshTooltip();
+        }
+
+        /// <summary>Socket this tower does not have. Stay visible, show the lock icon, and block input.</summary>
+        public void SetDisabled()
+        {
+            _available = false;
+            _socketIndex = -1;
+            _gem = default;
+            if (icon != null)
+            {
+                icon.gameObject.SetActive(false);
+                icon.sprite = null;
+            }
+            if (nameLabel != null)
+                nameLabel.text = EmptySlotText;
+            RefreshLockOverlay();
+            RefreshTooltip();
+        }
+
+        public void SetTooltip(TowerGemTooltip tooltip)
+        {
+            if (_tooltip == tooltip)
+                return;
+
+            if (_pointerOver)
+                _tooltip?.Hide();
+            _tooltip = tooltip;
+            RefreshTooltip();
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            _pointerOver = true;
+            RefreshTooltip();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _pointerOver = false;
+            _tooltip?.Hide();
+        }
+
+        void RefreshTooltip()
+        {
+            if (!_pointerOver)
+                return;
+
+            if (_available && !_gem.IsEmpty)
+                _tooltip?.Show(_gem);
+            else
+                _tooltip?.Hide();
+        }
+
+        public void RefreshLockOverlay()
+        {
+            var locked = !_available || _root == null || _root.SelectedSocketsLocked;
+            if (lockedIcon != null && lockedIcon.activeSelf != locked)
+                lockedIcon.SetActive(locked);
+            if (slotButton != null)
+                slotButton.interactable = !locked;
+            if (removeButton != null)
+                removeButton.gameObject.SetActive(CanUnsocket());
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (!CanBeginDrag())
-                return;
-            if (s_dragSource != null)
+            if (s_dragSource != null || !CanBeginDrag())
                 return;
 
             s_dragSource = this;
-            GemDragState.SetSocket(_socketIndex, _gem);
+            GemDragState.SetSocket(_socketIndex);
 
             ShowGhost(eventData);
         }
@@ -73,7 +140,7 @@ namespace GemTD.UI
         {
             if (s_dragSource != this)
                 return;
-            MoveGhost(eventData);
+            GemDragGhostPool.Move(eventData);
         }
 
         public void OnEndDrag(PointerEventData eventData)
@@ -81,51 +148,54 @@ namespace GemTD.UI
             if (s_dragSource != this)
                 return;
 
-            DestroyGhost();
+            GemDragGhostPool.Release();
             s_dragSource = null;
             GemDragState.Clear();
         }
 
         public void OnDrop(PointerEventData eventData)
         {
-            if (_root == null || _root.States == null)
-                return;
-
-            if (!(_root.States.Current == RunStateId.Plan || _root.States.Current == RunStateId.Combat))
+            if (!_available || _root == null || _root.States == null
+                || !IsSocketState(_root.States.Current))
                 return;
 
             if (!GemDragState.HasDrag)
                 return;
 
-            // Inventory -> socket is the main direction.
-            if (GemDragState.Kind != GemDragState.SourceKind.Inventory)
-                return;
+            if (GemDragState.Kind == GemDragState.SourceKind.Inventory)
+            {
+                if (GemDragState.InventoryIndex < 0 || _socketIndex < 0)
+                    return;
 
-            if (GemDragState.InventoryIndex < 0 || _socketIndex < 0)
+                GameEvents.RaisePlaySfx(dropSfxKey);
+                _root.RequestSocketFromInventoryAt(GemDragState.InventoryIndex, _socketIndex);
                 return;
+            }
 
-            _root.RequestSocketFromInventoryAt(GemDragState.InventoryIndex, _socketIndex);
+            if (GemDragState.Kind == GemDragState.SourceKind.Socket)
+            {
+                if (GemDragState.SocketIndex < 0 || _socketIndex < 0
+                    || GemDragState.SocketIndex == _socketIndex)
+                    return;
+
+                GameEvents.RaisePlaySfx(dropSfxKey);
+                _root.RequestMoveOrSwapSocketAt(
+                    GemDragState.SocketIndex, _socketIndex);
+            }
         }
 
-        void OnXClicked()
+        void OnRemoveClicked()
         {
-            if (_root == null)
+            if (!CanUnsocket())
                 return;
+
+            UiSfx.Click();
             _root.RequestUnsocket(_socketIndex);
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData.button != PointerEventData.InputButton.Right)
-                return;
-            if (_root == null || _gem == null)
-                return;
-            if (_root.States == null)
-                return;
-            var s = _root.States.Current;
-            if (s != RunStateId.Plan && s != RunStateId.Combat)
-                return;
-            if (_root.SelectedSocketLockRemaining > 0f)
+            if (eventData.button != PointerEventData.InputButton.Right || !CanUnsocket())
                 return;
 
             _root.RequestUnsocket(_socketIndex);
@@ -133,86 +203,50 @@ namespace GemTD.UI
 
         bool CanBeginDrag()
         {
-            if (_root == null || _gem == null)
-                return false;
-            if (_socketIndex < 0)
-                return false;
-            if (_root.SelectedSocketLockRemaining > 0f)
-                return false;
-            if (_root.States == null)
-                return false;
+            return CanUnsocket();
+        }
 
-            var s = _root.States.Current;
-            return s == RunStateId.Plan || s == RunStateId.Combat;
+        bool CanUnsocket()
+        {
+            return _available
+                && _root != null
+                && !_gem.IsEmpty
+                && _socketIndex >= 0
+                && _root.States != null
+                && IsSocketState(_root.States.Current)
+                && _root.CanUnsocketSelected(_socketIndex);
+        }
+
+        static bool IsSocketState(RunStateId state)
+        {
+            return state == RunStateId.Plan || state == RunStateId.Combat;
+        }
+
+        void OnDisable()
+        {
+            if (_pointerOver)
+                _tooltip?.Hide();
+            _pointerOver = false;
+
+            if (s_dragSource != this)
+                return;
+
+            GemDragGhostPool.Release();
+            s_dragSource = null;
+            GemDragState.Clear();
         }
 
         void ShowGhost(PointerEventData eventData)
         {
-            DestroyGhost();
-
-            var canvas = GetComponentInParent<Canvas>();
-            if (canvas == null)
-                return;
-
-            s_ghostCanvas = canvas.rootCanvas != null ? canvas.rootCanvas : canvas;
-            var go = new GameObject("SocketDragGhost", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
-            s_ghost = go.GetComponent<RectTransform>();
-            s_ghost.SetParent(s_ghostCanvas.transform, false);
-            s_ghost.SetAsLastSibling();
-            s_ghost.sizeDelta = ((RectTransform)transform).rect.size;
-
-            var group = go.GetComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-            group.interactable = false;
-            group.alpha = 0.9f;
-
-            var bg = go.GetComponent<Image>();
-            bg.raycastTarget = false;
-            bg.color = new Color(0.28f, 0.42f, 0.32f, 1f);
-
-            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-            var labelRt = labelGo.GetComponent<RectTransform>();
-            labelRt.SetParent(s_ghost, false);
-            labelRt.anchorMin = Vector2.zero;
-            labelRt.anchorMax = Vector2.one;
-            labelRt.offsetMin = Vector2.zero;
-            labelRt.offsetMax = Vector2.zero;
-
-            var tmp = labelGo.GetComponent<TextMeshProUGUI>();
-            tmp.raycastTarget = false;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = nameLabel != null ? nameLabel.fontSize : 16f;
-            tmp.text = nameLabel != null ? nameLabel.text : (_gem != null ? _gem.DisplayName : "—");
-            if (nameLabel != null)
-                tmp.font = nameLabel.font;
-
-            MoveGhost(eventData);
-        }
-
-        static void MoveGhost(PointerEventData eventData)
-        {
-            if (s_ghost == null || s_ghostCanvas == null)
-                return;
-
-            var canvasRt = (RectTransform)s_ghostCanvas.transform;
-            Camera cam = null;
-            if (s_ghostCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-                cam = eventData.pressEventCamera != null ? eventData.pressEventCamera : s_ghostCanvas.worldCamera;
-
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvasRt, eventData.position, cam, out var local))
-                return;
-
-            s_ghost.anchoredPosition = local;
-        }
-
-        static void DestroyGhost()
-        {
-            if (s_ghost == null)
-                return;
-            Destroy(s_ghost.gameObject);
-            s_ghost = null;
-            s_ghostCanvas = null;
+            GemDragGhostPool.Show(
+                    dragGhostPrefab,
+                    this,
+                    ((RectTransform)transform).rect.size,
+                    !_gem.IsEmpty ? _gem.Def.Icon : null,
+                    nameLabel != null ? nameLabel.text : (!_gem.IsEmpty ? _gem.DisplayName : EmptySlotText),
+                    nameLabel != null ? nameLabel.font : null,
+                    nameLabel != null ? nameLabel.fontSize : 16f,
+                    eventData);
         }
     }
 }

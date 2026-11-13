@@ -14,6 +14,56 @@ namespace GemTD.Tests.EditMode
             new Vector3(lx * Cell + Cell * 0.5f, 0f, ly * Cell + Cell * 0.5f);
 
         [Test]
+        public void OnChunkPlaced_ScalesPadTilesAndLeavesPathTilesFull()
+        {
+            var stampObject = new GameObject("stamp");
+            var viewObject = new GameObject("board");
+            try
+            {
+                var stamp = stampObject.AddComponent<MapChunkStamp>();
+                var buildable = new GameObject("Tile_0_0");
+                buildable.transform.SetParent(stampObject.transform, false);
+                buildable.transform.localScale = Vector3.one;
+                new GameObject("PadHeight1").transform.SetParent(buildable.transform, false);
+
+                var path = new GameObject("Tile_1_0");
+                path.transform.SetParent(stampObject.transform, false);
+                path.transform.localScale = Vector3.one;
+                new GameObject("PathTile").transform.SetParent(path.transform, false);
+
+                var isPath = new bool[ChunkMask.CellCount];
+                isPath[1] = true;
+                var grid = new ChunkGrid(1, 1);
+                grid.Place(Vector2Int.zero, new ChunkSlot(stamp, 0, new ChunkMask(isPath)));
+
+                var view = viewObject.AddComponent<ChunkBoardView>();
+                view.Bind(grid, null, 0.2f);
+                view.OnChunkPlaced(Vector2Int.zero);
+
+                var placed = viewObject.transform.GetChild(0);
+                var placedBuildable = placed.Find("Tile_0_0");
+                var placedPath = placed.Find("Tile_1_0");
+                Assert.AreEqual(0.8f, placedBuildable.localScale.x, 1e-4f);
+                Assert.AreEqual(1f, placedBuildable.localScale.y, 1e-4f);
+                Assert.AreEqual(0.8f, placedBuildable.localScale.z, 1e-4f);
+                Assert.AreEqual(1f, placedPath.localScale.x, 1e-4f);
+                Assert.AreEqual(1f, placedPath.localScale.y, 1e-4f);
+                Assert.AreEqual(1f, placedPath.localScale.z, 1e-4f);
+
+                view.SetTileSpacing(0.4f);
+                Assert.AreEqual(0.6f, placedBuildable.localScale.x, 1e-4f);
+                Assert.AreEqual(0.6f, placedBuildable.localScale.z, 1e-4f);
+                Assert.AreEqual(1f, placedPath.localScale.x, 1e-4f);
+                Assert.AreEqual(1f, placedPath.localScale.z, 1e-4f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(viewObject);
+                Object.DestroyImmediate(stampObject);
+            }
+        }
+
+        [Test]
         public void ChunkInstanceLocalPosition_Yaw0_IsChunkOrigin()
         {
             var pos = ChunkBoardView.ChunkInstanceLocalPosition(new Vector2Int(4, 5), 0, Cell);
